@@ -1,0 +1,28 @@
+<div class="row align-items-stretch gx-0" id="contact">
+  <div class="col-lg-6">
+    <div class="contact-img bg-center bg-cover" style="background: url({{img}})"></div>
+  </div>
+  <div class="col-lg-6">
+    <div class="p-5 h-100">
+      <header>
+        <p class="text-serif mb-0 text-primary">Contact Us</p>
+        <h2 class="text-uppercase">Reach Out</h2>
+        <p class="text-muted">If you have any questions, we would love to hear from you! Feel free to contact us via email or phone.</p>
+      </header>
+      <ul class="list-unstyled mb-0 text-muted">
+        @for (contact of contacts; track $index) {
+        <li class="mb-2">
+          <a class="reset-anchor" href="{{contact.link}}">
+            <span>
+              <fa-icon [icon]="contact.icon" />
+              &nbsp;{{contact.text}}
+            </span>
+          </a>
+        }
+        <li class="mb-2">
+          <span>Image Credit Sancta Familia Media</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>

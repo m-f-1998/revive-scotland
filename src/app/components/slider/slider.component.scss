@@ -1,0 +1,28 @@
+.hero-slide,
+.hero {
+  position: relative;
+}
+
+.hero-slide::before,
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.2));
+  display: block;
+}
+
+@media (min-width: 992px) {
+  .hero-slide {
+    min-height: 40rem;
+  }
+}
+
+@media (min-width: 992px) {
+  .hero-home {
+    min-height: 40rem;
+  }
+}

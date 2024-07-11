@@ -1,0 +1,17 @@
+<div class="container py-5" id="about">
+  <header class="mb-4 text-center mb-5">
+    <p class="text-serif mb-0 text-primary">About Us</p>
+    <h2 class="text-uppercase">Who Are We?</h2>
+  </header>
+  <div class="row text-center gy-4">
+    @for (paragraph of this.aboutUs; track $index) {
+      <div class="col-lg-4">
+        <div class="text-primary mb-4">
+          <fa-icon [icon]="paragraph.icon" size="3x" />
+        </div>
+        <h5>{{paragraph.title}}</h5>
+        <p class="text-muted">{{paragraph.description}}</p>
+      </div>
+    }
+  </div>
+</div>

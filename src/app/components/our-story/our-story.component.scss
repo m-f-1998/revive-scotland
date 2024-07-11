@@ -1,0 +1,17 @@
+.list-check li {
+  padding-left: 2.5rem;
+  position: relative;
+  list-style: none;
+}
+
+.list-check li::before {
+  content: '\f058';
+  display: block;
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  color: #3399FF;
+  font-family: 'Font Awesome\ 5 Free';
+  font-weight: 900;
+}

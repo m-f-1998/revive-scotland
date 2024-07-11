@@ -1,0 +1,16 @@
+<div class="swiper hero-slider text-center">
+  <swiper-container fmSwiper [config]="config" init="false" class="w-full">
+    @for (slide of slides; track $index) {
+      <swiper-slide class="hero-slide bg-cover with-border-image d-flex align-items-center" style="background: url({{slide.image}}); background-position: bottom; background-size: 100% 100%;">
+        <div class="container text-white py-5 my-5 index-forward p-3">
+          <h1 class="text-uppercase text-xl mt-5">{{slide.title}}</h1>
+          <div class="row">
+            <div class="col-lg-7 mx-auto">
+              <p class="lead" style="min-height: 300px;">{{slide.content}}</p>
+            </div>
+          </div>
+        </div>
+      </swiper-slide>
+    }
+  </swiper-container>
+</div>
