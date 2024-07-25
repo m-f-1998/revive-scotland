@@ -1,0 +1,23 @@
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Login</h5>
+          @if (form) {
+            <form [formGroup]="form">
+              <formly-form [form]="form" [fields]="fields" [model]="model" />
+              <button class="btn btn-primary" (click)="login()" [disabled]="loggingIn || !form.valid">
+                @if (loggingIn) {
+                  <fa-icon [icon]="faSpinner" animation="spin" size="1x" />
+                } @else {
+                  Login
+                }
+              </button>
+            </form>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

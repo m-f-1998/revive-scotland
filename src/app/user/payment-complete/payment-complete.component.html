@@ -1,0 +1,16 @@
+<div class="text-center">
+  @if (success === true) {
+    <fa-icon [icon]="faCheck" class="fa-10x text-success" />
+    <h1>Payment Complete</h1>
+    <h3>Thank You for Your Support!</h3>
+  } @else if (success === false) {
+    <fa-icon [icon]="faCross" class="fa-10x text-danger" />
+    <h1>Payment Failed</h1>
+    <h3>Sorry, there was an issue with your payment.</h3>
+  } @else {
+    <fa-icon [icon]="faCross" class="fa-10x text-info" />
+    <h1>An Error Occured</h1>
+    <h3>If the error persists please contact us.</h3>
+  }
+</div>
+<app-footer />

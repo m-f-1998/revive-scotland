@@ -4,7 +4,10 @@
   "compilerOptions": {
     "paths": {
       "@components/*": [
-        "./src/app/components/*"
+        "./src/app/user/components/*"
+      ],
+      "@services/*": [
+        "./src/app/services/*"
       ],
     },
     "outDir": "./dist/out-tsc",
@@ -13,6 +16,8 @@
     "noPropertyAccessFromIndexSignature": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
+    "strictPropertyInitialization": false,
+    "noImplicitAny": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "sourceMap": true,

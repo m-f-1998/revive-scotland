@@ -40,11 +40,14 @@
             "scripts": [
               "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
             ],
-            "server": "src/main.server.ts",
-            "prerender": true,
-            "ssr": {
-              "entry": "server.ts"
-            }
+            "extractLicenses": false,
+            "sourceMap": true,
+            "optimization": false,
+            "namedChunks": true,
+            "aot": true,
+            "statsJson": false,
+            "progress": false,
+            "prerender": false
           },
           "configurations": {
             "production": {

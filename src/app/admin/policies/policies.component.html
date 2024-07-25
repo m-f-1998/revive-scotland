@@ -1,0 +1,38 @@
+<div class="container">
+  <h1>Current Bookings</h1>
+  <p class="figure-caption">Logged in as: {{ adminService.user?.email }}</p>
+  <button class="btn btn-primary mb-2" (click)="addPolicy()">
+    <fa-icon [icon]="faPlus" />
+  </button>
+  <div class="table-responsive">
+    <table class="table table-striped" id="events-table">
+      <thead>
+        <tr class="text-center align-middle">
+          <th scope="col">Title</th>
+          <th scope="col">Category</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (policy of policies; track $index ) {
+          <tr class="text-center align-middle">
+            <td>{{ policy.title }}</td>
+            <!-- TODO: Add Category To DB -->
+            <td>1</td>
+            <!-- <td>{{ policy.category }}</td> -->
+            <td>
+              <div class="d-flex justify-content-center gap-2">
+                <button class="btn btn-danger" (click)="deletePolicy(policy.id)">
+                  <fa-icon [icon]="faTrash" />
+                </button>
+                <button class="btn btn-primary" (click)="editPolicy(policy.id)">
+                  <fa-icon [icon]="faEdit" />
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
