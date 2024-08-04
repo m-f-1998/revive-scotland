@@ -87,7 +87,7 @@
 
   if (!isset($_POST['type'])) {
     http_response_code(400);
-    echo json_encode(['error' => 'Type is required (event, event_bookings)']);
+    echo json_encode(['error' => 'Type is required (event_bookings)']);
     exit();
   }
 
@@ -95,50 +95,37 @@
 
   try {
     switch ($type) {
-      case 'event':
-        $stmt = $pdo->query("SELECT
-            e.id,
-            e.title,
-            e.date_from,
-            e.date_to,
-            e.location,
-            e.poster_link,
-            e.timetable_link,
-            e.price,
-            e.suggested_price,
-            p1.title AS policy_title,
-            p2.title AS gdpr_title
-        FROM Events e
-        LEFT JOIN Policies p1 ON e.policy_id = p1.id
-        LEFT JOIN Policies p2 ON e.gdpr_id = p2.id
-        ORDER BY e.date_from");
-        $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        http_response_code(200);
-        echo json_encode($events);
-        break;
-      case 'policy':
-        if (isset($_POST['title'])) {
-          $title = htmlspecialchars(strip_tags(trim($_POST['title'])));
-          $stmt = $pdo->prepare("SELECT * FROM Policies WHERE title = :title");
-          $stmt->execute(['title' => $title]);
-        } else {
-          $stmt = $pdo->query("SELECT * FROM Policies");
-        }
-        $policies = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        http_response_code(200);
-        echo json_encode($policies);
-        break;
       case 'event_bookings':
-        if (!isset($_POST['id'])) {
-          http_response_code(400);
-          echo json_encode(['error' => 'Required field: id']);
-          exit();
-        }
-
-        $id = htmlspecialchars(strip_tags(trim($_POST['id'])));
-
-        $stmt = $pdo->prepare("SELECT * FROM EventRegister WHERE event_id = :event_id");
-        $stmt->execute(['event_id' => $id]);
+        $stmt = $pdo->prepare("SELECT
+          r.`id`,
+          r.`name`,
+          r.`telephone`,
+          r.`email`,
+          r.`emergency_contact`,
+          r.`dob`,
+          r.`allergies_or_medical_requirements`,
+          r.`accepted_gdpr`,
+          r.`accepted_event_policy`,
+          r.`paid`,
+          e.`title`,
+          e.`description`,
+          e.`date_from`,
+          e.`date_to`,
+          e.`location`,
+          e.`poster_link`,
+          e.`featured_image`,
+          e.`timetable_link`,
+          e.`price`,
+          e.`suggested_price`,
+          p1.`title` AS `event_policy_title`,
+          p1.`description` AS `event_policy_description`,
+          p2.`title` AS `gdpr_title`,
+          p2.`description` AS `gdpr_description`
+          FROM EventRegister r
+          LEFT JOIN `Events` e ON r.`event_id` = e.`id`
+          LEFT JOIN `Policies` p1 ON e.`policy_id` = p1.`id`
+          LEFT JOIN `Policies` p2 ON e.`gdpr_id` = p2.`id`");
+        $stmt->execute([]);
         $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         http_response_code(200);

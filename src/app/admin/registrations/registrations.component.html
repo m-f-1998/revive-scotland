@@ -1,1 +1,61 @@
-<p>registrations works!</p>
+<div>
+  <p class="figure-caption">Logged in as: {{ adminService.user?.email }}</p>
+  @if (loading) {
+    <fa-icon [icon]="faSpinner" animation="spin" size="2x" class="mb-2" />
+  } @else {
+    @if ( form ) {
+      <div class="accordion mb-3" id="filterAccordion">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="filterHeading">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
+              Filter
+            </button>
+          </h2>
+          <div id="filterCollapse" class="accordion-collapse collapse" aria-labelledby="filterHeading" data-bs-parent="#filterAccordion">
+            <div class="accordion-body">
+              <form [formGroup]="form" class="mb-3">
+                <div class="row">
+                  <formly-form [form]="form" [fields]="fields" [model]="model" />
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+    <div class="table-responsive">
+      <table class="table table-striped" id="events-table">
+        <thead>
+          <tr class="text-center align-middle">
+            <th scope="col">Event Title</th>
+            <th scope="col">Name</th>
+            <th scope="col">Email</th>
+            <th scope="col">Paid</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (registration of filter; track $index ) {
+            <tr class="text-center align-middle">
+              <td>{{ registration.title }}</td>
+              <td>{{ registration.name }}</td>
+              <td>{{ registration.email }}</td>
+              @if (registration.paid) {
+                <td>Yes</td>
+              } @else {
+                <td>No</td>
+              }
+              <td>
+                <div class="d-flex justify-content-center gap-2">
+                  <button class="btn btn-primary" (click)="viewRegistration(registration)">
+                    <fa-icon [icon]="faView" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

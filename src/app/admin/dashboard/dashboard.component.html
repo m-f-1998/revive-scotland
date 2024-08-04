@@ -1,62 +1,20 @@
 <div class="container">
-  <h1>Current Bookings</h1>
-  <p class="figure-caption">Logged in as: {{ adminService.user?.email }}</p>
-  <button class="btn btn-primary mb-2" (click)="addEvent()">
-    <fa-icon [icon]="faPlus" />
-  </button>
-  <div class="table-responsive">
-    <table class="table table-striped" id="events-table">
-      <thead>
-        <tr class="text-center align-middle">
-          <th scope="col">Title</th>
-          <th scope="col">Price</th>
-          <th scope="col">Price Suggested/Required</th>
-          <th scope="col">Timetable</th>
-          <th scope="col">Poster</th>
-          <th scope="col">Event Policy</th>
-          <th scope="col">GDPR</th>
-          <th scope="col"></th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (event of events; track $index ) {
-          <tr class="text-center align-middle">
-            <td>{{ event.title }}</td>
-            @if (event.price) {
-              <td>{{ event.price | currency: "GBP" }}</td>
-            } @else {
-              <td>Free</td>
-            }
-            @if (event.suggested_price) {
-              <td>Suggested</td>
-            } @else {
-              <td>Required</td>
-            }
-            <td (click)="openDoc('Timetable', event.timetable_link)">
-              <a class="clickable">{{ event.timetable_link }}</a>
-            </td>
-            <td (click)="openDoc('Poster', event.poster_link)">
-              <a class="clickable">{{ event.poster_link }}</a>
-            </td>
-            <td (click)="openPolicy(event.policy_title)">
-              <a class="clickable">{{ event.policy_title }}</a>
-            </td>
-            <td (click)="openPolicy(event.gdpr_title)">
-              <a class="clickable">{{ event.gdpr_title }}</a>
-            </td>
-            <td>
-              <div class="d-flex justify-content-center gap-2">
-                <button class="btn btn-danger" (click)="deleteEvent(event.id)">
-                  <fa-icon [icon]="faTrash" />
-                </button>
-                <button class="btn btn-primary" (click)="editEvent(event.id)">
-                  <fa-icon [icon]="faEdit" />
-                </button>
-              </div>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <button class="btn btn-primary" (click)="setActiveTab(0)" [disabled]="activeTab === 0">
+      Events
+    </button>
+    <button class="btn btn-primary" (click)="setActiveTab(1)" [disabled]="activeTab === 1">
+      Policies
+    </button>
+    <button class="btn btn-primary" (click)="setActiveTab(2)" [disabled]="activeTab === 2">
+      Registrations
+    </button>
   </div>
+  @if (activeTab === 0) {
+    <app-admin-events />
+  } @else if (activeTab === 1) {
+    <app-admin-policies />
+  } @else if (activeTab === 2) {
+    <app-admin-registrations />
+  }
 </div>

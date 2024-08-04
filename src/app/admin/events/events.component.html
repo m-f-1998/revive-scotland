@@ -1,0 +1,65 @@
+<div>
+  <p class="figure-caption">Logged in as: {{ adminSvc.user?.email }}</p>
+  @if (loading) {
+    <div class="d-flex flex-column align-items-center m-3">
+      <fa-icon [icon]="faSpinner" animation="spin" size="2x" class="mb-2" />
+      Loading...
+    </div>
+  } @else {
+    <button class="btn btn-primary mb-2" (click)="addEvent()">
+      <fa-icon [icon]="faPlus" />
+    </button>
+    <div class="table-responsive">
+      <table class="table table-striped" id="events-table">
+        <thead>
+          <tr class="text-center align-middle">
+            <th scope="col">Title</th>
+            <th scope="col">Date</th>
+            <th scope="col">Location</th>
+            <th scope="col">Timetable</th>
+            <th scope="col">Poster</th>
+            <th scope="col">Price</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (event of events; track $index ) {
+            <tr class="text-center align-middle">
+              <td>{{ event.title }}</td>
+              <td>
+                <span>
+                  {{ dateSvc.reformat ( event.date_from, "EEE dd MMM" ) }}
+                  @if (event.date_to) {
+                    <span> - {{ dateSvc.reformat ( event.date_to, "EEE dd MMM" ) }}</span>
+                  }
+                </span>
+              </td>
+              <td>{{ event.location }}</td>
+              <td (click)="openDoc('Timetable', event.timetable_link)">
+                <a class="clickable">{{ event.timetable_link }}</a>
+              </td>
+              <td (click)="openDoc('Poster', event.poster_link)">
+                <a class="clickable">{{ event.poster_link }}</a>
+              </td>
+              @if (event.price) {
+                <td>{{ event.price | currency: "GBP" }}</td>
+              } @else {
+                <td>Free</td>
+              }
+              <td>
+                <div class="d-flex justify-content-center gap-2">
+                  <button class="btn btn-danger" (click)="deleteEvent(event.id)">
+                    <fa-icon [icon]="faTrash" />
+                  </button>
+                  <button class="btn btn-primary" (click)="viewEvent(event)">
+                    <fa-icon [icon]="faView" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

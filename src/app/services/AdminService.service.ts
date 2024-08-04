@@ -1,8 +1,8 @@
 import { Injectable } from "@angular/core"
-import { Router } from "@angular/router"
-import { ToastrService } from "ngx-toastr"
 import { HttpService } from "./HttpService.service"
-import { Location } from "@angular/common"
+import { from, Observable, of } from "rxjs"
+import { ToastrService } from "ngx-toastr"
+import { Router } from "@angular/router"
 
 @Injectable ( {
   providedIn: "root"
@@ -18,35 +18,37 @@ export class AdminService {
 
   constructor (
     private httpClient: HttpService,
-    private router: Router,
     private toastrSvc: ToastrService,
-    private location: Location
+    private router: Router
   ) { }
 
-  public resumeSession ( ) {
+  public resumeSession ( ): Observable<boolean> {
     const token = localStorage.getItem ( "token" ) as string
     if ( token ) {
       this.token = token
-      this.httpClient.request ( "/login.php", {} ).then ( ( res: any ) => {
+      return from ( this.httpClient.request ( "/login.php", {}, "POST" ).then ( ( res: any ) => {
         this.token = token
         this.loggedIn = true
         this.user = res.user
-        if ( this.location.path ( ) === "/admin/login" ) {
-          this.router.navigate ( [ "/admin/dashboard" ] )
-        }
+        return true
       } ).catch ( e => {
         if ( e.status !== 401 ) {
           console.error ( e )
         }
         localStorage.removeItem ( "token" )
-      } )
+        return true
+      } ) )
+    } else {
+      return of ( false )
     }
   }
 
   public logout ( ) {
+    this.toastrSvc.info ( "Your Session has Expired. Please Re-Login" )
     this.loggedIn = false
     this.token = ""
     this.user = null
     localStorage.removeItem ( "token" )
+    this.router.navigate ( [ "/admin/login" ] )
   }
 }

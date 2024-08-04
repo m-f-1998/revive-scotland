@@ -12,6 +12,7 @@ DROP TABLE IF EXISTS `EventRegister`;
 DROP TABLE IF EXISTS `Events`;
 DROP TABLE IF EXISTS `Login`;
 DROP TABLE IF EXISTS `Policies`;
+DROP TABLE IF EXISTS `PolicyCategories`;
 
 -- Table to store user logins
 CREATE TABLE `Login` (
@@ -23,11 +24,21 @@ CREATE TABLE `Login` (
   `last_login` DATETIME
 );
 
+-- Table to store categories
+CREATE TABLE `PolicyCategories` (
+  `id` CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+  `name` VARCHAR(50) NOT NULL UNIQUE
+);
+
 -- Table to store policies
 CREATE TABLE `Policies` (
   `id` CHAR(36) PRIMARY KEY DEFAULT (UUID()),
   `title` VARCHAR(100) NOT NULL,
-  `description` TEXT NOT NULL
+  `category_id` CHAR(36) NOT NULL,
+  `description` TEXT NOT NULL,
+  CONSTRAINT `fk_category`
+      FOREIGN KEY(`category_id`)
+          REFERENCES `PolicyCategories`(`id`)
 );
 
 -- Table to store events
@@ -71,16 +82,26 @@ CREATE TABLE `EventRegister` (
           REFERENCES `Events`(`id`)
 );
 
+CREATE INDEX idx_events_policy_id ON `Events` (policy_id);
+CREATE INDEX idx_events_gdpr_id ON `Events` (gdpr_id);
+CREATE INDEX idx_events_date_from ON `Events` (date_from);
+
 -- Insert row into Login table with default password
 -- admin:G7uaw54J7EtbcQehv1FO
 INSERT INTO `Login` (`id`, `username`, `email`, `password`, `permissions`, `last_login`)
   VALUES (UUID(), 'admin', 'revivescotlandx@gmail.com', '$2y$10$C5l93.2xzxRaWnGNMIMmNuhpUH5VB3W4s3JGM7lJNEAsvwyGV2hqG', 'admin', NULL);
 
--- Insert default policies
-INSERT INTO `Policies` (`id`, `title`, `description`)
+-- Insert default categories
+INSERT INTO `PolicyCategories` (`id`, `name`)
 VALUES
-    (UUID(), 'Event Policy', 'This is an exemplary text for the Event Policy.'),
-    (UUID(), 'GDPR Policy', 'This is an exemplary text for the GDPR Policy.');
+    (UUID(), 'Event Policy'),
+    (UUID(), 'GDPR');
+
+-- Insert default policies with category_id
+INSERT INTO `Policies` (`id`, `title`, `category_id`, `description`)
+VALUES
+    (UUID(), 'Event Policy', (SELECT `id` FROM `PolicyCategories` WHERE `name` = 'Event Policy'), 'This is an exemplary text for the Event Policy.'),
+    (UUID(), 'GDPR Policy', (SELECT `id` FROM `PolicyCategories` WHERE `name` = 'GDPR'), 'This is an exemplary text for the GDPR Policy.');
 
 -- Insert 4 events with placeholder text and default boolean values
 INSERT INTO `Events` (`id`, `title`, `date_from`, `date_to`, `location`, `poster_link`, `timetable_link`, `price`, `suggested_price`, `policy_id`, `gdpr_id`)
@@ -89,6 +110,14 @@ VALUES
     (UUID(), 'Event 2', NOW() + INTERVAL 6 MONTH, NULL, 'Location 2', 'poster2.jpg', 'timetable2.pdf', 15.00, FALSE, (SELECT `id` FROM `Policies` WHERE `title` = 'Event Policy'), (SELECT `id` FROM `Policies` WHERE `title` = 'GDPR Policy')),
     (UUID(), 'Event 3', NOW() + INTERVAL 6 MONTH, NULL, 'Location 3', 'poster3.jpg', 'timetable3.pdf', 20.00, TRUE, (SELECT `id` FROM `Policies` WHERE `title` = 'Event Policy'), (SELECT `id` FROM `Policies` WHERE `title` = 'GDPR Policy')),
     (UUID(), 'Event 4', NOW() + INTERVAL 6 MONTH, NULL, 'Location 4', 'poster4.jpg', 'timetable4.pdf', 0.00, FALSE, (SELECT `id` FROM `Policies` WHERE `title` = 'Event Policy'), (SELECT `id` FROM `Policies` WHERE `title` = 'GDPR Policy'));
+
+-- Insert example event registrations
+INSERT INTO `EventRegister` (`id`, `event_id`, `name`, `telephone`, `email`, `emergency_contact`, `dob`, `allergies_or_medical_requirements`, `accepted_gdpr`, `accepted_event_policy`, `paid`)
+VALUES
+  (UUID(), (SELECT `id` FROM `Events` WHERE `title` = 'Event 1'), 'John Doe', '+441234567890', 'johndoe@example.com', 'Jane Doe', '1990-01-01', 'None', TRUE, TRUE, TRUE),
+  (UUID(), (SELECT `id` FROM `Events` WHERE `title` = 'Event 1'), 'Jane Smith', '+44987654321', 'janesmith@example.com', 'John Smith', '1995-05-05', 'None', TRUE, TRUE, FALSE),
+  (UUID(), (SELECT `id` FROM `Events` WHERE `title` = 'Event 2'), 'Alice Johnson', '+449876543210', 'alicejohnson@example.com', 'Bob Johnson', '1985-12-25', 'None', TRUE, TRUE, TRUE),
+  (UUID(), (SELECT `id` FROM `Events` WHERE `title` = 'Event 3'), 'Bob Williams', '+44123456789', 'bobwilliams@example.com', 'Alice Williams', '1998-07-15', 'None', TRUE, TRUE, FALSE);
 
 SET GLOBAL event_scheduler = ON;
 

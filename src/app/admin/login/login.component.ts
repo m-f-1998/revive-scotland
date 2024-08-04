@@ -67,7 +67,7 @@ export class AdminLoginComponent {
 
   public login ( ) {
     this.loggingIn = true
-    this.httpClient.request ( "/login.php", this.model ).then ( ( res: any ) => {
+    this.httpClient.request ( "/login.php", this.model, "POST" ).then ( ( res: any ) => {
       this.adminSvc.loggedIn = true
       this.adminSvc.token = res.jwt
       localStorage.setItem ( "token", res.jwt )
@@ -77,6 +77,8 @@ export class AdminLoginComponent {
     } ).catch ( e => {
       if ( e.status === 401 ) {
         this.toastrSvc.error ( "Invalid Username or Password" )
+      } else {
+        this.toastrSvc.error ( e.error )
       }
       this.loggingIn = false
       console.error ( e )

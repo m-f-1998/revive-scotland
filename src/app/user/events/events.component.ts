@@ -30,9 +30,7 @@ export class EventsComponent implements OnInit {
   ) { }
 
   public ngOnInit ( ) {
-    this.httpClient.request ( "/get.php", {
-      "type": "event"
-    } ).then ( ( data: any ) => {
+    this.httpClient.request ( "/events.php", { }, "POST" ).then ( ( data: any ) => {
       const chunkSize = 2
       for ( let i = 0; i < data.length; i += chunkSize ) {
         this.events.push ( data.slice ( i, i + chunkSize ) )

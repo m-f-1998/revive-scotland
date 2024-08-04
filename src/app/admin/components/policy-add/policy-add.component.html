@@ -1,0 +1,23 @@
+<div class="modal-header">
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" (click)="close()"></button>
+</div>
+
+<div class="modal-body">
+  @if (loading) {
+    <div class="d-flex flex-column align-items-center m-3">
+      <fa-icon [icon]="faSpinner" animation="spin" size="2x" class="mb-2" />
+      <p>Loading...</p>
+    </div>
+  } @else {
+    @if ( form ) {
+      <form [formGroup]="form">
+        <formly-form [form]="form" [fields]="fields" [model]="model" />
+      </form>
+    }
+  }
+</div>
+
+<div class="modal-footer">
+  <button type="button" class="btn btn-primary" (click)="submit()" [disabled]="!form.valid">Save</button>
+  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" (click)="close()">Close</button>
+</div>

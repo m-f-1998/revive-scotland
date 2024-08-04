@@ -31,16 +31,6 @@ export const routes: Routes = [
     canActivate: [ AuthActive ],
   },
   {
-    path: "admin/registrations",
-    component: AdminRegistrationsComponent,
-    canActivate: [ AuthActive ],
-  },
-  {
-    path: "admin/policies",
-    component: AdminPoliciesComponent,
-    canActivate: [ AuthActive ],
-  },
-  {
     path: "payment-complete",
     component: PaymentCompleteComponent
   }

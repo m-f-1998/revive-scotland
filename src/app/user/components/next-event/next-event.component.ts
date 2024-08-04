@@ -1,5 +1,6 @@
 import { CommonModule } from "@angular/common"
 import { ChangeDetectorRef, Component, NgZone, OnInit } from "@angular/core"
+import { HttpService } from "@services/HttpService.service"
 import { intervalToDuration } from "date-fns"
 
 @Component ( {
@@ -12,7 +13,8 @@ import { intervalToDuration } from "date-fns"
   styleUrl: "./next-event.component.scss"
 } )
 export class NextEventComponent implements OnInit {
-  public nextEvent = new Date ( 2025, 1, 1 ) // TODO: Set this to the next event date
+  public nextEvent = new Date ( 2025, 1, 1 )
+  public today = new Date ( )
 
   public months = "0"
   public days = "0"
@@ -23,8 +25,20 @@ export class NextEventComponent implements OnInit {
 
   constructor (
     private _ngZone: NgZone,
-    private changeDetector: ChangeDetectorRef
-  ) { }
+    private changeDetector: ChangeDetectorRef,
+    private httpSvc: HttpService
+  ) {
+    this.httpSvc.request ( "/events.php", { } ).then ( ( res: any ) => {
+      const nextEvent = res.reduce ( ( a: { date_from: string | number | Date }, b: { date_from: string | number | Date } ) => {
+        return new Date ( a.date_from ) > new Date ( b.date_from ) ? b : a
+      } )
+      if ( nextEvent ) {
+        this.nextEvent = new Date ( nextEvent.date_from )
+      } else {
+        this.nextEvent = new Date ( 1900, 1, 1 )
+      }
+    } )
+  }
 
   public updateComponent ( ) {
     const diff = intervalToDuration ( {

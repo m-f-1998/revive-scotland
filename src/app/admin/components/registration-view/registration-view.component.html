@@ -1,0 +1,150 @@
+<div class="modal-header">
+  <h1 class="modal-title fs-5">Registration Details</h1>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" (click)="close()"></button>
+</div>
+
+<div class="modal-body m-2">
+  <div class="table-responsive">
+    <table class="table">
+      <tbody>
+        <tr>
+          <th scope="row">Name</th>
+          <td>{{registration?.name}}</td>
+        </tr>
+        <tr>
+          <th scope="row">Email</th>
+          <td>
+            <a href="mailto:{{registration?.email}}">{{registration?.email}}</a>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Date of Birth</th>
+          <td>{{dateSvc.reformat(registration?.dob, "dd/MM/yyyy")}}</td>
+        </tr>
+        <tr>
+          <th scope="row">Telephone</th>
+          <td>
+            <a href="tel://{{registration?.telephone}}">{{registration?.telephone}}</a>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Emergency Contact</th>
+          <td>{{registration?.emergency_contact}}</td>
+        </tr>
+        <tr>
+          <th scope="row">Has Paid</th>
+          @if (registration?.paid) {
+            <td>Yes</td>
+          } @else {
+            <td>No</td>
+          }
+        </tr>
+        <tr>
+          <th scope="row">Allergies or Medical Requirements</th>
+          <td>{{registration?.allergies_or_medical_requirements}}</td>
+        </tr>
+        <tr>
+          <th scope="row">Accepted Event Policy</th>
+          @if (registration?.accepted_event_policy) {
+            <td>Yes</td>
+          } @else {
+            <td>No</td>
+          }
+        </tr>
+        <tr>
+          <th scope="row">Accepted GDPR</th>
+          @if (registration?.accepted_gdpr) {
+            <td>Yes</td>
+          } @else {
+            <td>No</td>
+          }
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <br />
+  <div class="table-responsive">
+    <table class="table">
+      <tbody>
+        <tr>
+          <th scope="row">Title of Event</th>
+          <td>{{registration?.title}}</td>
+        </tr>
+        <tr>
+          <th scope="row">Date From</th>
+          <td>{{dateSvc.reformat(registration?.date_from, "dd/MM/yyyy")}}</td>
+        </tr>
+        <tr>
+          <th scope="row">Date To</th>
+          <td>{{dateSvc.reformat(registration?.date_to, "dd/MM/yyyy")}}</td>
+        </tr>
+        <tr>
+          <th scope="row">Location</th>
+          <td>{{registration?.location}}</td>
+        </tr>
+        <tr>
+          <th scope="row">Link to the Timetable</th>
+          <td>
+            <a href="{{registration?.timetable_link}}">{{registration.timetable_link}}</a>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Link to the Poster</th>
+          <td>
+            <a href="{{registration?.poster_link}}">{{registration.poster_link}}</a>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Link to the Featured Image</th>
+          <td>
+            <a href="{{registration?.featured_image}}">{{registration.featured_image}}</a>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Event Price</th>
+          <td>{{registration?.price | currency: "GBP"}}</td>
+        </tr>
+        <tr>
+          <th scope="row">Donation or Payment Requirement</th>
+          @if (registration?.suggested_price) {
+            <td>Donation</td>
+          } @else {
+            <td>Payment Required</td>
+          }
+        </tr>
+        <tr>
+          <th scope="row">Link to the Event Policy</th>
+          <td>
+            <a (click)="openPolicy(registration?.event_policy_title, registration?.event_policy_description)">{{registration?.event_policy_title}}</a>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Link to the GDPR Policy</th>
+          <td>
+            <a (click)="openPolicy(registration?.gdpr_title, registration?.gdpr_description)">{{registration?.gdpr_title}}</a>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Accepted Event Policy</th>
+          @if (registration?.accepted_event_policy) {
+            <td>Yes</td>
+          } @else {
+            <td>No</td>
+          }
+        </tr>
+        <tr>
+          <th scope="row">Accepted GDPR</th>
+          @if (registration?.accepted_gdpr) {
+            <td>Yes</td>
+          } @else {
+            <td>No</td>
+          }
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal-footer">
+  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" (click)="close()">Close</button>
+</div>

@@ -44,37 +44,7 @@ export class NavbarComponent {
         href: "/",
         title: "Home"
       }
-    ],
-    "/admin/dashboard": [
-      {
-        href: "/admin/registrations",
-        title: "Event Registrations"
-      },
-      {
-        href: "/admin/policies",
-        title: "Event Policies"
-      }
-    ],
-    "/admin/registrations": [
-      {
-        href: "/admin/dashboard",
-        title: "Events"
-      },
-      {
-        href: "/admin/policies",
-        title: "Event Policies"
-      }
-    ],
-    "/admin/policies": [
-      {
-        href: "/admin/dashboard",
-        title: "Events"
-      },
-      {
-        href: "/admin/registrations",
-        title: "Event Registrations"
-      }
-    ],
+    ]
   }
 
   public constructor (

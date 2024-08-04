@@ -8,6 +8,7 @@ import { ReactiveFormsModule } from "@angular/forms"
 import { FormlyModule } from "@ngx-formly/core"
 import { FormlyBootstrapModule } from "@ngx-formly/bootstrap"
 import { AdminService } from '@services/AdminService.service';
+import { FormlyLink } from './admin/components/formly-fields/formly-link.component';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -21,15 +22,21 @@ export const appConfig: ApplicationConfig = {
       progressBar: true,
       tapToDismiss: true,
       autoDismiss: true,
+      timeOut: 4000,
+      extendedTimeOut: 3000
     } ),
     importProvidersFrom (
       ReactiveFormsModule,
-      FormlyModule.forRoot ( ),
+      FormlyModule.forRoot ( {
+        types: [
+          { name: 'formly-link', component: FormlyLink }
+        ]
+      } ),
       FormlyBootstrapModule
     ),
     {
       provide: APP_INITIALIZER,
-      useFactory: (adminSvc: AdminService) => () => adminSvc.resumeSession(),
+      useFactory: (adminSvc: AdminService) => () => adminSvc.resumeSession ( ),
       deps: [
         AdminService
       ],
