@@ -18,12 +18,16 @@ export class HttpService {
     const adminSvc = this.injector.get ( AdminService )
 
     const address = this.ADDRESS + path
-    const headers = new HttpHeaders ( {
+    let headers = new HttpHeaders ( {
       "X-Auth": adminSvc.token
     } )
 
-    if ( !(body instanceof FormData) ) {
-      headers.append ( "Content-Type", "application/json" )
+    if ( !( body instanceof FormData ) ) {
+      headers = headers.append ( "Content-Type", "application/json" )
+    }
+
+    if ( path === "/asset.php" ) {
+      headers = headers.append ( "Response-Type", "blob" )
     }
 
     switch ( method ) {
@@ -64,8 +68,9 @@ export class HttpService {
   private post ( address: string, headers: HttpHeaders, body: any = { },  ) {
     return new Promise ( ( resolve, reject ) => {
       this.httpClient.post ( address, body, {
-        headers
-      } ).subscribe ( {
+        headers,
+        responseType: address.endsWith ( "/asset.php" ) ? "blob" : "json"
+      } as Object ).subscribe ( {
         next: ( response ) => {
           resolve ( this.parseData ( response ) )
         },

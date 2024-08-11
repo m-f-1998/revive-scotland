@@ -1,8 +1,8 @@
 <?php
-  header('Content-Type: application/json; charset=utf-8');
-  header('Access-Control-Allow-Origin: *'); // TODO: Remove On Production
-  header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
-  header('Access-Control-Allow-Headers: Origin, Content-Type, X-Auth');
+  header ( "Content-Type: application/json; charset=utf-8" );
+  header ( "Access-Control-Allow-Origin: *" ); // TODO: Remove On Production
+  header ( "Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS" );
+  header ( "Access-Control-Allow-Headers: Origin, Content-Type, X-Auth" );
 
   include_once "controller/db.php";
 

@@ -156,6 +156,11 @@ export class EventAddComponent implements OnInit, AfterViewChecked {
       ]
 
       this.model = {
+        title: "Event 40",
+        description: "Event 40 Description",
+        location: "Event 40 Location",
+        price: 100,
+        date_from: "2021-12-01",
         suggested_price: true
       }
 

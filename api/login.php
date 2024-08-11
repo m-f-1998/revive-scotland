@@ -1,8 +1,8 @@
 <?php
-  header('Content-Type: application/json; charset=utf-8');
-  header('Access-Control-Allow-Origin: *'); // TODO: Remove On Production
-  header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
-  header('Access-Control-Allow-Headers: Origin, Content-Type, X-Auth');
+  header ( "Content-Type: application/json; charset=utf-8" );
+  header ( "Access-Control-Allow-Origin: *" ); // TODO: Remove On Production
+  header ( "Access-Control-Allow-Methods: POST, OPTIONS" );
+  header ( "Access-Control-Allow-Headers: Origin, Content-Type, X-Auth" );
 
   include_once "controller/db.php";
 
@@ -12,15 +12,19 @@
 
   include_once "controller/authenticate.php";
 
-  if ( isset ( $headers [ "X-Auth" ] ) && $headers [ "X-Auth" ] !== "" ) {
-    $user = getUser ( );
-    if ( $user ) {
-      echo json_encode ( [
-        "message" => "Login successful",
-        "jwt" => $headers [ "X-Auth" ],
-        "user" => $user [ "data" ]
-      ] );
-      exit ( );
+  $_POST = json_decode ( file_get_contents ( "php://input" ), true );
+
+  if ( !isset ( $_POST [ "username" ] ) || !isset ( $_POST [ "password" ] ) ) {
+    if ( isset ( $headers [ "X-Auth" ] ) && $headers [ "X-Auth" ] !== "" ) {
+      $user = getUser ( );
+      if ( $user ) {
+        echo json_encode ( [
+          "message" => "Login successful",
+          "jwt" => $headers [ "X-Auth" ],
+          "user" => $user [ "data" ]
+        ] );
+        exit ( );
+      }
     }
   }
 
@@ -29,8 +33,6 @@
     echo json_encode ( "Method not Allowed" );
     exit ( );
   }
-
-  $_POST = json_decode ( file_get_contents ( "php://input" ), true );
 
   if ( !isset ( $_POST [ "username" ] ) || !isset ( $_POST [ "password" ] ) ) {
     http_response_code ( 400 );
@@ -63,8 +65,8 @@
     ];
 
     $payload = [
-      "iat" => time(),
-      "exp" => time() + ( 60 * 60 ), // Token valid for 1 hour
+      "iat" => time ( ),
+      "exp" => time ( ) + ( 60 * 60 ), // Token valid for 1 hour
       "data" => [
         "username" => $user [ "username" ],
         "email" => $user [ "email" ],

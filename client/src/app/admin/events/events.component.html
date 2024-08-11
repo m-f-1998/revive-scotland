@@ -35,12 +35,20 @@
                 </span>
               </td>
               <td>{{ event.location }}</td>
-              <td (click)="openDoc('Timetable', event.timetable_link)">
-                <a class="clickable">{{ event.timetable_link }}</a>
-              </td>
-              <td (click)="openDoc('Poster', event.poster_link)">
-                <a class="clickable">{{ event.poster_link }}</a>
-              </td>
+              @if (event.timetable_link) {
+                <td (click)="openDoc('Timetable', event.timetable_link)">
+                  <a class="clickable">{{ event.title }} Timetable</a>
+                </td>
+              } @else {
+                <td></td>
+              }
+              @if (event.poster_link) {
+                <td (click)="openDoc('Poster', event.poster_link)">
+                  <a class="clickable">{{ event.title }} Poster</a>
+                </td>
+              } @else {
+                <td></td>
+              }
               @if (event.price) {
                 <td>{{ event.price | currency: "GBP" }}</td>
               } @else {

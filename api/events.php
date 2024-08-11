@@ -9,28 +9,25 @@
     header ( "Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS" );
   }
 
-  header('Access-Control-Allow-Origin: *'); // TODO: Remove On Production
+  header ( "Access-Control-Allow-Origin: *" ); // TODO: Remove On Production
   header ( "Access-Control-Allow-Headers: Origin, Content-Type, X-Auth" );
 
   include_once "controller/db.php";
-
   $conn = db_connection ( );
 
   try {
     $headers = getallheaders ( );
 
+    if ( isset ( $headers [ "X-Auth" ] ) ) {
+      include_once "controller/authenticate.php";
+      $user = getUser ( );
+    }
+
     switch ( $_SERVER [ "REQUEST_METHOD" ] ) {
       case "GET":
-        if ( isset ( $headers [ "X-Auth" ] ) ) {
-          include_once "controller/authenticate.php";
-          $user = getUser ( );
-        }
         echo json_encode ( get_events ( $conn, $headers ) );
         break;
       case "POST":
-        include_once "controller/authenticate.php";
-        $user = getUser ( );
-
         if (
           !isset ( $_POST [ "title" ] ) ||
           !isset ( $_POST [ "description" ] ) ||
@@ -46,14 +43,14 @@
           exit ( );
         }
 
-        save_files ( $conn );
+        $saved_files = save_files ( $conn, $headers );
 
         if ( isset ( $_POST [ "id" ] ) ) {
           check_event_register ( $conn );
-          update_event ( $conn );
+          update_event ( $conn, $saved_files );
           http_response_code ( 204 );
         } else {
-          insert_event ( $conn );
+          insert_event ( $conn, $saved_files );
           http_response_code ( 201 );
         }
 
@@ -67,6 +64,24 @@
           exit ( );
         }
         check_event_register ( $conn );
+
+        $event = get_events ( $conn, $headers, $_POST [ "id" ] );
+        if ( count ( $event ) === 0 ) {
+          http_response_code ( 404 );
+          echo json_encode ( "Event not found" );
+          exit ( );
+        }
+
+        if ( is_file ( $event [ 0 ] [ "featured_image" ] ) ) {
+          unlink ( $event [ 0 ] [ "featured_image" ] );
+        }
+        if ( is_file ( $event [ 0 ] [ "poster_link" ] ) ) {
+          unlink ( $event [ 0 ] [ "poster_link" ] );
+        }
+        if ( is_file ( $event [ 0 ] [ "timetable_link" ] ) ) {
+          unlink ( $event [ 0 ] [ "timetable_link" ] );
+        }
+
         $stmt = $conn->prepare ( "DELETE FROM Events WHERE id = :id" );
         $stmt->execute ( [
           "id" => $_POST [ "id" ]
@@ -78,7 +93,7 @@
     }
   } catch ( PDOException $e ) {
     http_response_code ( 500 );
-    echo json_encode ( "Database query failed" );
+    echo json_encode ( $e->getMessage ( ) );
   }
 
   function check_event_register ( $conn ) {
@@ -94,7 +109,7 @@
     }
   }
 
-  function get_events ( $conn, $headers ) {
+  function get_events ( $conn, $headers, $id = null ) {
     $stmt = $conn->query ( "SELECT
         " . ( isset ( $headers [ "X-Auth" ] ) ? "e.`id`," : "" ) . "
         e.`title`,
@@ -119,12 +134,15 @@
         `Policies` p1 ON e.`policy_id` = p1.`id`
     LEFT JOIN
         `Policies` p2 ON e.`gdpr_id` = p2.`id`
+    " . ( !is_null ( $id ) ? "WHERE e.`id` = '" . $id . "'" : "" ) . "
     ORDER BY
         e.date_from;" );
+
+
     return $stmt->fetchAll ( PDO::FETCH_ASSOC );
   }
 
-  function update_event ( $conn ) {
+  function update_event ( $conn, $saved_files ) {
     $stmt = $conn->prepare ( "UPDATE Events SET
       `title` = :title,
       `description` = :description,
@@ -140,7 +158,7 @@
       `gdpr_id` = :gdpr_id
     WHERE id = :id" );
 
-    $queryVariables = [
+    $stmt->execute ( array_merge ( [
       "id" => $_POST [ "id" ],
       "title" => $_POST [ "title" ],
       "description" => $_POST [ "description" ],
@@ -151,33 +169,23 @@
       "suggested_price" => $_POST [ "suggested_price" ],
       "policy_id" => $_POST [ "policy_id" ],
       "gdpr_id" => $_POST [ "gdpr_id" ]
-    ];
-
-    if ( isset ( $_POST [ "featured_image" ] ) ) {
-      $queryVariables [ "featured_image" ] = "assets/" . $_POST [ "featured_image" ];
-    }
-
-    if ( isset ( $_POST [ "poster_link" ] ) ) {
-      $queryVariables [ "poster_link" ] = "assets/" . $_POST [ "poster_link" ];
-    }
-
-    if ( isset ( $_POST [ "timetable_link" ] ) ) {
-      $queryVariables [ "timetable_link" ] = "assets/" . $_POST [ "timetable_link" ];
-    }
-
-    $stmt->execute ( $queryVariables );
+    ], $saved_files ) );
   }
 
-  function insert_event ( $conn ) {
+  function get_asset_url ( ) {
+    return "assets/";
+  }
+
+  function insert_event ( $conn, $saved_files ) {
     $stmt = $conn->prepare ( "INSERT INTO Events (
       `title`,
       `description`,
       `date_from`,
       `date_to`,
       `location`,
-      `featured_image`,
-      `poster_link`,
-      `timetable_link`,
+      " . ( array_key_exists ( "featured_image", $saved_files ) ? "`featured_image`," : "" ) . "
+      " . ( array_key_exists ( "poster_link", $saved_files ) ? "`poster_link`," : "" ) . "
+      " . ( array_key_exists ( "timetable_link", $saved_files ) ? "`timetable_link`," : "" ) . "
       `price`,
       `suggested_price`,
       `policy_id`,
@@ -188,31 +196,45 @@
       :date_from,
       :date_to,
       :location,
-      :featured_image,
-      :poster_link,
-      :timetable_link,
+      " . ( array_key_exists ( "featured_image", $saved_files ) ? ":featured_image," : "" ) . "
+      " . ( array_key_exists ( "poster_link", $saved_files ) ? ":poster_link," : "" ) . "
+      " . ( array_key_exists ( "timetable_link", $saved_files ) ? ":timetable_link," : "" ) . "
       :price,
       :suggested_price,
       :policy_id,
       :gdpr_id
     )" );
-    $stmt->execute ( [
+
+    $stmt->execute ( array_merge ( [
       "title" => $_POST [ "title" ],
       "description" => $_POST [ "description" ],
       "date_from" => $_POST [ "date_from" ],
       "date_to" => $_POST [ "date_to" ] ? $_POST [ "date_to" ] : null,
       "location" => $_POST [ "location" ],
-      "featured_image" => !isset ( $_POST [ "featured_image" ] ) ? "" : "assets/" . $_POST [ "featured_image" ],
-      "poster_link" => !isset ( $_POST [ "poster_link" ] ) ? "" : "assets/" . $_POST [ "poster_link" ],
-      "timetable_link" => !isset ( $_POST [ "timetable_link" ] ) ? "" : "assets/" . $_POST [ "timetable_link" ],
       "price" => $_POST [ "price" ],
       "suggested_price" => $_POST [ "suggested_price" ],
       "policy_id" => $_POST [ "policy_id" ],
       "gdpr_id" => $_POST [ "gdpr_id" ]
-    ] );
+    ], $saved_files ) );
   }
 
-  function save_files ( $conn ) {
+  function save_files ( $conn, $headers ) {
+    if ( !isset ( $_POST [ "id" ] ) ) {
+      $name = $_POST [ "title" ];
+    } else {
+      $event = get_events ( $conn, $headers, $_POST [ "id" ] );
+      if ( count ( $event ) > 0 ) {
+        $event = $event [ 0 ];
+        $name = $event [ "title" ];
+      } else {
+        http_response_code ( 404 );
+        echo json_encode ( "Event not found" );
+        exit ( );
+      }
+    }
+
+    $files = array ( );
+
     foreach ( $_FILES as $key => $file ) {
       $file_name = $file [ "name" ];
       $file_size = $file [ "size" ];
@@ -228,14 +250,16 @@
         exit ( );
       }
 
-      if ( !is_dir ( "../assets" ) ) {
-        $upload_path = "../public/" . basename ( $file_name );
-      } else {
-        $upload_path = "../assets/" . basename ( $file_name );
+      $upload_path = get_asset_url ( ) . urlencode ( str_replace ( " ", "-", $name ) . "-" . $key ) . "." . $file_ext;
+      $files [ $key ] = $upload_path;
+
+      $file_exists = glob ( get_asset_url ( ) . urlencode ( str_replace ( " ", "-", $name ) . "-" . $key ) . ".*" );
+      if ( count ( $file_exists ) > 0 ) {
+        unlink ( $file_exists [ 0 ] );
       }
 
       if ( move_uploaded_file ( $file_tmp, $upload_path ) ) {
-        return;
+        return $files;
       } else {
         http_response_code ( 500 );
         echo json_encode ( "Failed to upload file" );
