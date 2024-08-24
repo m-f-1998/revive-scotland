@@ -1,4 +1,25 @@
 <?php
+
+/*
+  * @author: Matthew Frankland
+  * @date: 2021-06-14 16:00:00
+  * @last modified by:   Matthew Frankland
+  * @last modified time: 2021-06-14 16:00:00
+*/
+
+/*
+  * This script is used to get all policies.
+  * Parameters:
+  *   - None
+  * Response:
+  *   - 200: The policies were successfully retrieved.
+  *   - 400: Invalid Input.
+  *   - 405: Method Not Allowed.
+  *   - 500: Database error.
+  * Response Data:
+  *   - An array of policies.
+*/
+
   header ( "Content-Type: application/json; charset=utf-8" );
   header ( "Access-Control-Allow-Origin: *" ); // TODO: Remove On Production
   header ( "Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS" );
@@ -7,6 +28,7 @@
   include_once "controller/db.php";
 
   $conn = db_connection ( );
+  $_POST = json_decode ( file_get_contents ( "php://input" ), true );
 
   try {
     $headers = getallheaders ( );
@@ -22,8 +44,7 @@
       case "POST":
         include_once "controller/authenticate.php";
         $user = getUser ( );
-
-        $_POST = json_decode ( file_get_contents ( "php://input" ), true );
+        setup_security ( );
 
         if (
           !isset ( $_POST [ "title" ] ) ||
@@ -31,11 +52,16 @@
           !isset ( $_POST [ "category" ] )
         ) {
           http_response_code ( 400 );
-          echo json_encode ( "Missing required fields" );
+          echo json_encode ( "Invalid Input" );
           exit ( );
         }
 
+        $_POST [ "title" ] = htmlspecialchars ( strip_tags ( trim ( $_POST [ "title" ] ) ) );
+        $_POST [ "description" ] = htmlspecialchars ( strip_tags ( trim ( $_POST [ "description" ] ) ) );
+        $_POST [ "category" ] = htmlspecialchars ( strip_tags ( trim ( $_POST [ "category" ] ) ) );
+
         if ( isset ( $_POST [ "id" ] ) ) {
+          $_POST [ "id" ] = htmlspecialchars ( strip_tags ( trim ( $_POST [ "id" ] ) ) );
           check_policy_not_used ( $conn );
           update_policy ( $conn );
         } else {
@@ -54,25 +80,30 @@
             "category" => $_POST [ "category" ]
           ] );
         }
+
+        session_regenerate_id ( );
         http_response_code ( 204 );
         break;
       case "DELETE":
         include_once "controller/authenticate.php";
         $user = getUser ( );
-
-        $_POST = json_decode ( file_get_contents ( "php://input" ), true );
+        setup_security ( );
 
         if ( !isset ( $_POST [ "id" ] ) ) {
           http_response_code ( 400 );
-          echo json_encode ( "Missing required fields" );
+          echo json_encode ( "Invalid Input" );
           exit ( );
         }
+
+        $_POST [ "id" ] = htmlspecialchars ( strip_tags ( trim ( $_POST [ "id" ] ) ) );
 
         check_policy_not_used ( $conn );
         $stmt = $conn->prepare ( "DELETE FROM `Policies` WHERE id = :id" );
         $stmt->execute ( [
           "id" => $_POST [ "id" ]
         ] );
+        session_regenerate_id ( );
+
         break;
       default:
         http_response_code ( 405 );

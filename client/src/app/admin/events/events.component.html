@@ -56,10 +56,14 @@
               }
               <td>
                 <div class="d-flex justify-content-center gap-2">
-                  <button class="btn btn-danger" (click)="deleteEvent(event.id)">
-                    <fa-icon [icon]="faTrash" />
+                  <button class="btn btn-danger" (click)="deleteEvent(event.id)" [disabled]="processing">
+                    @if (processing) {
+                      <fa-icon [icon]="faSpinner" animation="spin" />
+                    } @else {
+                      Cancel
+                    }
                   </button>
-                  <button class="btn btn-primary" (click)="viewEvent(event)">
+                  <button class="btn btn-primary" (click)="viewEvent(event)" [disabled]="processing">
                     <fa-icon [icon]="faView" />
                   </button>
                 </div>

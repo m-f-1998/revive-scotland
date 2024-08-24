@@ -26,21 +26,32 @@ export class AdminDocumentComponent implements OnInit {
     private activeModal: NgbActiveModal,
     private apiSvc: HttpService,
     private toastrSvc: ToastrService
-  ) { }
+  ) {
+  }
 
   public ngOnInit ( ) {
-    this.apiSvc.request ( "/asset.php", {
-      url: this.documentLink
-    }, "POST" ).then ( ( blob: any ) => {
-      this.href = URL.createObjectURL ( blob )
-      this.loading = false
-      setTimeout ( ( ) => {
-        URL.revokeObjectURL ( this.href )
-      }, 1000 )
-    } ).catch ( e => {
-      this.toastrSvc.error ( "There was an error opening the file." )
-      console.error ( e )
-    } )
+    if ( !this.documentLink ) {
+      this.toastrSvc.error ( "No document link provided." )
+      this.close ( )
+    } else {
+      this.apiSvc.request ( "/asset.php", {
+        url: this.documentLink
+      }, "POST" ).then ( ( blob: any ) => {
+        this.href = URL.createObjectURL ( blob )
+        if ( this.documentLink.endsWith ( ".pdf" ) ) {
+          window.open ( this.href, "_blank" )
+          this.close ( )
+        } else {
+          this.loading = false
+        }
+        setTimeout ( ( ) => {
+          URL.revokeObjectURL ( this.href )
+        }, 1000 )
+      } ).catch ( e => {
+        this.toastrSvc.error ( "There was an error opening the file." )
+        console.error ( e )
+      } )
+    }
   }
 
   public close ( ) {

@@ -37,12 +37,10 @@ export class AdminRegistrationsComponent {
     private httpSvc: HttpService,
     private ngModal: NgbModal
   ) {
-    this.httpSvc.request ( "/secure/get.php", {
-      "type": "event_bookings",
-    }, "POST" ).then ( ( res: any ) => {
+    this.httpSvc.request ( "/registrations/get_all.php" ).then ( ( res: any ) => {
       this.registrations = res
       this.filter = res
-      const eventTitles = [ ...new Set ( res.map ( ( x: any ) => x.title ) ) ]
+      const eventTitles = [ ...new Set ( res.map ( ( x: any ) => x.event_title ) ) ]
 
       this.fields = [
         {
@@ -63,13 +61,26 @@ export class AdminRegistrationsComponent {
           type: "checkbox",
           props: {
             change: ( ) => this.applyFilter ( ),
-            label: "Paid",
+            label: "Paid (Payment Required Only)",
+          },
+          expressions: {
+            hide: ( field: FormlyFieldConfig ) => {
+              this.model.paid = false
+              return field.model.donation
+            },
+          }
+        },
+        {
+          key: "donation",
+          type: "checkbox",
+          props: {
+            change: ( ) => this.applyFilter ( ),
+            label: "Donation",
           }
         }
       ]
       this.model = {
-        accepted_gdpr: false,
-        accepted_event_policy: false,
+        donation: false,
         paid: false
       }
 
@@ -88,16 +99,14 @@ export class AdminRegistrationsComponent {
   public applyFilter ( ) {
     this.filter = this.registrations.filter ( ( x: any ) => {
       if ( this.model.paid ) {
+        if ( !x.payment_required ) return false
         if ( !x.paid ) return false
       }
-      if ( this.model.accepted_event_policy ) {
-        if ( !x.accepted_event_policy ) return false
-      }
-      if ( this.model.accepted_gdpr ) {
-        if ( !x.accepted_gdpr ) return false
+      if ( this.model.donation ) {
+        if ( x.payment_required ) return false
       }
       if ( this.model.title ) {
-        if ( x.title !== this.model.title ) return false
+        if ( x.event_title !== this.model.title ) return false
       }
       return true
     } )

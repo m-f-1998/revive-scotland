@@ -2,22 +2,13 @@
   <div class="text-center" style="flex-grow: 1; align-content: center;">
     @if (success === true) {
       <fa-icon [icon]="faCheck" class="fa-10x text-success" />
-      <h1>Payment Complete</h1>
-      @if (message) {
-        <h3>{{ message }}</h3>
-      } @else {
-        <h3>Your payment was successful.</h3>
-      }
-      <h3>Thank You for Your Support!</h3>
+      <h1>Your Event Registration is Cancelled</h1>
       <button class="btn btn-primary mt-2" (click)="goHome()">Go Home</button>
     } @else if (success === false) {
       <fa-icon [icon]="faCross" class="fa-10x text-danger" />
-      <h1>Payment Failed</h1>
-      @if (message) {
-        <h3>{{ message }}</h3>
-      } @else {
-        <h3>Sorry, there was an issue with your payment.</h3>
-      }
+      <h1>Cancellation Failed</h1>
+      <h3>{{failureMessage}}</h3>
+      <h3>Please try again later. If the error persists, please contact us.</h3>
       <button class="btn btn-primary mt-2" (click)="goHome()">Go Home</button>
     } @else {
       <fa-icon [icon]="faCross" class="fa-10x text-info" />

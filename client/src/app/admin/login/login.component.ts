@@ -39,7 +39,7 @@ export class AdminLoginComponent {
       {
         key: "username",
         type: "input",
-        templateOptions: {
+        props: {
           label: "Username",
           type: "text",
           placeholder: "Enter your username",
@@ -52,11 +52,12 @@ export class AdminLoginComponent {
       {
         key: "password",
         type: "input",
-        templateOptions: {
+        props: {
           label: "Password",
           type: "password",
           placeholder: "Enter your password",
           required: true,
+          minLength: 15,
           attributes: {
             autocomplete: "current-password"
           }

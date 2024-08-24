@@ -7,6 +7,7 @@ import { AuthActive } from "./guards/Auth.guard";
 import { AdminDashboardComponent } from "./admin/dashboard/dashboard.component"
 import { AdminRegistrationsComponent } from "./admin/registrations/registrations.component"
 import { AdminPoliciesComponent } from "./admin/policies/policies.component"
+import { CancelledEventComponent } from "./user/cancelled-event/cancelled-event.component"
 
 export const routes: Routes = [
   {
@@ -33,5 +34,9 @@ export const routes: Routes = [
   {
     path: "payment-complete",
     component: PaymentCompleteComponent
+  },
+  {
+    path: "cancellation",
+    component: CancelledEventComponent
   }
 ];

@@ -1,7 +1,27 @@
 <?php
 
+/*
+  * @author: Matthew Frankland
+  * @date: 2021-06-14 16:00:00
+  * @last modified by:   Matthew Frankland
+  * @last modified time: 2021-06-14 16:00:00
+*/
+
+/*
+  * This script is used to get assets.
+  * Parameters:
+  *   - url: The URL of the asset.
+  * Response:
+  *   - 200: The asset was successfully retrieved.
+  *   - 400: URL is required.
+  *   - 404: The asset was not found.
+  *   - 415: The asset type is not supported.
+  * Response Data:
+  *   - The asset.
+*/
+
   header ( "Access-Control-Allow-Origin: *" ); // TODO: Remove On Production
-  header ( "Access-Control-Allow-Methods: POST, OPTIONS" );
+  header ( "Access-Control-Allow-Methods: GET, OPTIONS" );
   header ( "Access-Control-Allow-Headers: Origin, Content-Type, X-Auth, Response-Type" );
 
   if ( $_SERVER [ "REQUEST_METHOD" ] === "OPTIONS" ) {
@@ -34,15 +54,13 @@
     }
   }
 
-  $_POST = json_decode ( file_get_contents ( "php://input" ), true );
-
-  if ( !isset ( $_POST [ "url" ] ) ) {
+  if ( !isset ( $_GET [ "url" ] ) ) {
     http_response_code ( 400 );
     echo json_encode ( "URL is Required" );
     exit ( );
   }
 
-  $url = $_POST [ "url" ];
+  $url = htmlspecialchars ( strip_tags ( trim ( $_GET [ "url" ] ) ) );
 
   setHeaderForFileType ( getFileTypeFromUrl ( $url ) );
 

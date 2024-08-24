@@ -13,6 +13,7 @@ DROP TABLE IF EXISTS `Events`;
 DROP TABLE IF EXISTS `Login`;
 DROP TABLE IF EXISTS `Policies`;
 DROP TABLE IF EXISTS `PolicyCategories`;
+DROP TABLE IF EXISTS `StripeCharges`;
 
 -- Table to store user logins
 CREATE TABLE `Login` (
@@ -53,9 +54,11 @@ CREATE TABLE `Events` (
   `featured_image` TEXT DEFAULT '' NOT NULL,
   `timetable_link` TEXT DEFAULT '' NOT NULL,
   `price` DECIMAL(10, 2),
-  `suggested_price` BOOLEAN DEFAULT TRUE,
+  `payment_required` BOOLEAN DEFAULT TRUE,
+  `cancelled` BOOLEAN DEFAULT FALSE,
   `policy_id` CHAR(36),
   `gdpr_id` CHAR(36),
+  `payment_link` TEXT DEFAULT "" NOT NULL,
   CONSTRAINT `fk_policy`
       FOREIGN KEY(`policy_id`)
           REFERENCES `Policies`(`id`),
@@ -71,15 +74,34 @@ CREATE TABLE `EventRegister` (
   `name` VARCHAR(100) NOT NULL,
   `telephone` VARCHAR(20) NOT NULL,
   `email` VARCHAR(100) NOT NULL,
-  `emergency_contact` VARCHAR(100) NOT NULL,
+  `emergency_contact_name` VARCHAR(100) NOT NULL,
+  `emergency_contact_number` VARCHAR(20) NOT NULL,
   `dob` DATE,
   `allergies_or_medical_requirements` TEXT NOT NULL,
   `accepted_gdpr` BOOLEAN DEFAULT FALSE,
   `accepted_event_policy` BOOLEAN DEFAULT FALSE,
   `paid` BOOLEAN DEFAULT FALSE,
+  `cancelled` BOOLEAN DEFAULT FALSE,
   CONSTRAINT `fk_event`
       FOREIGN KEY(`event_id`)
           REFERENCES `Events`(`id`)
+);
+
+-- Table to store Stripe charges against customers
+CREATE TABLE `StripeCharges` (
+  `id` CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+  `event_id` CHAR(36) NOT NULL,
+  `customer_id` CHAR(36) NOT NULL,
+  `session_id` TEXT NOT NULL,
+  `charge_id` TEXT NOT NULL DEFAULT '',
+  `payment_intent_id` TEXT NOT NULL,
+  `refunded` BOOLEAN DEFAULT FALSE,
+  CONSTRAINT `fk_event_payment`
+      FOREIGN KEY(`event_id`)
+          REFERENCES `Events`(`id`)
+  CONSTRAINT `fk_customer_payment`
+      FOREIGN KEY(`customer_id`)
+          REFERENCES `EventRegister`(`id`)
 );
 
 CREATE INDEX idx_events_policy_id ON `Events` (policy_id);
@@ -104,7 +126,7 @@ VALUES
     (UUID(), 'GDPR Policy', (SELECT `id` FROM `PolicyCategories` WHERE `name` = 'GDPR'), 'This is an exemplary text for the GDPR Policy.');
 
 -- Insert 4 events with placeholder text and default boolean values
-INSERT INTO `Events` (`id`, `title`, `date_from`, `date_to`, `location`, `poster_link`, `timetable_link`, `price`, `suggested_price`, `policy_id`, `gdpr_id`)
+INSERT INTO `Events` (`id`, `title`, `date_from`, `date_to`, `location`, `poster_link`, `timetable_link`, `price`, `payment_required`, `policy_id`, `gdpr_id`)
 VALUES
     (UUID(), 'Event 1', NOW() + INTERVAL 6 MONTH, NULL, 'Location 1', 'poster1.jpg', 'timetable1.pdf', 10.00, FALSE, (SELECT `id` FROM `Policies` WHERE `title` = 'Event Policy'), (SELECT `id` FROM `Policies` WHERE `title` = 'GDPR Policy')),
     (UUID(), 'Event 2', NOW() + INTERVAL 6 MONTH, NULL, 'Location 2', 'poster2.jpg', 'timetable2.pdf', 15.00, FALSE, (SELECT `id` FROM `Policies` WHERE `title` = 'Event Policy'), (SELECT `id` FROM `Policies` WHERE `title` = 'GDPR Policy')),
@@ -112,12 +134,12 @@ VALUES
     (UUID(), 'Event 4', NOW() + INTERVAL 6 MONTH, NULL, 'Location 4', 'poster4.jpg', 'timetable4.pdf', 0.00, FALSE, (SELECT `id` FROM `Policies` WHERE `title` = 'Event Policy'), (SELECT `id` FROM `Policies` WHERE `title` = 'GDPR Policy'));
 
 -- Insert example event registrations
-INSERT INTO `EventRegister` (`id`, `event_id`, `name`, `telephone`, `email`, `emergency_contact`, `dob`, `allergies_or_medical_requirements`, `accepted_gdpr`, `accepted_event_policy`, `paid`)
+INSERT INTO `EventRegister` (`id`, `event_id`, `name`, `telephone`, `email`, `emergency_contact_name`, `emergency_contact_number`, `dob`, `allergies_or_medical_requirements`, `accepted_gdpr`, `accepted_event_policy`, `paid`)
 VALUES
-  (UUID(), (SELECT `id` FROM `Events` WHERE `title` = 'Event 1'), 'John Doe', '+441234567890', 'johndoe@example.com', 'Jane Doe', '1990-01-01', 'None', TRUE, TRUE, TRUE),
-  (UUID(), (SELECT `id` FROM `Events` WHERE `title` = 'Event 1'), 'Jane Smith', '+44987654321', 'janesmith@example.com', 'John Smith', '1995-05-05', 'None', TRUE, TRUE, FALSE),
-  (UUID(), (SELECT `id` FROM `Events` WHERE `title` = 'Event 2'), 'Alice Johnson', '+449876543210', 'alicejohnson@example.com', 'Bob Johnson', '1985-12-25', 'None', TRUE, TRUE, TRUE),
-  (UUID(), (SELECT `id` FROM `Events` WHERE `title` = 'Event 3'), 'Bob Williams', '+44123456789', 'bobwilliams@example.com', 'Alice Williams', '1998-07-15', 'None', TRUE, TRUE, FALSE);
+  (UUID(), (SELECT `id` FROM `Events` WHERE `title` = 'Event 1'), 'John Doe', '+441234567890', 'johndoe@example.com', 'Jane Doe', '+44123456789', '1990-01-01', 'None', TRUE, TRUE, TRUE),
+  (UUID(), (SELECT `id` FROM `Events` WHERE `title` = 'Event 1'), 'Jane Smith', '+44987654321', 'janesmith@example.com', 'John Smith', '+44123456789', '1995-05-05', 'None', TRUE, TRUE, FALSE),
+  (UUID(), (SELECT `id` FROM `Events` WHERE `title` = 'Event 2'), 'Alice Johnson', '+449876543210', 'alicejohnson@example.com', 'Bob Johnson', '+44123456789', '1985-12-25', 'None', TRUE, TRUE, TRUE),
+  (UUID(), (SELECT `id` FROM `Events` WHERE `title` = 'Event 3'), 'Bob Williams', '+44123456789', 'bobwilliams@example.com', 'Alice Williams', '+44123456789', '1998-07-15', 'None', TRUE, TRUE, FALSE);
 
 SET GLOBAL event_scheduler = ON;
 

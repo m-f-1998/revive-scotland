@@ -37,13 +37,17 @@
         <tbody>
           @for (registration of filter; track $index ) {
             <tr class="text-center align-middle">
-              <td>{{ registration.title }}</td>
+              <td>{{ registration.event_title }}</td>
               <td>{{ registration.name }}</td>
               <td>{{ registration.email }}</td>
-              @if (registration.paid) {
-                <td>Yes</td>
+              @if (registration.payment_required) {
+                @if (registration.paid) {
+                  <td>Yes</td>
+                } @else {
+                  <td>No</td>
+                }
               } @else {
-                <td>No</td>
+                <td>Donation Only</td>
               }
               <td>
                 <div class="d-flex justify-content-center gap-2">

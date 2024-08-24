@@ -1,12 +1,36 @@
 <?php
+
+/*
+  * @author: Matthew Frankland
+  * @date: 2021-06-14 16:00:00
+  * @last modified by:   Matthew Frankland
+  * @last modified time: 2021-06-14 16:00:00
+*/
+
+/*
+  * This script is used to login a user.
+  * Parameters:
+  *   - username: The username of the user.
+  *   - password: The password of the user.
+  * Response:
+  *   - 200: The user was successfully logged in.
+  *   - 400: Missing required fields.
+  *   - 401: Invalid Credentials.
+  *   - 405: Method Not Allowed.
+  *   - 500: Database error.
+  * Response Data:
+  *   - A JWT token.
+*/
+
   header ( "Content-Type: application/json; charset=utf-8" );
   header ( "Access-Control-Allow-Origin: *" ); // TODO: Remove On Production
   header ( "Access-Control-Allow-Methods: POST, OPTIONS" );
   header ( "Access-Control-Allow-Headers: Origin, Content-Type, X-Auth" );
 
   include_once "controller/db.php";
-
   $conn = db_connection ( );
+  setup_security ( );
+
   $headers = getallheaders ( );
   $secretKey = getenv ( "JWT_SECRET" );
 
@@ -34,31 +58,32 @@
     exit ( );
   }
 
-  if ( !isset ( $_POST [ "username" ] ) || !isset ( $_POST [ "password" ] ) ) {
+  if (
+    !isset ( $_POST [ "username" ] ) ||
+    !isset ( $_POST [ "password" ] )
+  ) {
     http_response_code ( 400 );
-    echo json_encode ( "Username and Password are Required" );
+    echo json_encode ( "Missing required fields" );
     exit ( );
   }
 
-  $username = htmlspecialchars ( strip_tags ( trim ( $_POST [ "username" ] ) ) );
-  $password = $_POST [ "password" ];
+  $_POST [ "username" ] = htmlspecialchars ( strip_tags ( trim ( $_POST [ "username" ] ) ) );
+  $_POST [ "password" ] = htmlspecialchars ( strip_tags ( trim ( $_POST [ "password" ] ) ) );
 
   try {
     $stmt = $conn->prepare ( "SELECT * FROM Login WHERE username = :username" );
-    $stmt->execute ( [ "username" => $username ] );
+    $stmt->execute ( [ "username" => $_POST [ "username" ] ] );
     $user = $stmt->fetch ( PDO::FETCH_ASSOC );
 
-    if ( !$user || !password_verify ( $password, $user [ "password" ] ) ) {
+    if ( !$user || !password_verify ( $_POST [ "password" ], $user [ "password" ] ) ) {
       http_response_code ( 401 );
       echo json_encode ( "Invalid Credentials" );
       exit ( );
     }
 
-    // Update last login time
     $stmt = $conn->prepare ( "UPDATE Login SET last_login = NOW() WHERE id = :id" );
     $stmt->execute ( [ "id" => $user [ "id" ] ] );
 
-    // Generate JWT
     $header = [
       "alg" => "HS256",
       "typ" => "JWT"
@@ -86,8 +111,9 @@
         "permissions" => $user [ "permissions" ]
       ]
     ] );
-} catch ( PDOException $e ) {
-  http_response_code ( 500 );
-  echo json_encode ( "Database query failed" );
-}
+    session_regenerate_id ( );
+  } catch ( PDOException $e ) {
+    http_response_code ( 500 );
+    echo json_encode ( "Database query failed" );
+  }
 ?>

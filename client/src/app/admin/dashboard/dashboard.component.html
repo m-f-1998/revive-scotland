@@ -9,6 +9,9 @@
     <button class="btn btn-primary" (click)="setActiveTab(2)" [disabled]="activeTab === 2">
       Registrations
     </button>
+    <button class="btn btn-danger" (click)="logout()">
+      Logout
+    </button>
   </div>
   @if (activeTab === 0) {
     <app-admin-events />

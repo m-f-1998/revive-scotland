@@ -5,7 +5,6 @@ import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { faSpinner } from "@fortawesome/free-solid-svg-icons"
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap"
 import { FormlyFieldConfig, FormlyModule } from "@ngx-formly/core"
-import { DatesService } from "@services/DateService.service"
 import { HttpService } from "@services/HttpService.service"
 import { ToastrService } from "ngx-toastr"
 
@@ -32,12 +31,11 @@ export class EventAddComponent implements OnInit, AfterViewChecked {
   public form = new FormGroup ( { } )
   public fields: FormlyFieldConfig [ ] = [ ]
   public model: any = {
-    suggested_price: true
+    payment_required: true
   }
 
   public constructor (
     private apiSvc: HttpService,
-    private dateSvc: DatesService,
     private activeModal: NgbActiveModal,
     private toastrSvc: ToastrService,
     private readonly changeDetector: ChangeDetectorRef
@@ -76,15 +74,19 @@ export class EventAddComponent implements OnInit, AfterViewChecked {
           defaultValue: 0,
           props: {
             type: "number",
-            label: "Price (GBP)",
             required: true
+          },
+          expressions: {
+            "props.label": ( field: FormlyFieldConfig ) => {
+              return field.model.payment_required ? "Price (GBP)" : "Suggested Donation (GBP)"
+            }
           }
         },
         {
-          key: "suggested_price",
+          key: "payment_required",
           type: "checkbox",
           props: {
-            label: "Suggested Price",
+            label: "Payment Required (?)",
             required: true
           }
         },
@@ -156,12 +158,7 @@ export class EventAddComponent implements OnInit, AfterViewChecked {
       ]
 
       this.model = {
-        title: "Event 40",
-        description: "Event 40 Description",
-        location: "Event 40 Location",
-        price: 100,
-        date_from: "2021-12-01",
-        suggested_price: true
+        payment_required: true
       }
 
       this.loading = false
@@ -193,7 +190,7 @@ export class EventAddComponent implements OnInit, AfterViewChecked {
           this.apiSvc.request ( "/events.php", fd, "POST" ).then ( ( res: any ) => {
             this.confirm = true
           } ).catch ( e => {
-            this.toastrSvc.error ( e.error )
+            this.toastrSvc.error ( "Failed to Add Event" )
           } ).finally ( ( ) => {
             this.close ( )
           } )

@@ -80,10 +80,10 @@ export class EventViewComponent implements OnInit, AfterViewChecked {
           }
         },
         {
-          key: "suggested_price",
+          key: "payment_required",
           type: "checkbox",
           props: {
-            label: "Suggested Price",
+            label: "Payment Required (?)",
             required: true
           }
         },
@@ -194,7 +194,7 @@ export class EventViewComponent implements OnInit, AfterViewChecked {
         date_from: this.dateSvc.reformat ( new Date ( this.event.date_from ), "yyyy-MM-dd" ),
         date_to: this.event.date_to ? this.dateSvc.reformat ( new Date ( this.event.date_to ), "yyyy-MM-dd" ) : "",
         price: this.event.price,
-        suggested_price: this.event.suggested_price,
+        payment_required: this.event.payment_required,
         policy_id: this.event.policy_id ?? "",
         gdpr_id: this.event.gdpr_id ?? ""
       }
@@ -234,7 +234,7 @@ export class EventViewComponent implements OnInit, AfterViewChecked {
           this.apiSvc.request ( "/events.php", fd, "POST" ).then ( ( res: any ) => {
             this.confirm = true
           } ).catch ( e => {
-            this.toastrSvc.error ( e.error )
+            this.toastrSvc.error ( "Failed to Add Event" )
           } ).finally ( ( ) => {
             this.close ( )
           } )

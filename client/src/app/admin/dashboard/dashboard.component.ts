@@ -5,6 +5,7 @@ import { DatesService } from '@services/DateService.service';
 import { AdminEventsComponent } from '../events/events.component';
 import { AdminPoliciesComponent } from '../policies/policies.component';
 import { AdminRegistrationsComponent } from '../registrations/registrations.component';
+import { Router } from '@angular/router';
 
 @Component ( {
   selector: 'app-admin-dashboard',
@@ -24,11 +25,18 @@ export class AdminDashboardComponent {
 
   public constructor (
     public adminSvc: AdminService,
-    public dateSvc: DatesService
+    public dateSvc: DatesService,
+    private router: Router
   ) { }
 
   public setActiveTab ( tab: number ) {
     this.activeTab = tab
+  }
+
+  public logout ( ) {
+    this.adminSvc.logout ( )
+    sessionStorage.removeItem ( "token" )
+    this.router.navigate ( [ "/" ] )
   }
 
 }

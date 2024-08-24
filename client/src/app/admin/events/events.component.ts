@@ -25,6 +25,7 @@ export class AdminEventsComponent {
   public events: any[] = []
   public loading = true
   public faSpinner = faSpinner
+  public processing = false
 
   public faTrash = faTrash
   public faView = faEye
@@ -50,17 +51,18 @@ export class AdminEventsComponent {
   }
 
   public deleteEvent ( id: string ) {
+    if ( !confirm ( "Are you sure you want to delete this event? This action will automatically cancel all event registrations and process any associated refunds." ) ) return
+    this.processing = true
     this.httpSvc.request ( "/events.php", {
       "id": id
     }, "DELETE" ).then ( ( ) => {
       this.events = this.events.filter ( x => x.id !== id )
       this.toastrSvc.success ( "Event Deleted" )
     } ).catch ( e => {
-      if ( e.status === 409 ) {
-        this.toastrSvc.error ( "Someone has Already Registered for this Event" )
-      } else {
-        this.toastrSvc.error ( "Failed to Delete Event" )
-      }
+      console.error ( e )
+      this.toastrSvc.error ( "Failed to Fully Delete Event" )
+    } ).finally ( ( ) => {
+      this.processing = false
     } )
   }
 

@@ -18,9 +18,11 @@ export class HttpService {
     const adminSvc = this.injector.get ( AdminService )
 
     const address = this.ADDRESS + path
-    let headers = new HttpHeaders ( {
-      "X-Auth": adminSvc.token
-    } )
+    let headers = new HttpHeaders ( )
+
+    if ( adminSvc.token !== "" && ( adminSvc.loggedIn || path === "/login.php" ) ) {
+      headers = headers.append ( "X-Auth", adminSvc.token )
+    }
 
     if ( !( body instanceof FormData ) ) {
       headers = headers.append ( "Content-Type", "application/json" )
@@ -33,17 +35,17 @@ export class HttpService {
     switch ( method ) {
       case "GET":
         return this.get ( address, headers, body ).catch ( e => {
-          if ( e.status === 401 && adminSvc.loggedIn ) adminSvc.logout ( )
+          if ( e.status === 401 && adminSvc.loggedIn ) adminSvc.logout ( true )
           return Promise.reject ( e )
         } )
       case "POST":
         return this.post ( address, headers, body ).catch ( e => {
-          if ( e.status === 401 && adminSvc.loggedIn ) adminSvc.logout ( )
+          if ( e.status === 401 && adminSvc.loggedIn ) adminSvc.logout ( true )
           return Promise.reject ( e )
         } )
       case "DELETE":
         return this.delete ( address, headers, body ).catch ( e => {
-          if ( e.status === 401 && adminSvc.loggedIn ) adminSvc.logout ( )
+          if ( e.status === 401 && adminSvc.loggedIn ) adminSvc.logout ( true )
           return Promise.reject ( e )
         } )
     }
@@ -53,8 +55,9 @@ export class HttpService {
     return new Promise ( ( resolve, reject ) => {
       this.httpClient.get ( address, {
         params: body,
-        headers
-      } ).subscribe ( {
+        headers,
+        responseType: address.endsWith ( "/asset.php" ) ? "blob" : "json"
+      } as Object ).subscribe ( {
         next: ( response ) => {
           resolve ( this.parseData ( response ) )
         },
@@ -68,9 +71,8 @@ export class HttpService {
   private post ( address: string, headers: HttpHeaders, body: any = { },  ) {
     return new Promise ( ( resolve, reject ) => {
       this.httpClient.post ( address, body, {
-        headers,
-        responseType: address.endsWith ( "/asset.php" ) ? "blob" : "json"
-      } as Object ).subscribe ( {
+        headers
+      } ).subscribe ( {
         next: ( response ) => {
           resolve ( this.parseData ( response ) )
         },

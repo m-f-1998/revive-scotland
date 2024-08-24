@@ -6,21 +6,21 @@ import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { faCheckCircle, faTimesCircle } from "@fortawesome/free-solid-svg-icons"
 
 @Component ( {
-  selector: "app-payment-complete",
+  selector: "app-cancelled-event",
   standalone: true,
   imports: [
     NavbarComponent,
     FooterComponent,
     FaIconComponent
   ],
-  templateUrl: "./payment-complete.component.html",
-  styleUrl: "./payment-complete.component.scss"
+  templateUrl: "./cancelled-event.component.html",
+  styleUrl: "./cancelled-event.component.scss"
 } )
-export class PaymentCompleteComponent {
+export class CancelledEventComponent {
   public faCheck = faCheckCircle
   public faCross = faTimesCircle
   public success: boolean | null = null
-  public message = ""
+  public failureMessage = ""
 
   public constructor (
     private activatedRoute: ActivatedRoute,
@@ -29,8 +29,8 @@ export class PaymentCompleteComponent {
     this.activatedRoute.queryParams.subscribe ( params => {
       const success = params [ "success" ]
       if ( success ) {
-        if ( params [ "message" ] ) {
-          this.message = params [ "message" ]
+        if ( success == "0" ) {
+          this.failureMessage = params [ "error" ]
         }
         this.success = success == "1" ? true : false
       }

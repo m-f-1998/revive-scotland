@@ -43,8 +43,9 @@ export class AdminService {
     }
   }
 
-  public logout ( ) {
-    this.toastrSvc.info ( "Your Session has Expired. Please Re-Login" )
+  public logout ( sessionExpiry = false ) {
+    if ( sessionExpiry )
+      this.toastrSvc.info ( "Your Session has Expired. Please Re-Login" )
     this.loggedIn = false
     this.token = ""
     this.user = null
