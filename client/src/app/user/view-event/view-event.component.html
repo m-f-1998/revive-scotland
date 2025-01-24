@@ -33,7 +33,8 @@
       <p class="text-center">Thank you for registering for {{this.event.title}}. An email confirmation has been sent to {{this.model.email}}.</p>
       @if (event?.payment_required && paymentLink) {
         <a href="{{paymentLink}}" target="_blank" class="btn btn-primary">Pay Registration Fee</a>
-        <p class="text-center">Please pay the registration fee to secure your place. You can also pay the registration fee later via the link in your confirmation email. Your place is not secure until payment of this fee.</p>
+        <p class="text-center">Please pay the registration fee to secure your place. You can also pay the registration fee later via the link in your confirmation email.</p>
+        <p class="text-center">Alternatively, you can pay the registration fee in person. Your place is not secure until payment of this fee.</p>
       }
       <p class="text-center">We look forward to seeing you soon.</p>
     </div>

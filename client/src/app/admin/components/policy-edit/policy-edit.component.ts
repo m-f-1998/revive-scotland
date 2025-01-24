@@ -53,7 +53,7 @@ export class PolicyEditComponent implements OnInit {
         key: "description",
         type: "textarea",
         props: {
-          label: "Description",
+          label: "Content",
           required: true
         }
       },

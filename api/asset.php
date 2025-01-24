@@ -25,7 +25,7 @@
   header ( "Access-Control-Allow-Headers: Origin, Content-Type, X-Auth, Response-Type" );
 
   if ( $_SERVER [ "REQUEST_METHOD" ] === "OPTIONS" ) {
-    header ( "HTTP/1.1 200 OK" );
+    http_response_code ( 200 );
     exit ( );
   }
 
@@ -54,23 +54,22 @@
     }
   }
 
-  if ( !isset ( $_GET [ "url" ] ) ) {
+  $url = htmlspecialchars ( strip_tags ( trim ( $_GET [ "url" ] ) ) );
+
+  if ( !isset ( $url ) ) {
     http_response_code ( 400 );
     echo json_encode ( "URL is Required" );
     exit ( );
   }
 
-  $url = htmlspecialchars ( strip_tags ( trim ( $_GET [ "url" ] ) ) );
-
-  setHeaderForFileType ( getFileTypeFromUrl ( $url ) );
-
-  $file = readfile ( $url );
-
-  if ( !$file ) {
+  if ( !file_exists ( $url ) ) {
     http_response_code ( 404 );
     echo json_encode ( "File Not Found" );
     exit ( );
   }
+
+  setHeaderForFileType ( getFileTypeFromUrl ( $url ) );
+  $file = readfile ( $url );
 
   echo ( $file );
 

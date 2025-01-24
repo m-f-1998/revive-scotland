@@ -43,9 +43,9 @@
       exit ( );
     }
 
-    if ( !empty ( $_POST [ "honeypot" ] ) ) {
+    if ( empty ( $_POST [ "honeypot" ] ) ) {
       http_response_code ( 403 );
-      echo json_encode ( "Bot detected. Registration not allowed." );
+      echo json_encode ( "Bot detected." );
       exit ( );
     }
   }

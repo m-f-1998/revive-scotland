@@ -39,11 +39,13 @@ export class HttpService {
           return Promise.reject ( e )
         } )
       case "POST":
+        body.honeypot = true
         return this.post ( address, headers, body ).catch ( e => {
           if ( e.status === 401 && adminSvc.loggedIn ) adminSvc.logout ( true )
           return Promise.reject ( e )
         } )
       case "DELETE":
+        body.honeypot = true
         return this.delete ( address, headers, body ).catch ( e => {
           if ( e.status === 401 && adminSvc.loggedIn ) adminSvc.logout ( true )
           return Promise.reject ( e )

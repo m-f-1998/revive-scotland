@@ -54,6 +54,17 @@
                   <button class="btn btn-primary" (click)="viewRegistration(registration)">
                     <fa-icon [icon]="faView" />
                   </button>
+                  @if (registration.payment_required) {
+                    @if (registration.paid) {
+                      <button class="btn btn-info" (click)="updatePaid(registration)">
+                        Mark as Unpaid
+                      </button>
+                    } @else {
+                      <button class="btn btn-info" (click)="updatePaid(registration)">
+                        Mark as Paid
+                      </button>
+                    }
+                  }
                 </div>
               </td>
             </tr>

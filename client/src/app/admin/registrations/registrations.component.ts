@@ -7,6 +7,7 @@ import { HttpService } from "@services/HttpService.service"
 import { FormlyFieldConfig, FormlyModule } from "@ngx-formly/core"
 import { FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms"
 import { RegistrationViewComponent } from "../components/registration-view/registration-view.component"
+import { ToastrService } from "ngx-toastr"
 
 @Component ( {
   selector: "app-admin-registrations",
@@ -32,15 +33,18 @@ export class AdminRegistrationsComponent {
   public model: any = { }
   public fields: FormlyFieldConfig [ ] = [ ]
 
+  private eventTitles: any [ ] = [ ]
+
   public constructor (
     public adminService: AdminService,
     private httpSvc: HttpService,
-    private ngModal: NgbModal
+    private ngModal: NgbModal,
+    private toastrSvc: ToastrService
   ) {
     this.httpSvc.request ( "/registrations/get_all.php" ).then ( ( res: any ) => {
       this.registrations = res
       this.filter = res
-      const eventTitles = [ ...new Set ( res.map ( ( x: any ) => x.event_title ) ) ]
+      this.eventTitles = [ ...new Set ( res.map ( ( x: any ) => x.event_title ) ) ]
 
       this.fields = [
         {
@@ -51,7 +55,7 @@ export class AdminRegistrationsComponent {
             change: ( ) => this.applyFilter ( ),
             options: [
               { label: "", value: "" },
-              ...eventTitles.map(title => ({ label: title, value: title }))
+              ...this.eventTitles.map ( title => ( { label: title, value: title } ) )
             ],
             required: false
           }
@@ -65,9 +69,13 @@ export class AdminRegistrationsComponent {
           },
           expressions: {
             hide: ( field: FormlyFieldConfig ) => {
-              this.model.paid = false
-              return field.model.donation
-            },
+              const onlyDonations = this.registrations.every ( ( x: any ) => !x.payment_required )
+              if ( onlyDonations ) {
+                return true
+              }
+              this.filterTitles ( field )
+              return false
+            }
           }
         },
         {
@@ -76,6 +84,16 @@ export class AdminRegistrationsComponent {
           props: {
             change: ( ) => this.applyFilter ( ),
             label: "Donation",
+          },
+          expressions: {
+            hide: ( field: FormlyFieldConfig ) => {
+              const onlyPaid = this.registrations.every ( ( x: any ) => x.payment_required )
+              if ( onlyPaid ) {
+                return true
+              }
+              this.filterTitles ( field )
+              return false
+            }
           }
         }
       ]
@@ -87,6 +105,51 @@ export class AdminRegistrationsComponent {
       this.loading = false
     } ).catch ( e => {
       console.error ( e )
+      this.loading = false
+    } )
+  }
+
+  public filterTitles ( field: FormlyFieldConfig ) {
+    const titleField = field.parent && field.parent.fieldGroup && field.parent.fieldGroup.find(x => x.key === "title");
+    if ( titleField && titleField.props ) {
+      titleField.props.options = [
+        { label: "", value: "" },
+        ...this.eventTitles.map ( title => ( { label: title, value: title } ) )
+      ].filter ( x => {
+        if ( field.model.paid ) {
+          const registration = this.registrations.find ( ( y: any ) => y.event_title === x.value )
+          if ( registration && !registration.payment_required ) return false
+        }
+        if ( field.model.donation ) {
+          const registration = this.registrations.find ( ( y: any ) => y.event_title === x.value )
+          if ( registration && registration.payment_required ) return false
+        }
+        return true
+      } )
+      console.log ( titleField.props.options )
+      if ( titleField.props.options.length === 2 ) {
+        console.log ( "Select 1" )
+        titleField.props.options = [ titleField.props.options [ 1 ] ]
+        titleField.model.title = titleField.props.options [ 0 ].value
+      } else {
+        console.log ( "Here" )
+        titleField.model.title = ""
+      }
+    }
+  }
+
+  public updatePaid ( registration: any ) {
+    if ( !confirm ( "Are you sure you want to update this registration's payment status?" ) ) return
+    this.loading = true
+    this.httpSvc.request ( "/registrations/post_update.php", {
+      id: registration.id,
+      paid: registration.paid ? 0 : 1
+    }, "POST" ).then ( ( ) => {
+      registration.paid = registration.paid ? 0 : 1
+    } ).catch ( e => {
+      console.error ( e )
+      this.toastrSvc.error ( "There was an error updating the registration." )
+    } ).finally ( ( ) => {
       this.loading = false
     } )
   }

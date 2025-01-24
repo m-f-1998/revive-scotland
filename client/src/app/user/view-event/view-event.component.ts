@@ -67,13 +67,6 @@ export class ViewEventComponent implements OnInit {
     this.getPolicies ( ).then ( ( ) => {
       this.eventFields = [
         {
-          key: "description",
-          type: "textarea",
-          props: {
-            readonly: true
-          }
-        },
-        {
           key: "location",
           type: "input",
           props: {
@@ -117,6 +110,17 @@ export class ViewEventComponent implements OnInit {
         }
       ]
 
+      if ( this.event.description ) {
+        this.eventFields.unshift ( {
+          key: "description",
+          type: "textarea",
+          props: {
+            label: "Description",
+            readonly: true
+          }
+        } )
+      }
+
       if ( this.event.featured_image ) {
         this.eventFields.push ( {
           key: "current_featured_image",
@@ -151,7 +155,8 @@ export class ViewEventComponent implements OnInit {
       }
 
       if ( this.event.date_to ) {
-        this.eventFields.push ( {
+        const dateFromIndex = this.eventFields.findIndex ( x => x.key === "date_from" )
+        this.eventFields.splice ( dateFromIndex + 1, 0, {
           key: "date_to",
           type: "input",
           props: {
@@ -253,14 +258,6 @@ export class ViewEventComponent implements OnInit {
           props: {
             label: "Accept Event Policy",
             required: true
-          }
-        },
-        {
-          key: "honeypot",
-          type: "input",
-          props: {
-            type: "hidden",
-            required: false
           }
         }
       ]

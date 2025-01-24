@@ -50,7 +50,7 @@ export class PolicyAddComponent implements OnInit, AfterViewChecked {
         key: "description",
         type: "textarea",
         props: {
-          label: "Description",
+          label: "Content",
           required: true
         }
       },

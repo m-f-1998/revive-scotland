@@ -1,6 +1,6 @@
 import { Component } from "@angular/core"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
-import { faEye, faPlus, faSpinner, faTrash } from "@fortawesome/free-solid-svg-icons"
+import { faPencil, faPlus, faSpinner, faTrash } from "@fortawesome/free-solid-svg-icons"
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
 import { AdminService } from "@services/AdminService.service"
 import { HttpService } from "@services/HttpService.service"
@@ -21,7 +21,7 @@ export class AdminPoliciesComponent {
   public policies: any[] = []
 
   public faTrash = faTrash
-  public faView = faEye
+  public faEdit = faPencil
   public faPlus = faPlus
   public faSpinner = faSpinner
 

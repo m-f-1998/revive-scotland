@@ -23,7 +23,7 @@
   *   - refunded: 1 if refunded, 0 otherwise.
 */
 
-  require 'vendor/autoload.php';
+  require '../vendor/autoload.php';
   \Stripe\Stripe::setApiKey ( "sk_test_51PqghM00eYCjdRhRAa4N59BXb78bsZyEu8MisDnUQH0OdsqVXtZY1SupN7nkHJGLg2K3w39s2tm7FAmLZpN5TuiJ00x2n0ZVoq" ); // TODO: Replace With Your Stripe Secret Key And Add To Environment Variables
 
   header ( "Content-Type: application/json; charset=utf-8" );

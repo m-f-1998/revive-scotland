@@ -39,6 +39,7 @@
 
   function get_registrations ( $conn, $headers ) {
     $stmt = $conn->query ( "SELECT
+        er.`id`,
         er.`name`,
         er.`telephone`,
         er.`email`,

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "92697e9ef69b104b09c8c27a026c0b3c",
+    "content-hash": "669331d0e18fe92dd0268f78a501b430",
     "packages": [
         {
             "name": "brick/math",
@@ -68,16 +68,16 @@
         },
         {
             "name": "phpmailer/phpmailer",
-            "version": "v6.9.1",
+            "version": "v6.9.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPMailer/PHPMailer.git",
-                "reference": "039de174cd9c17a8389754d3b877a2ed22743e18"
+                "reference": "2f5c94fe7493efc213f643c23b1b1c249d40f47e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPMailer/PHPMailer/zipball/039de174cd9c17a8389754d3b877a2ed22743e18",
-                "reference": "039de174cd9c17a8389754d3b877a2ed22743e18",
+                "url": "https://api.github.com/repos/PHPMailer/PHPMailer/zipball/2f5c94fe7493efc213f643c23b1b1c249d40f47e",
+                "reference": "2f5c94fe7493efc213f643c23b1b1c249d40f47e",
                 "shasum": ""
             },
             "require": {
@@ -137,7 +137,7 @@
             "description": "PHPMailer is a full-featured email creation and transfer class for PHP",
             "support": {
                 "issues": "https://github.com/PHPMailer/PHPMailer/issues",
-                "source": "https://github.com/PHPMailer/PHPMailer/tree/v6.9.1"
+                "source": "https://github.com/PHPMailer/PHPMailer/tree/v6.9.3"
             },
             "funding": [
                 {
@@ -145,7 +145,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2023-11-25T22:23:28+00:00"
+            "time": "2024-11-24T18:04:13+00:00"
         },
         {
             "name": "ramsey/collection",
@@ -330,16 +330,16 @@
         },
         {
             "name": "stripe/stripe-php",
-            "version": "v15.7.0",
+            "version": "v16.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/stripe/stripe-php.git",
-                "reference": "3e8161c1d7d1e9fb79751a693cd6123550f6ce21"
+                "reference": "48af6bc64ca8157b3fdce100e856069963bac466"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/stripe/stripe-php/zipball/3e8161c1d7d1e9fb79751a693cd6123550f6ce21",
-                "reference": "3e8161c1d7d1e9fb79751a693cd6123550f6ce21",
+                "url": "https://api.github.com/repos/stripe/stripe-php/zipball/48af6bc64ca8157b3fdce100e856069963bac466",
+                "reference": "48af6bc64ca8157b3fdce100e856069963bac466",
                 "shasum": ""
             },
             "require": {
@@ -383,18 +383,18 @@
             ],
             "support": {
                 "issues": "https://github.com/stripe/stripe-php/issues",
-                "source": "https://github.com/stripe/stripe-php/tree/v15.7.0"
+                "source": "https://github.com/stripe/stripe-php/tree/v16.3.0"
             },
-            "time": "2024-08-15T21:17:26+00:00"
+            "time": "2024-11-20T23:30:16+00:00"
         }
     ],
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": false,
     "prefer-lowest": false,
-    "platform": [],
-    "platform-dev": [],
+    "platform": {},
+    "platform-dev": {},
     "plugin-api-version": "2.6.0"
 }

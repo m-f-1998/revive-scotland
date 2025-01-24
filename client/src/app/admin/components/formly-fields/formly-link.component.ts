@@ -22,12 +22,20 @@ export class FormlyLink extends FieldType<FieldTypeConfig> {
   public openFile ( file: string ) {
     this.apiSvc.request ( "/asset.php", {
       url: file
-    }, "POST" ).then ( ( blob: any ) => {
+    } ).then ( ( blob: any ) => {
       const url = window.URL.createObjectURL ( blob )
       window.open ( url, "_blank" )
       window.URL.revokeObjectURL ( url )
     } ).catch ( e => {
-      this.toastrSvc.error ( "There was an error opening the file." )
+      if ( e.status === 401 ) {
+        this.toastrSvc.error ( "You are not authorized to view this file." )
+      } else if ( e.status === 404 ) {
+        this.toastrSvc.error ( "The file could not be found." )
+      } else if ( e.status === 415 ) {
+        this.toastrSvc.error ( "The file is not in a supported format." )
+      } else {
+        this.toastrSvc.error ( "There was an error opening the file." )
+      }
       console.error ( e )
     } )
   }

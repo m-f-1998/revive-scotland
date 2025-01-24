@@ -29,14 +29,14 @@
 
   include_once "controller/db.php";
   $conn = db_connection ( );
+
+  $_POST = json_decode ( file_get_contents ( "php://input" ), true );
   setup_security ( );
 
   $headers = getallheaders ( );
   $secretKey = getenv ( "JWT_SECRET" );
 
   include_once "controller/authenticate.php";
-
-  $_POST = json_decode ( file_get_contents ( "php://input" ), true );
 
   if ( !isset ( $_POST [ "username" ] ) || !isset ( $_POST [ "password" ] ) ) {
     if ( isset ( $headers [ "X-Auth" ] ) && $headers [ "X-Auth" ] !== "" ) {
