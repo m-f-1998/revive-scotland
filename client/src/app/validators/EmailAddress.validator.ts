@@ -1,6 +1,6 @@
-import { AbstractControl, ValidationErrors } from '@angular/forms'
+import { AbstractControl, ValidationErrors } from "@angular/forms"
 
-export function ValidEmail(control: AbstractControl): ValidationErrors | null {
+export function ValidEmail ( control: AbstractControl ): ValidationErrors | null {
   // eslint-disable-next-line max-len
   const validRegex = /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/
 
@@ -8,5 +8,5 @@ export function ValidEmail(control: AbstractControl): ValidationErrors | null {
     return null
   }
 
-  return { ValidEmail: { message: 'Please Specify a Valid Email' } }
+  return { ValidEmail: { message: "Please Specify a Valid Email" } }
 }

@@ -1,28 +1,28 @@
 <div class="modal-header">
   <h5 class="modal-title" id="exampleModalLabel">{{this.event.title}} Sign Up</h5>
-  @if (!processing) {
+  @if (!processing()) {
     <button type="button" class="btn-close" data-bs-dismiss="modal" (click)="close()"></button>
   }
 </div>
 
 <div class="modal-body">
-  @if ( loading ) {
+  @if (loading()) {
     <div class="d-flex flex-column align-items-center m-3">
       <fa-icon [icon]="faSpinner" animation="spin" size="2x" class="mb-2" />
       Loading...
     </div>
-  } @else if ( error ) {
+  } @else if (error()) {
     <div class="d-flex flex-column align-items-center m-3">
       <fa-icon [icon]="faWarning" size="2x" class="mb-2" />
-      <p>Error Message: {{errorMessage}}</p>
+      <p>Error Message: {{errorMessage()}}</p>
       <p>Please try again later. If the error persists, please contact us.</p>
     </div>
-  } @else if ( processing ) {
+  } @else if (processing()) {
     <div class="d-flex flex-column align-items-center m-3">
       <fa-icon [icon]="faSpinner" animation="spin" size="2x" class="mb-2" />
       Processing Registration...
     </div>
-  } @else if ( processingSuccess ) {
+  } @else if (processingSuccess()) {
     <div class="d-flex flex-column align-items-center m-3">
       <fa-icon [icon]="faCheck" class="fa-10x text-success" />
       @if (event?.payment_required) {
@@ -31,8 +31,8 @@
         <h1>Registration Successful</h1>
       }
       <p class="text-center">Thank you for registering for {{this.event.title}}. An email confirmation has been sent to {{this.model.email}}.</p>
-      @if (event?.payment_required && paymentLink) {
-        <a href="{{paymentLink}}" target="_blank" class="btn btn-primary">Pay Registration Fee</a>
+      @if (event?.payment_required && paymentLink()) {
+        <a href="{{paymentLink()}}" target="_blank" class="btn btn-primary">Pay Registration Fee</a>
         <p class="text-center">Please pay the registration fee to secure your place. You can also pay the registration fee later via the link in your confirmation email.</p>
         <p class="text-center">Alternatively, you can pay the registration fee in person. Your place is not secure until payment of this fee.</p>
       }

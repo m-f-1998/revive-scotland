@@ -1,5 +1,4 @@
-import { Component, Input, OnInit } from "@angular/core"
-import { FooterComponent } from "@components/footer/footer.component"
+import { ChangeDetectionStrategy, Component, Input, OnInit, signal, WritableSignal } from "@angular/core"
 import { faCheck, faSpinner, faWarning } from "@fortawesome/free-solid-svg-icons"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { HttpService } from "@services/HttpService.service"
@@ -11,9 +10,7 @@ import { CurrencyPipe } from "@angular/common"
 
 @Component ( {
   selector: "app-view-event",
-  standalone: true,
   imports: [
-    FooterComponent,
     FaIconComponent,
     FormlyModule,
     FormsModule,
@@ -23,18 +20,19 @@ import { CurrencyPipe } from "@angular/common"
     CurrencyPipe
   ],
   templateUrl: "./view-event.component.html",
-  styleUrl: "./view-event.component.scss"
+  styleUrl: "./view-event.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class ViewEventComponent implements OnInit {
   @Input ( ) public event: any = { }
-  public policies: any[] = []
+  public policies: WritableSignal<Array<any>> = signal ( [ ] )
 
-  public loading = true
-  public error = false
-  public errorMessage = ""
-  public processing = false
-  public processingSuccess = false
-  public paymentLink = ""
+  public loading: WritableSignal<boolean> = signal ( true )
+  public error: WritableSignal<boolean> = signal ( false )
+  public errorMessage: WritableSignal<string> = signal ( "" )
+  public processing: WritableSignal<boolean> = signal ( false )
+  public processingSuccess: WritableSignal<boolean> = signal ( false )
+  public paymentLink: WritableSignal<string> = signal ( "" )
   public faSpinner = faSpinner
   public faWarning = faWarning
 
@@ -48,7 +46,7 @@ export class ViewEventComponent implements OnInit {
 
   public faCheck = faCheck
 
-  constructor (
+  public constructor (
     private apiSvc: HttpService,
     private activeModal: NgbActiveModal,
     private dateSvc: DatesService,
@@ -267,11 +265,11 @@ export class ViewEventComponent implements OnInit {
         accepted_event_policy: false
       }
 
-      this.loading = false
+      this.loading.set ( false )
     } ).catch ( ( e: any ) => {
       this.errorMessage = e.error
-      this.error = true
-      this.loading = false
+      this.error.set ( true )
+      this.loading.set ( false )
       console.error ( e )
     } )
   }
@@ -281,18 +279,18 @@ export class ViewEventComponent implements OnInit {
   }
 
   public register ( ) {
-    this.processing = true
+    this.processing.set ( true )
     const res = { ...this.model, event_id: this.event.id }
     this.apiSvc.request ( "/registrations/post_create.php", res, "POST" ).then ( ( res: any ) => {
       if ( res.payment_link ) {
         this.paymentLink = res.payment_link
       }
-      this.processingSuccess = true
-      this.processing = false
+      this.processingSuccess.set ( true )
+      this.processing.set ( false )
     } ).catch ( e => {
       this.errorMessage = e.error
-      this.error = true
-      this.processing = false
+      this.error.set ( true )
+      this.processing.set ( false )
       console.error ( e )
     } )
   }

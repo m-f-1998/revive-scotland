@@ -8,7 +8,7 @@
             <form [formGroup]="form">
               <formly-form [form]="form" [fields]="fields" [model]="model" />
               <button class="btn btn-primary" (click)="login()" [disabled]="loggingIn || !form.valid">
-                @if (loggingIn) {
+                @if (loggingIn()) {
                   <fa-icon [icon]="faSpinner" animation="spin" size="1x" />
                 } @else {
                   Login

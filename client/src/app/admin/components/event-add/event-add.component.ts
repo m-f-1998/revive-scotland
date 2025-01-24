@@ -1,5 +1,5 @@
 import { CurrencyPipe } from "@angular/common"
-import { AfterViewChecked, ChangeDetectorRef, Component, Input, OnInit } from "@angular/core"
+import { AfterViewChecked, ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, signal, WritableSignal } from "@angular/core"
 import { FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { faSpinner } from "@fortawesome/free-solid-svg-icons"
@@ -10,7 +10,6 @@ import { ToastrService } from "ngx-toastr"
 
 @Component ( {
   selector: "app-admin-event-add",
-  standalone: true,
   imports: [
     FaIconComponent,
     ReactiveFormsModule,
@@ -20,13 +19,14 @@ import { ToastrService } from "ngx-toastr"
   providers: [
     CurrencyPipe
   ],
-  templateUrl: "./event-add.component.html"
+  templateUrl: "./event-add.component.html",
+  changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class EventAddComponent implements OnInit, AfterViewChecked {
-  public loading = true
+  public loading: WritableSignal<boolean> = signal ( true )
   public faSpinner = faSpinner
-  public confirm = false
-  public policies: any[] = []
+  public confirm: WritableSignal<boolean> = signal ( false )
+  public policies: WritableSignal<Array<any>> = signal ( [ ] )
 
   public form = new FormGroup ( { } )
   public fields: FormlyFieldConfig [ ] = [ ]
@@ -77,6 +77,7 @@ export class EventAddComponent implements OnInit, AfterViewChecked {
             required: true
           },
           expressions: {
+            // eslint-disable-next-line @typescript-eslint/naming-convention
             "props.label": ( field: FormlyFieldConfig ) => {
               return field.model.payment_required ? "Price (GBP)" : "Suggested Donation (GBP)"
             }
@@ -143,7 +144,7 @@ export class EventAddComponent implements OnInit, AfterViewChecked {
           props: {
             label: "Policy",
             required: true,
-            options: this.policies.filter ( x => x.category === "Event Policy" ).map ( x => ( { label: x.title, value: x.id } ) )
+            options: this.policies ( ).filter ( x => x.category === "Event Policy" ).map ( x => ( { label: x.title, value: x.id } ) )
           }
         },
         {
@@ -152,7 +153,7 @@ export class EventAddComponent implements OnInit, AfterViewChecked {
           props: {
             label: "GDPR",
             required: true,
-            options: this.policies.filter ( x => x.category === "GDPR" ).map ( x => ( { label: x.title, value: x.id } ) )
+            options: this.policies ( ).filter ( x => x.category === "GDPR" ).map ( x => ( { label: x.title, value: x.id } ) )
           }
         }
       ]
@@ -161,7 +162,7 @@ export class EventAddComponent implements OnInit, AfterViewChecked {
         payment_required: true
       }
 
-      this.loading = false
+      this.loading.set ( false )
     } )
   }
 
@@ -187,9 +188,9 @@ export class EventAddComponent implements OnInit, AfterViewChecked {
               fd.append ( key, this.model [ key ] )
             }
           }
-          this.apiSvc.request ( "/events.php", fd, "POST" ).then ( ( res: any ) => {
-            this.confirm = true
-          } ).catch ( e => {
+          this.apiSvc.request ( "/events.php", fd, "POST" ).then ( ( ) => {
+            this.confirm.set ( true )
+          } ).catch ( ( ) => {
             this.toastrSvc.error ( "Failed to Add Event" )
           } ).finally ( ( ) => {
             this.close ( )

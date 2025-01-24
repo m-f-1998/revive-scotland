@@ -1,11 +1,10 @@
-import { Component } from "@angular/core"
+import { ChangeDetectionStrategy, Component } from "@angular/core"
 
 @Component ( {
   selector: "app-donate",
-  standalone: true,
-  imports: [],
   templateUrl: "./donate.component.html",
-  styleUrl: "./donate.component.scss"
+  styleUrl: "./donate.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class DonateComponent {
   public url = "img/donation.jpg"

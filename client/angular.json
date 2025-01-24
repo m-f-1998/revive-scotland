@@ -15,7 +15,7 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:application",
+          "builder": "@angular/build:application",
           "options": {
             "outputPath": "dist/revive-scotland",
             "index": "src/index.html",
@@ -33,9 +33,17 @@
               }
             ],
             "styles": [
+              "src/styles.scss",
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
+              "node_modules/ngx-toastr/toastr.css",
               "node_modules/@fortawesome/fontawesome-free/css/all.min.css",
-              "src/styles.scss"
+              "node_modules/@fontsource/poppins/300.css",
+              "node_modules/@fontsource/poppins/300-italic.css",
+              "node_modules/@fontsource/poppins/400.css",
+              "node_modules/@fontsource/poppins/400-italic.css",
+              "node_modules/@fontsource/poppins/700.css",
+              "node_modules/@fontsource/poppins/700-italic.css",
+              "node_modules/@fontsource/playfair-display/500.css"
             ],
             "scripts": [
               "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
@@ -74,7 +82,10 @@
           "defaultConfiguration": "production"
         },
         "serve": {
-          "builder": "@angular-devkit/build-angular:dev-server",
+          "builder": "@angular/build:dev-server",
+          "options": {
+            "hmr": false
+          },
           "configurations": {
             "production": {
               "buildTarget": "revive-scotland:build:production"
@@ -86,7 +97,7 @@
           "defaultConfiguration": "development"
         },
         "extract-i18n": {
-          "builder": "@angular-devkit/build-angular:extract-i18n"
+          "builder": "@angular/build:extract-i18n"
         }
       }
     }

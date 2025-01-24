@@ -1,6 +1,6 @@
 <div>
-  <p class="figure-caption">Logged in as: {{ adminSvc.user?.email }}</p>
-  @if (loading) {
+  <p class="figure-caption">Logged in as: {{ adminSvc.user()?.email }}</p>
+  @if (loading()) {
     <div class="d-flex flex-column align-items-center m-3">
       <fa-icon [icon]="faSpinner" animation="spin" size="2x" class="mb-2" />
       Loading...
@@ -23,7 +23,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (event of events; track $index ) {
+          @for (event of events(); track $index ) {
             <tr class="text-center align-middle">
               <td>{{ event.title }}</td>
               <td>
@@ -56,14 +56,14 @@
               }
               <td>
                 <div class="d-flex justify-content-center gap-2">
-                  <button class="btn btn-danger" (click)="deleteEvent(event.id)" [disabled]="processing">
-                    @if (processing) {
+                  <button class="btn btn-danger" (click)="deleteEvent(event.id)" [disabled]="processing()">
+                    @if (processing()) {
                       <fa-icon [icon]="faSpinner" animation="spin" />
                     } @else {
                       Cancel
                     }
                   </button>
-                  <button class="btn btn-primary" (click)="viewEvent(event)" [disabled]="processing">
+                  <button class="btn btn-primary" (click)="viewEvent(event)" [disabled]="processing()">
                     <fa-icon [icon]="faView" />
                   </button>
                 </div>

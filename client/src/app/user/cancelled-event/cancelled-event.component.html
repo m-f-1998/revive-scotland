@@ -1,13 +1,13 @@
 <div style="display: flex; flex-direction: column; flex-grow: 1;">
   <div class="text-center" style="flex-grow: 1; align-content: center;">
-    @if (success === true) {
+    @if (success()) {
       <fa-icon [icon]="faCheck" class="fa-10x text-success" />
       <h1>Your Event Registration is Cancelled</h1>
       <button class="btn btn-primary mt-2" (click)="goHome()">Go Home</button>
-    } @else if (success === false) {
+    } @else if (!success()) {
       <fa-icon [icon]="faCross" class="fa-10x text-danger" />
       <h1>Cancellation Failed</h1>
-      <h3>{{failureMessage}}</h3>
+      <h3>{{failureMessage()}}</h3>
       <h3>Please try again later. If the error persists, please contact us.</h3>
       <button class="btn btn-primary mt-2" (click)="goHome()">Go Home</button>
     } @else {

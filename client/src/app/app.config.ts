@@ -1,16 +1,16 @@
-import { APP_INITIALIZER, ApplicationConfig, importProvidersFrom, provideZoneChangeDetection } from "@angular/core";
+import { ApplicationConfig, importProvidersFrom, provideZoneChangeDetection, inject, provideAppInitializer } from "@angular/core"
 import { provideRouter } from "@angular/router"
-import { routes } from "./app.routes";
-import { provideHttpClient } from "@angular/common/http";
+import { routes } from "./app.routes"
+import { provideHttpClient } from "@angular/common/http"
 import { provideToastr } from "ngx-toastr"
 import { provideAnimations } from "@angular/platform-browser/animations"
 import { ReactiveFormsModule } from "@angular/forms"
 import { FormlyFieldConfig, FormlyModule } from "@ngx-formly/core"
 import { FormlyBootstrapModule } from "@ngx-formly/bootstrap"
-import { AdminService } from "@services/AdminService.service";
-import { FormlyLink } from "./admin/components/formly-fields/formly-link.component";
-import { ValidEmail } from "./validators/EmailAddress.validator";
-import { ValidPhoneNumber } from "./validators/PhoneNumber.validator";
+import { AdminService } from "@services/AdminService.service"
+import { FormlyLinkComponent } from "./admin/components/formly-fields/formly-link.component"
+import { ValidEmail } from "./validators/EmailAddress.validator"
+import { ValidPhoneNumber } from "./validators/PhoneNumber.validator"
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -31,13 +31,13 @@ export const appConfig: ApplicationConfig = {
       ReactiveFormsModule,
       FormlyModule.forRoot ( {
         types: [
-          { name: "formly-link", component: FormlyLink }
+          { name: "formly-link", component: FormlyLinkComponent }
         ],
         validationMessages: [
-          { name: "minLength", message: (error: any, field: FormlyFieldConfig ) => {
+          { name: "minLength", message: ( error: any, field: FormlyFieldConfig ) => {
             return `Should have a minimum of ${field.props?.minLength} characters.`
           } },
-          { name: "maxLength", message: (error: any, field: FormlyFieldConfig ) => {
+          { name: "maxLength", message: ( error: any, field: FormlyFieldConfig ) => {
             return `Should have a maximum of ${field.props?.maxLength} characters.`
           } },
         ],
@@ -48,14 +48,10 @@ export const appConfig: ApplicationConfig = {
       } ),
       FormlyBootstrapModule
     ),
-    {
-      provide: APP_INITIALIZER,
-      useFactory: (adminSvc: AdminService) => () => adminSvc.resumeSession ( ),
-      deps: [
-        AdminService
-      ],
-      multi: true
-    }
+    provideAppInitializer ( () => {
+      const initializerFn = ( ( adminSvc: AdminService ) => () => adminSvc.resumeSession ( ) ) ( inject ( AdminService ) )
+      return initializerFn ()
+    } )
   ]
-};
+}
 

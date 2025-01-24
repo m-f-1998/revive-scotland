@@ -1,5 +1,5 @@
 <div class="swiper hero-slider text-center">
-  <swiper-container fmSwiper [config]="config" init="false" class="w-full">
+  <swiper-container appFMSwiper [config]="config" init="false" class="w-full">
     @for (slide of slides; track $index) {
       <swiper-slide class="hero-slide bg-cover with-border-image d-flex align-items-center" style="background: url({{slide.image}}); background-position: bottom; background-size: 100% 100%;">
         <div class="container text-white py-5 my-5 index-forward p-3">

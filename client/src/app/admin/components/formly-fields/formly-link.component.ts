@@ -1,17 +1,18 @@
-import { Component } from "@angular/core"
+import { ChangeDetectionStrategy, Component } from "@angular/core"
 import { FieldType, FieldTypeConfig } from "@ngx-formly/core"
 import { HttpService } from "@services/HttpService.service"
 import { ToastrService } from "ngx-toastr"
 
-@Component({
- selector: "formly-link",
- template: `
+@Component ( {
+  selector: "app-formly-link",
+  template: `
     <div class="mb-2">
       <a href="javascript:void(0)" (click)="openFile(formControl.defaultValue)">{{ to.label }}</a>
     </div>
  `,
-})
-export class FormlyLink extends FieldType<FieldTypeConfig> {
+  changeDetection: ChangeDetectionStrategy.OnPush
+} )
+export class FormlyLinkComponent extends FieldType<FieldTypeConfig> {
   public constructor (
     private apiSvc: HttpService,
     private toastrSvc: ToastrService

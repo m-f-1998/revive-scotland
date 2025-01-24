@@ -1,5 +1,5 @@
 import { CurrencyPipe } from "@angular/common"
-import { Component, Input, OnInit } from "@angular/core"
+import { ChangeDetectionStrategy, Component, Input, OnInit, signal, WritableSignal } from "@angular/core"
 import { FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { faSpinner } from "@fortawesome/free-solid-svg-icons"
@@ -10,7 +10,6 @@ import { ToastrService } from "ngx-toastr"
 
 @Component ( {
   selector: "app-admin-policy-edit",
-  standalone: true,
   imports: [
     FaIconComponent,
     ReactiveFormsModule,
@@ -20,14 +19,15 @@ import { ToastrService } from "ngx-toastr"
   providers: [
     CurrencyPipe
   ],
-  templateUrl: "./policy-edit.component.html"
+  templateUrl: "./policy-edit.component.html",
+  changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class PolicyEditComponent implements OnInit {
   @Input ( ) public policy: any = ""
 
-  public loading = true
+  public loading: WritableSignal<boolean> = signal ( true )
   public faSpinner = faSpinner
-  public confirm = false
+  public confirm: WritableSignal<boolean> = signal ( false )
 
   public form = new FormGroup ( { } )
   public fields: FormlyFieldConfig [ ] = [ ]
@@ -73,7 +73,7 @@ export class PolicyEditComponent implements OnInit {
       description: this.policy.description,
       category: this.policy.category
     }
-    this.loading = false
+    this.loading.set ( false )
   }
 
   public submit ( ) {
@@ -81,8 +81,8 @@ export class PolicyEditComponent implements OnInit {
       "id": this.policy.id,
       ...this.model
     }
-    this.apiSvc.request ( "/policies.php", to_update, "POST" ).then ( ( res: any ) => {
-      this.confirm = true
+    this.apiSvc.request ( "/policies.php", to_update, "POST" ).then ( ( ) => {
+      this.confirm.set ( true )
     } ).catch ( e => {
       this.toastrSvc.error ( e.error )
     } ).finally ( ( ) => {

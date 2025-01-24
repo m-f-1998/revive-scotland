@@ -1,26 +1,24 @@
-import { Component } from "@angular/core"
+import { ChangeDetectionStrategy, Component, signal, WritableSignal } from "@angular/core"
 import { ActivatedRoute, Router } from "@angular/router"
 import { FooterComponent } from "@components/footer/footer.component"
-import { NavbarComponent } from "@components/navbar/navbar.component"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { faCheckCircle, faTimesCircle } from "@fortawesome/free-solid-svg-icons"
 
 @Component ( {
   selector: "app-cancelled-event",
-  standalone: true,
   imports: [
-    NavbarComponent,
     FooterComponent,
     FaIconComponent
   ],
   templateUrl: "./cancelled-event.component.html",
-  styleUrl: "./cancelled-event.component.scss"
+  styleUrl: "./cancelled-event.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class CancelledEventComponent {
   public faCheck = faCheckCircle
   public faCross = faTimesCircle
-  public success: boolean | null = null
-  public failureMessage = ""
+  public success: WritableSignal<boolean | null> = signal ( null )
+  public failureMessage: WritableSignal<string> = signal ( "" )
 
   public constructor (
     private activatedRoute: ActivatedRoute,
@@ -32,7 +30,7 @@ export class CancelledEventComponent {
         if ( success == "0" ) {
           this.failureMessage = params [ "error" ]
         }
-        this.success = success == "1" ? true : false
+        this.success.set ( success == "1" ? true : false )
       }
     } )
   }

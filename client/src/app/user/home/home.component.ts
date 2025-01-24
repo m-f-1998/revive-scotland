@@ -1,4 +1,4 @@
-import { Component } from "@angular/core"
+import { ChangeDetectionStrategy, Component } from "@angular/core"
 import { SliderComponent } from "@components/slider/slider.component"
 import { TestimonyComponent } from "@components/testimony/testimony.component"
 import { AboutUsComponent } from "@components/about-us/about-us.component"
@@ -13,7 +13,6 @@ import { NextEventComponent } from "@components/next-event/next-event.component"
 
 @Component ( {
   selector: "app-home",
-  standalone: true,
   imports: [
     SliderComponent,
     TestimonyComponent,
@@ -28,7 +27,8 @@ import { NextEventComponent } from "@components/next-event/next-event.component"
     NextEventComponent
   ],
   templateUrl: "./home.component.html",
-  styleUrl: "./home.component.scss"
+  styleUrl: "./home.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class HomeComponent {
 }

@@ -1,4 +1,4 @@
-import { Component } from "@angular/core"
+import { ChangeDetectionStrategy, Component, signal, WritableSignal } from "@angular/core"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { faEye, faSpinner } from "@fortawesome/free-solid-svg-icons"
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
@@ -11,7 +11,6 @@ import { ToastrService } from "ngx-toastr"
 
 @Component ( {
   selector: "app-admin-registrations",
-  standalone: true,
   imports: [
     FaIconComponent,
     FormsModule,
@@ -19,12 +18,13 @@ import { ToastrService } from "ngx-toastr"
     ReactiveFormsModule
   ],
   templateUrl: "./registrations.component.html",
-  styleUrl: "./registrations.component.scss"
+  styleUrl: "./registrations.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class AdminRegistrationsComponent {
-  public registrations: any[] = []
-  public filter: any[] = []
-  public loading = true
+  public registrations: WritableSignal<any[]> = signal ( [ ] )
+  public filter: WritableSignal<any[]> = signal ( [] )
+  public loading: WritableSignal<boolean> = signal ( true )
 
   public faView = faEye
   public faSpinner = faSpinner
@@ -33,7 +33,7 @@ export class AdminRegistrationsComponent {
   public model: any = { }
   public fields: FormlyFieldConfig [ ] = [ ]
 
-  private eventTitles: any [ ] = [ ]
+  private eventTitles: WritableSignal<string[]> = signal ( [ ] )
 
   public constructor (
     public adminService: AdminService,
@@ -44,7 +44,7 @@ export class AdminRegistrationsComponent {
     this.httpSvc.request ( "/registrations/get_all.php" ).then ( ( res: any ) => {
       this.registrations = res
       this.filter = res
-      this.eventTitles = [ ...new Set ( res.map ( ( x: any ) => x.event_title ) ) ]
+      this.eventTitles.set ( [ ...new Set ( res.map ( ( x: any ) => x.event_title ) ) ] as string [ ] )
 
       this.fields = [
         {
@@ -55,7 +55,7 @@ export class AdminRegistrationsComponent {
             change: ( ) => this.applyFilter ( ),
             options: [
               { label: "", value: "" },
-              ...this.eventTitles.map ( title => ( { label: title, value: title } ) )
+              ...this.eventTitles ( ).map ( title => ( { label: title, value: title } ) )
             ],
             required: false
           }
@@ -69,7 +69,7 @@ export class AdminRegistrationsComponent {
           },
           expressions: {
             hide: ( field: FormlyFieldConfig ) => {
-              const onlyDonations = this.registrations.every ( ( x: any ) => !x.payment_required )
+              const onlyDonations = this.registrations ( ).every ( ( x: any ) => !x.payment_required )
               if ( onlyDonations ) {
                 return true
               }
@@ -87,7 +87,7 @@ export class AdminRegistrationsComponent {
           },
           expressions: {
             hide: ( field: FormlyFieldConfig ) => {
-              const onlyPaid = this.registrations.every ( ( x: any ) => x.payment_required )
+              const onlyPaid = this.registrations ( ).every ( ( x: any ) => x.payment_required )
               if ( onlyPaid ) {
                 return true
               }
@@ -102,37 +102,34 @@ export class AdminRegistrationsComponent {
         paid: false
       }
 
-      this.loading = false
+      this.loading.set ( false )
     } ).catch ( e => {
       console.error ( e )
-      this.loading = false
+      this.loading.set ( false )
     } )
   }
 
   public filterTitles ( field: FormlyFieldConfig ) {
-    const titleField = field.parent && field.parent.fieldGroup && field.parent.fieldGroup.find(x => x.key === "title");
+    const titleField = field.parent && field.parent.fieldGroup && field.parent.fieldGroup.find ( x => x.key === "title" )
     if ( titleField && titleField.props ) {
       titleField.props.options = [
         { label: "", value: "" },
-        ...this.eventTitles.map ( title => ( { label: title, value: title } ) )
+        ...this.eventTitles ( ).map ( title => ( { label: title, value: title } ) )
       ].filter ( x => {
         if ( field.model.paid ) {
-          const registration = this.registrations.find ( ( y: any ) => y.event_title === x.value )
+          const registration = this.registrations ( ).find ( ( y: any ) => y.event_title === x.value )
           if ( registration && !registration.payment_required ) return false
         }
         if ( field.model.donation ) {
-          const registration = this.registrations.find ( ( y: any ) => y.event_title === x.value )
+          const registration = this.registrations ( ).find ( ( y: any ) => y.event_title === x.value )
           if ( registration && registration.payment_required ) return false
         }
         return true
       } )
-      console.log ( titleField.props.options )
       if ( titleField.props.options.length === 2 ) {
-        console.log ( "Select 1" )
         titleField.props.options = [ titleField.props.options [ 1 ] ]
         titleField.model.title = titleField.props.options [ 0 ].value
       } else {
-        console.log ( "Here" )
         titleField.model.title = ""
       }
     }
@@ -140,7 +137,7 @@ export class AdminRegistrationsComponent {
 
   public updatePaid ( registration: any ) {
     if ( !confirm ( "Are you sure you want to update this registration's payment status?" ) ) return
-    this.loading = true
+    this.loading.set ( true )
     this.httpSvc.request ( "/registrations/post_update.php", {
       id: registration.id,
       paid: registration.paid ? 0 : 1
@@ -150,7 +147,7 @@ export class AdminRegistrationsComponent {
       console.error ( e )
       this.toastrSvc.error ( "There was an error updating the registration." )
     } ).finally ( ( ) => {
-      this.loading = false
+      this.loading.set ( false )
     } )
   }
 
@@ -160,7 +157,7 @@ export class AdminRegistrationsComponent {
   }
 
   public applyFilter ( ) {
-    this.filter = this.registrations.filter ( ( x: any ) => {
+    this.filter.set ( this.registrations ( ).filter ( ( x: any ) => {
       if ( this.model.paid ) {
         if ( !x.payment_required ) return false
         if ( !x.paid ) return false
@@ -172,6 +169,6 @@ export class AdminRegistrationsComponent {
         if ( x.event_title !== this.model.title ) return false
       }
       return true
-    } )
+    } ) )
   }
 }

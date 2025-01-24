@@ -20,8 +20,8 @@ export class HttpService {
     const address = this.ADDRESS + path
     let headers = new HttpHeaders ( )
 
-    if ( adminSvc.token !== "" && ( adminSvc.loggedIn || path === "/login.php" ) ) {
-      headers = headers.append ( "X-Auth", adminSvc.token )
+    if ( adminSvc.token ( ) !== "" && ( adminSvc.loggedIn ( ) || path === "/login.php" ) ) {
+      headers = headers.append ( "X-Auth", adminSvc.token ( ) )
     }
 
     if ( !( body instanceof FormData ) ) {
@@ -35,19 +35,19 @@ export class HttpService {
     switch ( method ) {
       case "GET":
         return this.get ( address, headers, body ).catch ( e => {
-          if ( e.status === 401 && adminSvc.loggedIn ) adminSvc.logout ( true )
+          if ( e.status === 401 && adminSvc.loggedIn ( ) ) adminSvc.logout ( true )
           return Promise.reject ( e )
         } )
       case "POST":
         body.honeypot = true
         return this.post ( address, headers, body ).catch ( e => {
-          if ( e.status === 401 && adminSvc.loggedIn ) adminSvc.logout ( true )
+          if ( e.status === 401 && adminSvc.loggedIn ( ) ) adminSvc.logout ( true )
           return Promise.reject ( e )
         } )
       case "DELETE":
         body.honeypot = true
         return this.delete ( address, headers, body ).catch ( e => {
-          if ( e.status === 401 && adminSvc.loggedIn ) adminSvc.logout ( true )
+          if ( e.status === 401 && adminSvc.loggedIn ( ) ) adminSvc.logout ( true )
           return Promise.reject ( e )
         } )
     }
@@ -59,7 +59,7 @@ export class HttpService {
         params: body,
         headers,
         responseType: address.endsWith ( "/asset.php" ) ? "blob" : "json"
-      } as Object ).subscribe ( {
+      } as object ).subscribe ( {
         next: ( response ) => {
           resolve ( this.parseData ( response ) )
         },
@@ -107,12 +107,12 @@ export class HttpService {
         this.parseData ( x )
       } )
     if ( res instanceof Object )
-      for ( let key of Object.keys ( res ) ) {
+      for ( const key of Object.keys ( res ) ) {
         if ( Array.isArray ( res [ key ] ) || typeof res [ key ] === "object" ) {
           this.parseData ( res [ key ] )
         } else {
           if ( res [ key ] && typeof res [ key ] === "string" ) {
-            for ( let format of [
+            for ( const format of [
               "yyyy-MM-dd HH:mm:ss",
               "yyyy-MM-dd HH:mm",
               "yyyy-MM-dd"

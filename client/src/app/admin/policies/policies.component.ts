@@ -1,4 +1,4 @@
-import { Component } from "@angular/core"
+import { ChangeDetectionStrategy, Component, signal, WritableSignal } from "@angular/core"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { faPencil, faPlus, faSpinner, faTrash } from "@fortawesome/free-solid-svg-icons"
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
@@ -10,12 +10,12 @@ import { PolicyAddComponent } from "../components/policy-add/policy-add.componen
 
 @Component ( {
   selector: "app-admin-policies",
-  standalone: true,
   imports: [
     FaIconComponent
   ],
   templateUrl: "./policies.component.html",
-  styleUrl: "./policies.component.scss"
+  styleUrl: "./policies.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class AdminPoliciesComponent {
   public policies: any[] = []
@@ -25,7 +25,7 @@ export class AdminPoliciesComponent {
   public faPlus = faPlus
   public faSpinner = faSpinner
 
-  public loading = true
+  public loading: WritableSignal<boolean> = signal ( true )
 
   public constructor (
     public adminService: AdminService,
@@ -43,7 +43,7 @@ export class AdminPoliciesComponent {
       console.error ( e )
       this.toastrSvc.error ( "Failed to Load Policies" )
     } ).finally ( ( ) => {
-      this.loading = false
+      this.loading.set ( false )
     } )
   }
 

@@ -1,13 +1,14 @@
-import { Component } from "@angular/core"
+import { ChangeDetectionStrategy, Component } from "@angular/core"
 import { NgbActiveModal, NgbModule } from "@ng-bootstrap/ng-bootstrap"
 import { text, lastUpdated, contact } from "./terms.json"
 
 @Component ( {
-  standalone: true,
+  selector: "app-terms",
   imports: [
     NgbModule
   ],
-  templateUrl: "./terms.component.html"
+  templateUrl: "./terms.component.html",
+  changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class TermsComponent {
 
@@ -15,7 +16,7 @@ export class TermsComponent {
   public contact = contact
   public lastUpdated = lastUpdated
 
-  constructor (
+  public constructor (
     private modalRef: NgbActiveModal
   ) { }
 

@@ -1,15 +1,15 @@
-import { Component } from "@angular/core"
+import { ChangeDetectionStrategy, Component } from "@angular/core"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { faEnvelope, faPhone } from "@fortawesome/free-solid-svg-icons"
 
 @Component ( {
   selector: "app-contact",
-  standalone: true,
   imports: [
     FaIconComponent
   ],
   templateUrl: "./contact.component.html",
-  styleUrl: "./contact.component.scss"
+  styleUrl: "./contact.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class ContactComponent {
   public img = "img/contact-bg.jpg"

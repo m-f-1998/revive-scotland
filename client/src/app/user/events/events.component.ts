@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core"
+import { ChangeDetectionStrategy, Component, OnInit } from "@angular/core"
 import { FooterComponent } from "@components/footer/footer.component"
 import { faSpinner, faWarning } from "@fortawesome/free-solid-svg-icons"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
@@ -10,13 +10,13 @@ import { PolicyViewComponent } from "../../admin/components/policy-view/policy-v
 
 @Component ( {
   selector: "app-events",
-  standalone: true,
   imports: [
     FooterComponent,
     FaIconComponent
   ],
   templateUrl: "./events.component.html",
-  styleUrl: "./events.component.scss"
+  styleUrl: "./events.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class EventsComponent implements OnInit {
   public events: any[][] = [ ]
@@ -30,7 +30,7 @@ export class EventsComponent implements OnInit {
   public faSpinner = faSpinner
   public faError = faWarning
 
-  constructor (
+  public constructor (
     private apiSvc: HttpService,
     private modalSvc: NgbModal,
     public dateSvc: DatesService
@@ -78,7 +78,7 @@ export class EventsComponent implements OnInit {
         URL.revokeObjectURL ( href )
       }, 1000 )
       return href
-    } ).catch ( e => { } ).finally ( ( ) => {
+    } ).catch ( ( ) => { } ).finally ( ( ) => {
       this.loading = false
     } )
   }

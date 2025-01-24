@@ -1,4 +1,4 @@
-import { AfterViewChecked, ChangeDetectorRef, Component, Input, OnInit } from "@angular/core"
+import { AfterViewChecked, ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, signal, WritableSignal } from "@angular/core"
 import { FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { faSpinner } from "@fortawesome/free-solid-svg-icons"
@@ -9,21 +9,21 @@ import { ToastrService } from "ngx-toastr"
 
 @Component ( {
   selector: "app-admin-policy-add",
-  standalone: true,
   imports: [
     FaIconComponent,
     ReactiveFormsModule,
     FormsModule,
     FormlyModule
   ],
-  templateUrl: "./policy-add.component.html"
+  templateUrl: "./policy-add.component.html",
+  changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class PolicyAddComponent implements OnInit, AfterViewChecked {
   @Input ( ) public categories: any = ""
 
-  public loading = true
+  public loading: WritableSignal<boolean> = signal ( true )
   public faSpinner = faSpinner
-  public confirm = false
+  public confirm: WritableSignal<boolean> = signal ( false )
 
   public form = new FormGroup ( { } )
   public fields: FormlyFieldConfig [ ] = [ ]
@@ -65,7 +65,7 @@ export class PolicyAddComponent implements OnInit, AfterViewChecked {
       }
     ]
 
-    this.loading = false
+    this.loading.set ( false )
   }
 
   public ngAfterViewChecked ( ) {
@@ -73,15 +73,15 @@ export class PolicyAddComponent implements OnInit, AfterViewChecked {
   }
 
   public submit ( ) {
-    this.loading = true
+    this.loading.set ( true )
 
-    this.apiSvc.request ( "/policies.php", this.model, "POST" ).then ( ( response: any ) => {
+    this.apiSvc.request ( "/policies.php", this.model, "POST" ).then ( ( ) => {
       this.toastrSvc.success ( "Policy Created Successfully" )
       this.close ( )
     } ).catch ( e => {
       this.toastrSvc.error ( e.error )
     } ).finally ( ( ) => {
-      this.loading = false
+      this.loading.set ( false )
     } )
   }
 

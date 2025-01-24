@@ -1,6 +1,5 @@
 import { CurrencyPipe } from "@angular/common"
-import { Component, Input, OnInit } from "@angular/core"
-import { FaIconComponent } from "@fortawesome/angular-fontawesome"
+import { ChangeDetectionStrategy, Component, Input, OnInit, signal, WritableSignal } from "@angular/core"
 import { faSpinner } from "@fortawesome/free-solid-svg-icons"
 import { NgbActiveModal, NgbModal } from "@ng-bootstrap/ng-bootstrap"
 import { DatesService } from "@services/DateService.service"
@@ -9,17 +8,16 @@ import { HttpService } from "@services/HttpService.service"
 
 @Component ( {
   selector: "app-admin-registration-view",
-  standalone: true,
   imports: [
-    FaIconComponent,
     CurrencyPipe
   ],
-  templateUrl: "./registration-view.component.html"
+  templateUrl: "./registration-view.component.html",
+  changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class RegistrationViewComponent implements OnInit {
   @Input ( ) public registration: any = { }
 
-  public loading = true
+  public loading: WritableSignal<boolean> = signal ( true )
   public faSpinner = faSpinner
 
   public constructor (
@@ -63,8 +61,8 @@ export class RegistrationViewComponent implements OnInit {
         URL.revokeObjectURL ( href )
       }, 1000 )
       return href
-    } ).catch ( e => { } ).finally ( ( ) => {
-      this.loading = false
+    } ).catch ( ( ) => { } ).finally ( ( ) => {
+      this.loading.set ( false )
     } )
   }
 

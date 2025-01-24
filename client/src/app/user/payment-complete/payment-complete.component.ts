@@ -1,26 +1,24 @@
-import { Component } from "@angular/core"
+import { ChangeDetectionStrategy, Component, signal, WritableSignal } from "@angular/core"
 import { ActivatedRoute, Router } from "@angular/router"
 import { FooterComponent } from "@components/footer/footer.component"
-import { NavbarComponent } from "@components/navbar/navbar.component"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { faCheckCircle, faTimesCircle } from "@fortawesome/free-solid-svg-icons"
 
 @Component ( {
   selector: "app-payment-complete",
-  standalone: true,
   imports: [
-    NavbarComponent,
     FooterComponent,
     FaIconComponent
   ],
   templateUrl: "./payment-complete.component.html",
-  styleUrl: "./payment-complete.component.scss"
+  styleUrl: "./payment-complete.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class PaymentCompleteComponent {
   public faCheck = faCheckCircle
   public faCross = faTimesCircle
-  public success: boolean | null = null
-  public message = ""
+  public success: WritableSignal<boolean> = signal ( false )
+  public message: WritableSignal<string> = signal ( "" )
 
   public constructor (
     private activatedRoute: ActivatedRoute,
@@ -32,7 +30,7 @@ export class PaymentCompleteComponent {
         if ( params [ "message" ] ) {
           this.message = params [ "message" ]
         }
-        this.success = success == "1" ? true : false
+        this.success.set ( success == "1" ? true : false )
       }
     } )
   }

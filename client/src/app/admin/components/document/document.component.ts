@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from "@angular/core"
+import { ChangeDetectionStrategy, Component, Input, OnInit, signal, WritableSignal } from "@angular/core"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { faSpinner } from "@fortawesome/free-solid-svg-icons"
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap"
@@ -7,20 +7,20 @@ import { ToastrService } from "ngx-toastr"
 
 @Component ( {
   selector: "app-admin-document",
-  standalone: true,
   imports: [
     FaIconComponent
   ],
-  templateUrl: "./document.component.html"
+  templateUrl: "./document.component.html",
+  changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class AdminDocumentComponent implements OnInit {
   @Input ( ) public documentLink: string = ""
   @Input ( ) public title: string = ""
 
-  public loading = true
+  public loading: WritableSignal<boolean> = signal ( true )
   public faSpinner = faSpinner
 
-  public href: string = ""
+  public href: WritableSignal<string> = signal ( "" )
 
   public constructor (
     private activeModal: NgbActiveModal,
@@ -37,15 +37,15 @@ export class AdminDocumentComponent implements OnInit {
       this.apiSvc.request ( "/asset.php", {
         url: this.documentLink
       }, "POST" ).then ( ( blob: any ) => {
-        this.href = URL.createObjectURL ( blob )
+        this.href.set ( URL.createObjectURL ( blob ) )
         if ( this.documentLink.endsWith ( ".pdf" ) ) {
-          window.open ( this.href, "_blank" )
+          window.open ( this.href ( ), "_blank" )
           this.close ( )
         } else {
-          this.loading = false
+          this.loading.set ( false )
         }
         setTimeout ( ( ) => {
-          URL.revokeObjectURL ( this.href )
+          URL.revokeObjectURL ( this.href ( ) )
         }, 1000 )
       } ).catch ( e => {
         this.toastrSvc.error ( "There was an error opening the file." )

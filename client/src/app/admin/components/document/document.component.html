@@ -4,12 +4,12 @@
 </div>
 
 <div class="modal-body">
-  @if (loading) {
+  @if (loading()) {
     <div class="d-flex flex-column align-items-center m-3">
       <fa-icon [icon]="faSpinner" animation="spin" size="2x" class="mb-2" />
       <p>Loading...</p>
     </div>
   } @else {
-    <img class="w-100" [src]="href" alt="{{documentLink}}" />
+    <img class="w-100" [src]="href()" alt="{{documentLink}}" />
   }
 </div>

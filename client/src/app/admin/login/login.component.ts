@@ -1,4 +1,4 @@
-import { Component } from "@angular/core"
+import { ChangeDetectionStrategy, Component, signal, WritableSignal } from "@angular/core"
 import { FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { faSpinner } from "@fortawesome/free-solid-svg-icons"
@@ -10,7 +10,6 @@ import { HttpService } from "@services/HttpService.service"
 
 @Component ( {
   selector: "app-admin-login",
-  standalone: true,
   imports: [
     FormsModule,
     FormlyModule,
@@ -18,7 +17,8 @@ import { HttpService } from "@services/HttpService.service"
     FaIconComponent
   ],
   templateUrl: "./login.component.html",
-  styleUrl: "./login.component.scss"
+  styleUrl: "./login.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class AdminLoginComponent {
 
@@ -26,7 +26,7 @@ export class AdminLoginComponent {
   public form = new FormGroup ( { } )
   public fields: FormlyFieldConfig [ ] = [ ]
 
-  public loggingIn = false
+  public loggingIn: WritableSignal<boolean> = signal ( false )
   public faSpinner = faSpinner
 
   public constructor (
@@ -67,13 +67,13 @@ export class AdminLoginComponent {
   }
 
   public login ( ) {
-    this.loggingIn = true
+    this.loggingIn.set ( true )
     this.httpClient.request ( "/login.php", this.model, "POST" ).then ( ( res: any ) => {
-      this.adminSvc.loggedIn = true
+      this.adminSvc.loggedIn.set ( true )
       this.adminSvc.token = res.jwt
       localStorage.setItem ( "token", res.jwt )
       this.adminSvc.user = res.user
-      this.loggingIn = false
+      this.loggingIn.set ( false )
       this.router.navigate ( [ "/admin/dashboard" ] )
     } ).catch ( e => {
       if ( e.status === 401 ) {
@@ -81,7 +81,7 @@ export class AdminLoginComponent {
       } else {
         this.toastrSvc.error ( e.error )
       }
-      this.loggingIn = false
+      this.loggingIn.set ( false )
       console.error ( e )
     } )
   }

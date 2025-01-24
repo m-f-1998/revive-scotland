@@ -1,0 +1,93 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Server",
+      "type": "shell",
+      "command": "php",
+      "args": [
+        "-S",
+        "localhost:8000"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/api",
+      },
+      "isBackground": true,
+      "presentation": {
+        "focus": true,
+        "panel": "dedicated"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": [
+        {
+          "owner": "php",
+          "source": "php",
+          "applyTo": "closedDocuments",
+          "fileLocation": [
+            "relative",
+            "${cwd}"
+          ],
+          "pattern": "$tsc",
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": {
+              "regexp": "php -S localhost:8000"
+            },
+            "endsPattern": {
+              "regexp": "^\\[.*\\] PHP (.*) Development Server (.*) started$"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "label": "Build Client",
+      "type": "npm",
+      "script": "start",
+      "options": {
+        "cwd": "${workspaceFolder}/client",
+      },
+      "isBackground": true,
+      "presentation": {
+        "focus": true,
+        "panel": "dedicated"
+      },
+      "dependsOrder": "sequence",  // Ensures this task waits for the server task
+      "problemMatcher": [
+        {
+          "owner": "typescript",
+          "source": "ts",
+          "applyTo": "closedDocuments",
+          "fileLocation": [
+            "relative",
+            "${cwd}"
+          ],
+          "pattern": "$tsc",
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": {
+              "regexp": "ng serve"
+            },
+            "endsPattern": {
+              "regexp": "Application bundle generation complete|Failed to compile."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "label": "Build Client & Server",
+      "dependsOn": [
+        "Build Server",
+        "Build Client"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+    }
+  ]
+}

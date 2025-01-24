@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Development",
+            "type": "chrome",
+            "request": "launch",
+            "preLaunchTask": "Build Client & Server",
+            "url": "http://localhost:4200",
+            "webRoot": "${workspaceFolder}/client"
+        }
+    ]
+}

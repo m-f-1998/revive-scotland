@@ -1,21 +1,22 @@
-import { Component } from "@angular/core"
+import { ChangeDetectionStrategy, Component } from "@angular/core"
 import { faBible, faChurch, faPrayingHands } from "@fortawesome/free-solid-svg-icons"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 
 @Component ( {
   selector: "app-about-us",
-  standalone: true,
   imports: [
     FaIconComponent
   ],
   templateUrl: "./about-us.component.html",
-  styleUrl: "./about-us.component.scss"
+  styleUrl: "./about-us.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class AboutUsComponent {
   public aboutUs = [
     {
       icon: faBible,
       title: "Scripture",
+      // eslint-disable-next-line max-len
       description: "We promote strongly the basic message of the Gospel and the transformative truth that the Holy Spirit is living and active within hearts that are in a state of grace."
     },
     {
@@ -26,6 +27,7 @@ export class AboutUsComponent {
     {
       icon: faPrayingHands,
       title: "Evangelisation",
+      // eslint-disable-next-line max-len
       description: "We focus, but are not limited to the evangelisation of youth and young adults with the aim to lead them to live a grace filled lifestyle, actively giving back to their own parish community."
     }
   ]

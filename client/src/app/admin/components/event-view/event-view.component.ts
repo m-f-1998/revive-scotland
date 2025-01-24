@@ -1,5 +1,5 @@
 import { CurrencyPipe } from "@angular/common"
-import { AfterViewChecked, ChangeDetectorRef, Component, Input, OnInit } from "@angular/core"
+import { AfterViewChecked, ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, signal, WritableSignal } from "@angular/core"
 import { FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { faSpinner } from "@fortawesome/free-solid-svg-icons"
@@ -11,7 +11,6 @@ import { ToastrService } from "ngx-toastr"
 
 @Component ( {
   selector: "app-admin-event-view",
-  standalone: true,
   imports: [
     FaIconComponent,
     ReactiveFormsModule,
@@ -21,15 +20,16 @@ import { ToastrService } from "ngx-toastr"
   providers: [
     CurrencyPipe
   ],
-  templateUrl: "./event-view.component.html"
+  templateUrl: "./event-view.component.html",
+  changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class EventViewComponent implements OnInit, AfterViewChecked {
   @Input ( ) public event: any = ""
-  public policies: any[] = []
+  public policies: WritableSignal<Array<any>> = signal ( [ ] )
 
-  public loading = true
+  public loading: WritableSignal<boolean> = signal ( true )
   public faSpinner = faSpinner
-  public confirm = false
+  public confirm: WritableSignal<boolean> = signal ( false )
 
   public form = new FormGroup ( { } )
   public fields: FormlyFieldConfig [ ] = [ ]
@@ -112,7 +112,7 @@ export class EventViewComponent implements OnInit, AfterViewChecked {
             label: "Current Featured Image",
             required: false,
           },
-          hide: this.event.featured_image === ''
+          hide: this.event.featured_image === ""
         },
         {
           key: "featured_image",
@@ -133,7 +133,7 @@ export class EventViewComponent implements OnInit, AfterViewChecked {
             label: "Current Poster",
             required: false,
           },
-          hide: this.event.poster_link === ''
+          hide: this.event.poster_link === ""
         },
         {
           key: "poster_link",
@@ -172,7 +172,7 @@ export class EventViewComponent implements OnInit, AfterViewChecked {
           props: {
             label: "Policy",
             required: true,
-            options: this.policies.filter ( x => x.category === "Event Policy" ).map ( x => ( { label: x.title, value: x.id } ) )
+            options: this.policies ( ).filter ( x => x.category === "Event Policy" ).map ( x => ( { label: x.title, value: x.id } ) )
           }
         },
         {
@@ -182,7 +182,7 @@ export class EventViewComponent implements OnInit, AfterViewChecked {
           props: {
             label: "GDPR",
             required: true,
-            options: this.policies.filter ( x => x.category === "GDPR" ).map ( x => ( { label: x.title, value: x.id } ) )
+            options: this.policies ( ).filter ( x => x.category === "GDPR" ).map ( x => ( { label: x.title, value: x.id } ) )
           }
         }
       ]
@@ -198,7 +198,7 @@ export class EventViewComponent implements OnInit, AfterViewChecked {
         policy_id: this.event.policy_id ?? "",
         gdpr_id: this.event.gdpr_id ?? ""
       }
-      this.loading = false
+      this.loading.set ( false )
     } )
   }
 
@@ -231,9 +231,9 @@ export class EventViewComponent implements OnInit, AfterViewChecked {
               fd.append ( key, this.model [ key ] )
             }
           }
-          this.apiSvc.request ( "/events.php", fd, "POST" ).then ( ( res: any ) => {
-            this.confirm = true
-          } ).catch ( e => {
+          this.apiSvc.request ( "/events.php", fd, "POST" ).then ( ( ) => {
+            this.confirm.set ( true )
+          } ).catch ( ( ) => {
             this.toastrSvc.error ( "Failed to Add Event" )
           } ).finally ( ( ) => {
             this.close ( )

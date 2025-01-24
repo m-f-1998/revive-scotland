@@ -1,11 +1,10 @@
-import { Component } from "@angular/core"
+import { ChangeDetectionStrategy, Component } from "@angular/core"
 
-@Component({
+@Component ( {
   selector: "app-pilgramages",
-  standalone: true,
-  imports: [],
   templateUrl: "./pilgramages.component.html",
-  styleUrl: "./pilgramages.component.scss"
+  styleUrl: "./pilgramages.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class PilgramagesComponent {
 
