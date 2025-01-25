@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from "@angular/core"
 import { FieldType, FieldTypeConfig } from "@ngx-formly/core"
-import { HttpService } from "@services/HttpService.service"
+import { ApiService } from "@services/api.service"
 import { ToastrService } from "ngx-toastr"
 
 @Component ( {
@@ -14,7 +14,7 @@ import { ToastrService } from "ngx-toastr"
 } )
 export class FormlyLinkComponent extends FieldType<FieldTypeConfig> {
   public constructor (
-    private apiSvc: HttpService,
+    private apiSvc: ApiService,
     private toastrSvc: ToastrService
   ) {
     super ( )

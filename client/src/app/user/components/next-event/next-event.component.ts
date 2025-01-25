@@ -1,6 +1,6 @@
 import { CommonModule } from "@angular/common"
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, NgZone, OnInit, signal, WritableSignal } from "@angular/core"
-import { HttpService } from "@services/HttpService.service"
+import { ApiService } from "@services/api.service"
 import { intervalToDuration } from "date-fns"
 
 @Component ( {
@@ -26,12 +26,12 @@ export class NextEventComponent implements OnInit {
   public constructor (
     private _ngZone: NgZone,
     private changeDetector: ChangeDetectorRef,
-    private httpSvc: HttpService
+    private apiSvc: ApiService
   ) {
-    this.httpSvc.request ( "/events.php", { } ).then ( ( res: any ) => {
+    this.apiSvc.request ( "/events.php", { } ).then ( ( res: any ) => {
       const events = res.sort ( ( a: any, b: any ) => b.date_from - a.date_from )
-      if ( events.length > 0 && new Date ( events [ 0 ].date_from ) > this.today ) {
-        this.nextEvent = new Date ( events [ 0 ].date_from )
+      if ( events.length > 0 && events [ 0 ].date_from > this.today ) {
+        this.nextEvent = events [ 0 ].date_from
       } else {
         this.nextEvent = new Date ( 1900, 1, 1 )
       }

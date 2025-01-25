@@ -6,7 +6,7 @@ import { FormlyFieldConfig, FormlyModule } from "@ngx-formly/core"
 import { ToastrService } from "ngx-toastr"
 import { AdminService } from "@services/AdminService.service"
 import { Router } from "@angular/router"
-import { HttpService } from "@services/HttpService.service"
+import { ApiService } from "@services/api.service"
 
 @Component ( {
   selector: "app-admin-login",
@@ -30,7 +30,7 @@ export class AdminLoginComponent {
   public faSpinner = faSpinner
 
   public constructor (
-    private httpClient: HttpService,
+    private apiSvc: ApiService,
     private toastrSvc: ToastrService,
     private adminSvc: AdminService,
     private router: Router
@@ -68,7 +68,7 @@ export class AdminLoginComponent {
 
   public login ( ) {
     this.loggingIn.set ( true )
-    this.httpClient.request ( "/login.php", this.model, "POST" ).then ( ( res: any ) => {
+    this.apiSvc.request ( "/login.php", this.model, "POST" ).then ( ( res: any ) => {
       this.adminSvc.loggedIn.set ( true )
       this.adminSvc.token = res.jwt
       localStorage.setItem ( "token", res.jwt )

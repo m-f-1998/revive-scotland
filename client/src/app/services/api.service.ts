@@ -1,13 +1,13 @@
 import { HttpClient, HttpHeaders } from "@angular/common/http"
-import { Injectable, Injector } from "@angular/core"
+import { Injectable, Injector, isDevMode } from "@angular/core"
 import { AdminService } from "./AdminService.service"
 import { parse } from "date-fns"
 
 @Injectable ( {
   providedIn: "root"
 } )
-export class HttpService {
-  private readonly ADDRESS = "http://localhost:8000"
+export class ApiService {
+  private readonly ADDRESS = isDevMode ( ) ? "http://localhost:8000" : "https://api.matthewfrankland.co.uk"
 
   public constructor (
     private httpClient: HttpClient,
@@ -61,7 +61,7 @@ export class HttpService {
         responseType: address.endsWith ( "/asset.php" ) ? "blob" : "json"
       } as object ).subscribe ( {
         next: ( response ) => {
-          resolve ( this.parseData ( response ) )
+          resolve ( this.parseObj ( response ) )
         },
         error: ( error ) => {
           reject ( error )
@@ -76,7 +76,7 @@ export class HttpService {
         headers
       } ).subscribe ( {
         next: ( response ) => {
-          resolve ( this.parseData ( response ) )
+          resolve ( this.parseObj ( response ) )
         },
         error: ( error ) => {
           reject ( error )
@@ -92,7 +92,7 @@ export class HttpService {
         headers
       } ).subscribe ( {
         next: ( response ) => {
-          resolve ( this.parseData ( response ) )
+          resolve ( this.parseObj ( response ) )
         },
         error: ( error ) => {
           reject ( error )
@@ -100,36 +100,67 @@ export class HttpService {
       } )
     } )
   }
-
-  public parseData ( res: any ) {
-    if ( Array.isArray ( res ) )
-      res.forEach ( x => {
-        this.parseData ( x )
-      } )
-    if ( res instanceof Object )
+  private parseObj ( obj: any ): any {
+    const res = obj
+    if ( res instanceof Object ) {
       for ( const key of Object.keys ( res ) ) {
-        if ( Array.isArray ( res [ key ] ) || typeof res [ key ] === "object" ) {
-          this.parseData ( res [ key ] )
-        } else {
-          if ( res [ key ] && typeof res [ key ] === "string" ) {
-            for ( const format of [
-              "yyyy-MM-dd HH:mm:ss",
-              "yyyy-MM-dd HH:mm",
-              "yyyy-MM-dd"
-            ] ) {
-              const isDate = parse ( res [ key ], format, new Date ( ) )
-              if ( isDate instanceof Date && !isNaN ( isDate.getDate ( ) ) ) {
-                res [ key ] = isDate
-                break
-              }
-            }
-            const isNumber = isNaN ( res [ key ] )
-            if ( !isNumber ) {
-              res [ key ] = Number ( res [ key ] )
-            }
+        if ( res [ key ] ) {
+          if ( Array.isArray ( res [ key ] ) ) {
+            res [ key ] = res [ key ].map ( ( x: any ) => this.parseObj ( x ) )
+          } else if ( typeof obj [ key ] === "object" ) {
+            res [ key ] = this.parseObj ( res [ key ] )
+          } else if ( this.isNumber ( res [ key ] ) ) {
+            res [ key ] = Number ( res [ key ] )
+          } else if ( this.isBool ( res [ key ] ) ) {
+            res [ key ] = Boolean ( res [ key ] )
           }
+          res [ key ] = this.checkDate ( res [ key ] )
         }
       }
+    }
     return res
+  }
+
+  private isBool = ( value: string ): boolean => {
+    return String ( value ).toUpperCase ( ) === "TRUE" || String ( value ).toUpperCase ( ) === "FALSE"
+  }
+
+  private isNumber = ( value: string ): boolean => {
+    if ( value != null ) {
+      return ( String ( value ).length == 1 || !String ( value ).startsWith ( "0" ) ) && !isNaN ( Number ( value ) ) && String ( value ) != ""
+    }
+    return false
+  }
+
+  private checkDate = ( value: string ): Date | string  => {
+    const dangerous_format = [
+      "yyyy-MM-dd",
+      "dd/MM/yyyy"
+    ]
+
+    for ( const format of [
+      "dd/MM/yyyy HH:mm",
+      "E dd/MM/yyyy",
+      "E dd/MM/yyyy HH:mm",
+      "yyyy-MM-dd",
+      "dd/MM/yyyy",
+      "yyyy-MM-dd HH:mm:ss",
+      "yyyy-MM-dd HH:mm",
+      "yyyy-MM-dd HH:mm:ss.SSSSSS"
+    ] ) {
+      try {
+        const res = parse ( value, format, new Date ( ) )
+
+        const is_dangerous = dangerous_format.includes ( format )
+        const allow_dangerous = is_dangerous && format.length === value.length
+
+        if ( res.toString ( ) !== "Invalid Date" && ( !is_dangerous || allow_dangerous ) ) {
+          return res
+        }
+      } catch {
+        continue
+      }
+    }
+    return value
   }
 }

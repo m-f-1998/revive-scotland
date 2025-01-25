@@ -13,18 +13,41 @@
             @if (item.dropdown) {
               <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  @if (item.icon) {
+                    <fa-icon [icon]="item.icon" />
+                  }
                   {{item.title}}
                 </a>
                 <ul class="dropdown-menu">
                   @for (child of item.children; track $index) {
                     @if (child.href && child.externalLink) {
-                      <a class="nav-link clickable" [href]="child.href">{{child.title}}</a>
+                      <a class="nav-link clickable" [href]="child.href">
+                        @if (child.icon) {
+                          <fa-icon [icon]="child.icon" />
+                        }
+                        {{child.title}}
+                      </a>
                     } @else if (child.href) {
-                      <a class="nav-link clickable" [routerLink]="child.href">{{child.title}}</a>
+                      <a class="nav-link clickable" [routerLink]="child.href">
+                        @if (child.icon) {
+                          <fa-icon [icon]="child.icon" />
+                        }
+                        {{child.title}}
+                      </a>
                     } @else if (child.onclick) {
-                      <a class="nav-link clickable" (click)="child.onclick()">{{child.title}}</a>
+                      <a class="nav-link clickable" (click)="child.onclick()">
+                        @if (child.icon) {
+                          <fa-icon [icon]="child.icon" />
+                        }
+                        {{child.title}}
+                      </a>
                     } @else {
-                      <a class="nav-link clickable">{{child.title}}</a>
+                      <a class="nav-link clickable">
+                        @if (child.icon) {
+                          <fa-icon [icon]="child.icon" />
+                        }
+                        {{child.title}}
+                      </a>
                     }
                   }
                 </ul>
@@ -32,13 +55,33 @@
             } @else {
               <li class="nav-item">
                 @if (item.href && item.externalLink) {
-                  <a class="nav-link clickable" href="{{item.href}}">{{item.title}}</a>
+                  <a class="nav-link clickable" href="{{item.href}}">
+                    @if (item.icon) {
+                      <fa-icon [icon]="item.icon" />
+                    }
+                    {{item.title}}
+                  </a>
                 } @else if (item.href) {
-                  <a class="nav-link clickable" [routerLink]="item.href">{{item.title}}</a>
+                  <a class="nav-link clickable" [routerLink]="item.href">
+                    @if (item.icon) {
+                      <fa-icon [icon]="item.icon" />
+                    }
+                    {{item.title}}
+                  </a>
                 } @else if (item.onclick) {
-                  <a class="nav-link clickable" (click)="item.onclick()">{{item.title}}</a>
+                  <a class="nav-link clickable" (click)="item.onclick()">
+                    @if (item.icon) {
+                      <fa-icon [icon]="item.icon" />
+                    }
+                    {{item.title}}
+                  </a>
                 } @else {
-                  <a class="nav-link clickable">{{item.title}}</a>
+                  <a class="nav-link clickable">
+                    @if (item.icon) {
+                      <fa-icon [icon]="item.icon" />
+                    }
+                    {{item.title}}
+                  </a>
                 }
               </li>
             }

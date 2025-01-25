@@ -1,11 +1,14 @@
 import { Location } from "@angular/common"
 import { ChangeDetectionStrategy, Component, OnInit, signal, WritableSignal } from "@angular/core"
 import { Router, RouterLink } from "@angular/router"
+import { FaIconComponent } from "@fortawesome/angular-fontawesome"
+import { faCalendar, faCross, faEnvelope, faHandshake, faHome } from "@fortawesome/free-solid-svg-icons"
 
 @Component ( {
   selector: "app-navbar",
   imports: [
-    RouterLink
+    RouterLink,
+    FaIconComponent
   ],
   templateUrl: "./navbar.component.html",
   styleUrl: "./navbar.component.scss",
@@ -15,10 +18,12 @@ export class NavbarComponent implements OnInit {
   public navItems: WritableSignal<any> = signal ( {
     "": [
       {
+        icon: faCalendar,
         href: "/events",
         title: "Event Sign Up"
       },
       {
+        icon: faCross,
         title: "Missions",
         dropdown: true,
         children: [
@@ -37,16 +42,19 @@ export class NavbarComponent implements OnInit {
         ]
       },
       {
+        icon: faHandshake,
         onclick: () => this.scrollTo ( "#support" ),
         title: "Support"
       },
       {
+        icon: faEnvelope,
         onclick: () => this.scrollTo ( "#contact" ),
         title: "Contact"
       }
     ],
     "/events": [
       {
+        icon: faHome,
         href: "/",
         title: "Home"
       }
@@ -71,7 +79,6 @@ export class NavbarComponent implements OnInit {
   }
 
   public showNav ( ) {
-    console.log ( this.location.path ( ) )
-    return Object.keys ( this.navItems ( ) ).includes ( this.location.path ( ) )
+    return Object.keys ( this.navItems ( ) ).includes ( this.path ( ) )
   }
 }

@@ -4,7 +4,7 @@ import { faSpinner } from "@fortawesome/free-solid-svg-icons"
 import { NgbActiveModal, NgbModal } from "@ng-bootstrap/ng-bootstrap"
 import { DatesService } from "@services/DateService.service"
 import { PolicyViewComponent } from "../policy-view/policy-view.component"
-import { HttpService } from "@services/HttpService.service"
+import { ApiService } from "@services/api.service"
 
 @Component ( {
   selector: "app-admin-registration-view",
@@ -24,7 +24,7 @@ export class RegistrationViewComponent implements OnInit {
     private activeModal: NgbActiveModal,
     private modalSvc: NgbModal,
     public dateSvc: DatesService,
-    private apiSvc: HttpService
+    private apiSvc: ApiService
   ) { }
 
   public ngOnInit ( ) {

@@ -4,7 +4,7 @@ import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { faSpinner } from "@fortawesome/free-solid-svg-icons"
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap"
 import { FormlyFieldConfig, FormlyModule } from "@ngx-formly/core"
-import { HttpService } from "@services/HttpService.service"
+import { ApiService } from "@services/api.service"
 import { ToastrService } from "ngx-toastr"
 
 @Component ( {
@@ -30,7 +30,7 @@ export class PolicyAddComponent implements OnInit, AfterViewChecked {
   public model = { }
 
   public constructor (
-    private apiSvc: HttpService,
+    private apiSvc: ApiService,
     private activeModal: NgbActiveModal,
     private toastrSvc: ToastrService,
     public changeDetectorRef: ChangeDetectorRef

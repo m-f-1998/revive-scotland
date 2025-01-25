@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal, WritableSignal } from "@angular/core"
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
 import { AdminService } from "@services/AdminService.service"
-import { HttpService } from "@services/HttpService.service"
+import { ApiService } from "@services/api.service"
 import { CurrencyPipe } from "@angular/common"
 import { AdminDocumentComponent } from "../components/document/document.component"
 import { faEye, faPlus, faSpinner, faTrash } from "@fortawesome/free-solid-svg-icons"
@@ -33,12 +33,12 @@ export class AdminEventsComponent {
 
   public constructor (
     public adminSvc: AdminService,
-    private httpSvc: HttpService,
+    private apiSvc: ApiService,
     private toastrSvc: ToastrService,
     private modalSvc: NgbModal,
     public dateSvc: DatesService
   ) {
-    this.httpSvc.request ( "/events.php" ).then ( ( res: any ) => {
+    this.apiSvc.request ( "/events.php" ).then ( ( res: any ) => {
       this.events.set ( res )
       this.loading.set ( false )
     } )
@@ -55,7 +55,7 @@ export class AdminEventsComponent {
       "Are you sure you want to delete this event? This action will automatically cancel all event registrations and process any associated refunds."
     ) ) return
     this.processing.set ( true )
-    this.httpSvc.request ( "/events.php", {
+    this.apiSvc.request ( "/events.php", {
       "id": id
     }, "DELETE" ).then ( ( ) => {
       this.events.set ( this.events ( ).filter ( ( x: any ) => x.id !== id ) )
@@ -74,7 +74,7 @@ export class AdminEventsComponent {
       if ( modalRef.componentInstance.confirm ) {
         this.toastrSvc.success ( "Event Added" )
         this.loading.set ( true )
-        this.httpSvc.request ( "/events.php" ).then ( ( res: any ) => {
+        this.apiSvc.request ( "/events.php" ).then ( ( res: any ) => {
           this.events = res
           this.loading.set ( false )
         } )
@@ -89,7 +89,7 @@ export class AdminEventsComponent {
       if ( modalRef.componentInstance.confirm ) {
         this.toastrSvc.success ( "Event Updated" )
         this.loading.set ( true )
-        this.httpSvc.request ( "/events.php" ).then ( ( res: any ) => {
+        this.apiSvc.request ( "/events.php" ).then ( ( res: any ) => {
           this.events = res
           this.loading.set ( false )
         } )

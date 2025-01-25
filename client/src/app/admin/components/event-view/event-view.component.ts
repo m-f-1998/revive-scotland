@@ -6,7 +6,7 @@ import { faSpinner } from "@fortawesome/free-solid-svg-icons"
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap"
 import { FormlyFieldConfig, FormlyModule } from "@ngx-formly/core"
 import { DatesService } from "@services/DateService.service"
-import { HttpService } from "@services/HttpService.service"
+import { ApiService } from "@services/api.service"
 import { ToastrService } from "ngx-toastr"
 
 @Component ( {
@@ -36,7 +36,7 @@ export class EventViewComponent implements OnInit, AfterViewChecked {
   public model: any = { }
 
   public constructor (
-    private apiSvc: HttpService,
+    private apiSvc: ApiService,
     private dateSvc: DatesService,
     private activeModal: NgbActiveModal,
     private toastrSvc: ToastrService,
@@ -191,8 +191,8 @@ export class EventViewComponent implements OnInit, AfterViewChecked {
         title: this.event.title,
         description: this.event.description,
         location: this.event.location,
-        date_from: this.dateSvc.reformat ( new Date ( this.event.date_from ), "yyyy-MM-dd" ),
-        date_to: this.event.date_to ? this.dateSvc.reformat ( new Date ( this.event.date_to ), "yyyy-MM-dd" ) : "",
+        date_from: this.dateSvc.reformat ( this.event.date_from, "yyyy-MM-dd" ),
+        date_to: this.event.date_to ? this.dateSvc.reformat ( this.event.date_to, "yyyy-MM-dd" ) : "",
         price: this.event.price,
         payment_required: this.event.payment_required,
         policy_id: this.event.policy_id ?? "",

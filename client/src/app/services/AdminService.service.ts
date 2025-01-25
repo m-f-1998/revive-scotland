@@ -1,5 +1,5 @@
 import { Injectable, signal, WritableSignal } from "@angular/core"
-import { HttpService } from "./HttpService.service"
+import { ApiService } from "./api.service"
 import { from, Observable, of } from "rxjs"
 import { ToastrService } from "ngx-toastr"
 import { Router } from "@angular/router"
@@ -17,7 +17,7 @@ export class AdminService {
   } | null> = signal ( null )
 
   public constructor (
-    private httpClient: HttpService,
+    private apiSvc: ApiService,
     private toastrSvc: ToastrService,
     private router: Router
   ) { }
@@ -26,7 +26,7 @@ export class AdminService {
     const token = localStorage.getItem ( "token" ) as string
     if ( token ) {
       this.token.set ( token )
-      return from ( this.httpClient.request ( "/login.php", {}, "POST" ).then ( ( res: any ) => {
+      return from ( this.apiSvc.request ( "/login.php", {}, "POST" ).then ( ( res: any ) => {
         this.token.set ( token )
         this.loggedIn.set ( true )
         this.user = res.user

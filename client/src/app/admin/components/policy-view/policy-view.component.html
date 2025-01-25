@@ -1,24 +1,10 @@
 <div class="modal-header">
+  <h1 class="modal-title fs-5">{{title}}</h1>
   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" (click)="close()"></button>
 </div>
 
 <div class="modal-body">
-  <div class="table-responsive">
-    <table class="table">
-      <tbody>
-        <tr>
-          <th scope="row">Title</th>
-          <td>{{title}}</td>
-        </tr>
-        <tr>
-          <th scope="row"></th>
-          <td>{{description}}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<div class="modal-footer">
-  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" (click)="close()">Close</button>
+  <p style="white-space: pre-wrap; max-height: 700px; overflow-y: auto; padding-right: 10px; word-wrap: break-word;">
+    {{description}}
+  </p>
 </div>

@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, OnInit } from "@angular/core"
+import { ChangeDetectionStrategy, Component, OnInit, signal, WritableSignal } from "@angular/core"
 import { FooterComponent } from "@components/footer/footer.component"
 import { faSpinner, faWarning } from "@fortawesome/free-solid-svg-icons"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
-import { HttpService } from "@services/HttpService.service"
+import { ApiService } from "@services/api.service"
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
 import { ViewEventComponent } from "../view-event/view-event.component"
 import { DatesService } from "@services/DateService.service"
@@ -19,19 +19,19 @@ import { PolicyViewComponent } from "../../admin/components/policy-view/policy-v
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class EventsComponent implements OnInit {
-  public events: any[][] = [ ]
+  public events: WritableSignal<Array<Array<any>>> = signal ( [ ] )
   public quote = "Prayer, as a means of drawing ever new strength from Christ, is concretely and urgently needed."
   public quoteAuthor = "Benedict XVI"
 
-  public loading = true
-  public error = false
-  public errorMessage = ""
+  public loading: WritableSignal<boolean> = signal ( true )
+  public error: WritableSignal<boolean> = signal ( false )
+  public errorMessage: WritableSignal<string> = signal ( "" )
 
   public faSpinner = faSpinner
   public faError = faWarning
 
   public constructor (
-    private apiSvc: HttpService,
+    private apiSvc: ApiService,
     private modalSvc: NgbModal,
     public dateSvc: DatesService
   ) { }
@@ -58,14 +58,17 @@ export class EventsComponent implements OnInit {
             } )
           }
         }
-        this.events.push ( row )
+        this.events.set ( [
+          ...this.events ( ),
+          row
+        ] )
       }
-      this.loading = false
+      this.loading.set ( false )
     } ).catch ( e => {
       console.error ( e )
-      this.errorMessage = e.error
-      this.error = true
-      this.loading = false
+      this.errorMessage.set ( e.error )
+      this.error.set ( true )
+      this.loading.set ( false )
     } )
   }
 
@@ -79,7 +82,7 @@ export class EventsComponent implements OnInit {
       }, 1000 )
       return href
     } ).catch ( ( ) => { } ).finally ( ( ) => {
-      this.loading = false
+      this.loading.set ( false )
     } )
   }
 

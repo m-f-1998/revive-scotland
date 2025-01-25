@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, Input, OnInit, signal, WritableSignal } from "@angular/core"
 import { faCheck, faSpinner, faWarning } from "@fortawesome/free-solid-svg-icons"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
-import { HttpService } from "@services/HttpService.service"
+import { ApiService } from "@services/api.service"
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap"
 import { FormlyFieldConfig, FormlyModule } from "@ngx-formly/core"
 import { FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms"
@@ -47,7 +47,7 @@ export class ViewEventComponent implements OnInit {
   public faCheck = faCheck
 
   public constructor (
-    private apiSvc: HttpService,
+    private apiSvc: ApiService,
     private activeModal: NgbActiveModal,
     private dateSvc: DatesService,
     private currencyPipe: CurrencyPipe
@@ -168,8 +168,8 @@ export class ViewEventComponent implements OnInit {
       this.eventModel = {
         description: this.event.description,
         location: this.event.location,
-        date_from: this.dateSvc.reformat ( new Date ( this.event.date_from ), "yyyy-MM-dd" ),
-        date_to: this.event.date_to ? this.dateSvc.reformat ( new Date ( this.event.date_to ), "yyyy-MM-dd" ) : "",
+        date_from: this.dateSvc.reformat ( this.event.date_from, "yyyy-MM-dd" ),
+        date_to: this.event.date_to ? this.dateSvc.reformat ( this.event.date_to, "yyyy-MM-dd" ) : "",
         price: this.currencyPipe.transform ( this.event.price, "GBP" ),
         event_policy: this.event.policy_description ?? "",
         gdpr: this.event.gdpr_description ?? ""

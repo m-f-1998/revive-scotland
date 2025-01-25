@@ -3,7 +3,7 @@ import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { faEye, faSpinner } from "@fortawesome/free-solid-svg-icons"
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
 import { AdminService } from "@services/AdminService.service"
-import { HttpService } from "@services/HttpService.service"
+import { ApiService } from "@services/api.service"
 import { FormlyFieldConfig, FormlyModule } from "@ngx-formly/core"
 import { FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms"
 import { RegistrationViewComponent } from "../components/registration-view/registration-view.component"
@@ -37,11 +37,11 @@ export class AdminRegistrationsComponent {
 
   public constructor (
     public adminService: AdminService,
-    private httpSvc: HttpService,
+    private apiSvc: ApiService,
     private ngModal: NgbModal,
     private toastrSvc: ToastrService
   ) {
-    this.httpSvc.request ( "/registrations/get_all.php" ).then ( ( res: any ) => {
+    this.apiSvc.request ( "/registrations/get_all.php" ).then ( ( res: any ) => {
       this.registrations = res
       this.filter = res
       this.eventTitles.set ( [ ...new Set ( res.map ( ( x: any ) => x.event_title ) ) ] as string [ ] )
@@ -138,7 +138,7 @@ export class AdminRegistrationsComponent {
   public updatePaid ( registration: any ) {
     if ( !confirm ( "Are you sure you want to update this registration's payment status?" ) ) return
     this.loading.set ( true )
-    this.httpSvc.request ( "/registrations/post_update.php", {
+    this.apiSvc.request ( "/registrations/post_update.php", {
       id: registration.id,
       paid: registration.paid ? 0 : 1
     }, "POST" ).then ( ( ) => {

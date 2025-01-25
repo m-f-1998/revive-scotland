@@ -10,9 +10,7 @@ export class DatesService {
       if ( !date ) return ""
       return format ( date, outputFormat )
     } catch {
-      const d = new Date ( )
-      const datestring = d.getFullYear ( )  + "/" + ( d.getMonth ( ) + 1 ) + "/" + d.getDate ( )
-      return datestring
+      return format ( new Date ( ), "yyyy/MM/dd" )
     }
   }
 

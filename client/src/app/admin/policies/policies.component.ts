@@ -3,7 +3,7 @@ import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { faPencil, faPlus, faSpinner, faTrash } from "@fortawesome/free-solid-svg-icons"
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
 import { AdminService } from "@services/AdminService.service"
-import { HttpService } from "@services/HttpService.service"
+import { ApiService } from "@services/api.service"
 import { ToastrService } from "ngx-toastr"
 import { PolicyEditComponent } from "../components/policy-edit/policy-edit.component"
 import { PolicyAddComponent } from "../components/policy-add/policy-add.component"
@@ -29,7 +29,7 @@ export class AdminPoliciesComponent {
 
   public constructor (
     public adminService: AdminService,
-    private httpSvc: HttpService,
+    private apiSvc: ApiService,
     private ngModal: NgbModal,
     private toastrSvc: ToastrService
   ) {
@@ -37,7 +37,7 @@ export class AdminPoliciesComponent {
   }
 
   public getPolicies ( ) {
-    this.httpSvc.request ( "/policies.php" ).then ( ( res: any ) => {
+    this.apiSvc.request ( "/policies.php" ).then ( ( res: any ) => {
       this.policies = res
     } ).catch ( e => {
       console.error ( e )
@@ -52,7 +52,7 @@ export class AdminPoliciesComponent {
     if ( this.policies.filter ( x => x.category === category ).length === 1 ) {
       this.toastrSvc.info ( "You Must Have At Least One Policy For Each Category" )
     } else {
-      this.httpSvc.request ( "/policies.php", {
+      this.apiSvc.request ( "/policies.php", {
         "id": id
       }, "DELETE" ).then ( ( ) => {
         this.policies = this.policies.filter ( x => x.id !== id )

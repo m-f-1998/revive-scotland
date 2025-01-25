@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, Input, OnInit, signal, WritableSign
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { faSpinner } from "@fortawesome/free-solid-svg-icons"
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap"
-import { HttpService } from "@services/HttpService.service"
+import { ApiService } from "@services/api.service"
 import { ToastrService } from "ngx-toastr"
 
 @Component ( {
@@ -24,7 +24,7 @@ export class AdminDocumentComponent implements OnInit {
 
   public constructor (
     private activeModal: NgbActiveModal,
-    private apiSvc: HttpService,
+    private apiSvc: ApiService,
     private toastrSvc: ToastrService
   ) {
   }
