@@ -2,11 +2,10 @@ import { ChangeDetectionStrategy, Component, OnInit, signal, WritableSignal } fr
 import { FooterComponent } from "@components/footer/footer.component"
 import { faSpinner, faWarning } from "@fortawesome/free-solid-svg-icons"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
-import { ApiService } from "@services/api.service"
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
 import { ViewEventComponent } from "../view-event/view-event.component"
-import { DatesService } from "@services/DateService.service"
-import { PolicyViewComponent } from "../../admin/components/policy-view/policy-view.component"
+import { DatesService } from "@services/dates.service"
+import { EventsService } from "@services/events.service"
 
 @Component ( {
   selector: "app-events",
@@ -31,71 +30,52 @@ export class EventsComponent implements OnInit {
   public faError = faWarning
 
   public constructor (
-    private apiSvc: ApiService,
+    private eventsSvc: EventsService,
     private modalSvc: NgbModal,
     public dateSvc: DatesService
   ) { }
 
   public ngOnInit ( ) {
-    this.apiSvc.request ( "/events.php", { } ).then ( ( data: any ) => {
-      const chunkSize = 2
-      for ( let i = 0; i < data.length; i += chunkSize ) {
-        const row = data.slice ( i, i + chunkSize )
-        for ( const event of row ) {
-          if ( event.featured_image ) {
-            this.createBlobURL ( event.featured_image ).then ( ( url: string | void ) => {
-              event.featured_href = url ?? ""
-            } )
-          }
-          if ( event.poster_link ) {
-            this.createBlobURL ( event.poster_link ).then ( ( url: string | void ) => {
-              event.poster_href = url ?? ""
-            } )
-          }
-          if ( event.timetable_link ) {
-            this.createBlobURL ( event.timetable_link ).then ( ( url: string | void ) => {
-              event.timetable_href = url ?? ""
-            } )
-          }
-        }
+    const chunkSize = 2
+    this.eventsSvc.getEvents ( ).then ( ( events: Array<any> ) => {
+      for ( let i = 0; i < events.length; i += chunkSize ) {
+        const row = events.slice ( i, i + chunkSize )
+        // for ( const event of row ) {
+        //   if ( event.featured_image ) {
+        //     this.createBlobURL ( event.featured_image ).then ( ( url: string | void ) => {
+        //       event.featured_href = url ?? ""
+        //     } )
+        //   }
+        //   if ( event.poster_link ) {
+        //     this.createBlobURL ( event.poster_link ).then ( ( url: string | void ) => {
+        //       event.poster_href = url ?? ""
+        //     } )
+        //   }
+        //   if ( event.timetable_link ) {
+        //     this.createBlobURL ( event.timetable_link ).then ( ( url: string | void ) => {
+        //       event.timetable_href = url ?? ""
+        //     } )
+        //   }
+        // }
         this.events.set ( [
           ...this.events ( ),
           row
         ] )
       }
       this.loading.set ( false )
-    } ).catch ( e => {
-      console.error ( e )
-      this.errorMessage.set ( e.error )
+    } ).catch ( ( error: any ) => {
+      console.error ( error )
       this.error.set ( true )
-      this.loading.set ( false )
+      this.errorMessage.set ( "Failed to load events" )
     } )
   }
 
-  public createBlobURL ( documentLink: string ) {
-    return this.apiSvc.request ( "/asset.php", {
-      url: documentLink
-    } ).then ( ( blob: any ) => {
-      const href = URL.createObjectURL ( blob )
-      setTimeout ( ( ) => {
-        URL.revokeObjectURL ( href )
-      }, 1000 )
-      return href
-    } ).catch ( ( ) => { } ).finally ( ( ) => {
-      this.loading.set ( false )
-    } )
+  public viewGDPR ( _event: any ) {
+    console.log ( "View GDPR" )
   }
 
-  public viewGDPR ( event: any ) {
-    const modalRef = this.modalSvc.open ( PolicyViewComponent, { size: "lg" } )
-    modalRef.componentInstance.title = event.gdpr_title
-    modalRef.componentInstance.description = event.gdpr_description
-  }
-
-  public viewTerms ( event: any ) {
-    const modalRef = this.modalSvc.open ( PolicyViewComponent, { size: "lg" } )
-    modalRef.componentInstance.title = event.policy_title
-    modalRef.componentInstance.description = event.policy_description
+  public viewTerms ( _event: any ) {
+    console.log ( "View Terms" )
   }
 
   public isImage ( link: string ) {

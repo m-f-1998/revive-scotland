@@ -1,5 +1,4 @@
 import { AfterViewInit, ApplicationRef, Directive, ElementRef, Input } from "@angular/core"
-import { first } from "rxjs"
 import { SwiperContainer } from "swiper/element"
 import { SwiperOptions } from "swiper/types"
 
@@ -20,9 +19,8 @@ export class SwiperDirective implements AfterViewInit {
 
   public ngAfterViewInit ( ) {
     Object.assign ( this.el.nativeElement, this.config )
-    this.appRef.isStable.pipe ( first ( ( isStable ) => isStable ) ).subscribe ( ( ) => {
-      if ( this.el.nativeElement.initialize )
-        this.el.nativeElement.initialize ( )
-    } )
+    if ( this.el.nativeElement.initialize ) {
+      this.el.nativeElement.initialize ( )
+    }
   }
 }

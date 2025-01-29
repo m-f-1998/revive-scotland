@@ -52,6 +52,7 @@ export default tseslint.config (
             "accessor",
             "enumMember"
           ],
+          "leadingUnderscore": "allow",
           "format": [
             "camelCase",
             "PascalCase"

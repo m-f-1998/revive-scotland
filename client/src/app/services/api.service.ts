@@ -1,6 +1,5 @@
 import { HttpClient, HttpHeaders } from "@angular/common/http"
-import { Injectable, Injector, isDevMode } from "@angular/core"
-import { AdminService } from "./AdminService.service"
+import { Injectable, isDevMode } from "@angular/core"
 import { parse } from "date-fns"
 
 @Injectable ( {
@@ -10,50 +9,17 @@ export class ApiService {
   private readonly ADDRESS = isDevMode ( ) ? "http://localhost:8000" : "https://api.matthewfrankland.co.uk"
 
   public constructor (
-    private httpClient: HttpClient,
-    private injector: Injector
+    private httpClient: HttpClient
   ) { }
 
-  public request ( path: string, body: any = { }, method: "GET" | "POST" | "DELETE" = "GET" ) {
-    const adminSvc = this.injector.get ( AdminService )
-
+  public get ( path: string, body: any = { },  ) {
     const address = this.ADDRESS + path
     let headers = new HttpHeaders ( )
-
-    if ( adminSvc.token ( ) !== "" && ( adminSvc.loggedIn ( ) || path === "/login.php" ) ) {
-      headers = headers.append ( "X-Auth", adminSvc.token ( ) )
-    }
 
     if ( !( body instanceof FormData ) ) {
       headers = headers.append ( "Content-Type", "application/json" )
     }
 
-    if ( path === "/asset.php" ) {
-      headers = headers.append ( "Response-Type", "blob" )
-    }
-
-    switch ( method ) {
-      case "GET":
-        return this.get ( address, headers, body ).catch ( e => {
-          if ( e.status === 401 && adminSvc.loggedIn ( ) ) adminSvc.logout ( true )
-          return Promise.reject ( e )
-        } )
-      case "POST":
-        body.honeypot = true
-        return this.post ( address, headers, body ).catch ( e => {
-          if ( e.status === 401 && adminSvc.loggedIn ( ) ) adminSvc.logout ( true )
-          return Promise.reject ( e )
-        } )
-      case "DELETE":
-        body.honeypot = true
-        return this.delete ( address, headers, body ).catch ( e => {
-          if ( e.status === 401 && adminSvc.loggedIn ( ) ) adminSvc.logout ( true )
-          return Promise.reject ( e )
-        } )
-    }
-  }
-
-  private get ( address: string, headers: HttpHeaders, body: any = { },  ) {
     return new Promise ( ( resolve, reject ) => {
       this.httpClient.get ( address, {
         params: body,
@@ -70,36 +36,6 @@ export class ApiService {
     } )
   }
 
-  private post ( address: string, headers: HttpHeaders, body: any = { },  ) {
-    return new Promise ( ( resolve, reject ) => {
-      this.httpClient.post ( address, body, {
-        headers
-      } ).subscribe ( {
-        next: ( response ) => {
-          resolve ( this.parseObj ( response ) )
-        },
-        error: ( error ) => {
-          reject ( error )
-        }
-      } )
-    } )
-  }
-
-  private delete ( address: string, headers: HttpHeaders, body: any = { },  ) {
-    return new Promise ( ( resolve, reject ) => {
-      this.httpClient.delete ( address, {
-        body,
-        headers
-      } ).subscribe ( {
-        next: ( response ) => {
-          resolve ( this.parseObj ( response ) )
-        },
-        error: ( error ) => {
-          reject ( error )
-        }
-      } )
-    } )
-  }
   private parseObj ( obj: any ): any {
     const res = obj
     if ( res instanceof Object ) {

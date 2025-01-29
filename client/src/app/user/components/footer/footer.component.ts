@@ -23,8 +23,4 @@ export class FooterComponent {
     this.modalSvc.open ( TermsComponent, { size: "lg", backdrop: "static" } )
   }
 
-  public goToAdmin ( ) {
-    this.router.navigate ( [ "/admin" ] )
-  }
-
 }

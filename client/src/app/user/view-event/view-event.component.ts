@@ -5,7 +5,7 @@ import { ApiService } from "@services/api.service"
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap"
 import { FormlyFieldConfig, FormlyModule } from "@ngx-formly/core"
 import { FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms"
-import { DatesService } from "@services/DateService.service"
+import { DatesService } from "@services/dates.service"
 import { CurrencyPipe } from "@angular/common"
 
 @Component ( {
@@ -54,10 +54,9 @@ export class ViewEventComponent implements OnInit {
   ) { }
 
   public getPolicies ( ) {
-    return this.apiSvc.request ( "/policies.php" ).then ( ( res: any ) => {
-      this.policies = res
-    } ).catch ( e => {
-      console.error ( e )
+    return new Promise ( ( resolve ) => {
+      this.policies.set ( [ ] )
+      resolve ( [ ] )
     } )
   }
 
@@ -279,19 +278,6 @@ export class ViewEventComponent implements OnInit {
   }
 
   public register ( ) {
-    this.processing.set ( true )
-    const res = { ...this.model, event_id: this.event.id }
-    this.apiSvc.request ( "/registrations/post_create.php", res, "POST" ).then ( ( res: any ) => {
-      if ( res.payment_link ) {
-        this.paymentLink = res.payment_link
-      }
-      this.processingSuccess.set ( true )
-      this.processing.set ( false )
-    } ).catch ( e => {
-      this.errorMessage = e.error
-      this.error.set ( true )
-      this.processing.set ( false )
-      console.error ( e )
-    } )
+    console.log ( "Go to register..." )
   }
 }
