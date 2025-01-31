@@ -16,7 +16,15 @@ export class EventsService {
 
   public initialize ( ) {
     return this.apiSvc.get ( "/events.php" ).then ( ( response: any ) => {
-      this.eventbrite = response
+      this.eventbrite = response.sort ( ( a: any, b: any ) => {
+        if ( a.start.local > b.start.local ) {
+          return 1
+        }
+        if ( a.start.local < b.start.local ) {
+          return -1
+        }
+        return 0
+      } )
     } ).catch ( ( error ) => {
       console.error ( error )
       this.toastrSvc.error ( "Failed to load events" )
@@ -35,14 +43,6 @@ export class EventsService {
     if ( !this.eventbrite ) {
       await this.initialize ( )
     }
-    return this.eventbrite!.sort ( ( a: any, b: any ) => {
-      if ( a.start.local > b.start.local ) {
-        return 1
-      }
-      if ( a.start.local < b.start.local ) {
-        return -1
-      }
-      return 0
-    } ) [ 0 ]
+    return this.eventbrite! [ 0 ]
   }
 }

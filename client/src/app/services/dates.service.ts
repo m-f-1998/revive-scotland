@@ -18,4 +18,8 @@ export class DatesService {
     if ( !time ) return ""
     return this.reformat ( parse ( time, "HH:mm:ss", new Date ( ) ), "HH:mm" )
   }
+
+  public sameDay ( date1: Date, date2: Date ) {
+    return new Date ( date1 ).getDate ( ) === new Date ( date2 ).getDate ( )
+  }
 }

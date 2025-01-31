@@ -45,7 +45,7 @@ export class NextEventComponent implements OnInit {
       this.eventSvc.getNextEvent ( ).then ( ( nextEvent: any ) => {
         this.nextEvent = new Date ( nextEvent.start.local )
         this.title.set ( nextEvent.name.text )
-        this.locationName.set ( nextEvent.location.address.localized_address_display )
+        this.locationName.set ( nextEvent.venue.address.localized_address_display )
 
         setInterval ( ( ) => {
           this.getTimeRemaining ( )

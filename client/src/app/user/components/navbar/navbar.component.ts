@@ -20,7 +20,7 @@ export class NavbarComponent implements OnInit {
       {
         icon: faCalendar,
         href: "/events",
-        title: "Event Sign Up"
+        title: "Upcoming Events"
       },
       {
         icon: faCross,

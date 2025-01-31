@@ -3,7 +3,7 @@
     <div class="container py-5 mt-5">
       <div class="row py-5 text-white text-center">
         <div class="col-lg-7 mx-auto">
-          <h1 class="text-xl">Event Sign Up</h1>
+          <h1 class="text-xl">Upcoming Events</h1>
         </div>
       </div>
     </div>
@@ -17,27 +17,84 @@
 } @else if (error()) {
   <div class="d-flex flex-column align-items-center m-3">
     <fa-icon [icon]="faError" size="2x" class="mb-2" />
-    <p>Error Message: {{errorMessage()}}</p>
+    <p>Failed to Load Events</p>
     <p>Please try again later. If the error persists, please contact us.</p>
+  </div>
+} @else if (events().length === 0) {
+  <div class="d-flex flex-column align-items-center m-3">
+    <fa-icon [icon]="faInfo" size="2x" class="mb-2" />
+    <p>No Events Found</p>
+    <p>Check back later for updates!!</p>
   </div>
 } @else {
   @for (row of events(); track $index) {
     <div class="row m-3">
       @for (event of row; track $index) {
-        <div [class]="row.length === 1 ? 'col-sm-12' : 'col-sm-6'" class="mb-3 mb-sm-0 align-self-center">
+        <div [class]="row.length === 1 ? 'col-md-12' : 'col-md-6'" class="mb-3 mb-sm-0 align-self-center">
           <div class="card m-2">
             <img
-              [src]="isImage ( event.featured_image ) ? event.featured_href : 'img/placeholder.jpg'"
+              [src]="event.logo ? event.logo.original.url : 'img/placeholder.jpg'"
+              [width]="400"
+              [height]="400"
               class="card-img-top"
-              style="width: 100%; object-fit: contain; max-height: 400px; background-color: gray;"
+              style="object-fit: cover; background-color: gray;"
               onerror="this.src='img/placeholder.jpg'">
             <div class="card-body">
-              <h5 class="card-title">{{event.title}}</h5>
-              <p class="card-text">{{this.dateSvc.reformat (event.date_from, 'E do LLL yyyy')}}</p>
+              <div class="card-title">
+                <h4>{{event.name.text}}</h4>
+              </div>
+              <figcaption class="figure-caption mt-2 mb-3">
+                {{event.description.text}}
+              </figcaption>
+              <div class="card-text d-flex flex-column gap-2 mb-4">
+                <div>
+                  <fa-icon [icon]="faPerson" class="me-2" />
+                  Registered Places: {{event.ticket_classes[0].quantity_sold}}/{{event.capacity}}
+                </div>
+                <div>
+                  <fa-icon [icon]="faCalendar" class="me-2" />
+                  @if(dateSvc.sameDay(event.start.local, event.end.local)) {
+                    {{this.dateSvc.reformat (event.start.local, 'E do LLL yyyy h:mma')}} - {{this.dateSvc.reformat (event.end.local, 'h:mma')}}
+                  } @else {
+                    {{this.dateSvc.reformat (event.start.local, 'E do LLL yyyy')}} - {{this.dateSvc.reformat (event.end.local, 'E do LLL yyyy')}}
+                  }
+                </div>
+                <div>
+                  <fa-icon [icon]="faMapMarker" class="me-2" />
+                  @if (event.venue) {
+                    <a [href]="'https://www.google.com/maps/place/' + event.venue.latitude.toString() + ',' + event.venue.longitude.toString()" target="_blank">
+                      {{event.venue.name}}, {{event.venue.address.localized_address_display}}
+                    </a>
+                  } @else {
+                    Location Not Specified
+                  }
+                </div>
+                @if (event.ticket_classes) {
+                  @if (!event.ticket_classes[0].free) {
+                    <div>
+                      <fa-icon [icon]="faMoney" class="me-2" />
+                      Price: {{event.ticket_classes[0].cost.display}}&nbsp;
+                      <i>(Online Booking Fee: {{event.ticket_classes[0].fee.display}})</i>
+                    </div>
+                  }
+                }
+                @if (event.refund_policy) {
+                  <div>
+                    <fa-icon [icon]="faInfo" class="me-2" />Refund Policy:&nbsp;
+                    <small class="text-muted" [innerHTML]="event.refund_policy.refund_policy_description"></small>
+                  </div>
+                }
+              </div>
+              <div class="mb-3 d-flex flex-column gap-2">
+                <small class="text-muted">
+                  Eventbrite is a third-party platform. Please refer to the event page for the most up-to-date information.
+                  Price shown above does not include Eventbrite admin fee. This fee is non-refundable.
+                </small>
+              </div>
               <div class="d-flex gap-2">
-                <a (click)="goToEvent(event)" href="javascript:void(0)" class="btn btn-primary">Register Now</a>
-                <a (click)="viewGDPR(event)" href="javascript:void(0)" class="btn btn-secondary">GDPR</a>
-                <a (click)="viewTerms(event)" href="javascript:void(0)" class="btn btn-secondary">Event Terms</a>
+                <a [href]="event.url" class="btn btn-primary" target="_blank">
+                  Go To Event...
+                </a>
               </div>
             </div>
           </div>

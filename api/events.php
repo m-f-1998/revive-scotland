@@ -1,25 +1,5 @@
 <?php
   /**
-   * Fetch details of a specific event by its ID.
-   */
-  function fetchEventDetails ( $eventId ) {
-
-    $url = EVENTBRITE_API_URL . "events/$eventId/";
-    return fetchFromEventbrite ( $url );
-
-  }
-
-  /**
-   * Fetch Venue Details if available.
-   */
-  function fetchVenueDetails ( $venueId ) {
-
-    $url = EVENTBRITE_API_URL . "venues/$venueId/";
-    return fetchFromEventbrite ( $url );
-
-  }
-
-    /**
    * Rate limiting function (example: 100 requests per hour per IP)
    */
   function rateLimit ( ) {
@@ -87,18 +67,8 @@
     $url = EVENTBRITE_API_URL . "users/me/organizations";
     $organization_id = fetchFromEventbrite ( $url ) [ "organizations" ] [ 0 ] [ "id" ] ?? "";
 
-    $url = EVENTBRITE_API_URL . "organizations/" . strval ( $organization_id ) . "/events?status=live";
+    $url = EVENTBRITE_API_URL . "organizations/" . strval ( $organization_id ) . "/events?status=live&expand=venue,ticket_classes,refund_policy";
     $userEvents = fetchFromEventbrite ( $url );
-
-    foreach ( $userEvents [ "events" ] as $key => $event ) {
-
-      $venue = isset ( $event [ "venue_id" ] )
-        ? fetchVenueDetails ( $event [ "venue_id" ] )
-        : null;
-
-      $userEvents [ "events" ] [ $key ] [ "location" ] = $venue ?? "Location not provided";
-
-    }
 
     echo json_encode ( $userEvents [ "events" ] );
 

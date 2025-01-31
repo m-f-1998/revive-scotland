@@ -1,4 +1,4 @@
-import { ApplicationConfig, importProvidersFrom, provideZoneChangeDetection } from "@angular/core"
+import { ApplicationConfig, importProvidersFrom, provideExperimentalZonelessChangeDetection } from "@angular/core"
 import { provideRouter } from "@angular/router"
 import { routes } from "./app.routes"
 import { provideHttpClient } from "@angular/common/http"
@@ -8,7 +8,8 @@ import { FormlyBootstrapModule } from "@ngx-formly/bootstrap"
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideZoneChangeDetection ( { eventCoalescing: true } ),
+    provideExperimentalZonelessChangeDetection ( ),
+    // provideZoneChangeDetection ( { eventCoalescing: true } ),
     provideRouter ( routes ),
     provideHttpClient ( ),
     provideAnimations ( ),
