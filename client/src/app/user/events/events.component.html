@@ -66,7 +66,7 @@
                       {{event.venue.name}}, {{event.venue.address.localized_address_display}}
                     </a>
                   } @else {
-                    Location Not Specified
+                    Online Event
                   }
                 </div>
                 @if (event.ticket_classes) {
@@ -110,5 +110,7 @@
       <cite class="text-small">{{quoteAuthor}}</cite>
     </figcaption>
   </figure>
+
+  <app-contact />
 }
 <app-footer />

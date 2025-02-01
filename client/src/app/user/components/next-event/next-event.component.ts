@@ -32,6 +32,7 @@ export class NextEventComponent implements OnInit {
     seconds: "0"
   } )
   public locationName: WritableSignal<string> = signal ( "" )
+  public eventLink: WritableSignal<string> = signal ( "" )
   public title: WritableSignal<string> = signal ( "Next Event" )
 
   public constructor (
@@ -45,7 +46,16 @@ export class NextEventComponent implements OnInit {
       this.eventSvc.getNextEvent ( ).then ( ( nextEvent: any ) => {
         this.nextEvent = new Date ( nextEvent.start.local )
         this.title.set ( nextEvent.name.text )
-        this.locationName.set ( nextEvent.venue.address.localized_address_display )
+
+        if ( nextEvent.url ) {
+          this.eventLink.set ( nextEvent.url )
+        }
+
+        if ( nextEvent.venue ) {
+          this.locationName.set ( nextEvent.venue.address.localized_address_display )
+        } else {
+          this.locationName.set ( "Online Event" )
+        }
 
         setInterval ( ( ) => {
           this.getTimeRemaining ( )

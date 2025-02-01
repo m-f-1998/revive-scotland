@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from "@angular/core"
+import { ChangeDetectionStrategy, Component, input, InputSignal } from "@angular/core"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { faEnvelope, faPhone } from "@fortawesome/free-solid-svg-icons"
 
@@ -12,7 +12,7 @@ import { faEnvelope, faPhone } from "@fortawesome/free-solid-svg-icons"
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class ContactComponent {
-  public img = "img/contact-bg.jpg"
+  public readonly img: InputSignal<string> = input ( "img/contact-bg.jpg" )
   public contacts = [
     {
       icon: faPhone,

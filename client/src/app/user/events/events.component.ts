@@ -4,12 +4,14 @@ import { faCalendar, faInfoCircle, faMapMarker, faMoneyBill, faSpinner, faUser, 
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { DatesService } from "@services/dates.service"
 import { EventsService } from "@services/events.service"
+import { ContactComponent } from "@components/contact/contact.component"
 
 @Component ( {
   selector: "app-events",
   imports: [
     FooterComponent,
-    FaIconComponent
+    FaIconComponent,
+    ContactComponent
   ],
   templateUrl: "./events.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -39,7 +41,6 @@ export class EventsComponent implements OnInit {
   public ngOnInit ( ) {
     const chunkSize = 2
     this.eventsSvc.getEvents ( ).then ( ( events: Array<any> ) => {
-      console.log ( events )
       for ( let i = 0; i < events.length; i += chunkSize ) {
         const row = events.slice ( i, i + chunkSize )
         this.events.set ( [

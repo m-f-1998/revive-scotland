@@ -30,6 +30,11 @@
               <span class="word text-serif">Seconds</span>
             </div>
           </div>
+          @if (eventLink()) {
+            <a class="btn btn-primary mt-3" type="button" [href]="eventLink()" target="_blank">
+              Go To Event
+            </a>
+          }
         </div>
       </div>
     </div>

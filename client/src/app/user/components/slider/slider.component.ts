@@ -17,7 +17,7 @@ import { SwiperDirective } from "./swiper.directive"
 } )
 export class SliderComponent {
 
-  public slides = [
+  public slides: any [ ] = [
     {
       title: "Revive Scotland",
       // eslint-disable-next-line max-len
@@ -49,6 +49,10 @@ export class SliderComponent {
     autoplay: {
       delay: 4000
     }
+  }
+
+  public isMiniTitle ( slide: any ) {
+    return Object.keys ( slide ).includes ( "miniTitle" )
   }
 
 }
