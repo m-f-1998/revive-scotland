@@ -23,6 +23,12 @@ export class NavbarComponent implements OnInit {
         title: "Upcoming Events"
       },
       {
+        icon: faGlobe,
+        href: "https://www.revive-consecrations.co.uk/",
+        externalLink: true,
+        title: "Revive Consecrations"
+      },
+      {
         icon: faCross,
         title: "Missions",
         dropdown: true,
@@ -46,12 +52,6 @@ export class NavbarComponent implements OnInit {
       //   onclick: () => this.scrollTo ( "#support" ),
       //   title: "Support"
       // },
-      {
-        icon: faGlobe,
-        href: "https://www.revive-consecrations.co.uk/",
-        externalLink: true,
-        title: "Revive Consecrations"
-      },
       {
         icon: faEnvelope,
         onclick: () => this.scrollTo ( "#contact" ),

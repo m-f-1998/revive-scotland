@@ -17,6 +17,7 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
+            "crossOrigin": "anonymous",
             "outputPath": "dist/revive-scotland",
             "index": "src/index.html",
             "browser": "src/main.ts",
