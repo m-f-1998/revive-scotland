@@ -21,7 +21,7 @@
                 <ul class="dropdown-menu">
                   @for (child of item.children; track $index) {
                     @if (child.href && child.externalLink) {
-                      <a class="nav-link clickable" [href]="child.href" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
+                      <a class="nav-link clickable" [href]="child.href" target="_blank">
                         @if (child.icon) {
                           <fa-icon [icon]="child.icon" />
                         }
@@ -55,7 +55,7 @@
             } @else {
               <li class="nav-item">
                 @if (item.href && item.externalLink) {
-                  <a class="nav-link clickable" [href]="item.href" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
+                  <a class="nav-link clickable" [href]="item.href" target="_blank">
                     @if (item.icon) {
                       <fa-icon [icon]="item.icon" />
                     }

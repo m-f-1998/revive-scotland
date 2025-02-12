@@ -2,7 +2,7 @@ import { Location } from "@angular/common"
 import { ChangeDetectionStrategy, Component, OnInit, signal, WritableSignal } from "@angular/core"
 import { Router, RouterLink } from "@angular/router"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
-import { faCalendar, faCross, faEnvelope, faHandshake, faHome } from "@fortawesome/free-solid-svg-icons"
+import { faCalendar, faCross, faEnvelope, faGlobe, faHome } from "@fortawesome/free-solid-svg-icons"
 
 @Component ( {
   selector: "app-navbar",
@@ -15,7 +15,7 @@ import { faCalendar, faCross, faEnvelope, faHandshake, faHome } from "@fortaweso
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class NavbarComponent implements OnInit {
-  public navItems: WritableSignal<any> = signal ( {
+  public readonly navItems: WritableSignal<any> = signal ( {
     "": [
       {
         icon: faCalendar,
@@ -28,8 +28,8 @@ export class NavbarComponent implements OnInit {
         dropdown: true,
         children: [
           {
-            onclick: () => this.scrollTo ( "#pilgramages" ),
-            title: "Pilgramages"
+            onclick: () => this.scrollTo ( "#pilgrimage" ),
+            title: "Pilgrimages"
           },
           {
             onclick: () => this.scrollTo ( "#adoration" ),
@@ -41,10 +41,16 @@ export class NavbarComponent implements OnInit {
           }
         ]
       },
+      // {
+      //   icon: faHandshake,
+      //   onclick: () => this.scrollTo ( "#support" ),
+      //   title: "Support"
+      // },
       {
-        icon: faHandshake,
-        onclick: () => this.scrollTo ( "#support" ),
-        title: "Support"
+        icon: faGlobe,
+        href: "https://www.revive-consecrations.co.uk/",
+        externalLink: true,
+        title: "Revive Consecrations"
       },
       {
         icon: faEnvelope,
@@ -61,7 +67,7 @@ export class NavbarComponent implements OnInit {
     ]
   } )
 
-  public path: WritableSignal<string> = signal ( this.location.path ( ) )
+  public readonly path: WritableSignal<string> = signal ( this.location.path ( ) )
 
   public constructor (
     public location: Location,

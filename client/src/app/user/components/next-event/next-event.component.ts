@@ -24,16 +24,16 @@ export class NextEventComponent implements OnInit {
   public nextEvent = new Date ( 1900, 1, 1 )
   public today = new Date ( )
 
-  public timeRemaining: WritableSignal<TimeRemaining> = signal ( {
+  public readonly timeRemaining: WritableSignal<TimeRemaining> = signal ( {
     months: "0",
     days: "0",
     hours: "0",
     minutes: "0",
     seconds: "0"
   } )
-  public locationName: WritableSignal<string> = signal ( "" )
-  public eventLink: WritableSignal<string> = signal ( "" )
-  public title: WritableSignal<string> = signal ( "Next Event" )
+  public readonly locationName: WritableSignal<string> = signal ( "" )
+  public readonly eventLink: WritableSignal<string> = signal ( "" )
+  public readonly title: WritableSignal<string> = signal ( "Next Event" )
 
   public constructor (
     private _ngZone: NgZone,
@@ -44,23 +44,25 @@ export class NextEventComponent implements OnInit {
   public ngOnInit ( ) {
     this._ngZone.runOutsideAngular ( ( ) => {
       this.eventSvc.getNextEvent ( ).then ( ( nextEvent: any ) => {
-        this.nextEvent = new Date ( nextEvent.start.local )
-        this.title.set ( nextEvent.name.text )
+        if ( nextEvent ) {
+          this.nextEvent = new Date ( nextEvent.start.local )
+          this.title.set ( nextEvent.name.text )
 
-        if ( nextEvent.url ) {
-          this.eventLink.set ( nextEvent.url )
+          if ( nextEvent.url ) {
+            this.eventLink.set ( nextEvent.url )
+          }
+
+          if ( nextEvent.venue ) {
+            this.locationName.set ( nextEvent.venue.address.localized_address_display )
+          } else {
+            this.locationName.set ( "Online Event" )
+          }
+
+          setInterval ( ( ) => {
+            this.getTimeRemaining ( )
+            this.changeDetector.detectChanges ( )
+          }, 1000 )
         }
-
-        if ( nextEvent.venue ) {
-          this.locationName.set ( nextEvent.venue.address.localized_address_display )
-        } else {
-          this.locationName.set ( "Online Event" )
-        }
-
-        setInterval ( ( ) => {
-          this.getTimeRemaining ( )
-          this.changeDetector.detectChanges ( )
-        }, 1000 )
       } )
     } )
   }

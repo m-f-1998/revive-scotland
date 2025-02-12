@@ -38,7 +38,7 @@ export default tseslint.config (
       "@angular-eslint/prefer-on-push-component-change-detection": "off",
       "@angular-eslint/no-host-metadata-property": "off",
       // TODO: Re-enable when ngBootstrap supports signals
-      "@angular-eslint/prefer-signals": "off",
+      "@angular-eslint/prefer-signals": "error",
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/naming-convention": [
         "error",

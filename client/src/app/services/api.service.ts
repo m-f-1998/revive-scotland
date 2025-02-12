@@ -6,7 +6,7 @@ import { parse } from "date-fns"
   providedIn: "root"
 } )
 export class ApiService {
-  private readonly ADDRESS = isDevMode ( ) ? "http://localhost:8000" : "https://api.matthewfrankland.co.uk"
+  private readonly ADDRESS = isDevMode ( ) ? "http://localhost:8000" : "https://revivescotland.co.uk/api"
 
   public constructor (
     private httpClient: HttpClient

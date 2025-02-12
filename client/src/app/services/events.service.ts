@@ -16,7 +16,9 @@ export class EventsService {
 
   public initialize ( ) {
     return this.apiSvc.get ( "/events.php" ).then ( ( response: any ) => {
-      this.eventbrite = response.sort ( ( a: any, b: any ) => {
+      this.eventbrite = response.filter ( ( x: any ) => {
+        return x.status === "live"
+      } ).sort ( ( a: any, b: any ) => {
         if ( a.start.local > b.start.local ) {
           return 1
         }

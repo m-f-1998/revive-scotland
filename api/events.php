@@ -48,16 +48,14 @@
 
   header ( "Content-Type: application/json; charset=utf-8" );
   header ( "Access-Control-Allow-Methods: GET, OPTIONS" );
-  // TODO: Update the origin URL in production
-  header ( "Access-Control-Allow-Origin: http://localhost:4200" );
+  header ( "Access-Control-Allow-Origin: https://revivescotland.co.uk" );
   header ( "Access-Control-Allow-Headers: Origin, Content-Type" );
 
   header ( "Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; object-src 'none';" );
   header ( "X-Content-Type-Options: nosniff" );
   header ( "X-Frame-Options: DENY" );
   header ( "X-XSS-Protection: 1; mode=block" );
-  // TODO: Enable HSTS in production
-  // header ( "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload" );
+  header ( "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload" );
 
   // Rate limiting (example: 100 requests per hour per IP)
   rateLimit ( );
