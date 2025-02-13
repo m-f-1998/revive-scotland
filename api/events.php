@@ -46,9 +46,19 @@
   include "config.php";
   include "api.php";
 
+  $allowed_origins = [
+    "https://revivescotland.co.uk",
+    "http://localhost:4200"
+  ];
+
+  if ( isset ( $_SERVER [ "HTTP_ORIGIN" ] ) && in_array ( $_SERVER [ "HTTP_ORIGIN" ], $allowed_origins ) ) {
+
+    header ( "Access-Control-Allow-Origin: " . $_SERVER [ "HTTP_ORIGIN" ] );
+
+  }
+
   header ( "Content-Type: application/json; charset=utf-8" );
   header ( "Access-Control-Allow-Methods: GET, OPTIONS" );
-  header ( "Access-Control-Allow-Origin: https://revivescotland.co.uk" );
   header ( "Access-Control-Allow-Headers: Origin, Content-Type" );
 
   header ( "Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; object-src 'none';" );
