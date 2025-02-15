@@ -1,6 +1,6 @@
 import { AbstractControl, ValidationErrors } from "@angular/forms"
 
-export function ValidPhoneNumber ( control: AbstractControl ): ValidationErrors | null {
+export const ValidPhoneNumber = ( control: AbstractControl ): ValidationErrors | null => {
   if ( control.value === null || control.value === "" ) {
     return null
   }

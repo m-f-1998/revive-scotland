@@ -1,6 +1,7 @@
 import stylistic from "@stylistic/eslint-plugin"
 import tseslint from "typescript-eslint"
 import angular from "angular-eslint"
+import preferArrow from "eslint-plugin-prefer-arrow-functions"
 
 export default tseslint.config (
   {
@@ -9,15 +10,14 @@ export default tseslint.config (
       "dist/**/*",
       "coverage/**/*",
       "projects/**/*",
-      "ios/**/*",
-      "android/**/*",
       ".angular/**/*",
       ".vscode/**/*",
     ]
   },
   {
     plugins: {
-      "@stylistic": stylistic
+      "@stylistic": stylistic,
+      "@arrowFunction": preferArrow
     },
     files: [
       "**/*.ts"
@@ -29,21 +29,45 @@ export default tseslint.config (
     processor: angular.processInlineTemplates,
     languageOptions: {
       sourceType: "module",
+      ecmaVersion: 2024,
       parserOptions: {
         projectService: true,
         createDefaultProgram: true
       },
     },
     rules: {
-      "@angular-eslint/prefer-on-push-component-change-detection": "off",
-      "@angular-eslint/no-host-metadata-property": "off",
+      "@angular-eslint/prefer-standalone": "warn",
       // TODO: Re-enable when ngBootstrap supports signals
-      "@angular-eslint/prefer-signals": "error",
+      "@angular-eslint/prefer-signals": "off",
+      // * END TODO
+      "@angular-eslint/prefer-on-push-component-change-detection": "error",
+      "@angular-eslint/component-selector": [
+        "error",
+        {
+          type: "element",
+          prefix: [
+            "app",
+            "iqx"
+          ],
+          style: "kebab-case"
+        }
+      ],
+      "@angular-eslint/directive-selector": [
+        "error",
+        {
+          type: "attribute",
+          prefix: [
+            "app",
+            "iqx"
+          ],
+          style: "camelCase"
+        }
+      ],
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/naming-convention": [
         "error",
         {
-          "selector": [
+          selector: [
             "classProperty",
             "typeProperty",
             "classMethod",
@@ -52,38 +76,44 @@ export default tseslint.config (
             "accessor",
             "enumMember"
           ],
-          "leadingUnderscore": "allow",
-          "format": [
+          format: [
             "camelCase",
             "PascalCase"
           ]
+        },
+        {
+          selector: "objectLiteralMethod",
+          modifiers: [
+            "requiresQuotes"
+          ],
+          format: null
         }
       ],
-      "@stylistic/member-ordering": "off",
       "@typescript-eslint/explicit-member-accessibility": [
         "error",
         {
-          "accessibility": "explicit"
-        }
-      ],
-      "@stylistic/member-delimiter-style": [
-        "error",
-        {
-          "multiline": {
-            "delimiter": "none",
-            "requireLast": true
-          },
-          "singleline": {
-            "delimiter": "semi",
-            "requireLast": false
-          }
+          accessibility: "explicit"
         }
       ],
       "@typescript-eslint/no-unused-vars": [
         "error",
         {
-          "argsIgnorePattern": "^_",
-          "varsIgnorePattern": "^_"
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_"
+        }
+      ],
+      "@typescript-eslint/member-ordering": "error",
+      "@stylistic/member-delimiter-style": [
+        "error",
+        {
+          multiline: {
+            delimiter: "none",
+            requireLast: true
+          },
+          singleline: {
+            delimiter: "semi",
+            requireLast: false
+          }
         }
       ],
       "@stylistic/semi": [
@@ -102,9 +132,9 @@ export default tseslint.config (
       "@stylistic/space-before-function-paren": [
         "error",
         {
-          "anonymous": "always",
-          "named": "always",
-          "asyncArrow": "always"
+          anonymous: "always",
+          named: "always",
+          asyncArrow: "always"
         }
       ],
       "@stylistic/keyword-spacing": [
@@ -130,62 +160,55 @@ export default tseslint.config (
         "error",
         "double",
         {
-          "avoidEscape": true,
-          "allowTemplateLiterals": true
+          avoidEscape: true,
+          allowTemplateLiterals: true
         }
       ],
       "@stylistic/indent": [
         "error",
         2,
         {
-          "SwitchCase": 1,
-          "FunctionDeclaration": {
-            "body": 1,
-            "parameters": "first"
+          SwitchCase: 1,
+          FunctionDeclaration: {
+            body: 1,
+            parameters: "first"
           },
-          "FunctionExpression": {
-            "body": 1,
-            "parameters": "first"
+          FunctionExpression: {
+            body: 1,
+            parameters: "first"
           }
         }
       ],
-      "no-unused-expressions": "error",
-      "no-unused-labels": "error",
-      "@stylistic/member-ordering": "off",
-      "@angular-eslint/component-selector": [
+      "@stylistic/arrow-parens": [
+        "error",
+        "as-needed"
+      ],
+      "@stylistic/max-len": [
         "error",
         {
-          "type": "element",
-          "prefix": [
-            "app",
-            "iqx"
-          ],
-          "style": "kebab-case"
+          ignorePattern: "^import [^,]+ from |^export | implements",
+          code: 150,
+          tabWidth: 2,
+          comments: 200,
+          ignoreComments: true,
+          ignoreStrings: true,
+          ignoreTemplateLiterals: true
         }
       ],
-      "@angular-eslint/directive-selector": [
-        "error",
+      "@arrowFunction/prefer-arrow-functions": [
+        "warn",
         {
-          "type": "attribute",
-          "prefix": [
-            "app",
-            "iqx"
-          ],
-          "style": "camelCase"
+          allowedNames: [],
+          allowNamedFunctions: false,
+          allowObjectProperties: false,
+          classPropertiesAllowed: false,
+          disallowPrototype: false,
+          returnStyle: "unchanged",
+          singleReturnOnly: false
         }
       ],
-      "arrow-parens": [
-        "off",
-        "always"
-      ],
-      "import/order": "off",
-      "max-len": [
-        "error",
-        {
-          "ignorePattern": "^import [^,]+ from |^export | implements",
-          "code": 150
-        }
-      ]
+      "no-unused-vars": "off", // Turn standard rule off, use TypeScript version
+      "no-unused-labels": "error"
     }
   },
   {
@@ -195,6 +218,12 @@ export default tseslint.config (
     extends: [
       ...angular.configs.templateRecommended,
     ],
-    rules: { }
+    rules: {
+      "@angular-eslint/template/prefer-self-closing-tags": "warn",
+      "@angular-eslint/template/prefer-control-flow": "warn",
+      // TODO: Re-enable
+      "@angular-eslint/template/prefer-ngsrc": "off",
+      // * END TODO
+    }
   }
 )

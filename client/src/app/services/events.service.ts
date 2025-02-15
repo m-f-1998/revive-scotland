@@ -27,7 +27,7 @@ export class EventsService {
         }
         return 0
       } )
-    } ).catch ( ( error ) => {
+    } ).catch ( error => {
       console.error ( error )
       this.toastrSvc.error ( "Failed to load events" )
       this.eventbrite = [ ]

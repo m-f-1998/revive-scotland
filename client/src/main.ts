@@ -21,4 +21,4 @@ window.matchMedia ( "(prefers-color-scheme: dark)" ).addEventListener ( "change"
 updateTheme ( )
 
 bootstrapApplication ( AppComponent, appConfig )
-  .catch ( ( err ) => console.error ( err ) )
+  .catch ( err => console.error ( err ) )

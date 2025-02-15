@@ -20,21 +20,18 @@ export class SliderComponent {
   public slides: any [ ] = [
     {
       title: "Revive Scotland",
-      // eslint-disable-next-line max-len
       content: "We are a team dedicated to reviving the faith in people's hearts through the power of the Holy Spirit. We aim to deliver this through formation, community and prayer in variety of ways; mainly Pilgrimages, Revive Weekends and Eucharistic Adoration.",
-      image: "img/hero-bg-3.jpg"
+      image: "assets/img/hero-bg-3.jpg"
     },
     {
       title: "Join the Prayer",
-      // eslint-disable-next-line max-len
       content: "'Let anyone who is thirsty come to me and drink. Whoever believes in me, as Scripture has said, rivers of living water will flow from within them. By this he meant the Holy Spirit' (Jn 7:38-39)",
-      image: "img/hero-bg-2.jpg"
+      image: "assets/img/hero-bg-2.jpg"
     },
     {
       title: "God is Love",
-      // eslint-disable-next-line max-len
       content: "Revive exists to give people a real and transformational HOPE, through a FAITH filled lifestyle centered on the sacraments, catechesis and real authentic friendships as a way to encounter God's LOVE.",
-      image: "img/hero-bg-1.jpg"
+      image: "assets/img/hero-bg-1.jpg"
     }
   ]
 

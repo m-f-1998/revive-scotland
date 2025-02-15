@@ -20,15 +20,15 @@ export class EventSliderComponent {
   public slides: any [ ] = [
     {
       title: "Upcoming Events",
-      image: "img/hero-bg-3.jpg"
+      image: "assets/img/hero-bg-3.jpg"
     },
     {
       miniTitle: "Skye Pilgrimage",
-      image: "img/hero-bg-4.jpg"
+      image: "assets/img/hero-bg-4.jpg"
     },
     {
       miniTitle: "World Youth Day",
-      image: "img/hero-bg-5.jpg"
+      image: "assets/img/hero-bg-5.jpg"
     }
   ]
 

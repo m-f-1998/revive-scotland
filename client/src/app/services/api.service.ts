@@ -26,10 +26,10 @@ export class ApiService {
         headers,
         responseType: address.endsWith ( "/asset.php" ) ? "blob" : "json"
       } as object ).subscribe ( {
-        next: ( response ) => {
+        next: response => {
           resolve ( this.parseObj ( response ) )
         },
-        error: ( error ) => {
+        error: error => {
           reject ( error )
         }
       } )

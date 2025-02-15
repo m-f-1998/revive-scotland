@@ -8,6 +8,6 @@ import { ChangeDetectionStrategy, Component } from "@angular/core"
 } )
 export class PilgrimageComponent {
 
-  public img = "img/pilgrimage.jpg"
+  public img = "assets/img/pilgrimage.jpg"
 
 }

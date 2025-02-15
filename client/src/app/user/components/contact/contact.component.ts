@@ -12,7 +12,7 @@ import { faInstagram } from "@fortawesome/free-brands-svg-icons"
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class ContactComponent {
-  public readonly img: InputSignal<string> = input ( "img/contact-bg.jpg" )
+  public readonly img: InputSignal<string> = input ( "assets/img/contact-bg.jpg" )
   public contacts = [
     {
       icon: faPhone,

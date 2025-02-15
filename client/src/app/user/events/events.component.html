@@ -1,4 +1,4 @@
-<!-- <section class="bg-cencer bg-cover events-background" style="background: url(img/hero-bg-3.jpg); background-position: center; filter: brightness(50%)">
+<!-- <section class="bg-cencer bg-cover events-background" style="background: url(assets/img/hero-bg-3.jpg); background-position: center; filter: brightness(50%)">
   <div class="overlay-content py-5 index-forward">
     <div class="container py-5 mt-5">
       <div class="row py-5 text-white text-center">
@@ -34,12 +34,12 @@
         <div [class]="row.length === 1 ? 'col-md-12' : 'col-md-6'" class="mb-3 mb-sm-0 align-self-center">
           <div class="card m-2">
             <img
-              [src]="event.logo ? event.logo.original.url : 'img/placeholder.jpg'"
+              [src]="event.logo ? event.logo.original.url : 'assets/img/placeholder.jpg'"
               [width]="400"
               [height]="400"
               class="card-img-top"
               style="object-fit: cover; background-color: gray;"
-              onerror="this.src='img/placeholder.jpg'">
+              onerror="this.src='assets/img/placeholder.jpg'">
             <div class="card-body">
               <div class="card-title">
                 <h4>{{event.name.text}}</h4>

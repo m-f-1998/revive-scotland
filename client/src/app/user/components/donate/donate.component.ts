@@ -7,5 +7,5 @@ import { ChangeDetectionStrategy, Component } from "@angular/core"
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class DonateComponent {
-  public url = "img/donation.jpg"
+  public url = "assets/img/donation.jpg"
 }
