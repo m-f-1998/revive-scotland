@@ -4,14 +4,20 @@
   list-style: none;
 }
 
-.list-check li::before {
-  content: '\f058';
-  display: block;
+.list-check {
+  list-style: none;
+  padding: 0;
+}
+
+.list-check li {
+  position: relative;
+  padding-left: 30px; /* Space for icon */
+  display: flex;
+  align-items: center;
+}
+
+.check-icon {
   position: absolute;
-  top: 50%;
   left: 0;
-  transform: translateY(-50%);
   color: #3399FF;
-  font-family: 'Font Awesome\ 5 Free';
-  font-weight: 900;
 }

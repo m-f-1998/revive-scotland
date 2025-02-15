@@ -3,11 +3,13 @@ import { ChangeDetectionStrategy, Component, OnInit, signal, WritableSignal } fr
 import { Router, RouterLink } from "@angular/router"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { faCalendar, faCross, faEnvelope, faGlobe, faHome } from "@fortawesome/free-solid-svg-icons"
+import { NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap"
 
 @Component ( {
   selector: "app-navbar",
   imports: [
     RouterLink,
+    NgbDropdownModule,
     FaIconComponent
   ],
   templateUrl: "./navbar.component.html",

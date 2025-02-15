@@ -36,10 +36,8 @@ export default tseslint.config (
       },
     },
     rules: {
-      "@angular-eslint/prefer-standalone": "warn",
-      // TODO: Re-enable when ngBootstrap supports signals
-      "@angular-eslint/prefer-signals": "off",
-      // * END TODO
+      "@angular-eslint/prefer-standalone": "error",
+      "@angular-eslint/prefer-signals": "error",
       "@angular-eslint/prefer-on-push-component-change-detection": "error",
       "@angular-eslint/component-selector": [
         "error",
@@ -216,14 +214,11 @@ export default tseslint.config (
       "*.html"
     ],
     extends: [
-      ...angular.configs.templateRecommended,
+      ...angular.configs.templateAll,
     ],
     rules: {
-      "@angular-eslint/template/prefer-self-closing-tags": "warn",
-      "@angular-eslint/template/prefer-control-flow": "warn",
-      // TODO: Re-enable
-      "@angular-eslint/template/prefer-ngsrc": "off",
-      // * END TODO
+      "@angular-eslint/template/prefer-self-closing-tags": "error",
+      "@angular-eslint/template/prefer-control-flow": "error"
     }
   }
 )

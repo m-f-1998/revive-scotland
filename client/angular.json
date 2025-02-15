@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "revive-scotland": {
+    "revivescotland": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -34,19 +34,7 @@
             ],
             "styles": [
               "src/styles.scss",
-              "node_modules/bootstrap/dist/css/bootstrap.min.css",
-              "node_modules/ngx-toastr/toastr.css",
-              "node_modules/@fortawesome/fontawesome-free/css/all.min.css",
-              "node_modules/@fontsource/poppins/300.css",
-              "node_modules/@fontsource/poppins/300-italic.css",
-              "node_modules/@fontsource/poppins/400.css",
-              "node_modules/@fontsource/poppins/400-italic.css",
-              "node_modules/@fontsource/poppins/700.css",
-              "node_modules/@fontsource/poppins/700-italic.css",
-              "node_modules/@fontsource/playfair-display/500.css"
-            ],
-            "scripts": [
-              "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
+              "node_modules/bootstrap/dist/css/bootstrap.min.css"
             ]
           },
           "configurations": {
@@ -61,8 +49,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "5MB",
-                  "maximumError": "10MB"
+                  "maximumWarning": "2MB",
+                  "maximumError": "3MB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -87,10 +75,10 @@
           },
           "configurations": {
             "production": {
-              "buildTarget": "revive-scotland:build:production"
+              "buildTarget": "revivescotland:build:production"
             },
             "development": {
-              "buildTarget": "revive-scotland:build:development"
+              "buildTarget": "revivescotland:build:development"
             }
           },
           "defaultConfiguration": "development"

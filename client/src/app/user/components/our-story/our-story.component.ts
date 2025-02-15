@@ -1,14 +1,20 @@
 import { ChangeDetectionStrategy, Component } from "@angular/core"
+import { FaIconComponent } from "@fortawesome/angular-fontawesome"
+import { faCheckCircle } from "@fortawesome/free-solid-svg-icons"
 
 @Component ( {
   selector: "app-our-story",
   templateUrl: "./our-story.component.html",
   styleUrl: "./our-story.component.scss",
+  imports: [
+    FaIconComponent
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class OurStoryComponent {
 
   public image = "assets/img/priest.jpg"
+  public faCheckCircle = faCheckCircle
 
   public ourStory = [
     {

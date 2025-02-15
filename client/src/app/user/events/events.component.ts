@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, signal, WritableSignal } from "@angular/core"
+import { ChangeDetectionStrategy, Component, isDevMode, OnInit, signal, WritableSignal } from "@angular/core"
 import { FooterComponent } from "@components/footer/footer.component"
 import { faCalendar, faInfoCircle, faMapMarker, faMoneyBill, faSpinner, faUser, faWarning } from "@fortawesome/free-solid-svg-icons"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
@@ -37,7 +37,7 @@ export class EventsComponent implements OnInit {
   public faPerson = faUser
 
   public constructor (
-    private eventsSvc: EventsService,
+    public eventsSvc: EventsService,
     public dateSvc: DatesService
   ) { }
 
@@ -51,10 +51,13 @@ export class EventsComponent implements OnInit {
           row
         ] )
       }
-      this.loading.set ( false )
     } ).catch ( ( error: any ) => {
-      console.error ( error )
+      if ( isDevMode ( ) ) {
+        console.error ( error )
+      }
       this.error.set ( true )
+    } ).finally ( ( ) => {
+      this.loading.set ( false )
     } )
   }
 }
