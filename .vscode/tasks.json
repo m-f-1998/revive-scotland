@@ -2,6 +2,39 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Build Patch Version",
+      "type": "shell",
+      "command": "npm version patch && npm run build",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": [],
+      "detail": "Bumps the patch version and create a production build"
+    },
+    {
+      "label": "Build Minor Version",
+      "type": "shell",
+      "command": "npm version minor && npm run build",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": [],
+      "detail": "Bumps the minor version and create a production build"
+    },
+    {
+      "label": "Build Major Version",
+      "type": "shell",
+      "command": "npm version major && npm run build",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": [],
+      "detail": "Bumps the major version and create a production build"
+    },
+    {
       "label": "Build Server",
       "type": "shell",
       "command": "php",

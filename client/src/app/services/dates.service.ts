@@ -5,7 +5,7 @@ import { format, parse } from "date-fns"
   providedIn: "root"
 } )
 export class DatesService {
-  public reformat ( date: Date, outputFormat: string ) {
+  public reformat ( date: Date | string, outputFormat: string ) {
     try {
       if ( !date ) return ""
       return format ( date, outputFormat )

@@ -11,7 +11,9 @@
     </div>
     <div class="py-4 border-top border-dark text-center">
       <p class="mb-0 text-muted">
-        Website Designed by <a class="reset-anchor text-primary" [href]="me">Matthew Frankland</a>
+        Website Designed by <a class="reset-anchor text-primary" [href]="me">Matthew Frankland</a><br />
+        Version: {{version}}<br />
+        Last Updated: {{dateSvc.reformat(lastUpdated, 'E dd MMM yyyy')}}
       </p>
     </div>
   </div>

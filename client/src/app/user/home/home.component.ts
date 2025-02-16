@@ -27,7 +27,6 @@ import { NextEventComponent } from "@components/next-event/next-event.component"
     NextEventComponent
   ],
   templateUrl: "./home.component.html",
-  styleUrl: "./home.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class HomeComponent {

@@ -13,7 +13,6 @@ import { NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap"
     FaIconComponent
   ],
   templateUrl: "./navbar.component.html",
-  styleUrl: "./navbar.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class NavbarComponent implements OnInit {

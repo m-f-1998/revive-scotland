@@ -8,7 +8,6 @@ import { FaIconComponent } from "@fortawesome/angular-fontawesome"
     FaIconComponent
   ],
   templateUrl: "./about-us.component.html",
-  styleUrl: "./about-us.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class AboutUsComponent {

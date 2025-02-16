@@ -16,7 +16,6 @@ import { EventSliderComponent } from "./slider/slider.component"
     EventSliderComponent
   ],
   templateUrl: "./events.component.html",
-  styleUrl: "./events.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class EventsComponent implements OnInit {

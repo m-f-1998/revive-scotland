@@ -3,7 +3,6 @@ import { ChangeDetectionStrategy, Component } from "@angular/core"
 @Component ( {
   selector: "app-revive-weekends",
   templateUrl: "./revive-weekends.component.html",
-  styleUrl: "./revive-weekends.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class ReviveWeekendsComponent {

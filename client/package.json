@@ -6,6 +6,7 @@
     "lint": "npx --yes eslint",
     "lint:fix": "npx --yes eslint --fix",
     "tsc-verify": "npx --yes tsc --noEmit",
+    "prebuild": "node ./scripts/build-info.js",
     "build": "ng build --configuration production"
   },
   "type": "module",
