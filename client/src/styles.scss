@@ -136,7 +136,7 @@ h1, .h1, h2, .h2, h3, .h3, h4, .h4, h5, .h5, h6, .h6 {
 
 a {
   color: #3399FF;
-  text-decoration: none;
+  text-decoration: none !important;
 }
 
 .bg-fixed {
@@ -145,20 +145,4 @@ a {
 
 .row {
   margin: 0;
-}
-
-app-payment-complete {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-}
-
-app-cancelled-event {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-}
-
-a {
-  text-decoration: none !important;
 }

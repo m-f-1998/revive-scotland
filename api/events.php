@@ -48,6 +48,7 @@
 
   $allowed_origins = [
     "https://revivescotland.co.uk",
+    "https://www.revivescotland.co.uk",
     "http://localhost:4200"
   ];
 
