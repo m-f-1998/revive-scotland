@@ -18,31 +18,31 @@
                   }
                   {{item.title}}
                 </a>
-                <ul ngbDropdownMenu>
+                <ul ngbDropdownMenu class="m-0 p-0">
                   @for (child of item.children; track $index) {
                     @if (child.href && child.externalLink) {
-                      <a ngbDropdownItem class="nav-link clickable" [href]="child.href" target="_blank">
+                      <a ngbDropdownItem class="p-2 nav-link clickable" [href]="child.href" target="_blank">
                         @if (child.icon) {
                           <fa-icon [icon]="child.icon" />
                         }
                         {{child.title}}
                       </a>
                     } @else if (child.href) {
-                      <a ngbDropdownItem class="nav-link clickable" [routerLink]="child.href" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
+                      <a ngbDropdownItem class="p-2 nav-link clickable" [routerLink]="child.href" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
                         @if (child.icon) {
                           <fa-icon [icon]="child.icon" />
                         }
                         {{child.title}}
                       </a>
                     } @else if (child.onclick) {
-                      <a ngbDropdownItem class="nav-link clickable" (click)="child.onclick()" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
+                      <a ngbDropdownItem class="p-2 nav-link clickable" (click)="child.onclick()" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
                         @if (child.icon) {
                           <fa-icon [icon]="child.icon" />
                         }
                         {{child.title}}
                       </a>
                     } @else {
-                      <a ngbDropdownItem class="nav-link clickable" data-bs-toggle="collapse">
+                      <a ngbDropdownItem class="p-2 nav-link clickable" data-bs-toggle="collapse">
                         @if (child.icon) {
                           <fa-icon [icon]="child.icon" />
                         }

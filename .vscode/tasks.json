@@ -5,6 +5,9 @@
       "label": "Build Patch Version",
       "type": "shell",
       "command": "npm version patch && npm run build",
+      "options": {
+        "cwd": "${workspaceFolder}/client",
+      },
       "group": {
         "kind": "build",
         "isDefault": false
@@ -16,6 +19,9 @@
       "label": "Build Minor Version",
       "type": "shell",
       "command": "npm version minor && npm run build",
+      "options": {
+        "cwd": "${workspaceFolder}/client",
+      },
       "group": {
         "kind": "build",
         "isDefault": false
@@ -27,6 +33,9 @@
       "label": "Build Major Version",
       "type": "shell",
       "command": "npm version major && npm run build",
+      "options": {
+        "cwd": "${workspaceFolder}/client",
+      },
       "group": {
         "kind": "build",
         "isDefault": false

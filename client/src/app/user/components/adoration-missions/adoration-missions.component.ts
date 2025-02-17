@@ -7,6 +7,7 @@ import { ChangeDetectionStrategy, Component } from "@angular/core"
 } )
 export class AdorationMissionsComponent {
   public img = "assets/img/adoration.jpg"
+  public title = "Adoration Missions"
 
   public goToContact ( ) {
     const element = document.getElementById ( "contact" )
