@@ -1,0 +1,9 @@
+.event-card {
+  max-width: 48%;
+}
+
+@media (max-width: 650px) {
+  .event-card {
+    max-width: 100%;
+  }
+}

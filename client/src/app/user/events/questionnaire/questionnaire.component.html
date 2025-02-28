@@ -1,0 +1,22 @@
+<div class="modal-header">
+  <h5 class="modal-title">{{title}}</h5>
+  @if (!processing()) {
+    <button type="button" class="btn-close" (click)="close()"></button>
+  }
+</div>
+<div class="modal-body">
+  <formly-form [fields]="event.fields" [model]="event.model" [form]="event.form" />
+  <p style="color: var(--bs-secondary-color); text-align: end;" class="m-0">
+    Thank you for your interest in this event! We will be in touch soon.
+  </p>
+</div>
+<div class="modal-footer">
+  <button type="button" class="btn btn-primary" (click)="submit()" [disabled]="event.form.invalid || this.processing()">
+    @if (processing()) {
+      <fa-icon [icon]="faSpinner" animation="spin" />
+    } @else {
+      <fa-icon [icon]="faMail" />
+      Submit
+    }
+  </button>
+</div>

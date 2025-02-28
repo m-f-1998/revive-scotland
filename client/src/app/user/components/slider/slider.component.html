@@ -1,24 +1,37 @@
-<div class="swiper hero-slider">
-  <swiper-container appFMSwiper [config]="config" init="false" class="w-full">
-    @for (slide of slides; track $index) {
-      @if (isMiniTitle(slide)) {
-        <swiper-slide class="hero-slide bg-cover with-border-image text-end d-flex align-items-end" style="background: url({{slide.image}}); background-position: center; background-size: 100% 100%; height: 750px;">
-          <div class="container text-white index-forward p-3">
-            <p class="text-uppercase text-sm">{{slide.miniTitle}}</p>
-          </div>
-        </swiper-slide>
-      } @else {
-        <swiper-slide class="hero-slide bg-cover with-border-image text-center d-flex align-items-center" style="background: url({{slide.image}}); background-position: center; background-size: 100% 100%; height: 750px;">
-          <div class="container text-white py-5 my-5 index-forward p-3">
-            <h1 class="text-uppercase text-xl mt-5">{{slide.title}}</h1>
-            <div class="row">
-              <div class="col-lg-7 mx-auto">
-                <p class="lead" style="min-height: 300px;">{{slide.content}}</p>
-              </div>
-            </div>
-          </div>
-        </swiper-slide>
+<div class="text-center header d-flex justify-content-evenly align-items-center" [class.header-2]="!!subtitle()" [class.header-1]="!subtitle()" style="min-height: 500px;">
+  <div class="container m-0">
+    <div class="d-flex row-container">
+      <div class="pt-3 ps-3 pe-3">
+        <img src="assets/favicon/web-app-manifest-512x512.png" class="img-fluid" alt="Scotland Flag" style="width: 100px;">
+        <h2 class="fw-bold m-0 slider-header">Revive Scotland</h2>
+        @if(subtitle()) {
+          <h4 class="fw-bold m-0 slider-subheader">{{subtitle()}}</h4>
+        }
+        <div class="pt-3 ps-3 pe-3 slider-description">
+          <i style="color: white;">
+            {{slides()?.[activeSlide()]?.content}}
+          </i>
+        </div>
+      </div>
+      @if (slides() && slides()!.length > 0 ) {
+        <div class="mt-3 mb-4 slider-container">
+          <ngb-carousel #carousel
+            [interval]="6000"
+            class="carousel"
+            [showNavigationArrows]="false"
+            [pauseOnHover]="true"
+            [pauseOnFocus]="true"
+            (slide)="onSlide($event)">
+            @for (img of slides(); track img; let i = $index) {
+              <ng-template ngbSlide>
+                <div style="background-color: var(--bs-secondary-bg); border-radius: 15px;">
+                  <img [src]="slides()?.[i]?.image" alt="Revive Scotland Header" class="img-fluid slider-image w-100 object-fit-cover">
+                </div>
+              </ng-template>
+            }
+          </ngb-carousel>
+        </div>
       }
-    }
-  </swiper-container>
+    </div>
+  </div>
 </div>

@@ -37,7 +37,7 @@ export default tseslint.config (
     },
     rules: {
       "@angular-eslint/prefer-standalone": "error",
-      "@angular-eslint/prefer-signals": "error",
+      "@angular-eslint/prefer-signals": "off",
       "@angular-eslint/prefer-on-push-component-change-detection": "error",
       "@angular-eslint/component-selector": [
         "error",

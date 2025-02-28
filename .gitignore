@@ -1,4 +1,4 @@
-client/node_modules
-client/.angular
-api/vendor
-client/dist
+node_modules
+.angular
+vendor
+dist

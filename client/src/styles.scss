@@ -146,3 +146,7 @@ a {
 .row {
   margin: 0;
 }
+
+textarea.form-control {
+  min-height: 200px !important;
+}
