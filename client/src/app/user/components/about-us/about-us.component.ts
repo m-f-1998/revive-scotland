@@ -15,7 +15,7 @@ export class AboutUsComponent {
     {
       icon: faBible,
       title: "Scripture",
-      description: "We promote strongly the basic message of the Gospel and the transformative truth that the Holy Spirit is living and active within hearts that are in a state of grace."
+      description: "We promote the basic message of the Gospel and the transformative truth that the Holy Spirit is living and active within hearts that are in a state of grace."
     },
     {
       icon: faChurch,

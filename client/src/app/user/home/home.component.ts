@@ -32,24 +32,19 @@ import { NextEventComponent } from "@components/next-event/next-event.component"
 export class HomeComponent {
   public slides = [
     {
+      title: "Revive Scotland",
       content: "We are dedicated to reviving the faith in people's hearts through the power of the Holy Spirit. We deliver this through formation, community and prayer; mainly Pilgrimages, Revive Weekends and Eucharistic Adoration.",
       image: "assets/img/hero-bg-1.jpg"
     },
     {
+      title: "Join the Prayer",
       content: "Revive exists to give people a real and transformational HOPE, through a FAITH filled lifestyle centered on the sacraments, catechesis and real authentic friendships as a way to encounter God's LOVE.",
       image: "assets/img/hero-bg-2.jpg"
     },
     {
+      title: "God is Love",
       content: "'Let anyone who is thirsty come to me and drink. Whoever believes in me, as Scripture has said, rivers of living water will flow from within them. By this he meant the Holy Spirit' (Jn 7:38-39)",
       image: "assets/img/hero-bg-3.jpg"
-    },
-    {
-      content: "'Let anyone who is thirsty come to me and drink. Whoever believes in me, as Scripture has said, rivers of living water will flow from within them. By this he meant the Holy Spirit' (Jn 7:38-39)",
-      image: "assets/img/hero-bg-4.jpg"
-    },
-    {
-      content: "'Let anyone who is thirsty come to me and drink. Whoever believes in me, as Scripture has said, rivers of living water will flow from within them. By this he meant the Holy Spirit' (Jn 7:38-39)",
-      image: "assets/img/hero-bg-5.jpg"
     }
   ]
 }

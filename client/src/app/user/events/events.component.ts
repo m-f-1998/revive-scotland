@@ -26,6 +26,19 @@ import { ActivatedRoute, Router } from "@angular/router"
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class EventsComponent implements OnInit {
+  public slides = [
+    {
+      title: "Upcoming Events",
+      content: "Revive Scotland",
+      image: "assets/img/hero-bg-4.jpg"
+    },
+    {
+      title: "Upcoming Events",
+      content: "Revive Scotland",
+      image: "assets/img/hero-bg-5.jpg"
+    },
+  ]
+
   public readonly events: WritableSignal<Array<any>> = signal ( [ ] )
   public readonly questionnaires: WritableSignal<Array<{
     title: string

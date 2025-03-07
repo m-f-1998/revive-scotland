@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, WritableSignal, signal, viewChild, Signal, input, InputSignal } from "@angular/core"
 import { NgbCarousel, NgbCarouselModule, NgbSlideEvent } from "@ng-bootstrap/ng-bootstrap"
 
-type Slide = { content: string; image: string }
+type Slide = { title: string; content: string; image: string }
 
 @Component ( {
   selector: "app-slider",

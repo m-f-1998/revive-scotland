@@ -92,6 +92,7 @@ export class QuestionnaireComponent implements OnInit, OnDestroy {
       },
       error: e => {
         this.activeModal.close ( )
+        this.event.form.reset ( )
         this.toastrSvc.error ( e.error ?? "An Unexpected Error Occured", "Please Try Again Later" )
         console.error ( e )
         this.processing.set ( false )

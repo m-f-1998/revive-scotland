@@ -119,27 +119,19 @@
 
     try {
 
-      if ( true ) {
-
-        http_response_code ( 400 );
-        echo json_encode ( "We are currently working on our email system. Please try again later." );
-        exit ( );
-
-      }
-
       // Server settings
       $mail->isSMTP ( );                                    // Send using SMTP
-      $mail->Host       = "smtp.gmail.com";                 // Set the SMTP server to send through
+      $mail->Host       = "smtp.mail.me.com";               // Set the SMTP server to send through
       $mail->SMTPAuth   = true;                             // Enable SMTP authentication
-      $mail->Username   = "revivescotlandx@gmail.com";      // SMTP username
-      $mail->Password   = "";            // SMTP password
+      $mail->Username   = "admin@matthewfrankland.co.uk";   // SMTP username
+      $mail->Password   = "pjig-ffvw-pyts-qnvz";            // SMTP password
       $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;   // Enable TLS encryption; PHPMailer::ENCRYPTION_SMTPS also available
       $mail->Port       = 587;                              // TCP port to connect to
       $mail->SMTPDebug  = 0;                                // Disable debugging output
 
       //Recipients
-      $mail->setFrom ( "revivescotlandx@gmail.com" );
-      $mail->addAddress (  "luca@revivescotland.co.uk", "Luca McQuillan" ); // Add a recipient
+      $mail->setFrom ( "admin@matthewfrankland.co.uk" ); // Add a recipient
+      $mail->addAddress ( "revivescotlandx@gmail.com" );
 
       // Content
       $mail->isHTML ( true );                                  // Set email format to HTML
@@ -149,9 +141,17 @@
       $mail->addCustomHeader ( "X-Mailer", "PHPMailer" );
       $mail->addCustomHeader ( "X-Priority", "3" );            // Normal priority
 
-      $mail->send ( );
-      http_response_code ( 200 );
-      echo json_encode ( "Email sent" );
+      if ( !$mail->send ( ) ) {
+
+        http_response_code ( 500 );
+        echo json_encode ( "Mailer Error: {$mail->ErrorInfo}" );
+
+      } else {
+
+        http_response_code ( 200 );
+        echo json_encode ( "Email sent" );
+
+      }
 
     } catch ( Exception $e ) {
 

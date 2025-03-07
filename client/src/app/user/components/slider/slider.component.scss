@@ -3,43 +3,8 @@
 	background-position: center;
 }
 
-.header-1 {
-	background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("/assets/img/hero-bg-6.jpg");
-}
-
 .header-2 {
 	background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("/assets/img/hero-bg-7.jpg");
-}
-
-.row-container {
-	flex-direction: row;
-	justify-content: center;
-}
-
-.carousel {
-	width: 500px;
-	height: 100%;
-}
-
-@media (max-width: 992px) {
-	.row-container {
-		flex-direction: column !important;
-	}
-	.carousel {
-		width: auto !important;
-		min-width: 300px !important;
-		max-width: 750px !important;
-	}
-}
-
-.slider-image {
-	border-radius: 15px;
-}
-
-.slider-container {
-	border-radius: 15px;
-	border: 5px solid var(--bs-primary);
-	align-self: center;
 }
 
 .slider-header {
@@ -60,4 +25,30 @@
 		-3px 3px 0 var(--bs-primary),
 		-3px -3px 0 var(--bs-primary),
 		3px -3px 0 var(--bs-primary);
+}
+
+.slider-image {
+	max-height: 700px;
+}
+
+.caption-text {
+	font-size: medium;
+}
+
+@media (max-width: 576px) {
+	.caption-text {
+		font-size: small;
+	}
+}
+
+@media (max-width: 450px) {
+	.caption-text {
+		font-size: x-small;
+	}
+}
+
+@media (max-width: 330px) {
+	.caption-text {
+		display: none;
+	}
 }
