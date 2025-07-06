@@ -1,0 +1,180 @@
+html {
+  min-width: 300px;
+}
+
+:root {
+  --bs-blue: #0d6efd;
+  --bs-indigo: #6610f2;
+  --bs-purple: #6f42c1;
+  --bs-pink: #d63384;
+  --bs-red: #dc3545;
+  --bs-orange: #fd7e14;
+  --bs-yellow: #ffc107;
+  --bs-green: #28a745;
+  --bs-teal: #20c997;
+  --bs-cyan: #17a2b8;
+  --bs-white: #fff;
+  --bs-gray: #6c757d;
+  --bs-gray-dark: #343a40;
+  --bs-gray-100: #f8f9fa;
+  --bs-gray-200: #e9ecef;
+  --bs-gray-300: #dee2e6;
+  --bs-gray-400: #ced4da;
+  --bs-gray-500: #adb5bd;
+  --bs-gray-600: #6c757d;
+  --bs-gray-700: #495057;
+  --bs-gray-800: #343a40;
+  --bs-gray-900: #212529;
+  --bs-primary: #3399FF;
+  --bs-secondary: #6c757d;
+  --bs-success: #28a745;
+  --bs-info: #17a2b8;
+  --bs-warning: #ffc107;
+  --bs-danger: #dc3545;
+  --bs-light: #f8f9fa;
+  --bs-dark: #343a40;
+  --bs-primary-rgb: 51, 153, 255;
+  --bs-secondary-rgb: 108, 117, 125;
+  --bs-success-rgb: 40, 167, 69;
+  --bs-info-rgb: 23, 162, 184;
+  --bs-warning-rgb: 255, 193, 7;
+  --bs-danger-rgb: 220, 53, 69;
+  --bs-light-rgb: 248, 249, 250;
+  --bs-dark-rgb: 52, 58, 64;
+  --bs-white-rgb: 255, 255, 255;
+  --bs-black-rgb: 0, 0, 0;
+  --bs-body-color-rgb: 33, 37, 41;
+  --bs-body-bg-rgb: 255, 255, 255;
+  --bs-font-sans-serif: "Poppins", sans-serif;
+  --bs-font-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --bs-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0));
+  --bs-body-font-family: var(--bs-font-sans-serif);
+  --bs-body-font-size: 1rem;
+  --bs-body-font-weight: 300;
+  --bs-body-line-height: 1.5;
+}
+
+a {
+  cursor: pointer;
+}
+
+body {
+  margin: 0;
+  font-family: var(--bs-body-font-family);
+  font-size: var(--bs-body-font-size);
+  font-weight: var(--bs-body-font-weight);
+  line-height: var(--bs-body-line-height);
+  color: var(--bs-body-color);
+  text-align: var(--bs-body-text-align);
+  background-color: var(--bs-body-bg);
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+
+html, body {
+  min-height: 100vh;
+}
+
+app-events {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex-grow: 1;
+}
+
+.index-forward {
+  position: relative;
+  z-index: 99;
+}
+
+h1, .h1 {
+  font-size: calc(1.375rem + 1.5vw);
+  font-weight: 700;
+}
+
+@media (min-width: 1200px) {
+  h1, .h1 {
+    font-size: 2.5rem;
+  }
+}
+
+h1, .h1, h2, .h2, h3, .h3, h4, .h4, h5, .h5, h6, .h6 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.text-uppercase {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  letter-spacing: 0.1em;
+}
+
+.text-serif {
+  font-family: "Georgia", "Times New Roman", serif;
+  font-style: italic;
+}
+
+.bg-cover {
+  background-size: cover !important;
+}
+
+.bg-center {
+  background-position: center center !important;
+}
+
+.text-xl {
+  font-size: 2.5rem;
+}
+
+@media (min-width: 600px) {
+  .text-xl {
+    font-size: 4.5rem !important;
+  }
+}
+
+a {
+  color: #3399FF;
+  text-decoration: none !important;
+}
+
+.bg-fixed {
+  background-attachment: fixed !important;
+}
+
+.row {
+  margin: 0;
+}
+
+textarea.form-control {
+  min-height: 200px !important;
+}
+
+.min-height-100vh {
+  min-height: 100vh !important;
+}
+
+.border-radius-15 {
+  border-radius: 15px !important;
+}
+
+.filter-50 {
+  filter: brightness(50%) !important;
+}
+
+.min-height-500 {
+  min-height: 500px !important;
+}
+
+.mmin-height-300 {
+  min-height: 300px !important;
+}
+
+.bg-top-right {
+  object-position: top right !important;
+}
+
+.bg-img-fit {
+  object-fit: cover !important;
+}

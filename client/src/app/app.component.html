@@ -1,0 +1,7 @@
+<div class="d-flex flex-column min-height-100vh">
+  <app-navbar />
+  <router-outlet></router-outlet>
+  <a class="scroll-top" id="scrollTop" (click)="scrollToTop()">
+    <fa-icon [icon]="iconSvc.getIcon('fas', 'arrow-up-long')" />
+  </a>
+</div>

@@ -1,0 +1,16 @@
+.event-card {
+  max-width: 48%;
+}
+
+@media (max-width: 650px) {
+  .event-card {
+    max-width: 100%;
+  }
+}
+
+.event-image {
+  object-fit: contain;
+  object-position: center;
+  max-height: 400px;
+  background-color: gray;
+}

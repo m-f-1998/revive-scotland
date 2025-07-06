@@ -1,0 +1,31 @@
+<div class="row align-items-stretch gx-0">
+  <div class="col-12 col-lg-6 half-page-banner bg-cover bg-center min-height-300">
+    <img class="w-100 h-100 bg-top-right bg-img-fit" [src]="image" alt="Our Story Banner">
+  </div>
+  <div class="col-12 col-lg-6 order-lg-first">
+    <div class="h-100 d-flex flex-column p-5 justify-content-center">
+      <p class="text-serif text-primary mb-0">About Us</p>
+      <h2 class="text-uppercase">Our Story</h2>
+      <ul class="list-check ps-0">
+        @let ourStory = screenWidth() > 992 ?
+          this.ourStory :
+          this.ourStory.slice(0,readmore() ? this.ourStory.length : 2);
+        @for (story of ourStory; track $index) {
+          @if (story.bullet) {
+            <li>
+              <fa-icon [icon]="iconSvc.getIcon('fas', 'check-circle')" class="check-icon" />
+              <p class="mb-0 text-muted mb-2">{{story.description}}</p>
+            </li>
+          } @else {
+            <p class="text-muted mb-0 mb-2">{{story.description}}</p>
+          }
+        }
+        @if (screenWidth() <= 992) {
+          <button class="btn btn-primary mt-3" (click)="toggleReadMore()">
+            {{readmore() ? 'Read Less' : 'Read More'}}
+          </button>
+        }
+      </ul>
+    </div>
+  </div>
+</div>

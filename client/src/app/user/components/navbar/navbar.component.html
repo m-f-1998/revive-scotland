@@ -1,0 +1,49 @@
+<nav class="navbar navbar-expand-lg">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <img src="assets/img/logo.png" width="100px">
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav">
+        @if (url() !== "") {
+          <a class="nav-link clickable" routerLink="/" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
+            <fa-icon [icon]="iconSvc.getIcon('fas', 'home')" />
+            Home
+          </a>
+        }
+        @if (url() !== "/events") {
+          <a class="nav-link clickable" routerLink="/events" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
+            <fa-icon [icon]="iconSvc.getIcon('fas', 'calendar')" />
+            Upcoming Events
+          </a>
+        }
+        <a class="nav-link clickable" href="https://www.revive-consecrations.co.uk/" target="_blank" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
+          <fa-icon [icon]="iconSvc.getIcon('fas', 'globe')" />
+          Revive Consecrations
+        </a>
+        @if (url() === "") {
+          <div ngbDropdown>
+            <a class="nav-link clickable" ngbDropdownToggle>
+              <fa-icon [icon]="iconSvc.getIcon('fas', 'cross')" />
+              Missions
+            </a>
+            <div ngbDropdownMenu>
+              <a ngbDropdownItem (click)="scrollTo('#pilgrimage')">
+                Pilgrimages
+              </a>
+              <a ngbDropdownItem (click)="scrollTo('#adoration')">
+                Adoration
+              </a>
+              <a ngbDropdownItem (click)="scrollTo('#weekends')">
+                Revive Weekends
+              </a>
+            </div>
+          </div>
+        }
+      </ul>
+    </div>
+  </div>
+</nav>
