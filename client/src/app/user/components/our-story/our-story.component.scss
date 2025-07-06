@@ -1,0 +1,22 @@
+.list-check li {
+  padding-left: 2.5rem;
+  position: relative;
+  list-style: none;
+}
+
+.list-check {
+  list-style: none;
+  padding: 0;
+}
+
+.list-check li {
+  position: relative;
+  padding-left: 30px; /* Space for icon */
+  display: flex;
+}
+
+.check-icon {
+  position: absolute;
+  left: 0;
+  color: #3399FF;
+}

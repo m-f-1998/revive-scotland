@@ -1,0 +1,47 @@
+{
+  "name": "revivescotland",
+  "version": "1.1.0",
+  "type": "module",
+  "scripts": {
+    "prestart": "npm i",
+    "start": "ng serve",
+    "build": "ng build",
+    "build:prod": "ng build --configuration production",
+    "lint": "npx --yes eslint",
+    "lint:fix": "npx --yes eslint --fix",
+    "tsc-verify": "npx --yes tsc --noEmit"
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/animations": "^20.0.6",
+    "@angular/cdk": "^20.0.5",
+    "@angular/common": "^20.0.6",
+    "@angular/compiler": "^20.0.6",
+    "@angular/core": "^20.0.6",
+    "@angular/forms": "^20.0.6",
+    "@angular/platform-browser": "^20.0.6",
+    "@angular/platform-browser-dynamic": "^20.0.6",
+    "@angular/router": "^20.0.6",
+    "@fortawesome/angular-fontawesome": "^2.0.1",
+    "@fortawesome/free-brands-svg-icons": "^6.7.2",
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
+    "@ng-bootstrap/ng-bootstrap": "^19.0.1",
+    "@ngx-formly/bootstrap": "^7.0.0",
+    "@ngx-formly/core": "^7.0.0",
+    "bootstrap": "^5.3.7",
+    "date-fns": "^4.1.0",
+    "ng-recaptcha-2": "^16.0.1",
+    "ngx-toastr": "^19.0.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^20.0.5",
+    "@angular/cli": "^20.0.5",
+    "@angular/compiler-cli": "^20.0.6",
+    "@angular/localize": "^20.0.6",
+    "@ngx-formly/schematics": "^7.0.0",
+    "@stylistic/eslint-plugin": "^5.1.0",
+    "angular-eslint": "^20.1.1",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.35.1"
+  }
+}

@@ -1,0 +1,58 @@
+.header {
+	background-size: cover;
+	background-position: center;
+}
+
+.header-2 {
+	background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("/assets/img/hero-bg-7.jpg");
+}
+
+.slider-header {
+	font-size: 4rem;
+	color: white;
+	text-shadow:
+		3px 3px 0 var(--bs-primary),
+		-3px 3px 0 var(--bs-primary),
+		-3px -3px 0 var(--bs-primary),
+		3px -3px 0 var(--bs-primary);
+}
+
+.slider-subheader {
+	font-size: 3rem;
+	color: white;
+	text-shadow:
+		3px 3px 0 var(--bs-primary),
+		-3px 3px 0 var(--bs-primary),
+		-3px -3px 0 var(--bs-primary),
+		3px -3px 0 var(--bs-primary);
+}
+
+.slider-image {
+	max-height: 700px;
+}
+
+.caption-text {
+	font-size: medium;
+}
+
+.carousel-caption {
+	color: white !important;
+}
+
+@media (max-width: 576px) {
+	.caption-text {
+		font-size: small;
+	}
+}
+
+@media (max-width: 450px) {
+	.caption-text {
+		font-size: x-small;
+	}
+}
+
+@media (max-width: 330px) {
+	.caption-text {
+		display: none;
+	}
+}

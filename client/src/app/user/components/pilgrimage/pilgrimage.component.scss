@@ -1,0 +1,53 @@
+.primary-overlay {
+  position: relative;
+}
+
+.primary-overlay::after {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  content: ' ';
+  opacity: 0.4;
+  background: #584039;
+  z-index: 2;
+}
+
+.text-white {
+  --bs-text-opacity: 1;
+  color: rgba(var(--bs-white-rgb), var(--bs-text-opacity)) !important;
+}
+
+.overlay-content {
+  position: relative;
+  z-index: 20;
+}
+
+.pilgrimage-text {
+  backdrop-filter: blur(5px) saturate(70%);
+}
+
+.pilgrimage-section {
+  position: relative;
+  overflow: hidden;
+
+  .background-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    z-index: 0;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .primary-overlay {
+    position: relative;
+    background-color: rgba(0, 0, 0, 0.5); // mimic overlay darkness
+    z-index: 10;
+  }
+}
