@@ -34,7 +34,7 @@ export class NextEventComponent {
   public readonly eventLink: WritableSignal<string> = signal ( "" )
   public readonly title: WritableSignal<string> = signal ( "Next Event" )
   private readonly eventSvc: EventsService = inject ( EventsService )
-  private readonly changeDetector = inject ( ChangeDetectorRef )
+  private readonly changeDetector: ChangeDetectorRef = inject ( ChangeDetectorRef )
 
   public constructor (  ) {
     this.eventSvc.getNextEvent ( ).then ( ( nextEvent: any ) => {

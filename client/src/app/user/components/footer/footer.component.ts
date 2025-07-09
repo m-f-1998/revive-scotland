@@ -16,9 +16,9 @@ export class FooterComponent {
   public me = "https://matthewfrankland.co.uk/"
   public version = version
 
-  public modalSvc: NgbModal = inject ( NgbModal )
-  public router: Router = inject ( Router )
-  public dateSvc: DatesService = inject ( DatesService )
+  public readonly modalSvc: NgbModal = inject ( NgbModal )
+  public readonly router: Router = inject ( Router )
+  public readonly dateSvc: DatesService = inject ( DatesService )
 
   public openTerms ( ) {
     this.modalSvc.open ( TermsComponent, { size: "lg", backdrop: "static" } )
