@@ -20,7 +20,7 @@ export class ApiService {
       this.httpClient.get ( address, {
         params: body,
         headers,
-        responseType: address.endsWith ( "/asset.php" ) ? "blob" : "json"
+        responseType: "json"
       } as object ).subscribe ( {
         next: response => {
           resolve ( this.parseObj ( response ) )
@@ -43,7 +43,7 @@ export class ApiService {
     return new Promise ( ( resolve, reject ) => {
       this.httpClient.post ( address, body, {
         headers,
-        responseType: address.endsWith ( "/asset.php" ) ? "blob" : "json"
+        responseType: "json"
       } as object ).subscribe ( {
         next: response => {
           resolve ( this.parseObj ( response ) )

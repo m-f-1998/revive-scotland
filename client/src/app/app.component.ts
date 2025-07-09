@@ -17,8 +17,7 @@ import { IconService } from "./services/icons.service"
 } )
 export class AppComponent {
   public readonly iconSvc: IconService = inject ( IconService )
-
-  private readonly faConfig = inject ( FaConfig )
+  private readonly faConfig: FaConfig = inject ( FaConfig )
 
   public constructor ( ) {
     this.faConfig.autoAddCss = false
