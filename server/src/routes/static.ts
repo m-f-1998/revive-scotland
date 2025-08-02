@@ -3,21 +3,8 @@ import type { Response } from "express"
 import { join } from "path"
 import { existsSync } from "fs"
 import { readFile } from "fs/promises"
-import { rateLimit } from "express-rate-limit"
 
 export const router = Router ( )
-
-router.use ( rateLimit ( {
-  windowMs: 60 * 1000, // 1 minute
-  max: 500, // limit each IP to 500 requests per windowMs
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  message: {
-    status: 429,
-    error: "Too many requests, please try again later.",
-    description: "You have exceeded the maximum number of requests allowed. Please wait a minute before trying again."
-  }
-} ) )
 
 router.use ( express.static ( join ( process.cwd ( ), "../client" ), {
   maxAge: "1d",
