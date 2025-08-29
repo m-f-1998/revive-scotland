@@ -2,9 +2,8 @@ import { ApplicationConfig, CSP_NONCE, provideZonelessChangeDetection } from "@a
 import { provideRouter } from "@angular/router"
 import { routes } from "./app.routes"
 import { provideHttpClient, withFetch } from "@angular/common/http"
-import { provideAnimations } from "@angular/platform-browser/animations"
 import { provideFormlyCore } from "@ngx-formly/core"
-import { provideToastr } from "ngx-toastr"
+import { provideToastr } from "@m-f-1998/ngx-toastr"
 import { RECAPTCHA_LOADER_OPTIONS, RECAPTCHA_V3_SITE_KEY } from "ng-recaptcha-2"
 import { withFormlyBootstrap } from "@ngx-formly/bootstrap"
 import { FormlyConfig } from "./formly/formly-config"
@@ -18,7 +17,6 @@ const appConfig: ApplicationConfig = {
     provideHttpClient (
       withFetch ( )
     ),
-    provideAnimations ( ),
     provideFormlyCore ( [
       new FormlyConfig ( ),
       ...withFormlyBootstrap ( )

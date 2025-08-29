@@ -1,5 +1,5 @@
 import express from "express"
-import type { Response } from "express"
+// import type { Response } from "express"
 import helmet from "helmet"
 
 import cors from "cors"
@@ -59,7 +59,8 @@ app.use ( helmet ( {
       ],
       scriptSrcElem: [
         "'self'",
-        ( _req, res ) => `'nonce-${( res as Response ).locals[ "cspNonce" ]}'`
+        "'unsafe-inline'",
+        // ( _req, res ) => `'nonce-${( res as Response ).locals[ "cspNonce" ]}'`
       ],
       imgSrc: [
         "'self'",

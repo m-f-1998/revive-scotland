@@ -9,9 +9,9 @@ export const router = Router ( )
 const envPath = resolve ( process.cwd ( ), ".env" )
 config ( { path: envPath, quiet: true } )
 
-router.use ( "/api/events", rateLimit ( { // limit each IP to 5 requests per hour
+router.use ( "/api/events", rateLimit ( { // limit each IP to 100 requests per hour
   windowMs: 60 * 60 * 1000,
-  max: 5,
+  max: 100,
   message: "Too many requests, please try again later.",
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
