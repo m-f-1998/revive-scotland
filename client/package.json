@@ -13,35 +13,34 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/animations": "^20.0.6",
-    "@angular/cdk": "^20.1.5",
+    "@angular/cdk": "^20.2.1",
     "@angular/common": "^20.0.6",
     "@angular/compiler": "^20.0.6",
     "@angular/core": "^20.0.6",
-    "@angular/forms": "^20.1.6",
+    "@angular/forms": "^20.2.2",
     "@angular/platform-browser": "^20.0.6",
-    "@angular/platform-browser-dynamic": "^20.1.6",
-    "@angular/router": "^20.1.6",
+    "@angular/platform-browser-dynamic": "^20.2.2",
+    "@angular/router": "^20.2.2",
     "@fortawesome/angular-fontawesome": "^3.0.0",
     "@fortawesome/free-brands-svg-icons": "^7.0.0",
     "@fortawesome/free-solid-svg-icons": "^7.0.0",
+    "@m-f-1998/ngx-toastr": "^1.0.1",
     "@ng-bootstrap/ng-bootstrap": "^19.0.1",
     "@ngx-formly/bootstrap": "^7.0.0",
     "@ngx-formly/core": "^7.0.0",
-    "bootstrap": "^5.3.7",
+    "bootstrap": "^5.3.8",
     "date-fns": "^4.1.0",
-    "ng-recaptcha-2": "^16.0.1",
-    "ngx-toastr": "^19.0.0"
+    "ng-recaptcha-2": "^16.0.1"
   },
   "devDependencies": {
-    "@angular/build": "^20.1.5",
-    "@angular/cli": "^20.1.5",
+    "@angular/build": "^20.2.1",
+    "@angular/cli": "^20.2.1",
     "@angular/compiler-cli": "^20.0.6",
-    "@angular/localize": "^20.1.6",
+    "@angular/localize": "^20.2.2",
     "@ngx-formly/schematics": "^7.0.0",
     "@stylistic/eslint-plugin": "^5.2.3",
-    "angular-eslint": "^20.1.1",
-    "typescript": "^5.8.3",
-    "typescript-eslint": "^8.39.0"
+    "angular-eslint": "^20.2.0",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.41.0"
   }
 }

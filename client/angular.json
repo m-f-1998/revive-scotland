@@ -36,7 +36,7 @@
               "src/styles.scss",
               "@fortawesome/fontawesome-svg-core/styles.css",
               "bootstrap/dist/css/bootstrap.min.css",
-              "node_modules/ngx-toastr/toastr.css"
+              "node_modules/@m-f-1998/ngx-toastr/toastr.css"
             ]
           },
           "configurations": {
