@@ -61,35 +61,35 @@ export class EventsComponent implements OnInit {
 
   public ngOnInit ( ) {
     this.questionnaires = [
-      {
-        title: "'Journey to Rome' - Expression of Interest",
-        description: "Join us on a pilgrimage to the Eternal City for the Marian Jubilee. Express your interest by completing the form below. Includes flights, accomodation, breakfast and lunch.",
-        price: 650,
-        location: "Rome, Italy",
-        image: "assets/img/trip-to-rome.png",
-        start: new Date ( "2025-10-07" ),
-        end: new Date ( "2025-10-12" ),
-        fields: [
-          this.formlySvc.TextInput ( "name", {
-            label: "Name",
-            required: true
-          } ),
-          this.formlySvc.EmailInput ( "email", {
-            label: "Email",
-            required: true
-          } ),
-          this.formlySvc.TextAreaInput ( "questions", {
-            label: "Questions",
-            required: true,
-            maxLength: 500,
-            minLength: 0,
-            includeMaxDescription: true
-          } ),
-          this.formlySvc.CheckboxInput ( "interest", {
-            label: "Are you interested in joining us on this pilgrimage?"
-          } )
-        ]
-      }
+      // {
+      //   title: "'Journey to Rome' - Expression of Interest",
+      //   description: "Join us on a pilgrimage to the Eternal City for the Marian Jubilee. Express your interest by completing the form below. Includes flights, accomodation, breakfast and lunch.",
+      //   price: 650,
+      //   location: "Rome, Italy",
+      //   image: "assets/img/trip-to-rome.png",
+      //   start: new Date ( "2025-10-07" ),
+      //   end: new Date ( "2025-10-12" ),
+      //   fields: [
+      //     this.formlySvc.TextInput ( "name", {
+      //       label: "Name",
+      //       required: true
+      //     } ),
+      //     this.formlySvc.EmailInput ( "email", {
+      //       label: "Email",
+      //       required: true
+      //     } ),
+      //     this.formlySvc.TextAreaInput ( "questions", {
+      //       label: "Questions",
+      //       required: true,
+      //       maxLength: 500,
+      //       minLength: 0,
+      //       includeMaxDescription: true
+      //     } ),
+      //     this.formlySvc.CheckboxInput ( "interest", {
+      //       label: "Are you interested in joining us on this pilgrimage?"
+      //     } )
+      //   ]
+      // }
     ]
     this.getEvents ( )
   }
