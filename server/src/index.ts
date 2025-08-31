@@ -64,6 +64,7 @@ app.use ( helmet ( {
         "https://www.googletagmanager.com",
         "https://static.cloudflareinsights.com",
         "https://www.google.com",
+        "https://www.gstatic.com",
         // ( _req, res ) => `'nonce-${( res as Response ).locals[ "cspNonce" ]}'`
       ],
       imgSrc: [
