@@ -38,6 +38,19 @@ export class FormlyService {
     return this.Input ( key, "email", props, expressions, focus )
   }
 
+  public PasswordInput (
+    key: string,
+    props: FormlyProps = { },
+    expressions: FormlyExpressions = { },
+    focus: boolean = false
+  ): FormlyFieldConfig {
+    if ( !props.maxLength ) {
+      props.maxLength = 250
+    }
+    props.minLength = props.minLength || 8
+    return this.CustomField ( key, "password", { ...expressions, props }, focus )
+  }
+
   public CheckboxInput (
     key: string,
     props: FormlyProps = { },

@@ -8,18 +8,20 @@ import { SliderComponent } from "@components/slider/slider.component"
 import { FormlyFieldConfig } from "@ngx-formly/core"
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
 import { QuestionnaireComponent } from "./questionnaire/questionnaire.component"
-import { IconService } from "../../services/icons.service"
-import { FormlyService } from "../../services/formly.service"
+import { IconService } from "@services/icons.service"
+import { FormlyService } from "@services/formly.service"
+import { NavbarComponent } from "../components/navbar/navbar.component"
 
 export interface Questionnaire {
   title: string
   description: string
-  price: number
+  price?: number
   location: string
   image: string
   start: Date
   end: Date
-  fields: FormlyFieldConfig [ ]
+  fields?: FormlyFieldConfig [ ]
+  url?: string
 }
 
 @Component ( {
@@ -28,6 +30,7 @@ export interface Questionnaire {
     FooterComponent,
     FaIconComponent,
     ContactComponent,
+    NavbarComponent,
     SliderComponent
   ],
   templateUrl: "./events.component.html",
@@ -61,6 +64,15 @@ export class EventsComponent implements OnInit {
 
   public ngOnInit ( ) {
     this.questionnaires = [
+      {
+        title: "Revive Weekend for Young Adults",
+        description: "Dare to be Wise, Begin!",
+        location: "Cumming Hall, Forres, 198 Portal Road, Kinloss, Forres IV36 3UN",
+        image: "assets/img/kinloss-weekend.jpg",
+        start: new Date ( "2025-10-17" ),
+        end: new Date ( "2025-10-19" ),
+        url: "https://stmaryscathedral.churchsuite.com/events/artezvmj"
+      }
       // {
       //   title: "'Journey to Rome' - Expression of Interest",
       //   description: "Join us on a pilgrimage to the Eternal City for the Marian Jubilee. Express your interest by completing the form below. Includes flights, accomodation, breakfast and lunch.",
@@ -95,10 +107,14 @@ export class EventsComponent implements OnInit {
   }
 
   public openQuestionnaire ( event: any ) {
-    const modalRef = this.modalSvc.open ( QuestionnaireComponent, {
-      size: "xl"
-    } )
-    modalRef.componentInstance.event = event
+    if ( event.url ) {
+      window.open ( event.url, "_blank" )
+    } else if ( event.fields ) {
+      const modalRef = this.modalSvc.open ( QuestionnaireComponent, {
+        size: "xl"
+      } )
+      modalRef.componentInstance.event = event
+    }
   }
 
   private async getEvents ( ) {

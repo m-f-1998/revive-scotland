@@ -1,14 +1,13 @@
 import { ChangeDetectionStrategy, Component, HostListener, inject } from "@angular/core"
 import { RouterOutlet } from "@angular/router"
-import { NavbarComponent } from "./user/components/navbar/navbar.component"
 import { FaConfig, FaIconComponent } from "@fortawesome/angular-fontawesome"
-import { IconService } from "./services/icons.service"
+import { IconService } from "@services/icons.service"
+import { ApplicationService } from "./services/application.service"
 
 @Component ( {
   selector: "app-root",
   imports: [
     RouterOutlet,
-    NavbarComponent,
     FaIconComponent
   ],
   templateUrl: "./app.component.html",
@@ -18,9 +17,14 @@ import { IconService } from "./services/icons.service"
 export class AppComponent {
   public readonly iconSvc: IconService = inject ( IconService )
   private readonly faConfig: FaConfig = inject ( FaConfig )
+  private readonly appSvc: ApplicationService = inject ( ApplicationService )
 
   public constructor ( ) {
     this.faConfig.autoAddCss = false
+
+    if ( localStorage.getItem ( "token" ) ) {
+      this.appSvc.setLogin ( localStorage.getItem ( "token" ) || "" )
+    }
   }
 
   @HostListener ( "window:scroll", [ "$event.target" ] ) public onScroll ( ) {

@@ -1,0 +1,24 @@
+<div class="login-container">
+  @if (!loading()) {
+    <div class="card shadow-sm p-4 mb-4 rounded">
+      <div class="card-body">
+        <h2 class="card-title text-center mb-4">Admin Login</h2>
+        <formly-form [form]="form" [fields]="fields" [model]="model" />
+        <button [disabled]="form.invalid" class="btn btn-primary w-100 mb-3" (click)="submit()">
+          <i class="bi bi-box-arrow-in-right"></i> Login
+        </button>
+        @if (error) {
+          <div class="alert alert-danger text-center" role="alert">
+            {{ error }}
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="loading-spinner d-flex justify-content-center">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  }
+</div>

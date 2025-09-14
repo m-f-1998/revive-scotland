@@ -1,12 +1,15 @@
 import { ChangeDetectionStrategy, Component, inject } from "@angular/core"
 import { TermsComponent } from "../terms/terms.component"
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
-import { Router } from "@angular/router"
+import { Router, RouterLink } from "@angular/router"
 import { DatesService } from "@services/dates.service"
 import { version } from "@revive/package.json"
 
 @Component ( {
   selector: "app-footer",
+  imports: [
+    RouterLink
+  ],
   templateUrl: "./footer.component.html",
   styleUrl: "./footer.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush

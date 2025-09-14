@@ -10,6 +10,7 @@ import { ContactComponent } from "@components/contact/contact.component"
 import { FooterComponent } from "@components/footer/footer.component"
 import { ReviveWeekendsComponent } from "@components/revive-weekends/revive-weekends.component"
 import { NextEventComponent } from "@components/next-event/next-event.component"
+import { NavbarComponent } from "../components/navbar/navbar.component"
 
 @Component ( {
   selector: "app-home",
@@ -21,6 +22,7 @@ import { NextEventComponent } from "@components/next-event/next-event.component"
     PilgrimageComponent,
     AdorationMissionsComponent,
     // DonateComponent,
+    NavbarComponent,
     ContactComponent,
     FooterComponent,
     ReviveWeekendsComponent,

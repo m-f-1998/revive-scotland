@@ -1,0 +1,29 @@
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Events</h2>
+    <button class="btn btn-primary" (click)="createEvent()">Create New Event</button>
+  </div>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Date</th>
+        <th>Location</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (event of events(); track $index) {
+        <tr>
+          <td>{{ event.title }}</td>
+          <td>{{ event.when | date:'mediumDate' }}</td>
+          <td>{{ event.address }}</td>
+          <td>
+            <button class="btn btn-sm btn-warning me-2" (click)="editEvent(event)">Edit</button>
+            <button class="btn btn-sm btn-danger" (click)="deleteEvent(event)">Delete</button>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

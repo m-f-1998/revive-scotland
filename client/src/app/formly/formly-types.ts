@@ -17,6 +17,7 @@ export interface FormlyProps {
   error?: boolean
   label?: string
   type?: string
+  minLength?: number
   maxLength?: number
   placeholder?: string
   disableNext?: boolean

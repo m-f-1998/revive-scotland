@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from "@angular/core"
 import { ActivatedRoute, Router } from "@angular/router"
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome"
-import { IconService } from "../../services/icons.service"
+import { IconService } from "@services/icons.service"
 
 @Component ( {
   selector: "app-error",

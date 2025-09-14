@@ -6,6 +6,9 @@ import cors from "cors"
 import { router as mailerRouter } from "./routes/mailer.js"
 import { router as staticRouter } from "./routes/static.js"
 import { router as eventRouter } from "./routes/events.js"
+import { router as events2Router } from "./routes/events-v2.js"
+import { router as authRouter } from "./routes/auth.js"
+
 import { randomBytes } from "crypto"
 import { rateLimit } from "express-rate-limit"
 
@@ -76,6 +79,7 @@ app.use ( helmet ( {
         "'self'",
         "https://\*.google-analytics.com",
         "https://\*.google.com",
+        "https://cloudflareinsights.com"
       ],
       frameSrc: [
         "'self'",
@@ -102,6 +106,8 @@ app.use ( "/assets", rateLimit ( {
 app.use ( eventRouter )
 app.use ( mailerRouter )
 app.use ( staticRouter )
+app.use ( "/event-v2", events2Router )
+app.use ( "/auth", authRouter )
 
 app.listen ( 3000, ( ) => {
   console.log ( "Server running on port 3000" )

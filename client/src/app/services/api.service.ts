@@ -1,12 +1,14 @@
 import { HttpClient, HttpHeaders } from "@angular/common/http"
 import { inject, Injectable, isDevMode } from "@angular/core"
 import { parse } from "date-fns"
+import { ApplicationService } from "./application.service"
 
 @Injectable ( {
   providedIn: "root"
 } )
 export class ApiService {
   private readonly httpClient: HttpClient = inject ( HttpClient )
+  private readonly appSvc: ApplicationService = inject ( ApplicationService )
 
   public get ( path: string, body: any = { },  ) {
     const address = ( isDevMode ( ) ? "http://localhost:3000" : "" ) + path
@@ -14,6 +16,10 @@ export class ApiService {
 
     if ( !( body instanceof FormData ) ) {
       headers = headers.append ( "Content-Type", "application/json" )
+    }
+
+    if ( this.appSvc.token ( ) ) {
+      headers = headers.append ( "Authorization", `Basic ${ this.appSvc.token ( ) }` )
     }
 
     return new Promise ( ( resolve, reject ) => {
@@ -38,6 +44,10 @@ export class ApiService {
 
     if ( !( body instanceof FormData ) ) {
       headers = headers.append ( "Content-Type", "application/json" )
+    }
+
+    if ( this.appSvc.token ( ) ) {
+      headers = headers.append ( "Authorization", `Basic ${ this.appSvc.token ( ) }` )
     }
 
     return new Promise ( ( resolve, reject ) => {

@@ -1,13 +1,20 @@
 import { Injectable } from "@angular/core"
 import { ConfigOption, FormlyFieldConfig } from "@ngx-formly/core"
-import { ValidEmail } from "../validators/EmailAddress.validator"
-import { ValidPhoneNumber } from "../validators/PhoneNumber.validator"
+import { ValidEmail } from "./validators/EmailAddress.validator"
+import { ValidPhoneNumber } from "./validators/PhoneNumber.validator"
+import { PasswordComponent } from "./password/password.component"
 
 @Injectable ( {
   providedIn: "root"
 } )
 export class FormlyConfig implements ConfigOption {
-  public types = [ ]
+  public types = [
+    {
+      name: "password",
+      component: PasswordComponent,
+      extends: "input"
+    },
+  ]
 
   public validationMessages = [
     { name: "required", message: "This field is Required" },

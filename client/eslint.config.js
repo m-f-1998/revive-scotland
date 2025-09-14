@@ -76,7 +76,11 @@ export default tseslint.config(
             "accessor",
             "enumMember",
           ],
-          format: ["camelCase", "PascalCase"],
+          format: [
+            "camelCase",
+            "PascalCase",
+            "snake_case"
+          ],
         },
         {
           selector: "objectLiteralMethod",
