@@ -61,6 +61,15 @@ export class EventsComponent implements OnInit {
 
   public ngOnInit ( ) {
     this.questionnaires = [
+      {
+        title: "Revive Weekend for Young Adults",
+        description: "Dare to be Wise, Begin!",
+        location: "Cumming Hall, Forres, 198 Portal Road, Kinloss, Forres IV36 3UN",
+        image: "assets/img/kinloss-weekend.jpg",
+        start: new Date ( "2025-10-17" ),
+        end: new Date ( "2025-10-19" ),
+        url: "https://stmaryscathedral.churchsuite.com/events/artezvmj"
+      },
       // {
       //   title: "'Journey to Rome' - Expression of Interest",
       //   description: "Join us on a pilgrimage to the Eternal City for the Marian Jubilee. Express your interest by completing the form below. Includes flights, accomodation, breakfast and lunch.",
