@@ -14,12 +14,13 @@ import { FormlyService } from "../../services/formly.service"
 export interface Questionnaire {
   title: string
   description: string
-  price: number
+  price?: number
   location: string
   image: string
   start: Date
   end: Date
-  fields: FormlyFieldConfig [ ]
+  fields?: FormlyFieldConfig [ ]
+  url?: string
 }
 
 @Component ( {
@@ -104,6 +105,10 @@ export class EventsComponent implements OnInit {
   }
 
   public openQuestionnaire ( event: any ) {
+    if ( event.url ) {
+      window.open ( event.url, "_blank" )
+      return
+    }
     const modalRef = this.modalSvc.open ( QuestionnaireComponent, {
       size: "xl"
     } )

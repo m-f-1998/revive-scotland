@@ -39,10 +39,12 @@
                 <fa-icon [icon]="iconSvc.getIcon('fas', 'map-marker')" class="me-2" />
                 {{event.location}}
               </div>
-              <div>
-                <fa-icon [icon]="iconSvc.getIcon('fas', 'money-bill')" class="me-2" />
-                £{{event.price}} approx.
-              </div>
+              @if (event.price) {
+                <div>
+                  <fa-icon [icon]="iconSvc.getIcon('fas', 'money-bill')" class="me-2" />
+                  £{{event.price}} approx.
+                </div>
+              }
             </div>
             <div class="d-flex gap-2">
               <button (click)="openQuestionnaire(event)" class="btn btn-primary">
