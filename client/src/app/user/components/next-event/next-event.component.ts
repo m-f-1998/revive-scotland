@@ -37,19 +37,17 @@ export class NextEventComponent {
   private readonly changeDetector: ChangeDetectorRef = inject ( ChangeDetectorRef )
 
   public constructor (  ) {
-    this.eventSvc.getNextEvent ( ).then ( ( nextEvent: any ) => {
+    this.eventSvc.getNextEvent ( ).then ( nextEvent => {
       if ( nextEvent ) {
-        this.nextEvent.set ( new Date ( nextEvent.start.local ) )
-        this.title.set ( nextEvent.name.text )
+        this.nextEvent.set ( nextEvent.start! )
+        this.title.set ( nextEvent.title )
 
-        if ( nextEvent.url ) {
-          this.eventLink.set ( nextEvent.url )
-        }
+        // if ( nextEvent.url ) {
+        //   this.eventLink.set ( nextEvent.url )
+        // }
 
-        if ( nextEvent.venue ) {
-          this.locationName.set ( nextEvent.venue.address.localized_address_display )
-        } else {
-          this.locationName.set ( "Online Event" )
+        if ( nextEvent.location_name ) {
+          this.locationName.set ( nextEvent.location_name )
         }
 
         setInterval ( ( ) => {
