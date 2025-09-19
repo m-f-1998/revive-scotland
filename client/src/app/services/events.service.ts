@@ -1,40 +1,37 @@
 import { inject, Injectable } from "@angular/core"
 import { ApiService } from "./api.service"
+import { Event } from "../interfaces/events.interface"
 
 @Injectable ( {
   providedIn: "root"
 } )
 export class EventsService {
-  private eventbrite: Array<any> | undefined
+  private events: Event [ ] | undefined
   private readonly apiSvc: ApiService = inject ( ApiService )
 
-  public async getEvents ( ): Promise<any> {
-    if ( !this.eventbrite ) {
+  public async getEvents ( ): Promise<Event[] | undefined> {
+    if ( !this.events ) {
       await this.initialize ( )
     }
-    return this.eventbrite
+    return this.events
   }
 
-  public async getNextEvent ( ): Promise<any> {
-    if ( !this.eventbrite ) {
+  public async getNextEvent ( ): Promise<Event | undefined> {
+    if ( !this.events ) {
       await this.initialize ( )
     }
-    return this.eventbrite! [ 0 ]
+    return this.events! [ 0 ]
   }
 
-  private initialize ( ) {
-    return this.apiSvc.get ( "/api/events" ).then ( ( response: any ) => {
-      this.eventbrite = response.filter ( ( x: any ) => {
-        return x.status === "live"
-      } ).sort ( ( a: any, b: any ) => {
-        if ( a.start.local > b.start.local ) {
-          return 1
-        }
-        if ( a.start.local < b.start.local ) {
-          return -1
-        }
-        return 0
-      } )
-    } )
+  private async initialize ( ) {
+    try {
+      const events = await this.apiSvc.get ( "/api/events" ) as Event [ ]
+      this.events = events.sort ( ( a, b ) =>
+        new Date ( a.start ?? 0 ).getTime ( ) - new Date ( b.start ?? 0 ).getTime ( )
+      )
+    } catch ( error: any ) {
+      console.error ( error )
+      this.events = [ ]
+    }
   }
 }

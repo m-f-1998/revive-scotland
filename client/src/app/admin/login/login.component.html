@@ -2,6 +2,9 @@
   @if (!loading()) {
     <div class="card shadow-sm p-4 mb-4 rounded">
       <div class="card-body">
+        <div class="text-center">
+          <img src="assets/img/logo.png" alt="Logo" class="logo mb-4" width="200px" />
+        </div>
         <h2 class="card-title text-center mb-4">Admin Login</h2>
         <formly-form [form]="form" [fields]="fields" [model]="model" />
         <button [disabled]="form.invalid" class="btn btn-primary w-100 mb-3" (click)="submit()">

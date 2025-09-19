@@ -32,7 +32,13 @@ The backend server requires the following environment variables to function prop
 | `SMTP_USER`           | SMTP login username (usually your email address) |
 | `SMTP_PASS`           | SMTP login password or app-specific password |
 | `SMTP_PORT`           | SMTP server port (typically `465` for SSL or `587` for TLS) |
-| `EVENTBRITE_OAUTH_TOKEN` | OAuth 2.0 Token from Eventbrite to pull events |
+| `DEV_MODE`            | Enable development mode (`true` or `false`)           |
+| `ADMIN_USERNAME`      | Admin panel username                                  |
+| `ADMIN_EMAIL`         | Admin panel email address                             |
+| `ADMIN_PASSWORD`      | Admin panel password                                  |
+| `POSTGRES_DB`         | PostgreSQL database name                              |
+| `POSTGRES_USER`       | PostgreSQL username                                   |
+| `POSTGRES_PASSWORD`   | PostgreSQL user password                              |
 
 ## 📁 Example `.env` (for local dev)
 
@@ -42,4 +48,10 @@ SMTP_HOST=smtp.example.com
 SMTP_USER=your@email.com
 SMTP_PASS=yourpassword
 SMTP_PORT=465
-EVENTBRITE_OAUTH_TOKEN=token
+DEV_MODE=true
+ADMIN_USERNAME=example
+ADMIN_EMAIL=your@example.com
+ADMIN_PASSWORD=yourpassword
+POSTGRES_DB=yourdb
+POSTGRES_USER=test
+POSTGRES_PASSWORD=yourdbpass

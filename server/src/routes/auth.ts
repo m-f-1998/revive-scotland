@@ -1,32 +1,10 @@
-const verifyPassword = ( password: string, storedSalt: string, storedHash: string ): boolean => {
-  const hash = crypto.pbkdf2Sync ( password, storedSalt, ITERATIONS, KEYLEN, DIGEST ).toString ( "hex" )
-
-  // Use timingSafeEqual to prevent timing attacks
-  return crypto.timingSafeEqual (
-    Buffer.from ( storedHash, "hex" ),
-    Buffer.from ( hash, "hex" )
-  )
-}
-
-// const hashPassword = ( password: string ): {
-//   salt: string
-//   hash: string
-// } => {
-//   const salt = crypto.randomBytes ( 32 ).toString ( "hex" ) // 32-byte salt
-//   const hash = crypto.pbkdf2Sync ( password, salt, ITERATIONS, KEYLEN, DIGEST ).toString ( "hex" )
-//   return { salt, hash }
-// }
-
-import type { NextFunction, Request, Response } from "express"
+import type { Request, Response } from "express"
 import { Router } from "express"
 
 import { rateLimit } from "express-rate-limit"
 import { pool } from "../db.js"
-import crypto from "crypto"
-
-const ITERATIONS = 310000
-const KEYLEN = 64
-const DIGEST = "sha512"
+import { issueToken, verifyPassword, verifyToken } from "../auth.js"
+import { isDevMode } from "../index.js"
 
 export const router = Router ( )
 
@@ -54,7 +32,7 @@ router.post ( "/login", async ( req: Request, res: Response ) => {
   }
 
   try {
-    const client = await pool.query ( "SELECT password_salt, password_hash FROM users WHERE username = $1", [ username ] )
+    const client = await pool!.query ( "SELECT password_salt, password_hash FROM users WHERE username = $1", [ username ] )
 
     if ( client.rowCount === 0 ) {
       res.status ( 401 ).json ( {
@@ -76,13 +54,22 @@ router.post ( "/login", async ( req: Request, res: Response ) => {
       return
     }
 
-    const basicAuthHeader = "Basic " + Buffer.from ( `${username}:${password}` ).toString ( "base64" )
-    res.setHeader ( "Authorization", basicAuthHeader )
-    res.status ( 200 ).json ( {
-      status: 200,
-      token: Buffer.from ( `${username}:${password}` ).toString ( "base64" )
+    const tokens = await issueToken ( { sub: username } )
+    res.cookie ( "accessToken", tokens.accessToken.token, {
+      httpOnly: true,
+      secure: !isDevMode ( ),
+      sameSite: "strict",
+      maxAge: tokens.accessToken.age
     } )
-    return
+
+    res.cookie ( "refreshToken", tokens.refreshToken.token, {
+      httpOnly: true,
+      secure: !isDevMode ( ),
+      sameSite: "strict",
+      maxAge: tokens.refreshToken.age
+    } )
+
+    res.status ( 200 ).json ( await issueToken ( { sub: username } ) )
   } catch ( error ) {
     console.error ( "Error while authenticating:", error )
     res.status ( 500 ).json ( {
@@ -95,8 +82,8 @@ router.post ( "/login", async ( req: Request, res: Response ) => {
 
 router.post ( "/verify", async ( req: Request, res: Response ) => {
   const authHeader = req.headers.authorization
-  console.log ( authHeader, req.headers )
-  if ( !authHeader || !authHeader.startsWith ( "Basic " ) ) {
+
+  if ( !authHeader || !authHeader.startsWith ( "Bearer " ) ) {
     res.status ( 401 ).json ( {
       status: 401,
       error: "Authorization header missing or invalid."
@@ -104,95 +91,122 @@ router.post ( "/verify", async ( req: Request, res: Response ) => {
     return
   }
 
-  const base64Credentials = authHeader.split ( " " ) [ 1 ]
-  const credentials = Buffer.from ( base64Credentials, "base64" ).toString ( "utf8" )
-  const [ username, password ] = credentials.split ( ":" )
+  const token = authHeader.split ( " " ) [ 1 ]
 
-  if ( !username || !password ) {
+  const payload = await verifyToken ( token )
+
+  if ( !payload ) {
     res.status ( 401 ).json ( {
       status: 401,
-      error: "Username and password required in Authorization header."
+      error: "Invalid or expired token."
+    } )
+    return
+  }
+
+  res.status ( 200 ).json ( {
+    status: 200,
+    message: "Token is valid.",
+    payload
+  } )
+} )
+
+router.post ( "/logout", async ( req: Request, res: Response ) => {
+  const accessToken = req.cookies.accessToken
+  const refreshToken = req.cookies.refreshToken
+
+  if ( !refreshToken || !accessToken ) {
+    res.status ( 200 ).json ( {
+      status: 200,
+      message: "Logged out successfully."
+    } )
+    return
+  }
+
+  res.clearCookie ( "accessToken" )
+  res.clearCookie ( "refreshToken" )
+  // Insert access token and refresh token jti into blacklistedTokens table
+  try {
+    const accessPayload = await verifyToken ( accessToken )
+    const refreshPayload = await verifyToken ( refreshToken )
+
+    if ( accessPayload ) {
+      await pool!.query ( "INSERT INTO blacklistedTokens ( jti, expiresAt ) VALUES ( $1, to_timestamp( $2 ) )", [ accessPayload.jti, accessPayload.exp ] )
+    }
+    if ( refreshPayload ) {
+      await pool!.query ( "INSERT INTO blacklistedTokens ( jti, expiresAt ) VALUES ( $1, to_timestamp( $2 ) )", [ refreshPayload.jti, refreshPayload.exp ] )
+    }
+  } catch ( error ) {
+    console.error ( "Error while logging out:", error )
+    // Even if there's an error, we still clear the cookies
+  }
+
+  res.status ( 200 ).json ( {
+    status: 200,
+    message: "Logged out successfully."
+  } )
+} )
+
+router.post ( "/refresh", async ( req: Request, res: Response ) => {
+  const accessToken = req.cookies.accessToken
+  const refreshToken = req.cookies.refreshToken
+
+  if ( !refreshToken ) {
+    res.status ( 401 ).json ( {
+      status: 401,
+      error: "Refresh token missing."
     } )
     return
   }
 
   try {
-    const client = await pool.query ( "SELECT password_salt, password_hash FROM users WHERE username = $1", [ username ] )
-
-    if ( client.rowCount === 0 ) {
-      res.status ( 401 ).json ( {
-        status: 401,
-        error: "Invalid credentials."
+    const accessPayload = await verifyToken ( accessToken )
+    if ( accessPayload ) {
+      res.status ( 200 ).json ( {
+        status: 200,
+        message: "Access token is still valid, no need to refresh."
       } )
       return
     }
 
-    const { password_salt, password_hash } = client.rows[0]
-    const isPasswordValid = verifyPassword ( password, password_salt, password_hash )
+    const payload = await verifyToken ( refreshToken )
 
-    if ( !isPasswordValid ) {
+    if ( !payload ) {
       res.status ( 401 ).json ( {
         status: 401,
-        error: "Invalid credentials."
+        error: "Invalid or expired refresh token."
       } )
       return
     }
-    res.status ( 200 ).json ( { status: 200, message: "Token is valid." } )
+
+    // Check if jti is blacklisted
+    const client = await pool!.query ( "SELECT COUNT(*) FROM blacklistedTokens WHERE jti = $1", [ payload.jti ] )
+    if ( client.rows [ 0 ].count > 0 ) {
+      res.status ( 401 ).json ( {
+        status: 401,
+        error: "Refresh token has been revoked."
+      } )
+      return
+    }
+
+    const tokens = await issueToken ( { sub: payload.sub } )
+
+    res.cookie ( "accessToken", tokens.accessToken.token, {
+      httpOnly: true,
+      secure: !isDevMode ( ),
+      sameSite: "strict",
+      maxAge: tokens.accessToken.age
+    } )
+
+    res.status ( 200 ).json ( {
+      status: 200,
+      message: "Token refreshed successfully."
+    } )
   } catch ( error ) {
-    console.error ( "Error while verifying token:", error )
+    console.error ( "Error while refreshing token:", error )
     res.status ( 500 ).json ( {
       status: 500,
       error: "Internal server error."
     } )
+    return
   }
 } )
-
-export const isAuthenticated = ( req: Request, res: Response, next: NextFunction ) => {
-  const authHeader = req.headers.authorization
-  if ( !authHeader || !authHeader.startsWith ( "Basic " ) ) {
-    res.status ( 401 ).json ( {
-      status: 401,
-      error: "Authorization header missing or invalid."
-    } )
-    return
-  }
-
-  const base64Credentials = authHeader.split ( " " ) [ 1 ]
-  const credentials = Buffer.from ( base64Credentials, "base64" ).toString ( "utf8" )
-  const [ username, password ] = credentials.split ( ":" )
-
-  if ( !username || !password ) {
-    res.status ( 401 ).json ( {
-      status: 401,
-      error: "Username and password required in Authorization header."
-    } )
-    return
-  }
-
-  pool.query ( "SELECT password_salt, password_hash FROM users WHERE username = $1", [ username ] )
-    .then ( client => {
-      if ( client.rowCount === 0 ) {
-        res.status ( 401 ).json ( {
-          status: 401,
-          error: "Invalid credentials."
-        } )
-        return
-      }
-      const { password_salt, password_hash } = client.rows[0]
-      if ( !verifyPassword ( password, password_salt, password_hash ) ) {
-        res.status ( 401 ).json ( {
-          status: 401,
-          error: "Invalid credentials."
-        } )
-        return
-      }
-      next ()
-    } )
-    .catch ( error => {
-      console.error ( "Error in basicAuthMiddleware:", error )
-      res.status ( 500 ).json ( {
-        status: 500,
-        error: "Internal server error."
-      } )
-    } )
-}

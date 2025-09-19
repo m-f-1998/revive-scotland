@@ -43,7 +43,7 @@ export class LoginComponent {
       } )
     ]
 
-    this.apiSvc.post ( "/auth/verify" ).then ( ( ) => {
+    this.apiSvc.post ( "/api/auth/verify" ).then ( ( ) => {
       this.router.navigate ( [ "/admin/events" ] )
     } ).catch ( ( ) => {
       this.appSvc.setLogout ( )
@@ -54,7 +54,7 @@ export class LoginComponent {
     if ( this.form.invalid ) return
     this.loading.set ( true )
     this.error = null
-    this.apiSvc.post ( "/auth/login", {
+    this.apiSvc.post ( "/api/auth/login", {
       username: this.model.username,
       password: this.model.password
     } ).then ( ( { token }: any ) => {

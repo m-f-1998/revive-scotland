@@ -11,15 +11,18 @@ export const router = Router ( )
 const envPath = resolve ( process.cwd ( ), ".env" )
 config ( { path: envPath, quiet: true } )
 
-router.use ( "/api/mail", rateLimit ( { // limit each IP to 20 requests per hour
-  windowMs: 60 * 60 * 1000,
-  max: 20,
-  message: "Too many requests, please try again later.",
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+router.use ( rateLimit ( {
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20, // Limit each IP to 20 requests per windowMs
+  standardHeaders: true, // Return rate limit info in the RateLimit-* headers
+  legacyHeaders: false, // Disable the X-RateLimit-* headers
+  message: {
+    status: 429,
+    error: "Too many requests, please try again later."
+  }
 } ) )
 
-router.post ( "/api/mail", async ( req: Request, res: Response ) => {
+router.post ( "/", async ( req: Request, res: Response ) => {
   if ( !req.body?.subject || !req.body?.message || !req.body?.recaptchaToken ) {
     res.status ( 400 ).json ( { message: "Invalid input." } )
     return

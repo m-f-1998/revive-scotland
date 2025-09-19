@@ -13,10 +13,10 @@
       @for (img of slides(); track img; let i = $index) {
         <ng-template ngbSlide>
           <div class="border-radius-15 bg-secondary-subtle">
-              <img [src]="slides()?.[i]?.image" alt="Revive Scotland Header" class="img-fluid slider-image w-100 object-fit-cover filter-50">
+              <img [src]="slides()?.[i]?.filename" alt="Revive Scotland Header" class="img-fluid slider-image w-100 object-fit-cover filter-50">
               <div class="carousel-caption">
                 <h1>{{slides()?.[i]?.title}}</h1>
-                <p class="caption-text">{{slides()?.[i]?.content}}</p>
+                <p class="caption-text">{{slides()?.[i]?.description}}</p>
               </div>
           </div>
         </ng-template>

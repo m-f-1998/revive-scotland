@@ -85,7 +85,7 @@ export class QuestionnaireComponent implements OnInit, OnDestroy {
     this.loading.set ( true )
 
     try {
-      await this.apiSvc.post ( "/api/mail", {
+      await this.apiSvc.post ( "/api/mailer", {
         subject: this.event!.title,
         message: message,
         recaptchaToken: this.captchaToken

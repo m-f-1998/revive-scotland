@@ -11,6 +11,10 @@ import { QuestionnaireComponent } from "./questionnaire/questionnaire.component"
 import { IconService } from "@services/icons.service"
 import { FormlyService } from "@services/formly.service"
 import { NavbarComponent } from "../components/navbar/navbar.component"
+import { Event } from "../../interfaces/events.interface"
+import { HeadersService } from "../../services/headers.service"
+import { Header } from "../../interfaces/headers.interface"
+import { v4 as uuidv4 } from "uuid"
 
 export interface Questionnaire {
   title: string
@@ -38,72 +42,36 @@ export interface Questionnaire {
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class EventsComponent implements OnInit {
-  public slides = [
+  public slides: WritableSignal<Header [ ]> = signal ( [
     {
+      id: uuidv4 ( ),
       title: "Upcoming Events",
-      content: "Revive Scotland",
-      image: "assets/img/hero-bg-4.jpg"
+      description: "Revive Scotland",
+      filename: "assets/img/hero-bg-4.jpg"
     },
     {
+      id: uuidv4 ( ),
       title: "Upcoming Events",
-      content: "Revive Scotland",
-      image: "assets/img/hero-bg-5.jpg"
+      description: "Revive Scotland",
+      filename: "assets/img/hero-bg-5.jpg"
     },
-  ]
+  ] )
 
-  public readonly events: WritableSignal<Array<any>> = signal ( [ ] )
+  public readonly events: WritableSignal<Event [ ]> = signal ( [ ] )
   public questionnaires: Questionnaire [ ] = [ ]
 
   public readonly loading: WritableSignal<boolean> = signal ( true )
 
   public readonly eventsSvc: EventsService = inject ( EventsService )
+  public readonly headersSvc: HeadersService = inject ( HeadersService )
   public readonly dateSvc: DatesService = inject ( DatesService )
   public readonly iconSvc: IconService = inject ( IconService )
   public readonly formlySvc: FormlyService = inject ( FormlyService )
   private readonly modalSvc: NgbModal = inject ( NgbModal )
 
   public ngOnInit ( ) {
-    this.questionnaires = [
-      {
-        title: "Revive Weekend for Young Adults",
-        description: "Dare to be Wise, Begin!",
-        location: "Cumming Hall, Forres, 198 Portal Road, Kinloss, Forres IV36 3UN",
-        image: "assets/img/kinloss-weekend.jpg",
-        start: new Date ( "2025-10-17" ),
-        end: new Date ( "2025-10-19" ),
-        url: "https://stmaryscathedral.churchsuite.com/events/artezvmj"
-      }
-      // {
-      //   title: "'Journey to Rome' - Expression of Interest",
-      //   description: "Join us on a pilgrimage to the Eternal City for the Marian Jubilee. Express your interest by completing the form below. Includes flights, accomodation, breakfast and lunch.",
-      //   price: 650,
-      //   location: "Rome, Italy",
-      //   image: "assets/img/trip-to-rome.png",
-      //   start: new Date ( "2025-10-07" ),
-      //   end: new Date ( "2025-10-12" ),
-      //   fields: [
-      //     this.formlySvc.TextInput ( "name", {
-      //       label: "Name",
-      //       required: true
-      //     } ),
-      //     this.formlySvc.EmailInput ( "email", {
-      //       label: "Email",
-      //       required: true
-      //     } ),
-      //     this.formlySvc.TextAreaInput ( "questions", {
-      //       label: "Questions",
-      //       required: true,
-      //       maxLength: 500,
-      //       minLength: 0,
-      //       includeMaxDescription: true
-      //     } ),
-      //     this.formlySvc.CheckboxInput ( "interest", {
-      //       label: "Are you interested in joining us on this pilgrimage?"
-      //     } )
-      //   ]
-      // }
-    ]
     this.getEvents ( )
+    this.loadHeaders ( )
   }
 
   public openQuestionnaire ( event: any ) {
@@ -119,8 +87,7 @@ export class EventsComponent implements OnInit {
 
   private async getEvents ( ) {
     try {
-      const events = await this.eventsSvc.getEvents ( )
-      this.events.set ( events )
+      this.events.set ( await this.eventsSvc.getEvents ( ) || [ ] )
     } catch ( error: any ) {
       if ( isDevMode ( ) ) {
         console.error ( error )
@@ -128,5 +95,9 @@ export class EventsComponent implements OnInit {
     } finally {
       this.loading.set ( false )
     }
+  }
+
+  private async loadHeaders ( ) {
+    this.slides.set ( await this.headersSvc.getHeaders ( "/events" ) || [ ] )
   }
 }

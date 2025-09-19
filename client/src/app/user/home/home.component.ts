@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from "@angular/core"
+import { ChangeDetectionStrategy, Component, inject, signal, WritableSignal } from "@angular/core"
 import { SliderComponent } from "@components/slider/slider.component"
 import { TestimonyComponent } from "@components/testimony/testimony.component"
 import { AboutUsComponent } from "@components/about-us/about-us.component"
@@ -11,6 +11,9 @@ import { FooterComponent } from "@components/footer/footer.component"
 import { ReviveWeekendsComponent } from "@components/revive-weekends/revive-weekends.component"
 import { NextEventComponent } from "@components/next-event/next-event.component"
 import { NavbarComponent } from "../components/navbar/navbar.component"
+import { Header } from "../../interfaces/headers.interface"
+import { v4 as uuidv4 } from "uuid"
+import { HeadersService } from "../../services/headers.service"
 
 @Component ( {
   selector: "app-home",
@@ -32,21 +35,34 @@ import { NavbarComponent } from "../components/navbar/navbar.component"
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class HomeComponent {
-  public slides = [
+  public slides: WritableSignal<Header [ ]> = signal ( [
     {
+      id: uuidv4 ( ),
       title: "Revive Scotland",
-      content: "We are dedicated to reviving the faith in people's hearts through the power of the Holy Spirit. We deliver this through formation, community and prayer; mainly Pilgrimages, Revive Weekends and Eucharistic Adoration.",
-      image: "assets/img/hero-bg-1.jpg"
+      description: "We are dedicated to reviving the faith in people's hearts through the power of the Holy Spirit. We deliver this through formation, community and prayer; mainly Pilgrimages, Revive Weekends and Eucharistic Adoration.",
+      filename: "assets/img/hero-bg-1.jpg"
     },
     {
+      id: uuidv4 ( ),
       title: "Join the Prayer",
-      content: "Revive exists to give people a real and transformational HOPE, through a FAITH filled lifestyle centered on the sacraments, catechesis and real authentic friendships as a way to encounter God's LOVE.",
-      image: "assets/img/hero-bg-2.jpg"
+      description: "Revive exists to give people a real and transformational HOPE, through a FAITH filled lifestyle centered on the sacraments, catechesis and real authentic friendships as a way to encounter God's LOVE.",
+      filename: "assets/img/hero-bg-2.jpg"
     },
     {
+      id: uuidv4 ( ),
       title: "God is Love",
-      content: "'Let anyone who is thirsty come to me and drink. Whoever believes in me, as Scripture has said, rivers of living water will flow from within them. By this he meant the Holy Spirit' (Jn 7:38-39)",
-      image: "assets/img/hero-bg-3.jpg"
+      description: "'Let anyone who is thirsty come to me and drink. Whoever believes in me, as Scripture has said, rivers of living water will flow from within them. By this he meant the Holy Spirit' (Jn 7:38-39)",
+      filename: "assets/img/hero-bg-3.jpg"
     }
-  ]
+  ] )
+
+  public readonly headersSvc: HeadersService = inject ( HeadersService )
+
+  public constructor ( ) {
+    this.loadHeaders ( )
+  }
+
+  private async loadHeaders ( ) {
+    this.slides.set ( await this.headersSvc.getHeaders ( "/" ) || [ ] )
+  }
 }

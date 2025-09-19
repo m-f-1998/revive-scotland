@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal, WritableSignal } from "@angular/core"
-import { Event } from "./events.interface"
+import { Event } from "../../interfaces/events.interface"
 import { ApiService } from "../../services/api.service"
 import { DatePipe } from "@angular/common"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
@@ -25,8 +25,8 @@ export class AdminEventsComponent {
 
   public constructor ( ) {
     Promise.all ( [
-      this.apiSvc.post ( "/event-v2" ),
-      this.apiSvc.post ( "/auth/verify" )
+      this.apiSvc.post ( "/api/events" ),
+      this.apiSvc.post ( "/api/auth/verify" )
     ] ).then ( ( [ events ] ) => {
       this.events.set ( events as Event [ ] )
     } ).catch ( ( ) => {
@@ -45,7 +45,7 @@ export class AdminEventsComponent {
 
   public deleteEvent ( event: Event ): void {
     if ( confirm ( `Are you sure you want to delete the event: '${ event.title }'` ) ) {
-      this.apiSvc.post ( `/event-v2/delete`, { id: event.id } ).then ( ( ) => {
+      this.apiSvc.post ( `/api/events/delete`, { id: event.id } ).then ( ( ) => {
         this.events.set ( this.events ( ).filter ( e => e.id !== event.id ) )
         this.toastrSvc.success ( "Event deleted successfully." )
       } ).catch ( err => {

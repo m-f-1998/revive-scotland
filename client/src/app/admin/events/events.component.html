@@ -16,7 +16,8 @@
       @for (event of events(); track $index) {
         <tr>
           <td>{{ event.title }}</td>
-          <td>{{ event.when | date:'mediumDate' }}</td>
+          <td>{{ event.start | date:'mediumDate' }}</td>
+          <td>{{ event.end | date:'mediumDate' }}</td>
           <td>{{ event.address }}</td>
           <td>
             <button class="btn btn-sm btn-warning me-2" (click)="editEvent(event)">Edit</button>
