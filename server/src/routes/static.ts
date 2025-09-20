@@ -3,7 +3,7 @@ import type { Response } from "express"
 import { join } from "path"
 import { existsSync } from "fs"
 import { readFile } from "fs/promises"
-import { isDevMode } from "../index.js"
+import { isDevMode } from "../server.js"
 
 export const router = Router ( )
 

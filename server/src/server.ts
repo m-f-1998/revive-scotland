@@ -8,6 +8,7 @@ import { router as staticRouter } from "./routes/static.js"
 import { router as eventRouter } from "./routes/events.js"
 import { router as authRouter } from "./routes/auth.js"
 import { router as headersRouter } from "./routes/headers.js"
+import { router as filesRouter } from "./routes/files.js"
 
 import { randomBytes } from "crypto"
 import { rateLimit } from "express-rate-limit"
@@ -110,6 +111,7 @@ app.use ( "/api/events", eventRouter )
 app.use ( "/api/mailer", mailerRouter )
 app.use ( "/api/auth", authRouter )
 app.use ( "/api/headers", headersRouter )
+app.use ( "/api/files", filesRouter )
 app.use ( staticRouter )
 
 export const isDevMode = ( ) => process.env [ "DEV_MODE" ] === "true" || process.env [ "DEV_MODE" ] === "1"
@@ -136,11 +138,11 @@ const preloadDB = async ( ) => {
 
   if ( Number ( headers.rows [ 0 ].count ) === 0 ) {
     console.log ( "No headers found in db, creating initial header..." )
-    await pool!.query ( "INSERT INTO headers ( filename, title, description, location ) VALUES ( $1, $2, $3, $4 )", [ "/assets/img/hero-bg-1.jpg", "Revive Scotland", "We are dedicated to reviving the faith in people's hearts through the power of the Holy Spirit. We deliver this through formation, community and prayer; mainly Pilgrimages, Revive Weekends and Eucharistic Adoration.", "/" ] )
-    await pool!.query ( "INSERT INTO headers ( filename, title, description, location ) VALUES ( $1, $2, $3, $4 )", [ "/assets/img/hero-bg-2.jpg", "Join the Prayer", "Revive exists to give people a real and transformational HOPE, through a FAITH filled lifestyle centered on the sacraments, catechesis and real authentic friendships as a way to encounter God's LOVE.", "/" ] )
-    await pool!.query ( "INSERT INTO headers ( filename, title, description, location ) VALUES ( $1, $2, $3, $4 )", [ "/assets/img/hero-bg-3.jpg", "God is Love", "'Let anyone who is thirsty come to me and drink. Whoever believes in me, as Scripture has said, rivers of living water will flow from within them. By this he meant the Holy Spirit' (Jn 7:38-39)", "/" ] )
-    await pool!.query ( "INSERT INTO headers ( filename, title, description, location ) VALUES ( $1, $2, $3, $4 )", [ "/assets/img/hero-bg-4.jpg", "Upcoming Events", "Revive Scotland", "/events" ] )
-    await pool!.query ( "INSERT INTO headers ( filename, title, description, location ) VALUES ( $1, $2, $3, $4 )", [ "/assets/img/hero-bg-5.jpg", "Upcoming Events", "Revive Scotland", "/events" ] )
+    await pool!.query ( "INSERT INTO headers ( filename, title, description, location ) VALUES ( $1, $2, $3, $4 )", [ "hero-bg-1.jpg", "Revive Scotland", "We are dedicated to reviving the faith in people's hearts through the power of the Holy Spirit. We deliver this through formation, community and prayer; mainly Pilgrimages, Revive Weekends and Eucharistic Adoration.", "/" ] )
+    await pool!.query ( "INSERT INTO headers ( filename, title, description, location ) VALUES ( $1, $2, $3, $4 )", [ "hero-bg-2.jpg", "Join the Prayer", "Revive exists to give people a real and transformational HOPE, through a FAITH filled lifestyle centered on the sacraments, catechesis and real authentic friendships as a way to encounter God's LOVE.", "/" ] )
+    await pool!.query ( "INSERT INTO headers ( filename, title, description, location ) VALUES ( $1, $2, $3, $4 )", [ "hero-bg-3.jpg", "God is Love", "'Let anyone who is thirsty come to me and drink. Whoever believes in me, as Scripture has said, rivers of living water will flow from within them. By this he meant the Holy Spirit' (Jn 7:38-39)", "/" ] )
+    await pool!.query ( "INSERT INTO headers ( filename, title, description, location ) VALUES ( $1, $2, $3, $4 )", [ "hero-bg-4.jpg", "Upcoming Events", "Revive Scotland", "/events" ] )
+    await pool!.query ( "INSERT INTO headers ( filename, title, description, location ) VALUES ( $1, $2, $3, $4 )", [ "hero-bg-5.jpg", "Upcoming Events", "Revive Scotland", "/events" ] )
     console.log ( "Initial headers created." )
   }
 

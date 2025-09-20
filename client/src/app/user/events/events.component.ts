@@ -15,6 +15,7 @@ import { Event } from "../../interfaces/events.interface"
 import { HeadersService } from "../../services/headers.service"
 import { Header } from "../../interfaces/headers.interface"
 import { v4 as uuidv4 } from "uuid"
+import { NgOptimizedImage } from "@angular/common"
 
 export interface Questionnaire {
   title: string
@@ -35,7 +36,8 @@ export interface Questionnaire {
     FaIconComponent,
     ContactComponent,
     NavbarComponent,
-    SliderComponent
+    SliderComponent,
+    NgOptimizedImage
   ],
   templateUrl: "./events.component.html",
   styleUrl: "./events.component.scss",

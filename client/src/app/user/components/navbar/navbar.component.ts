@@ -1,4 +1,4 @@
-import { Location } from "@angular/common"
+import { Location, NgOptimizedImage } from "@angular/common"
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
 import { NavigationEnd, Router, RouterLink } from "@angular/router"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
@@ -10,7 +10,8 @@ import { IconService } from "@revive/src/app/services/icons.service"
   imports: [
     RouterLink,
     NgbDropdownModule,
-    FaIconComponent
+    FaIconComponent,
+    NgOptimizedImage
   ],
   templateUrl: "./navbar.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush

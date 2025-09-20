@@ -1,12 +1,15 @@
+import { NgOptimizedImage } from "@angular/common"
 import { ChangeDetectionStrategy, Component } from "@angular/core"
 
 @Component ( {
   selector: "app-adoration-missions",
+  imports: [
+    NgOptimizedImage
+  ],
   templateUrl: "./adoration-missions.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class AdorationMissionsComponent {
-  public img = "assets/img/adoration.jpg"
   public title = "Adoration Missions"
 
   public goToContact ( ) {

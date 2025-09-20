@@ -16,10 +16,45 @@
     @for (event of events(); track $index) {
       <div class="d-flex flex-row flex-wrap justify-content-center">
         <div class="card m-2 event-card">
-          <img
+          @if (event.showcase_image) {
+            <img [ngSrc]="'/api/files/img/' + event.showcase_image + '?w=640&f=webp'"
+              [srcset]="'/api/files/img/' + event.showcase_image + '?w=320&f=webp 320w,/api/files/img/' + event.showcase_image + '?w=640&f=webp 640w,/api/files/img/' + event.showcase_image + '?w=1024&f=webp 1024w'"
+              sizes="(max-width: 600px) 100vw, 600px"
+              alt="Event Image"
+              loading="lazy"
+              decoding="async"
+              cclass="card-img-top event-image"
+            />
+          } @else {
+            <img ngSrc="/api/files/img/placeholder.jpg?w=640&f=webp"
+              srcset="
+                /api/files/img/placeholder.jpg?w=320&f=webp 320w,
+                /api/files/img/placeholder.jpg?w=640&f=webp 640w,
+                /api/files/img/placeholder.jpg?w=1024&f=webp 1024w
+              "
+              sizes="(max-width: 600px) 100vw, 600px"
+              alt="Placeholder Image"
+              loading="lazy"
+              decoding="async"
+              class="card-img-top event-image"
+            />
+          }
+          <!-- <img ngSrc="/api/files/img/donation.jpg?w=640&f=webp"
+            srcset="
+              /api/files/img/donation.jpg?w=320&f=webp 320w,
+              /api/files/img/donation.jpg?w=640&f=webp 640w,
+              /api/files/img/donation.jpg?w=1024&f=webp 1024w
+            "
+            sizes="(max-width: 600px) 100vw, 600px"
+            alt="Donate Background"
+            loading="lazy"
+            decoding="async"
+            class="background-img"
+          /> -->
+          <!-- <img
             [src]="event.showcase_image ? event.showcase_image : 'assets/img/placeholder.jpg'"
             class="card-img-top event-image"
-            onerror="this.src='assets/img/placeholder.jpg'">
+            onerror="this.src='assets/img/placeholder.jpg'"> -->
           <div class="card-body">
             <div class="card-title">
               <h4>{{event.title}}</h4>
@@ -83,68 +118,6 @@
         </div>
       </div>
     }
-    <!-- @for (event of events(); track $index) {
-      <div class="d-flex flex-row flex-wrap justify-content-center">
-        <div class="card m-2 event-card">
-          <img
-            [src]="event.logo ? event.logo.original.url : 'assets/img/placeholder.jpg'"
-            class="card-img-top event-image"
-            onerror="this.src='assets/img/placeholder.jpg'">
-          <div class="card-body">
-            <div class="card-title">
-              <h4>{{event.name.text}}</h4>
-            </div>
-            <figcaption class="figure-caption mt-2 mb-3">
-              {{event.description.text}}
-            </figcaption>
-            <div class="card-text d-flex flex-column gap-2 mb-4">
-              <div>
-                <fa-icon [icon]="iconSvc.getIcon('fas', 'user')" class="me-2" />
-                Registered Places: {{event.ticket_classes[0].quantity_sold}}/{{event.capacity}}
-              </div>
-              <div>
-                <fa-icon [icon]="iconSvc.getIcon('fas', 'calendar')" class="me-2" />
-                @if(dateSvc.sameDay(event.start.local, event.end.local)) {
-                  {{this.dateSvc.reformat (event.start.local, 'E do LLL yyyy h:mma')}} - {{this.dateSvc.reformat (event.end.local, 'h:mma')}}
-                } @else {
-                  {{this.dateSvc.reformat (event.start.local, 'E do LLL yyyy')}} - {{this.dateSvc.reformat (event.end.local, 'E do LLL yyyy')}}
-                }
-              </div>
-              <div>
-                <fa-icon [icon]="iconSvc.getIcon('fas', 'map-marker')" class="me-2" />
-                @if (event.venue) {
-                  <a [href]="'https://www.google.com/maps/place/' + event.venue.latitude.toString() + ',' + event.venue.longitude.toString()" target="_blank">
-                    {{event.venue.name}}, {{event.venue.address.localized_address_display}}
-                  </a>
-                } @else {
-                  Online Event
-                }
-              </div>
-              @if (event.ticket_classes) {
-                @if (!event.ticket_classes[0].free) {
-                  <div>
-                    <fa-icon [icon]="iconSvc.getIcon('fas', 'money-bill')" class="me-2" />
-                    Price: {{event.ticket_classes[0].cost.display}}&nbsp;
-                    <i>(Online Booking Fee: {{event.ticket_classes[0].fee.display}})</i>
-                  </div>
-                }
-              }
-              @if (event.refund_policy) {
-                <div>
-                  <fa-icon [icon]="iconSvc.getIcon('fas', 'info-circle')" class="me-2" />Refund Policy:&nbsp;
-                  <small class="text-muted" [innerHTML]="event.refund_policy.refund_policy_description"></small>
-                </div>
-              }
-            </div>
-            <div class="d-flex gap-2">
-              <a [href]="event.url" class="btn btn-primary" target="_blank">
-                Go To Event...
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    } -->
   </div>
   <figure class="p-4 p-lg-5 text-center m-0 bg-body-tertiary">
     <blockquote class="blockquote mb-4">

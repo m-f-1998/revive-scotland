@@ -5,11 +5,13 @@ import { FormlyService } from "@services/formly.service"
 import { ApiService } from "../../services/api.service"
 import { Router } from "@angular/router"
 import { ApplicationService } from "../../services/application.service"
+import { NgOptimizedImage } from "@angular/common"
 
 @Component ( {
   selector: "app-login",
   imports: [
-    FormlyForm
+    FormlyForm,
+    NgOptimizedImage
   ],
   templateUrl: "./login.component.html",
   styleUrl: "./login.component.scss",

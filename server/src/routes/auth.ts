@@ -4,7 +4,7 @@ import { Router } from "express"
 import { rateLimit } from "express-rate-limit"
 import { pool } from "../db.js"
 import { issueToken, verifyPassword, verifyToken } from "../auth.js"
-import { isDevMode } from "../index.js"
+import { isDevMode } from "../server.js"
 
 export const router = Router ( )
 
