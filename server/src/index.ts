@@ -76,6 +76,7 @@ app.use ( helmet ( {
         "'self'",
         "https://\*.google-analytics.com",
         "https://\*.google.com",
+        "https://cloudflareinsights.com"
       ],
       frameSrc: [
         "'self'",
