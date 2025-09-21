@@ -1,23 +1,21 @@
-import { ChangeDetectionStrategy, Component, inject, signal, WritableSignal } from "@angular/core"
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
 import { FormGroup } from "@angular/forms"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
 import { FormlyService } from "@services/formly.service"
 import { ApiService } from "../../services/api.service"
 import { Router } from "@angular/router"
 import { ApplicationService } from "../../services/application.service"
-import { NgOptimizedImage } from "@angular/common"
 
 @Component ( {
   selector: "app-login",
   imports: [
-    FormlyForm,
-    NgOptimizedImage
+    FormlyForm
   ],
   templateUrl: "./login.component.html",
   styleUrl: "./login.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   public form: FormGroup = new FormGroup ( { } )
   public fields: FormlyFieldConfig [ ] = [ ]
   public model: any = { }
@@ -44,12 +42,12 @@ export class LoginComponent {
         required: true
       } )
     ]
+  }
 
-    this.apiSvc.post ( "/api/auth/verify" ).then ( ( ) => {
-      this.router.navigate ( [ "/admin/events" ] )
-    } ).catch ( ( ) => {
-      this.appSvc.setLogout ( )
-    } )
+  public ngOnInit ( ): void {
+    if ( this.appSvc.isLoggedIn ( ) ) {
+      this.router.navigate ( [ "/admin/home" ] )
+    }
   }
 
   public submit ( ): void {
@@ -59,9 +57,9 @@ export class LoginComponent {
     this.apiSvc.post ( "/api/auth/login", {
       username: this.model.username,
       password: this.model.password
-    } ).then ( ( { token }: any ) => {
-      this.appSvc.setLogin ( token )
-      this.router.navigate ( [ "/admin/events" ] )
+    } ).then ( ( { accessToken }: any ) => {
+      this.appSvc.setLogin ( accessToken )
+      this.router.navigate ( [ "/admin/home" ] )
     } ).catch ( err => {
       this.error = err?.error?.message || "An error occurred"
       this.loading.set ( false )

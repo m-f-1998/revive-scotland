@@ -18,7 +18,7 @@ router.use ( rateLimit ( {
   legacyHeaders: false, // Disable the X-RateLimit-* headers
   message: {
     status: 429,
-    error: "Too many requests, please try again later."
+    message: "Too many requests, please try again later."
   }
 } ) )
 

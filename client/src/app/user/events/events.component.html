@@ -5,7 +5,7 @@
     <fa-icon [icon]="iconSvc.getIcon('fas', 'spinner')" animation="spin" size="2x" class="mb-2" />
     Loading...
   </div>
-} @else if (events().length === 0 && questionnaires.length === 0) {
+} @else if (events().length === 0) {
   <div class="d-flex flex-column align-items-center m-3">
     <fa-icon [icon]="iconSvc.getIcon('fas', 'info-circle')" size="2x" class="mb-2" />
     <p>No Events Found</p>
@@ -17,16 +17,21 @@
       <div class="d-flex flex-row flex-wrap justify-content-center">
         <div class="card m-2 event-card">
           @if (event.showcase_image) {
-            <img [ngSrc]="'/api/files/img/' + event.showcase_image + '?w=640&f=webp'"
-              [srcset]="'/api/files/img/' + event.showcase_image + '?w=320&f=webp 320w,/api/files/img/' + event.showcase_image + '?w=640&f=webp 640w,/api/files/img/' + event.showcase_image + '?w=1024&f=webp 1024w'"
+            <img
+              [attr.src]="'/api/files/img/' + event.showcase_image + '?w=640&f=webp'"
+              [attr.srcset]="
+                '/api/files/img/' + event.showcase_image + '?w=320&f=webp 320w, ' +
+                '/api/files/img/' + event.showcase_image + '?w=640&f=webp 640w, ' +
+                '/api/files/img/' + event.showcase_image + '?w=1024&f=webp 1024w'
+              "
               sizes="(max-width: 600px) 100vw, 600px"
-              alt="Event Image"
+              [attr.alt]="event.title || 'Event image'"
               loading="lazy"
               decoding="async"
-              cclass="card-img-top event-image"
+              class="card-img-top event-image"
             />
           } @else {
-            <img ngSrc="/api/files/img/placeholder.jpg?w=640&f=webp"
+            <img src="/api/files/img/placeholder.jpg?w=640&f=webp"
               srcset="
                 /api/files/img/placeholder.jpg?w=320&f=webp 320w,
                 /api/files/img/placeholder.jpg?w=640&f=webp 640w,
@@ -39,22 +44,6 @@
               class="card-img-top event-image"
             />
           }
-          <!-- <img ngSrc="/api/files/img/donation.jpg?w=640&f=webp"
-            srcset="
-              /api/files/img/donation.jpg?w=320&f=webp 320w,
-              /api/files/img/donation.jpg?w=640&f=webp 640w,
-              /api/files/img/donation.jpg?w=1024&f=webp 1024w
-            "
-            sizes="(max-width: 600px) 100vw, 600px"
-            alt="Donate Background"
-            loading="lazy"
-            decoding="async"
-            class="background-img"
-          /> -->
-          <!-- <img
-            [src]="event.showcase_image ? event.showcase_image : 'assets/img/placeholder.jpg'"
-            class="card-img-top event-image"
-            onerror="this.src='assets/img/placeholder.jpg'"> -->
           <div class="card-body">
             <div class="card-title">
               <h4>{{event.title}}</h4>

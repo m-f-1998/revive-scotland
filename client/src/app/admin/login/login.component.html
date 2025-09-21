@@ -3,7 +3,7 @@
     <div class="card shadow-sm p-4 mb-4 rounded">
       <div class="card-body">
         <div class="text-center">
-          <img ngSrc="/api/files/img/logo.png?w=640&f=webp"
+          <img src="/api/files/img/logo.png?w=640&f=webp"
             srcset="
               /api/files/img/logo.png?w=320&f=webp 320w,
               /api/files/img/logo.png?w=640&f=webp 640w,
@@ -13,9 +13,9 @@
             alt="Site Logo"
             loading="lazy"
             decoding="async"
+            class="mb-3"
           />
         </div>
-        <h2 class="card-title text-center mb-4">Admin Login</h2>
         <formly-form [form]="form" [fields]="fields" [model]="model" />
         <button [disabled]="form.invalid" class="btn btn-primary w-100 mb-3" (click)="submit()">
           <i class="bi bi-box-arrow-in-right"></i> Login

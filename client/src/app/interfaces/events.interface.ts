@@ -1,3 +1,5 @@
+import { FormlyFieldConfig } from "@ngx-formly/core"
+
 export interface Event {
   id: string
   title: string
@@ -22,6 +24,7 @@ export interface Event {
     country_code?: string
   }
   goto_event_link?: string
+  fields?: FormlyFieldConfig [ ]
 }
 
 

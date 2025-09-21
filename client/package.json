@@ -33,8 +33,7 @@
     "@zxcvbn-ts/language-en": "^3.0.2",
     "bootstrap": "^5.3.8",
     "date-fns": "^4.1.0",
-    "ng-recaptcha-2": "^16.0.1",
-    "uuid": "^13.0.0"
+    "ng-recaptcha-2": "^16.0.1"
   },
   "devDependencies": {
     "@angular/build": "^20.3.2",

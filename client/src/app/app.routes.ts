@@ -3,8 +3,11 @@ import { HomeComponent } from "./user/home/home.component"
 import { EventsComponent } from "./user/events/events.component"
 import { ErrorComponent } from "./user/error/error.component"
 import { LoginComponent } from "./admin/login/login.component"
+import { HomeComponent as AdminHomeComponent } from "./admin/home/home.component"
 import { AdminEventsComponent } from "./admin/events/events.component"
-import { LoginActivate, LoginChildActivate } from "./admin/events/event.guard"
+import { LoginActivate, LoginChildActivate } from "./guards/login.guard"
+import { HeadersComponent } from "./admin/headers/headers.component"
+import { UploadComponent } from "./admin/upload/upload.component"
 
 export const routes: Routes = [
   {
@@ -20,8 +23,26 @@ export const routes: Routes = [
     component: LoginComponent
   },
   {
+    path: "admin/home",
+    component: AdminHomeComponent,
+    canActivate: [ LoginActivate ],
+    canActivateChild: [ LoginChildActivate ]
+  },
+  {
     path: "admin/events",
     component: AdminEventsComponent,
+    canActivate: [ LoginActivate ],
+    canActivateChild: [ LoginChildActivate ]
+  },
+  {
+    path: "admin/headers",
+    component: HeadersComponent,
+    canActivate: [ LoginActivate ],
+    canActivateChild: [ LoginChildActivate ]
+  },
+  {
+    path: "admin/upload",
+    component: UploadComponent,
     canActivate: [ LoginActivate ],
     canActivateChild: [ LoginChildActivate ]
   },

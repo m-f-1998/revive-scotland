@@ -9,7 +9,7 @@ const DIGEST = "sha512"
 
 // Token lifetime
 const ACCESS_TOKEN_EXPIRY = "15m"
-const REFRESH_TOKEN_EXPIRY = "7d"
+const REFRESH_TOKEN_EXPIRY = "3d"
 
 export const issueToken = async ( payload: JWTPayload ) => {
   const WEB_SECRET = Buffer.from ( process.env [ "WEB_SECRET" ]!, "hex" ) // 64 bytes
@@ -36,15 +36,18 @@ export const verifyToken = async ( token: string ) => {
     const WEB_SECRET = Buffer.from ( process.env [ "WEB_SECRET" ]!, "hex" ) // 64 bytes
     const ENCRYPTION_SECRET = Buffer.from ( process.env [ "ENCRYPTION_SECRET" ]!, "hex" ) // 32 bytes
 
+    if ( !token ) {
+      return null
+    }
+
     const { payload } = await jwtDecrypt ( token, ENCRYPTION_SECRET, { clockTolerance: 5 } )
     const { payload: verified } = await jwtVerify ( payload [ "signed" ] as string, WEB_SECRET, {
       algorithms: [ "HS512" ],
     } )
 
-    await pool!.query ( "DELETE FROM blacklistedTokens WHERE expires < NOW()" )
+    await pool!.query ( "DELETE FROM blacklistedTokens WHERE expires_at < NOW()" )
 
-    const isBlacklisted = await pool!.query ( "SELECT * FROM blacklistedTokens WHERE jti = $1", [ payload.jti ] )
-
+    const isBlacklisted = await pool!.query ( "SELECT * FROM blacklistedTokens WHERE jti = $1", [ verified.jti ] )
     if ( isBlacklisted.rowCount && isBlacklisted.rowCount > 0 ) {
       return null
     }
@@ -52,6 +55,32 @@ export const verifyToken = async ( token: string ) => {
     return verified
   } catch {
     return null
+  }
+}
+
+export const useRefreshToken = async ( token: string ) => {
+  if ( !token ) {
+    return false
+  }
+
+  try {
+    const payload = await verifyToken ( token )
+    if ( !payload ) {
+      return false
+    }
+
+    const WEB_SECRET = Buffer.from ( process.env [ "WEB_SECRET" ]!, "hex" ) // 64 bytes
+    const ENCRYPTION_SECRET = Buffer.from ( process.env [ "ENCRYPTION_SECRET" ]!, "hex" ) // 32 bytes
+
+    return await generateToken (
+      payload,
+      ACCESS_TOKEN_EXPIRY,
+      WEB_SECRET,
+      ENCRYPTION_SECRET
+    )
+  } catch ( error ) {
+    console.error ( "Error while using refresh token:", error )
+    return false
   }
 }
 

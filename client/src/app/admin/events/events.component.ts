@@ -3,13 +3,13 @@ import { Event } from "../../interfaces/events.interface"
 import { ApiService } from "../../services/api.service"
 import { DatePipe } from "@angular/common"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
-import { ApplicationService } from "../../services/application.service"
-import { Router } from "@angular/router"
+import { NavigationBarComponent } from "../navigation-bar/navigation-bar.component"
 
 @Component ( {
   selector: "app-admin-events",
   imports: [
-    DatePipe
+    DatePipe,
+    NavigationBarComponent
   ],
   templateUrl: "./events.component.html",
   styleUrl: "./events.component.scss",
@@ -20,18 +20,12 @@ export class AdminEventsComponent {
 
   public readonly apiSvc: ApiService = inject ( ApiService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
-  private readonly appSvc: ApplicationService = inject ( ApplicationService )
-  private readonly router: Router = inject ( Router )
 
   public constructor ( ) {
-    Promise.all ( [
-      this.apiSvc.post ( "/api/events" ),
-      this.apiSvc.post ( "/api/auth/verify" )
-    ] ).then ( ( [ events ] ) => {
+    this.apiSvc.post ( "/api/events" ).then ( events => {
       this.events.set ( events as Event [ ] )
     } ).catch ( ( ) => {
-      this.appSvc.setLogout ( )
-      this.router.navigate ( [ "/login" ] )
+      console.log ( "Error fetching events, logging out." )
     } )
   }
 

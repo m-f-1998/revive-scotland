@@ -1,0 +1,44 @@
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">Admin Console</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar" aria-controls="adminNavbar" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="adminNavbar">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <button class="nav-link" [class.active]="router.url === '/admin/home'" aria-current="page" (click)="navigateTo('home')" [disabled]="loggingOut()">
+            <fa-icon [icon]="iconSvc.getIcon('fas', 'home')" class="me-2" />Home
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" [class.active]="router.url === '/admin/events'" (click)="navigateTo('events')" [disabled]="loggingOut()">
+            <fa-icon [icon]="iconSvc.getIcon('fas', 'calendar')" class="me-2" />Events
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" [class.active]="router.url === '/admin/headers'" (click)="navigateTo('headers')" [disabled]="loggingOut()">
+            <fa-icon [icon]="iconSvc.getIcon('fas', 'image')" class="me-2" />Headers
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" [class.active]="router.url === '/admin/upload'" (click)="navigateTo('upload')" [disabled]="loggingOut()">
+            <fa-icon [icon]="iconSvc.getIcon('fas', 'upload')" class="me-2" />Files
+          </button>
+        </li>
+      </ul>
+      <form class="d-flex mb-0">
+        @if (loggingOut()) {
+          <button class="btn btn-outline-light" type="button" disabled>
+            <fa-icon [icon]="iconSvc.getIcon('fas', 'spinner')" class="me-2 fa-spin" />
+            Logging Out...
+          </button>
+        } @else {
+          <button class="btn btn-outline-light" type="button" (click)="logout()">
+            <fa-icon [icon]="iconSvc.getIcon('fas', 'sign-out-alt')" class="me-2" />Logout
+          </button>
+        }
+      </form>
+    </div>
+  </div>
+</nav>

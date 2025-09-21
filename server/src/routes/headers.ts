@@ -13,7 +13,7 @@ router.use ( rateLimit ( {
   legacyHeaders: false, // Disable the X-RateLimit-* headers
   message: {
     status: 429,
-    error: "Too many requests, please try again later."
+    message: "Too many requests, please try again later."
   }
 } ) )
 
@@ -31,7 +31,7 @@ router.get ( "/", async ( req: Request, res: Response ) => {
     console.error ( "Error while fetching headers:", error )
     res.status ( 500 ).json ( {
       status: 500,
-      error: "Internal server error."
+      message: "Internal server error."
     } )
     return
   }

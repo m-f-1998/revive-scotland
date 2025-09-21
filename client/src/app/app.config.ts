@@ -1,4 +1,4 @@
-import { ApplicationConfig, CSP_NONCE, provideZonelessChangeDetection } from "@angular/core"
+import { ApplicationConfig, CSP_NONCE, inject, provideAppInitializer, provideZonelessChangeDetection } from "@angular/core"
 import { provideRouter } from "@angular/router"
 import { routes } from "./app.routes"
 import { provideHttpClient, withFetch } from "@angular/common/http"
@@ -7,11 +7,29 @@ import { provideToastr } from "@m-f-1998/ngx-toastr"
 import { RECAPTCHA_LOADER_OPTIONS, RECAPTCHA_V3_SITE_KEY } from "ng-recaptcha-2"
 import { withFormlyBootstrap } from "@ngx-formly/bootstrap"
 import { FormlyConfig } from "./formly/formly-config"
+import { ApiService } from "./services/api.service"
+import { ApplicationService } from "./services/application.service"
 
 const nonce = document.querySelector ( 'meta[name="csp-nonce"]' )?.getAttribute ( "content" )
 
 const appConfig: ApplicationConfig = {
   providers: [
+    provideAppInitializer ( ( ) => {
+      const initializerFn = ( ( apiSvc: ApiService, appSvc: ApplicationService ) => async ( ) => {
+        try {
+          const res = await apiSvc.post ( "/api/auth/status" )
+          const { isLoggedIn, accessToken } = res as any
+          if ( !isLoggedIn ) {
+            throw new Error ( "Not logged in" )
+          }
+
+          appSvc.setLogin ( accessToken )
+        } catch {
+          appSvc.setLogout ( )
+        }
+      } ) ( inject ( ApiService ), inject ( ApplicationService ) )
+      return initializerFn ( )
+    } ),
     provideZonelessChangeDetection ( ),
     provideRouter ( routes ),
     provideHttpClient (

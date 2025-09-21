@@ -14,13 +14,13 @@ router.use ( rateLimit ( {
   legacyHeaders: false, // Disable the X-RateLimit-* headers
   message: {
     status: 429,
-    error: "Too many requests, please try again later."
+    message: "Too many requests, please try again later."
   }
 } ) )
 
 router.get ( "/", async ( _req: Request, res: Response ) => {
   try {
-    const client = await pool!.query ( 'SELECT "id", "title", "description", "start", "end", "longitude", "latitude", "showcase_image", "donation_requested", "donation_amount", "payment_required", "payment_amount", "location_name" FROM events' )
+    const client = await pool!.query ( 'SELECT "id", "title", "description", "start", "end", "longitude", "latitude", "showcase_image", "donation_requested", "donation_amount", "payment_required", "payment_amount", "location_name" FROM events WHERE "end" > NOW()' )
     const results = [ ]
     for ( const row of client.rows ) {
       const lng = row?.longitude
@@ -54,89 +54,89 @@ router.get ( "/", async ( _req: Request, res: Response ) => {
     console.error ( "Error while fetching events:", error )
     res.status ( 500 ).json ( {
       status: 500,
-      error: "Internal server error."
+      message: "Internal server error."
     } )
     return
   }
 } )
 
-router.post ( "/events/add", isAuthenticated, async ( req: Request, res: Response ) => {
-  const title = req.body.title
-  const description = req.body.description
-  const when = req.body.when
-  const longitude = req.body.longitude
-  const latitude = req.body.latitude
-  const showcase_image = req.body.showcase_image
-  const donation_requested = req.body.donation_requested
-  const donation_amount = req.body.donation_amount
-  const payment_required = req.body.payment_required
-  const payment_amount = req.body.payment_amount
+router.post ( "/add", isAuthenticated, async ( req: Request, res: Response ) => {
+  const title = req.body?.title
+  const description = req.body?.description
+  const when = req.body?.when
+  const longitude = req.body?.longitude
+  const latitude = req.body?.latitude
+  const showcase_image = req.body?.showcase_image
+  const donation_requested = req.body?.donation_requested
+  const donation_amount = req.body?.donation_amount
+  const payment_required = req.body?.payment_required
+  const payment_amount = req.body?.payment_amount
 
   if ( !title ) {
     res.json ( {
       status: 500,
-      error: "Title Required"
+      message: "Title Required"
     } )
     return
   }
 
   // Title validation
   if ( typeof title !== "string" || title.trim ().length === 0 ) {
-    res.status ( 400 ).json ( { status: 400, error: "Title must be a non-empty string." } )
+    res.status ( 400 ).json ( { status: 400, message: "Title must be a non-empty string." } )
     return
   }
 
   // Description validation
   if ( description !== undefined && typeof description !== "string" ) {
-    res.status ( 400 ).json ( { status: 400, error: "Description must be a string." } )
+    res.status ( 400 ).json ( { status: 400, message: "Description must be a string." } )
     return
   }
 
   // Date validation
   if ( when !== undefined && isNaN ( Date.parse ( when ) ) ) {
-    res.status ( 400 ).json ( { status: 400, error: "Invalid date format for 'when'." } )
+    res.status ( 400 ).json ( { status: 400, message: "Invalid date format for 'when'." } )
     return
   }
 
   // Longitude validation
   if ( longitude !== undefined && ( typeof longitude !== "number" || longitude < -180 || longitude > 180 ) ) {
-    res.status ( 400 ).json ( { status: 400, error: "Longitude must be a number between -180 and 180." } )
+    res.status ( 400 ).json ( { status: 400, message: "Longitude must be a number between -180 and 180." } )
     return
   }
 
   // Latitude validation
   if ( latitude !== undefined && ( typeof latitude !== "number" || latitude < -90 || latitude > 90 ) ) {
-    res.status ( 400 ).json ( { status: 400, error: "Latitude must be a number between -90 and 90." } )
+    res.status ( 400 ).json ( { status: 400, message: "Latitude must be a number between -90 and 90." } )
     return
   }
 
   // Showcase image validation
   if ( showcase_image !== undefined && ( typeof showcase_image !== "string" || showcase_image.length > 2048 ) ) {
-    res.status ( 400 ).json ( { status: 400, error: "Showcase image must be a string with max length 2048." } )
+    res.status ( 400 ).json ( { status: 400, message: "Showcase image must be a string with max length 2048." } )
     return
   }
 
   // Donation requested validation
   if ( donation_requested !== undefined && donation_requested !== 0 && donation_requested !== 1 ) {
-    res.status ( 400 ).json ( { status: 400, error: "Donation requested must be 0 or 1." } )
+    res.status ( 400 ).json ( { status: 400, message: "Donation requested must be 0 or 1." } )
     return
   }
 
   // Donation amount validation
   if ( donation_amount !== undefined && ( typeof donation_amount !== "number" || donation_amount < 0 ) ) {
-    res.status ( 400 ).json ( { status: 400, error: "Donation amount must be a non-negative number." } )
+    res.status ( 400 ).json ( { status: 400, message: "Donation amount must be a non-negative number." } )
     return
   }
 
   // Payment required validation
   if ( payment_required !== undefined && payment_required !== 0 && payment_required !== 1 ) {
-    res.status ( 400 ).json ( { status: 400, error: "Payment required must be 0 or 1." } )
+    res.status ( 400 ).json ( { status: 400, message: "Payment required must be 0 or 1." } )
     return
   }
 
   // Payment amount validation
   if ( payment_amount !== undefined && ( typeof payment_amount !== "number" || payment_amount < 0 ) ) {
-    res.status ( 400 ).json ( { status: 400, error: "Payment amount must be a non-negative number." } )
+    res.status ( 400 ).json ( { status: 400, message: "Payment amount must be a non-negative number." } )
     return
   }
 
@@ -162,28 +162,28 @@ router.post ( "/events/add", isAuthenticated, async ( req: Request, res: Respons
     console.error ( "Error while adding an event:", error )
     res.status ( 500 ).json ( {
       status: 500,
-      error: "Internal server error."
+      message: "Internal server error."
     } )
   }
 } )
 
-router.post ( "/events/edit", isAuthenticated, async ( req: Request, res: Response ) => {
-  const id = req.body.id
-  const title = req.body.title
-  const description = req.body.description
-  const when = req.body.when
-  const longitude = req.body.longitude
-  const latitude = req.body.latitude
-  const showcase_image = req.body.showcase_image
-  const donation_requested = req.body.donation_requested
-  const donation_amount = req.body.donation_amount
-  const payment_required = req.body.payment_required
-  const payment_amount = req.body.payment_amount
+router.post ( "/edit", isAuthenticated, async ( req: Request, res: Response ) => {
+  const id = req.body?.id
+  const title = req.body?.title
+  const description = req.body?.description
+  const when = req.body?.when
+  const longitude = req.body?.longitude
+  const latitude = req.body?.latitude
+  const showcase_image = req.body?.showcase_image
+  const donation_requested = req.body?.donation_requested
+  const donation_amount = req.body?.donation_amount
+  const payment_required = req.body?.payment_required
+  const payment_amount = req.body?.payment_amount
 
   if ( !id ) {
     res.json ( {
       status: 500,
-      error: "No ID Provided"
+      message: "No ID Provided"
     } )
     return
   }
@@ -196,7 +196,7 @@ router.post ( "/events/edit", isAuthenticated, async ( req: Request, res: Respon
   // Title validation
   if ( title !== undefined ) {
     if ( typeof title !== "string" || title.trim ().length === 0 ) {
-      res.status ( 400 ).json ( { status: 400, error: "Title must be a non-empty string." } )
+      res.status ( 400 ).json ( { status: 400, message: "Title must be a non-empty string." } )
       return
     }
     fieldsToUpdate.push ( `title=$${paramIndex++}` )
@@ -206,7 +206,7 @@ router.post ( "/events/edit", isAuthenticated, async ( req: Request, res: Respon
   // Description validation
   if ( description !== undefined ) {
     if ( typeof description !== "string" ) {
-      res.status ( 400 ).json ( { status: 400, error: "Description must be a string." } )
+      res.status ( 400 ).json ( { status: 400, message: "Description must be a string." } )
       return
     }
     fieldsToUpdate.push ( `description=$${paramIndex++}` )
@@ -216,7 +216,7 @@ router.post ( "/events/edit", isAuthenticated, async ( req: Request, res: Respon
   // Date validation
   if ( when !== undefined ) {
     if ( isNaN ( Date.parse ( when ) ) ) {
-      res.status ( 400 ).json ( { status: 400, error: "Invalid date format for 'when'." } )
+      res.status ( 400 ).json ( { status: 400, message: "Invalid date format for 'when'." } )
       return
     }
     fieldsToUpdate.push ( `when=$${paramIndex++}` )
@@ -226,7 +226,7 @@ router.post ( "/events/edit", isAuthenticated, async ( req: Request, res: Respon
   // Longitude validation
   if ( longitude !== undefined ) {
     if ( typeof longitude !== "number" || longitude < -180 || longitude > 180 ) {
-      res.status ( 400 ).json ( { status: 400, error: "Longitude must be a number between -180 and 180." } )
+      res.status ( 400 ).json ( { status: 400, message: "Longitude must be a number between -180 and 180." } )
       return
     }
     fieldsToUpdate.push ( `longitude=$${paramIndex++}` )
@@ -236,7 +236,7 @@ router.post ( "/events/edit", isAuthenticated, async ( req: Request, res: Respon
   // Latitude validation
   if ( latitude !== undefined ) {
     if ( typeof latitude !== "number" || latitude < -90 || latitude > 90 ) {
-      res.status ( 400 ).json ( { status: 400, error: "Latitude must be a number between -90 and 90." } )
+      res.status ( 400 ).json ( { status: 400, message: "Latitude must be a number between -90 and 90." } )
       return
     }
     fieldsToUpdate.push ( `latitude=$${paramIndex++}` )
@@ -246,7 +246,7 @@ router.post ( "/events/edit", isAuthenticated, async ( req: Request, res: Respon
   // Showcase image validation
   if ( showcase_image !== undefined ) {
     if ( typeof showcase_image !== "string" || showcase_image.length > 2048 ) {
-      res.status ( 400 ).json ( { status: 400, error: "Showcase image must be a string with max length 2048." } )
+      res.status ( 400 ).json ( { status: 400, message: "Showcase image must be a string with max length 2048." } )
       return
     }
     fieldsToUpdate.push ( `showcase_image=$${paramIndex++}` )
@@ -256,7 +256,7 @@ router.post ( "/events/edit", isAuthenticated, async ( req: Request, res: Respon
   // Donation requested validation
   if ( donation_requested !== undefined ) {
     if ( donation_requested !== 0 && donation_requested !== 1 ) {
-      res.status ( 400 ).json ( { status: 400, error: "Donation requested must be 0 or 1." } )
+      res.status ( 400 ).json ( { status: 400, message: "Donation requested must be 0 or 1." } )
       return
     }
     fieldsToUpdate.push ( `donation_requested=$${paramIndex++}` )
@@ -266,7 +266,7 @@ router.post ( "/events/edit", isAuthenticated, async ( req: Request, res: Respon
   // Donation amount validation
   if ( donation_amount !== undefined ) {
     if ( typeof donation_amount !== "number" || donation_amount < 0 ) {
-      res.status ( 400 ).json ( { status: 400, error: "Donation amount must be a non-negative number." } )
+      res.status ( 400 ).json ( { status: 400, message: "Donation amount must be a non-negative number." } )
       return
     }
     fieldsToUpdate.push ( `donation_amount=$${paramIndex++}` )
@@ -276,7 +276,7 @@ router.post ( "/events/edit", isAuthenticated, async ( req: Request, res: Respon
   // Payment required validation
   if ( payment_required !== undefined ) {
     if ( payment_required !== 0 && payment_required !== 1 ) {
-      res.status ( 400 ).json ( { status: 400, error: "Payment required must be 0 or 1." } )
+      res.status ( 400 ).json ( { status: 400, message: "Payment required must be 0 or 1." } )
       return
     }
     fieldsToUpdate.push ( `payment_required=$${paramIndex++}` )
@@ -286,7 +286,7 @@ router.post ( "/events/edit", isAuthenticated, async ( req: Request, res: Respon
   // Payment amount validation
   if ( payment_amount !== undefined ) {
     if ( typeof payment_amount !== "number" || payment_amount < 0 ) {
-      res.status ( 400 ).json ( { status: 400, error: "Payment amount must be a non-negative number." } )
+      res.status ( 400 ).json ( { status: 400, message: "Payment amount must be a non-negative number." } )
       return
     }
     fieldsToUpdate.push ( `payment_amount=$${paramIndex++}` )
@@ -296,7 +296,7 @@ router.post ( "/events/edit", isAuthenticated, async ( req: Request, res: Respon
   if ( fieldsToUpdate.length === 0 ) {
     res.json ( {
       status: 400,
-      error: "No fields to update."
+      message: "No fields to update."
     } )
     return
   }
@@ -311,18 +311,18 @@ router.post ( "/events/edit", isAuthenticated, async ( req: Request, res: Respon
     console.error ( "Error while editing an event:", error )
     res.status ( 500 ).json ( {
       status: 500,
-      error: "Internal server error."
+      message: "Internal server error."
     } )
   }
 } )
 
-router.post ( "/events/delete", isAuthenticated, async ( req: Request, res: Response ) => {
-  const id = req.body.id
+router.post ( "/delete", isAuthenticated, async ( req: Request, res: Response ) => {
+  const id = req.body?.id
 
   if ( !id ) {
     res.json ( {
       status: 500,
-      error: "No ID Provided"
+      message: "No ID Provided"
     } )
     return
   }
@@ -337,7 +337,7 @@ router.post ( "/events/delete", isAuthenticated, async ( req: Request, res: Resp
     console.error ( "Error while deleting an event:", error )
     res.status ( 500 ).json ( {
       status: 500,
-      error: "Internal server error."
+      message: "Internal server error."
     } )
   }
 } )

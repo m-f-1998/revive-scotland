@@ -1,6 +1,7 @@
 import express from "express"
 // import type { Response } from "express"
 import helmet from "helmet"
+import cookieParser from "cookie-parser"
 
 import cors from "cors"
 import { router as mailerRouter } from "./routes/mailer.js"
@@ -39,6 +40,8 @@ app.use ( ( _req, res, next ) => {
   res.locals [ "cspNonce" ] = nonce
   next ( )
 } )
+
+app.use ( cookieParser ( ) )
 
 app.use ( helmet ( {
   frameguard: {
@@ -151,7 +154,7 @@ const preloadDB = async ( ) => {
   if ( Number ( events.rows [ 0 ].count ) === 0 ) {
     console.log ( "No events found in db, creating initial event..." )
 
-    await pool!.query ( `INSERT INTO events ( "title", "description", "latitude", "longitude", "showcase_image", "start", "end", "goto_event_link", "location_name" ) VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9 )`, [ "Revive Weekend for Young Adults", "Dare to be Wise, Begin!", "57.63663222627872", "-3.565196553620845", "/assets/img/kinloss-weekend.jpg", new Date ( "2025-10-17" ), new Date ( "2025-10-19" ), "https://stmaryscathedral.churchsuite.com/events/artezvmj", "Cumming Hall" ] )
+    await pool!.query ( `INSERT INTO events ( "title", "description", "latitude", "longitude", "showcase_image", "start", "end", "goto_event_link", "location_name" ) VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9 )`, [ "Revive Weekend for Young Adults", "Dare to be Wise, Begin!", "57.63663222627872", "-3.565196553620845", "kinloss-weekend.jpg", new Date ( "2025-10-17" ), new Date ( "2025-10-19" ), "https://stmaryscathedral.churchsuite.com/events/artezvmj", "Cumming Hall" ] )
     console.log ( "Initial event created." )
   }
 }

@@ -7,8 +7,8 @@ import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { RecaptchaV3Module, ReCaptchaV3Service } from "ng-recaptcha-2"
 import { Subscription } from "rxjs"
 import { ApiService } from "@revive/src/app/services/api.service"
-import { Questionnaire } from "../events.component"
 import { IconService } from "@revive/src/app/services/icons.service"
+import { Event } from "@revive/src/app/interfaces/events.interface"
 
 @Component ( {
   selector: "app-questionnaire",
@@ -23,7 +23,7 @@ import { IconService } from "@revive/src/app/services/icons.service"
 } )
 export class QuestionnaireComponent implements OnInit, OnDestroy {
   @Input ( ) public title: string = ""
-  @Input ( ) public event: Questionnaire | undefined
+  @Input ( ) public event: Event | undefined
 
   public loading: WritableSignal<boolean> = signal ( false )
 

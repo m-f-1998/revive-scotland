@@ -12,7 +12,6 @@ import { ReviveWeekendsComponent } from "@components/revive-weekends/revive-week
 import { NextEventComponent } from "@components/next-event/next-event.component"
 import { NavbarComponent } from "../components/navbar/navbar.component"
 import { Header } from "../../interfaces/headers.interface"
-import { v4 as uuidv4 } from "uuid"
 import { HeadersService } from "../../services/headers.service"
 
 @Component ( {
@@ -35,26 +34,7 @@ import { HeadersService } from "../../services/headers.service"
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class HomeComponent {
-  public slides: WritableSignal<Header [ ]> = signal ( [
-    {
-      id: uuidv4 ( ),
-      title: "Revive Scotland",
-      description: "We are dedicated to reviving the faith in people's hearts through the power of the Holy Spirit. We deliver this through formation, community and prayer; mainly Pilgrimages, Revive Weekends and Eucharistic Adoration.",
-      filename: "assets/img/hero-bg-1.jpg"
-    },
-    {
-      id: uuidv4 ( ),
-      title: "Join the Prayer",
-      description: "Revive exists to give people a real and transformational HOPE, through a FAITH filled lifestyle centered on the sacraments, catechesis and real authentic friendships as a way to encounter God's LOVE.",
-      filename: "assets/img/hero-bg-2.jpg"
-    },
-    {
-      id: uuidv4 ( ),
-      title: "God is Love",
-      description: "'Let anyone who is thirsty come to me and drink. Whoever believes in me, as Scripture has said, rivers of living water will flow from within them. By this he meant the Holy Spirit' (Jn 7:38-39)",
-      filename: "assets/img/hero-bg-3.jpg"
-    }
-  ] )
+  public slides: WritableSignal<Header [ ]> = signal ( [ ] )
 
   public readonly headersSvc: HeadersService = inject ( HeadersService )
 

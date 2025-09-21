@@ -3,7 +3,7 @@ import { Router } from "express"
 
 import { rateLimit } from "express-rate-limit"
 import { pool } from "../db.js"
-import { issueToken, verifyPassword, verifyToken } from "../auth.js"
+import { issueToken, useRefreshToken, verifyPassword, verifyToken } from "../auth.js"
 import { isDevMode } from "../server.js"
 
 export const router = Router ( )
@@ -15,18 +15,18 @@ router.use ( rateLimit ( {
   legacyHeaders: false, // Disable the X-RateLimit-* headers
   message: {
     status: 429,
-    error: "Too many requests, please try again later."
+    message: "Too many requests, please try again later."
   }
 } ) )
 
 router.post ( "/login", async ( req: Request, res: Response ) => {
-  const username = req.body.username
-  const password = req.body.password
+  const username = req.body?.username
+  const password = req.body?.password
 
   if ( !username || !password ) {
     res.status ( 400 ).json ( {
       status: 400,
-      error: "Username and password are required."
+      message: "Username and password are required."
     } )
     return
   }
@@ -37,7 +37,7 @@ router.post ( "/login", async ( req: Request, res: Response ) => {
     if ( client.rowCount === 0 ) {
       res.status ( 401 ).json ( {
         status: 401,
-        error: "Invalid username or password."
+        message: "Invalid username or password."
       } )
       return
     }
@@ -49,7 +49,7 @@ router.post ( "/login", async ( req: Request, res: Response ) => {
     if ( !isPasswordValid ) {
       res.status ( 401 ).json ( {
         status: 401,
-        error: "Invalid username or password."
+        message: "Invalid username or password."
       } )
       return
     }
@@ -69,50 +69,62 @@ router.post ( "/login", async ( req: Request, res: Response ) => {
       maxAge: tokens.refreshToken.age
     } )
 
-    res.status ( 200 ).json ( await issueToken ( { sub: username } ) )
+    res.status ( 200 ).json ( {
+      accessToken: tokens.accessToken.token
+    } )
   } catch ( error ) {
     console.error ( "Error while authenticating:", error )
     res.status ( 500 ).json ( {
       status: 500,
-      error: "Internal server error."
+      message: "Internal server error."
     } )
     return
   }
 } )
 
-router.post ( "/verify", async ( req: Request, res: Response ) => {
-  const authHeader = req.headers.authorization
+router.post ( "/status", async ( req: Request, res: Response ) => {
+  // Return if logged in, logout if not
+  const accessToken = req.cookies [ "accessToken" ]
+  const refreshToken = req.cookies [ "refreshToken" ]
 
-  if ( !authHeader || !authHeader.startsWith ( "Bearer " ) ) {
-    res.status ( 401 ).json ( {
-      status: 401,
-      error: "Authorization header missing or invalid."
-    } )
-    return
-  }
-
-  const token = authHeader.split ( " " ) [ 1 ]
-
-  const payload = await verifyToken ( token )
+  const payload = await verifyToken ( accessToken )
 
   if ( !payload ) {
-    res.status ( 401 ).json ( {
-      status: 401,
-      error: "Invalid or expired token."
+    if ( refreshToken ) {
+      const refreshed = await useRefreshToken ( refreshToken )
+      if ( refreshed ) {
+        res.cookie ( "accessToken", refreshed.token, {
+          httpOnly: true,
+          secure: !isDevMode ( ),
+          sameSite: "strict",
+          maxAge: refreshed.age
+        } )
+        res.status ( 200 ).json ( {
+          status: 200,
+          isLoggedIn: true,
+          accessToken: refreshed.token
+        } )
+        return
+      }
+    }
+    res.status ( 200 ).json ( {
+      status: 200,
+      isLoggedIn: false,
+      accessToken: null
     } )
     return
   }
 
   res.status ( 200 ).json ( {
     status: 200,
-    message: "Token is valid.",
-    payload
+    isLoggedIn: true,
+    accessToken
   } )
 } )
 
 router.post ( "/logout", async ( req: Request, res: Response ) => {
-  const accessToken = req.cookies.accessToken
-  const refreshToken = req.cookies.refreshToken
+  const accessToken = req.cookies [ "accessToken" ]
+  const refreshToken = req.cookies [ "refreshToken" ]
 
   if ( !refreshToken || !accessToken ) {
     res.status ( 200 ).json ( {
@@ -130,10 +142,11 @@ router.post ( "/logout", async ( req: Request, res: Response ) => {
     const refreshPayload = await verifyToken ( refreshToken )
 
     if ( accessPayload ) {
-      await pool!.query ( "INSERT INTO blacklistedTokens ( jti, expiresAt ) VALUES ( $1, to_timestamp( $2 ) )", [ accessPayload.jti, accessPayload.exp ] )
+      await pool!.query ( "INSERT INTO blacklistedTokens ( jti, expires_at ) VALUES ( $1, to_timestamp( $2 ) )", [ accessPayload.jti, accessPayload.exp ] )
     }
+
     if ( refreshPayload ) {
-      await pool!.query ( "INSERT INTO blacklistedTokens ( jti, expiresAt ) VALUES ( $1, to_timestamp( $2 ) )", [ refreshPayload.jti, refreshPayload.exp ] )
+      await pool!.query ( "INSERT INTO blacklistedTokens ( jti, expires_at ) VALUES ( $1, to_timestamp( $2 ) )", [ refreshPayload.jti, refreshPayload.exp ] )
     }
   } catch ( error ) {
     console.error ( "Error while logging out:", error )
@@ -144,69 +157,4 @@ router.post ( "/logout", async ( req: Request, res: Response ) => {
     status: 200,
     message: "Logged out successfully."
   } )
-} )
-
-router.post ( "/refresh", async ( req: Request, res: Response ) => {
-  const accessToken = req.cookies.accessToken
-  const refreshToken = req.cookies.refreshToken
-
-  if ( !refreshToken ) {
-    res.status ( 401 ).json ( {
-      status: 401,
-      error: "Refresh token missing."
-    } )
-    return
-  }
-
-  try {
-    const accessPayload = await verifyToken ( accessToken )
-    if ( accessPayload ) {
-      res.status ( 200 ).json ( {
-        status: 200,
-        message: "Access token is still valid, no need to refresh."
-      } )
-      return
-    }
-
-    const payload = await verifyToken ( refreshToken )
-
-    if ( !payload ) {
-      res.status ( 401 ).json ( {
-        status: 401,
-        error: "Invalid or expired refresh token."
-      } )
-      return
-    }
-
-    // Check if jti is blacklisted
-    const client = await pool!.query ( "SELECT COUNT(*) FROM blacklistedTokens WHERE jti = $1", [ payload.jti ] )
-    if ( client.rows [ 0 ].count > 0 ) {
-      res.status ( 401 ).json ( {
-        status: 401,
-        error: "Refresh token has been revoked."
-      } )
-      return
-    }
-
-    const tokens = await issueToken ( { sub: payload.sub } )
-
-    res.cookie ( "accessToken", tokens.accessToken.token, {
-      httpOnly: true,
-      secure: !isDevMode ( ),
-      sameSite: "strict",
-      maxAge: tokens.accessToken.age
-    } )
-
-    res.status ( 200 ).json ( {
-      status: 200,
-      message: "Token refreshed successfully."
-    } )
-  } catch ( error ) {
-    console.error ( "Error while refreshing token:", error )
-    res.status ( 500 ).json ( {
-      status: 500,
-      error: "Internal server error."
-    } )
-    return
-  }
 } )

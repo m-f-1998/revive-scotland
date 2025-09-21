@@ -40,6 +40,7 @@ export class NextEventComponent {
     this.eventSvc.getNextEvent ( ).then ( nextEvent => {
       if ( nextEvent ) {
         this.nextEvent.set ( nextEvent.start! )
+        console.log ( this.nextEvent (), this.today (), this.nextEvent () > this.today () )
         this.title.set ( nextEvent.title )
 
         // if ( nextEvent.url ) {
@@ -47,7 +48,23 @@ export class NextEventComponent {
         // }
 
         if ( nextEvent.location_name ) {
-          this.locationName.set ( nextEvent.location_name )
+          const location = nextEvent.location_name
+          if ( nextEvent.address?.road ) {
+            location.concat ( `${nextEvent.address.road}` )
+          }
+          if ( nextEvent.address?.village ) {
+            location.concat ( `, ${nextEvent.address.village}` )
+          }
+          if ( nextEvent.address?.county ) {
+            location.concat ( `, ${nextEvent.address.county}` )
+          }
+          if ( nextEvent.address?.country ) {
+            location.concat ( `, ${nextEvent.address.country}` )
+          }
+          if ( nextEvent.address?.postcode ) {
+            location.concat ( `, ${nextEvent.address.postcode}` )
+          }
+          this.locationName.set ( location )
         }
 
         setInterval ( ( ) => {

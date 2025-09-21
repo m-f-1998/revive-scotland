@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS events (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid (),
   "title" VARCHAR(50) NOT NULL,
   "description" TEXT NULL,
-  "start" DATE NULL,
-  "end" DATE NULL,
+  "start" TIMESTAMP NULL,
+  "end" TIMESTAMP NULL,
   "longitude" DECIMAL(9, 6) NULL,
   "latitude" DECIMAL(8, 6) NULL,
   "location_name" VARCHAR(100) NULL,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS users (
   "password_hash" VARCHAR(256) NOT NULL,
   "password_salt" VARCHAR(256) NOT NULL,
   "role" VARCHAR(20) DEFAULT 'user',
-  "created_at" DATE DEFAULT CURRENT_TIMESTAMP
+  "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ==========================
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS files (
   "filename" VARCHAR(255) NOT NULL,
   "filepath" VARCHAR(255) NOT NULL,
   "owned_by" UUID,
-  "uploaded_at" DATE DEFAULT CURRENT_TIMESTAMP
+  "uploaded_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 ALTER TABLE
@@ -68,10 +68,10 @@ CREATE TABLE IF NOT EXISTS shareLinks (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid (),
   "file_id" UUID NOT NULL,
   "shared_with" UUID NULL,
-  "expires_at" DATE NULL,
+  "expires_at" TIMESTAMP NULL,
   "max_uses" SMALLINT NULL,
   "uses" SMALLINT DEFAULT 0,
-  "created_at" DATE DEFAULT CURRENT_TIMESTAMP
+  "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 ALTER TABLE
@@ -85,6 +85,6 @@ ADD
 CREATE TABLE IF NOT EXISTS blacklistedTokens (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid (),
   "jti" VARCHAR(100) NOT NULL,
-  "blacklisted_at" DATE DEFAULT CURRENT_TIMESTAMP,
-  "expires_at" DATE NOT NULL
+  "blacklisted_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  "expires_at" TIMESTAMP NOT NULL
 );

@@ -13,7 +13,6 @@ import { Header } from "@revive/src/app/interfaces/headers.interface"
 } )
 export class SliderComponent {
   public readonly slides: InputSignal<Header[] | undefined> = input<Header[] | undefined> ( [ ] )
-  public readonly subtitle: InputSignal<string | undefined> = input<string | undefined> ( "" )
 
   public pauseOnHover = true
   public pauseOnFocus = true
