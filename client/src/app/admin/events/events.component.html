@@ -1,31 +1,64 @@
 <app-navigation-bar />
 <div class="container mt-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Events</h2>
-    <button class="btn btn-primary" (click)="createEvent()">Create New Event</button>
-  </div>
-  <table class="table table-striped">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Date</th>
-        <th>Location</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (event of events(); track $index) {
+  @if (loading()) {
+    <div class="text-center opacity-30">
+      <fa-icon [icon]="iconSvc.getIcon('fas', 'spinner')" size="3x" animation="spin" />
+      <p class="mt-3">
+        Loading events...
+      </p>
+    </div>
+  } @else if (events().length === 0) {
+    <div class="text-center">
+      <h2>No Events Found</h2>
+      <p>There are currently no events. Click the button below to create a new event.</p>
+      <button class="btn btn-primary" (click)="createEvent()">
+        <fa-icon [icon]="iconSvc.getIcon('fas', 'plus')" size="sm" />
+        Create New Event
+      </button>
+    </div>
+  } @else {
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2>Events</h2>
+      <button class="btn btn-primary" (click)="createEvent()">
+        <fa-icon [icon]="iconSvc.getIcon('fas', 'plus')" size="sm" />
+        Create New Event
+      </button>
+    </div>
+    <table class="table table-striped">
+      <thead>
         <tr>
-          <td>{{ event.title }}</td>
-          <td>{{ event.start | date:'mediumDate' }}</td>
-          <td>{{ event.end | date:'mediumDate' }}</td>
-          <td>{{ event.address }}</td>
-          <td>
-            <button class="btn btn-sm btn-warning me-2" (click)="editEvent(event)">Edit</button>
-            <button class="btn btn-sm btn-danger" (click)="deleteEvent(event)">Delete</button>
-          </td>
+          <th>Name</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Location</th>
+          <th>Actions</th>
         </tr>
-      }
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        @for (event of events(); track $index) {
+          <tr>
+            <td>{{ event.title }}</td>
+            <td>{{ event.start | date:'mediumDate' }}</td>
+            <td>{{ event.end | date:'mediumDate' }}</td>
+            <td>
+              {{ event.location_name }}
+              @if (event.address?.postcode) {
+                , {{ event.address?.postcode }}
+              }
+            </td>
+            <td>
+              <button class="btn btn-sm btn-primary me-2" (click)="editEvent(event)">
+                <fa-icon [icon]="iconSvc.getIcon('fas', 'edit')" size="sm" />
+                Edit
+              </button>
+              <button class="btn btn-sm btn-danger" (click)="deleteEvent(event)">
+                <fa-icon [icon]="iconSvc.getIcon('fas', 'trash')" size="sm" />
+                Delete
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
 </div>

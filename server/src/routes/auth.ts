@@ -88,7 +88,6 @@ router.post ( "/status", async ( req: Request, res: Response ) => {
   const refreshToken = req.cookies [ "refreshToken" ]
 
   if ( ! ( await sessionActive ( accessToken ) ) ) {
-    console.log ( `Session inactive or expired` )
     res.status ( 401 ).json ( {
       status: 401,
       message: "Session inactive or expired."

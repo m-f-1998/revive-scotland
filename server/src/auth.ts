@@ -62,7 +62,6 @@ export const verifyToken = async ( token: string, isAccessToken: boolean, update
 
     if ( isAccessToken ) {
       if ( !( await sessionActive ( token ) ) ) {
-        console.log ( "Session inactive or expired." )
         return null
       }
       if ( updateSessionLastActive ) {

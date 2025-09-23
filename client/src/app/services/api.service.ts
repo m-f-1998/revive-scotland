@@ -19,7 +19,7 @@ export class ApiService {
     }
 
     if ( this.appSvc.token ( ) ) {
-      headers = headers.append ( "Authorization", `Basic ${ this.appSvc.token ( ) }` )
+      headers = headers.append ( "Authorization", `Bearer ${ this.appSvc.token ( ) }` )
     }
 
     return new Promise ( ( resolve, reject ) => {
@@ -47,7 +47,7 @@ export class ApiService {
     }
 
     if ( this.appSvc.token ( ) ) {
-      headers = headers.append ( "Authorization", `Basic ${ this.appSvc.token ( ) }` )
+      headers = headers.append ( "Authorization", `Bearer ${ this.appSvc.token ( ) }` )
     }
 
     return new Promise ( ( resolve, reject ) => {
