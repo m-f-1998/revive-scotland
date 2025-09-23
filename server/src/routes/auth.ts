@@ -3,7 +3,7 @@ import { Router } from "express"
 
 import { rateLimit } from "express-rate-limit"
 import { pool } from "../db.js"
-import { issueToken, useRefreshToken, verifyPassword, verifyToken } from "../auth.js"
+import { issueToken, sessionActive, useRefreshToken, verifyPassword, verifyToken } from "../auth.js"
 import { isDevMode } from "../server.js"
 
 export const router = Router ( )
@@ -87,7 +87,16 @@ router.post ( "/status", async ( req: Request, res: Response ) => {
   const accessToken = req.cookies [ "accessToken" ]
   const refreshToken = req.cookies [ "refreshToken" ]
 
-  const payload = await verifyToken ( accessToken )
+  if ( ! ( await sessionActive ( accessToken ) ) ) {
+    console.log ( `Session inactive or expired` )
+    res.status ( 401 ).json ( {
+      status: 401,
+      message: "Session inactive or expired."
+    } )
+    return
+  }
+
+  const payload = await verifyToken ( accessToken, true )
 
   if ( !payload ) {
     if ( refreshToken ) {
@@ -99,6 +108,10 @@ router.post ( "/status", async ( req: Request, res: Response ) => {
           sameSite: "strict",
           maxAge: refreshed.age
         } )
+
+        req.headers.authorization = `Bearer ${ refreshed.token }`
+        await pool!.query ( "UPDATE sessions SET session_token = $1, last_active = $2 WHERE session_token = $3", [ refreshed.token, new Date ( ), accessToken ] )
+
         res.status ( 200 ).json ( {
           status: 200,
           isLoggedIn: true,
@@ -138,8 +151,8 @@ router.post ( "/logout", async ( req: Request, res: Response ) => {
   res.clearCookie ( "refreshToken" )
   // Insert access token and refresh token jti into blacklistedTokens table
   try {
-    const accessPayload = await verifyToken ( accessToken )
-    const refreshPayload = await verifyToken ( refreshToken )
+    const accessPayload = await verifyToken ( accessToken, true )
+    const refreshPayload = await verifyToken ( refreshToken, false )
 
     if ( accessPayload ) {
       await pool!.query ( "INSERT INTO blacklistedTokens ( jti, expires_at ) VALUES ( $1, to_timestamp( $2 ) )", [ accessPayload.jti, accessPayload.exp ] )

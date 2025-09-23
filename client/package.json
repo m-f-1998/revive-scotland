@@ -44,6 +44,6 @@
     "@stylistic/eslint-plugin": "^5.4.0",
     "angular-eslint": "^20.3.0",
     "typescript": "^5.9.2",
-    "typescript-eslint": "^8.44.0"
+    "typescript-eslint": "^8.44.1"
   }
 }

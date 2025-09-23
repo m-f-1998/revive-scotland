@@ -88,3 +88,18 @@ CREATE TABLE IF NOT EXISTS blacklistedTokens (
   "blacklisted_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   "expires_at" TIMESTAMP NOT NULL
 );
+
+-- ==========================
+-- Sessions for users
+-- ==========================
+CREATE TABLE IF NOT EXISTS "sessions" (
+  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+  "username" VARCHAR(50) UNIQUE NOT NULL,
+  "session_token" TEXT NOT NULL,
+  "last_active" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE
+  "sessions"
+ADD
+  CONSTRAINT fk_username FOREIGN KEY (username) REFERENCES users (username) ON DELETE CASCADE;

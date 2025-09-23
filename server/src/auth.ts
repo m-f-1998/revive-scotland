@@ -10,28 +10,36 @@ const DIGEST = "sha512"
 // Token lifetime
 const ACCESS_TOKEN_EXPIRY = "15m"
 const REFRESH_TOKEN_EXPIRY = "3d"
+export const SESSION_ACTIVE_LIMIT = 60 * 60 * 1000 // 1 hour
 
 export const issueToken = async ( payload: JWTPayload ) => {
   const WEB_SECRET = Buffer.from ( process.env [ "WEB_SECRET" ]!, "hex" ) // 64 bytes
   const ENCRYPTION_SECRET = Buffer.from ( process.env [ "ENCRYPTION_SECRET" ]!, "hex" ) // 32 bytes
 
+  const accessToken = await generateToken (
+    payload,
+    ACCESS_TOKEN_EXPIRY,
+    WEB_SECRET,
+    ENCRYPTION_SECRET
+  )
+
+  const refreshToken = await generateToken (
+    { sub: payload.sub },
+    REFRESH_TOKEN_EXPIRY,
+    WEB_SECRET,
+    ENCRYPTION_SECRET
+  )
+
+  // Add the session ID to the database with last used time
+  await pool!.query ( "INSERT INTO sessions ( username, session_token, last_active ) VALUES ( $1, $2, $3 ) ON CONFLICT ( username ) DO UPDATE SET session_token = $2, last_active = $3", [ payload.sub, accessToken.token, new Date ( ) ] )
+
   return {
-    accessToken: await generateToken (
-      payload,
-      ACCESS_TOKEN_EXPIRY,
-      WEB_SECRET,
-      ENCRYPTION_SECRET
-    ),
-    refreshToken: await generateToken (
-      { sub: payload.sub },
-      REFRESH_TOKEN_EXPIRY,
-      WEB_SECRET,
-      ENCRYPTION_SECRET
-    ),
+    accessToken,
+    refreshToken
   }
 }
 
-export const verifyToken = async ( token: string ) => {
+export const verifyToken = async ( token: string, isAccessToken: boolean, updateSessionLastActive: boolean = true ) => {
   try {
     const WEB_SECRET = Buffer.from ( process.env [ "WEB_SECRET" ]!, "hex" ) // 64 bytes
     const ENCRYPTION_SECRET = Buffer.from ( process.env [ "ENCRYPTION_SECRET" ]!, "hex" ) // 32 bytes
@@ -52,19 +60,36 @@ export const verifyToken = async ( token: string ) => {
       return null
     }
 
+    if ( isAccessToken ) {
+      if ( !( await sessionActive ( token ) ) ) {
+        console.log ( "Session inactive or expired." )
+        return null
+      }
+      if ( updateSessionLastActive ) {
+        // Update session last active time
+        await pool!.query ( "UPDATE sessions SET last_active = $1 WHERE session_token = $2", [ new Date ( ), token ] )
+      }
+    }
+
     return verified
-  } catch {
+  } catch ( error ) {
+    console.error ( "Error while verifying token:", error )
     return null
   }
 }
 
-export const useRefreshToken = async ( token: string ) => {
-  if ( !token ) {
+export const sessionActive = async ( token: string ) => {
+  const isActive = await pool!.query ( "SELECT * FROM sessions WHERE session_token = $1 AND last_active > $2", [ token, new Date ( Date.now ( ) - SESSION_ACTIVE_LIMIT ) ] )
+  return isActive.rowCount && isActive.rowCount > 0
+}
+
+export const useRefreshToken = async ( refreshToken: string ) => {
+  if ( !refreshToken ) {
     return false
   }
 
   try {
-    const payload = await verifyToken ( token )
+    const payload = await verifyToken ( refreshToken, false )
     if ( !payload ) {
       return false
     }

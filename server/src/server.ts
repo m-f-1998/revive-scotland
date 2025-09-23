@@ -159,13 +159,20 @@ const preloadDB = async ( ) => {
   }
 }
 
+const loadSecrets = async ( ) => {
+  if ( !process.env [ "WEB_SECRET" ] || !process.env [ "ENCRYPTION_SECRET" ] ) {
+    await updateEnv ( {
+      "WEB_SECRET":  randomBytes ( 64 ).toString ( "hex" ),
+      "ENCRYPTION_SECRET": randomBytes ( 32 ).toString ( "hex" )
+    } )
+    await pool!.query ( "DELETE FROM blacklistedTokens" )
+  }
+}
+
 initDB ( ).then ( async ( ) => {
   await Promise.all ( [
     preloadDB ( ),
-    !process.env [ "WEB_SECRET" ] || !process.env [ "ENCRYPTION_SECRET" ] ? updateEnv ( {
-      "WEB_SECRET":  randomBytes ( 64 ).toString ( "hex" ),
-      "ENCRYPTION_SECRET": randomBytes ( 32 ).toString ( "hex" )
-    } ) : Promise.resolve ( )
+    loadSecrets ( )
   ] )
 } ).then ( ( ) => {
   console.log ( "Preload complete." )

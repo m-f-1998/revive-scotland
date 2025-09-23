@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express"
-import { useRefreshToken, verifyToken } from "../auth.js"
+import { sessionActive, useRefreshToken, verifyToken } from "../auth.js"
 import { isDevMode } from "../server.js"
+import { pool } from "../db.js"
 
 export const isAuthenticated = async ( req: Request, res: Response, next: NextFunction ) => {
   const authHeader = req.cookies [ "accessToken" ] || req.headers.authorization || ""
@@ -12,9 +13,17 @@ export const isAuthenticated = async ( req: Request, res: Response, next: NextFu
     return
   }
 
-  const token = authHeader.split ( " " ) [ 1 ]
+  const accessToken = authHeader.split ( " " ) [ 1 ]
 
-  const payload = await verifyToken ( token )
+  if ( ! ( await sessionActive ( accessToken ) ) ) {
+    res.status ( 401 ).json ( {
+      status: 401,
+      message: "Session inactive or expired."
+    } )
+    return
+  }
+
+  const payload = await verifyToken ( accessToken, true )
 
   if ( !payload ) {
     const refreshToken = req.cookies [ "refreshToken" ]
@@ -34,7 +43,20 @@ export const isAuthenticated = async ( req: Request, res: Response, next: NextFu
         sameSite: "strict",
         maxAge: refreshed.age
       } )
+
+      req.headers.authorization = `Bearer ${ refreshed.token }`
+      // Update session last active time and token with the new token
+      await pool!.query ( "UPDATE sessions SET session_token = $1, last_active = $2 WHERE session_token = $3", [ refreshed.token, new Date ( ), accessToken ] )
+
+      next ( )
+      return
     }
+
+    res.status ( 401 ).json ( {
+      status: 401,
+      message: "Invalid or expired refresh token."
+    } )
+    return
   }
 
   next ( )
