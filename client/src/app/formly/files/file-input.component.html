@@ -1,0 +1,5 @@
+<input
+    [accept]="(this.props.attributes ?? { } )['accept']"
+    class="form-control ng-pristine ng-touched"
+    (change)="fileSelected($event)"
+    type="file">

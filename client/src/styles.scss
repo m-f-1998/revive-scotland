@@ -182,3 +182,8 @@ textarea.form-control {
 .bg-img-fit {
   object-fit: cover !important;
 }
+
+.invalid {
+  color: var(--danger);
+  border-color: var(--danger);
+}

@@ -1,10 +1,15 @@
 import { Injectable } from "@angular/core"
 import { FormlyFieldConfig } from "@ngx-formly/core"
 import {
+  FormlyDate,
   FormlyExpressions,
+  FormlyNumber,
   FormlyProps,
+  FormlySelect,
   FormlyText,
 } from "../formly/formly-types"
+// import { FormGroup } from "@angular/forms"
+// import { parse } from "postcode"
 
 @Injectable ( {
   providedIn: "root"
@@ -51,6 +56,16 @@ export class FormlyService {
     return this.CustomField ( key, "password", { ...expressions, props }, focus )
   }
 
+  public NumberInput (
+    key: string,
+    props: FormlyNumber = { },
+    expressions: FormlyExpressions = { },
+    focus: boolean = false
+  ): FormlyFieldConfig {
+    if ( !expressions.defaultValue ) expressions.defaultValue = 0
+    return this.Input ( key, "number", props, expressions, focus )
+  }
+
   public CheckboxInput (
     key: string,
     props: FormlyProps = { },
@@ -68,6 +83,58 @@ export class FormlyService {
     focus: boolean = false
   ): FormlyFieldConfig {
     return this.CustomField ( key, "textarea", { ...expressions, props }, focus )
+  }
+
+  public DateInput ( key: string, props: FormlyDate = { }, expressions: FormlyExpressions = { }, focus: boolean = false ): FormlyFieldConfig {
+    expressions.validators = {
+      validation: [ "ValidDate" ]
+    }
+    expressions.name = key
+    return this.CustomField ( key, "datepicker", { ...expressions, props }, focus )
+  }
+
+  public TimePickerInput (
+    key: string,
+    props: FormlyProps = { },
+    expressions: FormlyExpressions = { },
+    focus: boolean = false
+  ): FormlyFieldConfig {
+    return this.CustomField ( key, "timepicker", { ...expressions, props }, focus )
+  }
+
+  public LocationInput (
+    key: string,
+    props: FormlyProps = { },
+    expressions: FormlyExpressions = { },
+    focus: boolean = false
+  ): FormlyFieldConfig {
+    return this.CustomField ( key, "locationpicker", { ...expressions, props }, focus )
+  }
+
+  public FileInput ( key: string, props: FormlyProps = { }, expressions: FormlyExpressions = { } ): FormlyFieldConfig {
+    // NOTE: Attributes for File Input:
+    // - maxSize: Maximum size of the file in MB
+    // - accept: Comma separated list of MIME types
+    return this.CustomField ( key, "file", { ...expressions, props, } )
+  }
+
+  public Select (
+    key: string,
+    props: FormlySelect = { options: [ ] },
+    expressions: FormlyExpressions = { },
+    focus: boolean = false
+  ): FormlyFieldConfig {
+    return this.CustomField ( key, "select", { ...expressions, props }, focus )
+  }
+
+  // Radio Buttons
+  public Radio (
+    key: string,
+    props: FormlySelect = { options: [ ] },
+    expressions: FormlyExpressions = { },
+    focus: boolean = false
+  ): FormlyFieldConfig {
+    return this.CustomField ( key, "radio", { ...expressions, props }, focus )
   }
 
   private Input (

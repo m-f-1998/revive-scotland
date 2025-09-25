@@ -1,4 +1,5 @@
 import { WritableSignal } from "@angular/core"
+import { IconDefinition } from "@fortawesome/free-brands-svg-icons"
 import { FormlyFieldConfig } from "@ngx-formly/core"
 import { Observable } from "rxjs"
 
@@ -36,4 +37,30 @@ export interface FormlyText extends FormlyProps {
   minLength?: number
   rows?: number
   includeMaxDescription?: boolean
+}
+
+export interface FormlyDate extends FormlyProps {
+  minDate?: Date
+  maxDate?: Date
+  startDate?: Date
+}
+
+export interface FormlyNumber extends FormlyProps {
+  min?: number
+  max?: number
+  step?: number
+}
+
+export interface FormlySelect extends FormlyProps {
+  options: {
+    label: string
+    value: string | number
+    faClass?: IconDefinition
+  } [ ] | Observable<{
+    label: string
+    value: string | number
+    faClass?: IconDefinition
+  } [ ]>
+  multiple?: boolean
+  clearable?: boolean
 }

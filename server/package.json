@@ -20,6 +20,7 @@
     "eslint": "^9.36.0",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
+    "googleapis": "^160.0.0",
     "helmet": "^8.1.0",
     "jose": "^6.1.0",
     "mime": "^4.1.0",

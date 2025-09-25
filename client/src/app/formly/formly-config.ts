@@ -3,6 +3,10 @@ import { ConfigOption, FormlyFieldConfig } from "@ngx-formly/core"
 import { ValidEmail } from "./validators/EmailAddress.validator"
 import { ValidPhoneNumber } from "./validators/PhoneNumber.validator"
 import { PasswordComponent } from "./password/password.component"
+import { DatePickerComponent } from "./date-picker/date-picker.component"
+import { TimePickerComponent } from "./time-picker/time-picker.component"
+import { LocationPickerComponent } from "./location-picker/location-picker.component"
+import { FileInputComponent } from "./files/file-input.component"
 
 @Injectable ( {
   providedIn: "root"
@@ -10,10 +14,30 @@ import { PasswordComponent } from "./password/password.component"
 export class FormlyConfig implements ConfigOption {
   public types = [
     {
+      name: "datepicker",
+      component: DatePickerComponent,
+      extends: "input"
+    },
+    {
+      name: "timepicker",
+      component: TimePickerComponent,
+      extends: "input"
+    },
+    {
+      name: "locationpicker",
+      component: LocationPickerComponent,
+      extends: "input"
+    },
+    {
       name: "password",
       component: PasswordComponent,
       extends: "input"
     },
+    {
+      name: "file",
+      component: FileInputComponent,
+      extends: "input"
+    }
   ]
 
   public validationMessages = [

@@ -9,7 +9,7 @@ import { IconService } from "../../services/icons.service"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
 import { InputDialogComponent } from "../../formly/input-dialog/input-dialog.component"
-import { FormlyService } from "../../services/formly.service"
+import { eventFields } from "./details-fields"
 
 @Component ( {
   selector: "app-admin-events",
@@ -31,7 +31,6 @@ export class AdminEventsComponent {
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
   private readonly eventsSvc: EventsService = inject ( EventsService )
   private readonly modalSvc: NgbModal = inject ( NgbModal )
-  private readonly formlySvc: FormlyService = inject ( FormlyService )
 
   public constructor ( ) {
     this.eventsSvc.getEvents ( ).then ( events => {
@@ -42,15 +41,6 @@ export class AdminEventsComponent {
   }
 
   public createEvent ( ): void {
-    /*
-  const longitude = req.body?.longitude
-  const latitude = req.body?.latitude
-  const showcase_image = req.body?.showcase_image
-  const donation_requested = req.body?.donation_requested
-  const donation_amount = req.body?.donation_amount
-  const payment_required = req.body?.payment_required
-  const payment_amount = req.body?.payment_amount
-  */
     const modalRef = this.modalSvc.open ( InputDialogComponent, {
       size: "lg",
       backdrop: "static"
@@ -58,41 +48,7 @@ export class AdminEventsComponent {
     modalRef.componentInstance.title = "Create New Event"
     modalRef.componentInstance.confirmText = "Create Event"
     modalRef.componentInstance.cancelText = "Cancel"
-    modalRef.componentInstance.fields = [
-      this.formlySvc.TextInput ( "title", {
-        label: "Title",
-        required: true,
-        maxLength: 50
-      } ),
-      this.formlySvc.TextAreaInput ( "description", {
-        label: "Description"
-      } ),
-      {
-        formClassName: "d-flex gap-3",
-        formGroup: [
-          this.formlySvc.DateInput ( "start_date", {
-            label: "Event Start Date"
-          } ),
-          this.formlySvc.TimeInput ( "start_time", {
-            label: "Event Start Time"
-          } )
-        ]
-      },
-      {
-        formClassName: "d-flex gap-3",
-        formGroup: [
-          this.formlySvc.DateInput ( "end_date", {
-            label: "Event End Date"
-          } ),
-          this.formlySvc.TimeInput ( "end_time", {
-            label: "Event End Time"
-          } )
-        ]
-      },
-      // Search for place longitude, latitude
-      // Showcase Image
-      
-    ]
+    modalRef.componentInstance.fields = eventFields
   }
 
   public editEvent ( _event: Event ): void {

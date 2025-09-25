@@ -10,6 +10,7 @@ import { router as eventRouter } from "./routes/events.js"
 import { router as authRouter } from "./routes/auth.js"
 import { router as headersRouter } from "./routes/headers.js"
 import { router as filesRouter } from "./routes/files.js"
+import { router as addressLookup } from "./routes/location.js"
 
 import { randomBytes } from "crypto"
 import { rateLimit } from "express-rate-limit"
@@ -27,6 +28,7 @@ app.use ( express.urlencoded ( { limit: "1mb", extended: true } ) )
 
 app.use ( cors ( {
   origin: [
+    "http://localhost:4200",
     "http://localhost:3000",
     "https://revivescotland.co.uk"
   ],
@@ -115,6 +117,7 @@ app.use ( "/api/mailer", mailerRouter )
 app.use ( "/api/auth", authRouter )
 app.use ( "/api/headers", headersRouter )
 app.use ( "/api/files", filesRouter )
+app.use ( "/api/address", addressLookup )
 app.use ( staticRouter )
 
 export const isDevMode = ( ) => process.env [ "DEV_MODE" ] === "true" || process.env [ "DEV_MODE" ] === "1"

@@ -1,0 +1,5 @@
+<div class="input-group" class="d-flex justify-content-center">
+  @if (control) {
+    <input [id]="this.id" type="time" class="form-control" [formControl]="control" [value]="control ? control.value : '00:00'" />
+  }
+</div>
