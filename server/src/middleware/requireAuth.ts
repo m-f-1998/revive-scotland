@@ -3,7 +3,7 @@ import { sessionActive, useRefreshToken, verifyToken } from "../auth.js"
 import { isDevMode } from "../server.js"
 import { pool } from "../db.js"
 
-export const isAuthenticated = async ( req: Request, res: Response, next: NextFunction ) => {
+export const requireAuth = async ( req: Request, res: Response, next: NextFunction ) => {
   const authHeader = req.cookies [ "accessToken" ] || req.headers.authorization || ""
   if ( !authHeader || !authHeader.startsWith ( "Bearer " ) ) {
     res.status ( 401 ).json ( {

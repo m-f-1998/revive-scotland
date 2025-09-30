@@ -3,7 +3,7 @@ import { Router } from "express"
 
 import { rateLimit } from "express-rate-limit"
 import { pool } from "../db.js"
-import { isAuthenticated } from "../middleware/isAuthenticated.js"
+import { requireAuth } from "../middleware/requireAuth.js"
 
 export const router = Router ( )
 
@@ -60,7 +60,7 @@ router.get ( "/", async ( _req: Request, res: Response ) => {
   }
 } )
 
-router.post ( "/add", isAuthenticated, async ( req: Request, res: Response ) => {
+router.post ( "/add", requireAuth, async ( req: Request, res: Response ) => {
   const title = req.body?.title
   const description = req.body?.description
   const when = req.body?.when
@@ -167,7 +167,7 @@ router.post ( "/add", isAuthenticated, async ( req: Request, res: Response ) => 
   }
 } )
 
-router.post ( "/edit", isAuthenticated, async ( req: Request, res: Response ) => {
+router.post ( "/edit", requireAuth, async ( req: Request, res: Response ) => {
   const id = req.body?.id
   const title = req.body?.title
   const description = req.body?.description
@@ -316,7 +316,7 @@ router.post ( "/edit", isAuthenticated, async ( req: Request, res: Response ) =>
   }
 } )
 
-router.post ( "/delete", isAuthenticated, async ( req: Request, res: Response ) => {
+router.post ( "/delete", requireAuth, async ( req: Request, res: Response ) => {
   const id = req.body?.id
 
   if ( !id ) {

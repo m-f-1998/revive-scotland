@@ -15,7 +15,7 @@ COPY --chown=node:node client/dist/browser /node/client
 # Assets
 COPY --chown=node:node assets /node/assets
 
-RUN apt-get update && apt-get install -y --no-install-recommends nano
+RUN apt-get update && apt-get install -y --no-install-recommends nano clamav clamav-daemon
 
 # Set a non-root user (optional, good practice)
 USER node

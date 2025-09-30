@@ -96,7 +96,7 @@ router.get ( "/lookup", async ( req: Request, res: Response ) => {
     return res.json ( response.data.suggestions?.map ( x => {
       return {
         id: x.placePrediction?.placeId,
-        text: x.placePrediction?.text,
+        text: x.placePrediction?.text?.text || "",
       }
     } ) )
   } catch ( error ) {

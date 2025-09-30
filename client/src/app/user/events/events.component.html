@@ -18,11 +18,11 @@
         <div class="card m-2 event-card">
           @if (event.showcase_image) {
             <img
-              [attr.src]="'/api/files/img/' + event.showcase_image + '?w=640&f=webp'"
+              [attr.src]="'/api/img/' + event.showcase_image + '?w=640&f=webp'"
               [attr.srcset]="
-                '/api/files/img/' + event.showcase_image + '?w=320&f=webp 320w, ' +
-                '/api/files/img/' + event.showcase_image + '?w=640&f=webp 640w, ' +
-                '/api/files/img/' + event.showcase_image + '?w=1024&f=webp 1024w'
+                '/api/img/' + event.showcase_image + '?w=320&f=webp 320w, ' +
+                '/api/img/' + event.showcase_image + '?w=640&f=webp 640w, ' +
+                '/api/img/' + event.showcase_image + '?w=1024&f=webp 1024w'
               "
               sizes="(max-width: 600px) 100vw, 600px"
               [attr.alt]="event.title || 'Event image'"
@@ -31,11 +31,11 @@
               class="card-img-top event-image"
             />
           } @else {
-            <img src="/api/files/img/placeholder.jpg?w=640&f=webp"
+            <img src="/api/img/placeholder.jpg?w=640&f=webp"
               srcset="
-                /api/files/img/placeholder.jpg?w=320&f=webp 320w,
-                /api/files/img/placeholder.jpg?w=640&f=webp 640w,
-                /api/files/img/placeholder.jpg?w=1024&f=webp 1024w
+                /api/img/placeholder.jpg?w=320&f=webp 320w,
+                /api/img/placeholder.jpg?w=640&f=webp 640w,
+                /api/img/placeholder.jpg?w=1024&f=webp 1024w
               "
               sizes="(max-width: 600px) 100vw, 600px"
               alt="Placeholder Image"

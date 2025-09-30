@@ -9,11 +9,11 @@
         <ng-template ngbSlide>
           <div class="border-radius-15 bg-secondary-subtle">
             <img
-              [attr.src]="'/api/files/img/' + img.filename + '?w=640&f=webp'"
+              [attr.src]="'/api/img/' + img.filename + '?w=640&f=webp'"
               [attr.srcset]="
-                '/api/files/img/' + img.filename + '?w=320&f=webp 320w, ' +
-                '/api/files/img/' + img.filename + '?w=640&f=webp 640w, ' +
-                '/api/files/img/' + img.filename + '?w=1024&f=webp 1024w'
+                '/api/img/' + img.filename + '?w=320&f=webp 320w, ' +
+                '/api/img/' + img.filename + '?w=640&f=webp 640w, ' +
+                '/api/img/' + img.filename + '?w=1024&f=webp 1024w'
               "
               sizes="(max-width: 600px) 100vw, 600px"
               alt="Revive Scotland Header"

@@ -9,6 +9,7 @@ import { router as staticRouter } from "./routes/static.js"
 import { router as eventRouter } from "./routes/events.js"
 import { router as authRouter } from "./routes/auth.js"
 import { router as headersRouter } from "./routes/headers.js"
+import { router as imagesRouter } from "./routes/images.js"
 import { router as filesRouter } from "./routes/files.js"
 import { router as addressLookup } from "./routes/location.js"
 
@@ -116,6 +117,7 @@ app.use ( "/api/events", eventRouter )
 app.use ( "/api/mailer", mailerRouter )
 app.use ( "/api/auth", authRouter )
 app.use ( "/api/headers", headersRouter )
+app.use ( "/api/img", imagesRouter )
 app.use ( "/api/files", filesRouter )
 app.use ( "/api/address", addressLookup )
 app.use ( staticRouter )
