@@ -49,11 +49,17 @@ CREATE TABLE IF NOT EXISTS headers (
 -- Files
 -- ==========================
 CREATE TABLE IF NOT EXISTS files (
-  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid (),
-  "filename" VARCHAR(255) NOT NULL,
-  "filepath" VARCHAR(255) NOT NULL,
-  "owned_by" UUID,
-  "uploaded_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  type VARCHAR(10) NOT NULL,
+  -- NULL for root
+  r2_path VARCHAR(512),
+  -- path/key in R2
+  size INT,
+  mime_type VARCHAR(50),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  owned_by UUID NOT NULL
 );
 
 ALTER TABLE
@@ -62,11 +68,37 @@ ADD
   CONSTRAINT fk_owned_by FOREIGN KEY (owned_by) REFERENCES users (id) ON DELETE CASCADE;
 
 -- ==========================
+-- File Shares
+-- ==========================
+CREATE TABLE IF NOT EXISTS file_shares (
+  id SERIAL PRIMARY KEY,
+  file_id SERIAL NOT NULL,
+  token UUID NOT NULL DEFAULT gen_random_uuid(),
+  -- random token for sharing
+  max_downloads INT,
+  -- optional (NULL = unlimited)
+  downloads_used INT DEFAULT 0 NOT NULL,
+  -- increment per access
+  expires_at TIMESTAMP WITH TIME ZONE,
+  -- optional (NULL = no expiry)
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Add an index for quick token lookups
+CREATE UNIQUE INDEX idx_file_shares_token ON file_shares(token);
+
+ALTER TABLE
+  file_shares
+ADD
+  CONSTRAINT fk_file_id FOREIGN KEY (file_id) REFERENCES files (id) ON DELETE CASCADE;
+
+-- ==========================
 -- Share Links
 -- ==========================
 CREATE TABLE IF NOT EXISTS shareLinks (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid (),
-  "file_id" UUID NOT NULL,
+  "file_id" SERIAL NOT NULL,
   "shared_with" UUID NULL,
   "expires_at" TIMESTAMP NULL,
   "max_uses" SMALLINT NULL,

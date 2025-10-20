@@ -12,7 +12,7 @@ const ACCESS_TOKEN_EXPIRY = "15m"
 const REFRESH_TOKEN_EXPIRY = "3d"
 export const SESSION_ACTIVE_LIMIT = 60 * 60 * 1000 // 1 hour
 
-export const issueToken = async ( payload: JWTPayload ) => {
+export const issueToken = async ( payload: JWTPayload, username: string ) => {
   const WEB_SECRET = Buffer.from ( process.env [ "WEB_SECRET" ]!, "hex" ) // 64 bytes
   const ENCRYPTION_SECRET = Buffer.from ( process.env [ "ENCRYPTION_SECRET" ]!, "hex" ) // 32 bytes
 
@@ -31,7 +31,7 @@ export const issueToken = async ( payload: JWTPayload ) => {
   )
 
   // Add the session ID to the database with last used time
-  await pool!.query ( "INSERT INTO sessions ( username, session_token, last_active ) VALUES ( $1, $2, $3 ) ON CONFLICT ( username ) DO UPDATE SET session_token = $2, last_active = $3", [ payload.sub, accessToken.token, new Date ( ) ] )
+  await pool!.query ( "INSERT INTO sessions ( username, session_token, last_active ) VALUES ( $1, $2, $3 ) ON CONFLICT ( username ) DO UPDATE SET session_token = $2, last_active = $3", [ username, accessToken.token, new Date ( ) ] )
 
   return {
     accessToken,

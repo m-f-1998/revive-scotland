@@ -24,8 +24,8 @@ export class LoginComponent implements OnInit {
 
   public error: string | null = null
 
+  public readonly apiSvc: ApiService = inject ( ApiService )
   private readonly formlySvc: FormlyService = inject ( FormlyService )
-  private readonly apiSvc: ApiService = inject ( ApiService )
   private readonly router: Router = inject ( Router )
   private readonly appSvc: ApplicationService = inject ( ApplicationService )
 

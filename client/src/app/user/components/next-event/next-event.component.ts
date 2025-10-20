@@ -40,7 +40,6 @@ export class NextEventComponent {
     this.eventSvc.getNextEvent ( ).then ( nextEvent => {
       if ( nextEvent ) {
         this.nextEvent.set ( nextEvent.start! )
-        console.log ( this.nextEvent (), this.today (), this.nextEvent () > this.today () )
         this.title.set ( nextEvent.title )
 
         // if ( nextEvent.url ) {

@@ -4,13 +4,18 @@ import { isDevMode } from "../server.js"
 import { pool } from "../db.js"
 
 export const requireAuth = async ( req: Request, res: Response, next: NextFunction ) => {
-  const authHeader = req.cookies [ "accessToken" ] || req.headers.authorization || ""
-  if ( !authHeader || !authHeader.startsWith ( "Bearer " ) ) {
+  let authHeader = req.cookies [ "accessToken" ] || req.headers.authorization || ""
+
+  if ( !authHeader ) {
     res.status ( 401 ).json ( {
       status: 401,
       message: "Authorization header missing or invalid."
     } )
     return
+  }
+
+  if ( !authHeader.startsWith ( "Bearer " ) ) {
+    authHeader = `Bearer ${ authHeader }`
   }
 
   const accessToken = authHeader.split ( " " ) [ 1 ]

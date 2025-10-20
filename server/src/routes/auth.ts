@@ -32,7 +32,7 @@ router.post ( "/login", async ( req: Request, res: Response ) => {
   }
 
   try {
-    const client = await pool!.query ( "SELECT password_salt, password_hash FROM users WHERE username = $1", [ username ] )
+    const client = await pool!.query ( "SELECT id, password_salt, password_hash FROM users WHERE username = $1", [ username ] )
 
     if ( client.rowCount === 0 ) {
       res.status ( 401 ).json ( {
@@ -42,7 +42,7 @@ router.post ( "/login", async ( req: Request, res: Response ) => {
       return
     }
 
-    const { password_salt, password_hash } = client.rows [ 0 ]
+    const { password_salt, password_hash, id } = client.rows [ 0 ]
 
     const isPasswordValid = verifyPassword ( password, password_salt, password_hash )
 
@@ -54,7 +54,9 @@ router.post ( "/login", async ( req: Request, res: Response ) => {
       return
     }
 
-    const tokens = await issueToken ( { sub: username } )
+    const tokens = await issueToken ( {
+      sub: id
+    }, username )
     res.cookie ( "accessToken", tokens.accessToken.token, {
       httpOnly: true,
       secure: !isDevMode ( ),
@@ -88,9 +90,10 @@ router.post ( "/status", async ( req: Request, res: Response ) => {
   const refreshToken = req.cookies [ "refreshToken" ]
 
   if ( ! ( await sessionActive ( accessToken ) ) ) {
-    res.status ( 401 ).json ( {
-      status: 401,
-      message: "Session inactive or expired."
+    res.status ( 200 ).json ( {
+      status: 200,
+      isLoggedIn: false,
+      accessToken: null
     } )
     return
   }

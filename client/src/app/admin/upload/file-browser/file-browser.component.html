@@ -1,0 +1,116 @@
+<div class="d-flex justify-content-end align-items-end mb-3">
+  <button class="btn btn-primary" (click)="upload()">
+    <fa-icon [icon]="iconSvc.getIcon('fas', 'plus')" size="sm" />
+    Upload File
+  </button>
+  <button class="btn btn-secondary ms-2" (click)="upload(false)">
+    <fa-icon [icon]="iconSvc.getIcon('fas', 'folder-plus')" size="sm" />
+    Upload Folder
+  </button>
+</div>
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item">
+      <a class="text-decoration-none" (click)="navigateTo('/')">
+        <fa-icon [icon]="iconSvc.getIcon('fas', 'house')" class="me-1" size="sm"></fa-icon>
+      </a>
+    </li>
+    @for (crumb of breadcrumbs; track crumb.path) {
+      <li class="breadcrumb-item">
+        <!-- If current link don't add a tag -->
+        @if (crumb.path === currentPath()) {
+          <span class="text-secondary">{{ crumb.name }}</span>
+        } @else {
+          <a class="text-decoration-none" (click)="navigateTo(crumb.path)">
+            {{ crumb.name }}
+          </a>
+        }
+      </li>
+    }
+  </ol>
+</nav>
+
+<!-- Table -->
+<div class="table-responsive">
+  <table class="table table-hover align-middle mb-0">
+    <thead class="text-secondary small border-bottom">
+      <tr>
+        <th class="ps-3" style="width: 2rem;"></th>
+        <th></th>
+        <th>Name</th>
+        <th class="text-end pe-3" style="width: 3rem;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (node of currentFolder; track node.path) {
+        <tr
+          class="align-middle"
+          [class.table-active]="isSelected(node)"
+          (dblclick)="navigateInto(node)"
+        >
+          <!-- Checkbox -->
+          <td class="ps-3 text-center">
+            <input
+              type="checkbox"
+              class="form-check-input m-0"
+              [checked]="isSelected(node)"
+              (click)="$event.stopPropagation(); toggleSelection(node)"
+            />
+          </td>
+
+          <!-- Icon -->
+          <td style="width: 2.5rem;">
+            @if (node.isFolder) {
+              <fa-icon [icon]="iconSvc.getIcon('fas', 'folder')" size="lg" class="text-warning" />
+            } @else {
+              <fa-icon [icon]="iconSvc.getIcon('fas', 'file')" size="lg" class="text-muted" />
+            }
+          </td>
+
+          <!-- Name -->
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <a class="text-decoration-none text-primary fw-medium" (click)="navigateInto(node); $event.stopPropagation()">
+                {{ node.name }}
+              </a>
+            </div>
+          </td>
+
+          <!-- Three-dot menu -->
+          <td class="text-end pe-3">
+            <div ngbDropdown placement="bottom-end" container="body">
+              <button
+                ngbDropdownToggle
+                class="btn btn-link p-0 text-muted border-0 shadow-none"
+                (click)="$event.stopPropagation()"
+              >
+                <fa-icon [icon]="iconSvc.getIcon('fas', 'ellipsis-v')" />
+              </button>
+              <div ngbDropdownMenu class="shadow-sm">
+                @if (!node.isFolder) {
+                  <button ngbDropdownItem (click)="moreInfo(node); $event.stopPropagation()">
+                    <fa-icon [icon]="iconSvc.getIcon('fas', 'info-circle')" class="me-2" />
+                    More Info
+                  </button>
+                }
+                <button ngbDropdownItem class="text-primary">
+                  <fa-icon [icon]="iconSvc.getIcon('fas', 'link')" class="me-2" />
+                  Create Share Link
+                </button>
+                <button ngbDropdownItem (click)="download(node); $event.stopPropagation()">
+                  <fa-icon [icon]="iconSvc.getIcon('fas', 'download')" class="me-2" />
+                  Download
+                </button>
+                <button ngbDropdownItem (click)="deleteFile(node); $event.stopPropagation()" class="text-danger">
+                  <fa-icon [icon]="iconSvc.getIcon('fas', 'trash')" class="me-2" />
+                  Delete
+                </button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

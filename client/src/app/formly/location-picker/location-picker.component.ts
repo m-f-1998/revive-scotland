@@ -80,7 +80,6 @@ export class LocationPickerComponent extends FieldType implements OnInit {
       const data: LocationLookup [ ] = await this.apiSvc.get ( "/api/address/lookup", {
         location
       } ) as any
-      console.log ( data )
 
       this.locationFields [ 1 ].props!.options = data.map ( ( x: LocationLookup ) => {
         return {

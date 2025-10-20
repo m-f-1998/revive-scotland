@@ -7,50 +7,33 @@
         Loading files...
       </p>
     </div>
-  } @else if (files().length === 0) {
+  <!-- } @else if (fileTree.length === 0) {
     <div class="text-center">
       <h2>No Files Found</h2>
-      <p>There are currently no files. Click the button below to create a new file.</p>
-      <button class="btn btn-primary" (click)="newFile()">
+      <p>There are currently no files. Click the button below to upload a new file.</p>
+      <button class="btn btn-primary" (click)="upload()">
         <fa-icon [icon]="iconSvc.getIcon('fas', 'plus')" size="sm" />
-        Create New File
+        Upload New File
       </button>
-    </div>
+      <button class="btn btn-secondary ms-2" (click)="upload(false)">
+        <fa-icon [icon]="iconSvc.getIcon('fas', 'folder-plus')" size="sm" />
+        Upload New Folder
+      </button>
+    </div> -->
   } @else {
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h2>Files</h2>
-      <button class="btn btn-primary" (click)="newFile()">
+    <!-- <div class="d-flex justify-content-end align-items-end mb-3">
+      <button class="btn btn-primary" (click)="upload()">
         <fa-icon [icon]="iconSvc.getIcon('fas', 'plus')" size="sm" />
-        Create New File
+        Upload File
       </button>
+      <button class="btn btn-secondary ms-2" (click)="upload(false)">
+        <fa-icon [icon]="iconSvc.getIcon('fas', 'folder-plus')" size="sm" />
+        Upload Folder
+      </button>
+    </div> -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2>File Browser</h2>
     </div>
-    <table class="table table-striped">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Start Date</th>
-          <th>End Date</th>
-          <th>Location</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (file of files(); track $index) {
-          <tr>
-            <td>{{ file.name }}</td>
-            <td>{{ file.modifiedAt| date:'mediumDate' }}</td>
-            <td>{{ file.createdAt | date:'mediumDate' }}</td>
-            <td>{{ fileSvc.translateByteSize(file.size) }}</td>
-            <td>{{ fileSvc.translateMimeType(file.type) }}</td>
-            <td>
-              <button class="btn btn-sm btn-danger" (click)="fileSvc.deleteFile(file)">
-                <fa-icon [icon]="iconSvc.getIcon('fas', 'trash')" size="sm" />
-                Delete
-              </button>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
+    <app-file-browser />
   }
 </div>

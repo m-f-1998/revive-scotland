@@ -26,7 +26,8 @@ export class ApiService {
       this.httpClient.get ( address, {
         params: body,
         headers,
-        responseType: "json"
+        responseType: "json",
+        withCredentials: true
       } as object ).subscribe ( {
         next: response => {
           resolve ( this.parseObj ( response ) )
@@ -53,7 +54,36 @@ export class ApiService {
     return new Promise ( ( resolve, reject ) => {
       this.httpClient.post ( address, body, {
         headers,
-        responseType: "json"
+        responseType: "json",
+        withCredentials: true
+      } as object ).subscribe ( {
+        next: response => {
+          resolve ( this.parseObj ( response ) )
+        },
+        error: error => {
+          reject ( error )
+        }
+      } )
+    } )
+  }
+
+  public delete ( path: string, body: any = { } ) {
+    const address = ( isDevMode ( ) ? "http://localhost:3000" : "" ) + path
+    let headers = new HttpHeaders ( )
+
+    if ( !( body instanceof FormData ) ) {
+      headers = headers.append ( "Content-Type", "application/json" )
+    }
+
+    if ( this.appSvc.token ( ) ) {
+      headers = headers.append ( "Authorization", `Bearer ${ this.appSvc.token ( ) }` )
+    }
+
+    return new Promise ( ( resolve, reject ) => {
+      this.httpClient.delete ( address, {
+        headers,
+        responseType: "json",
+        withCredentials: true
       } as object ).subscribe ( {
         next: response => {
           resolve ( this.parseObj ( response ) )

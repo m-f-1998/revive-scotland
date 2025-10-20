@@ -4,6 +4,7 @@ import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
 import { IconService } from "../../services/icons.service"
+import { IconProp } from "@fortawesome/fontawesome-svg-core"
 
 @Component ( {
   selector: "app-input-dialog",
@@ -21,11 +22,17 @@ export class InputDialogComponent {
   @Input ( ) public cancelText = "Cancel"
   @Input ( ) public fields: FormlyFieldConfig [ ] = [ ]
   @Input ( ) public model: any = { }
+  @Input ( ) public confirmIcon: IconProp
+  @Input ( ) public hideConfirmButton: boolean = false
 
   public form = new FormGroup ( { } )
 
   public readonly iconSvc: IconService = inject ( IconService )
   private readonly activeModal: NgbActiveModal = inject ( NgbActiveModal )
+
+  public constructor ( ) {
+    this.confirmIcon = this.iconSvc.getIcon ( "fas", "save" )
+  }
 
   public close ( ) {
     this.activeModal.dismiss ( )

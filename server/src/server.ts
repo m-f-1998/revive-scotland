@@ -19,6 +19,8 @@ import { initDB, pool } from "./db.js"
 import { updateEnv } from "./env.js"
 import { hashPassword } from "./auth.js"
 
+export const isDevMode = ( ) => process.env [ "DEV_MODE" ] === "true" || process.env [ "DEV_MODE" ] === "1"
+
 const app = express ( )
 
 app.use ( express.json ( ) )
@@ -33,7 +35,7 @@ app.use ( cors ( {
     "http://localhost:3000",
     "https://revivescotland.co.uk"
   ],
-  methods: [ "GET", "POST" ],
+  methods: [ "GET", "POST", "DELETE" ],
   allowedHeaders: [ "Content-Type", "Authorization" ],
   credentials: true
 } ) )
@@ -122,8 +124,6 @@ app.use ( "/api/files", filesRouter )
 app.use ( "/api/address", addressLookup )
 app.use ( staticRouter )
 
-export const isDevMode = ( ) => process.env [ "DEV_MODE" ] === "true" || process.env [ "DEV_MODE" ] === "1"
-
 const preloadDB = async ( ) => {
   const users = await pool!.query ( "SELECT COUNT(*) FROM users" )
   if ( Number ( users.rows [ 0 ].count ) === 0 ) {
@@ -152,15 +152,6 @@ const preloadDB = async ( ) => {
     await pool!.query ( "INSERT INTO headers ( filename, title, description, location ) VALUES ( $1, $2, $3, $4 )", [ "hero-bg-4.jpg", "Upcoming Events", "Revive Scotland", "/events" ] )
     await pool!.query ( "INSERT INTO headers ( filename, title, description, location ) VALUES ( $1, $2, $3, $4 )", [ "hero-bg-5.jpg", "Upcoming Events", "Revive Scotland", "/events" ] )
     console.log ( "Initial headers created." )
-  }
-
-  const events = await pool!.query ( "SELECT COUNT(*) FROM events" )
-
-  if ( Number ( events.rows [ 0 ].count ) === 0 ) {
-    console.log ( "No events found in db, creating initial event..." )
-
-    await pool!.query ( `INSERT INTO events ( "title", "description", "latitude", "longitude", "showcase_image", "start", "end", "goto_event_link", "location_name" ) VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9 )`, [ "Revive Weekend for Young Adults", "Dare to be Wise, Begin!", "57.63663222627872", "-3.565196553620845", "kinloss-weekend.jpg", new Date ( "2025-10-17" ), new Date ( "2025-10-19" ), "https://stmaryscathedral.churchsuite.com/events/artezvmj", "Cumming Hall" ] )
-    console.log ( "Initial event created." )
   }
 }
 

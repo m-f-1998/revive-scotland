@@ -10,9 +10,11 @@
   }
 </div>
 
-<div class="modal-footer">
-  <button type="submit" class="btn btn-primary" (click)="confirm()" [disabled]="this.form.invalid">
-    <fa-icon [icon]="iconSvc.getIcon('fas', 'save')" />&nbsp;
-    {{confirmText}}
-  </button>
-</div>
+@if (!hideConfirmButton) {
+  <div class="modal-footer">
+    <button type="submit" class="btn btn-primary" (click)="confirm()" [disabled]="this.form.invalid">
+      <fa-icon [icon]="confirmIcon" />&nbsp;
+      {{confirmText}}
+    </button>
+  </div>
+}

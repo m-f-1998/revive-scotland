@@ -1,4 +1,15 @@
 services:
+  clamav:
+    image: clamav/clamav:latest
+    container_name: revive-scotland-clamav
+    restart: unless-stopped
+    ports:
+      - "3310:3310"
+    healthcheck:
+      test: ["CMD", "clamdscan", "--version"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
   web:
     build:
       context: ../

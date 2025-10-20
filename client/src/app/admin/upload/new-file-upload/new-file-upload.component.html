@@ -1,0 +1,75 @@
+<div class="modal-body">
+  <ul ngbNav #nav="ngbNav" [(activeId)]="activeTab" class="nav-tabs">
+    <li [ngbNavItem]="1">
+      <button ngbNavLink>New Upload</button>
+      <ng-template ngbNavContent>
+        <div>
+          <div
+            class="drag-drop-area w-100 p-4 d-flex align-items-center justify-content-center mt-3 border border-secondary rounded drop-area"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDropSuccess($event)"
+            (click)="folderUpload ? fileInputFolder()?.nativeElement?.click() : fileInput()?.nativeElement?.click()"
+          >
+            @if (folderUpload) {
+              <!-- Hidden input for folder -->
+              <input
+                #fileInputFolder
+                type="file"
+                class="d-none"
+                webkitdirectory
+                (change)="onChange($event)"
+              />
+            } @else {
+              <!-- Hidden input for single file -->
+              <input
+                #fileInput
+                type="file"
+                accept=".pdf,image/jpeg,image/png"
+                class="d-none"
+                (change)="onChange($event)"
+              />
+            }
+            @if (hoveringFile()) {
+              <div class="upload-animate d-flex flex-column align-items-center">
+                <fa-icon [icon]="iconSvc.getIcon('fas', 'cloud-upload-alt')" size="3x" class="animate-bounce" />
+                <span class="fw-bold text-primary">Drop to upload!</span>
+                <div class="progress mt-2 w-75" style="height: 6px;">
+                  <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" style="width: 100%"></div>
+                </div>
+              </div>
+            } @else if (uploading()) {
+              <div class="upload-animate d-flex flex-column align-items-center">
+                <fa-icon [icon]="iconSvc.getIcon('fas', 'spinner')" size="3x" class="text-primary" animation="spin" />
+                <span class="fw-bold text-primary mt-2">Uploading...</span>
+                <div class="progress mt-2 w-75" style="height: 6px;">
+                  <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" style="width: 100%"></div>
+                </div>
+              </div>
+            } @else {
+              <fa-icon [icon]="iconSvc.getIcon('fas', 'cloud-upload-alt')" size="3x" class="me-3" />
+              <span>Drag &amp; drop your {{ folderUpload ? 'folder' : 'file' }} here, or click to select</span>
+            }
+          </div>
+        </div>
+      </ng-template>
+    </li>
+    @if (allowSelectExisting) {
+      <li [ngbNavItem]="2">
+        <button ngbNavLink>Select Existing File</button>
+        <ng-template ngbNavContent>
+
+        </ng-template>
+      </li>
+    }
+  </ul>
+  <div [ngbNavOutlet]="nav" class="mt-2"></div>
+</div>
+<div class="modal-footer">
+  @if (this.activeTab === 2) {
+    <button type="submit" class="btn btn-primary" (click)="confirm()" [disabled]="this.form.invalid">
+      Select File
+    </button>
+  }
+  <button type="button" class="btn btn-secondary" (click)="close()">Cancel</button>
+</div>

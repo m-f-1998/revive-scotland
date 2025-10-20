@@ -1,0 +1,45 @@
+.drop-area {
+  border-style: dashed !important;
+  cursor: pointer;
+  min-height: 200px;
+}
+
+.upload-animate {
+  .animate-bounce {
+    animation: bounce 1s infinite;
+  }
+
+  .progress {
+    background-color: #e9ecef;
+    border-radius: 3px;
+    height: 6px;
+    width: 75%;
+    margin-top: 0.5rem;
+  }
+
+  .progress-bar {
+    background-color: #0dcaf0;
+    border-radius: 3px;
+    height: 100%;
+    width: 100%;
+    animation: progress-bar-stripes 1s linear infinite;
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes progress-bar-stripes {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 40px 0;
+  }
+}
