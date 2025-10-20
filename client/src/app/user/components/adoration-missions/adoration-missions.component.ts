@@ -6,7 +6,6 @@ import { ChangeDetectionStrategy, Component } from "@angular/core"
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class AdorationMissionsComponent {
-  public img = "assets/img/adoration.jpg"
   public title = "Adoration Missions"
 
   public goToContact ( ) {

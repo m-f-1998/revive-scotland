@@ -6,6 +6,4 @@ import { ChangeDetectionStrategy, Component } from "@angular/core"
   styleUrl: "./donate.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
-export class DonateComponent {
-  public url = "assets/img/donation.jpg"
-}
+export class DonateComponent {}

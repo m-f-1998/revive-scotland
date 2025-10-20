@@ -14,7 +14,6 @@ type Slide = { title: string; content: string; image: string }
 } )
 export class SliderComponent {
   public readonly slides: InputSignal<Slide[] | undefined> = input<Slide[] | undefined> ( [ ] )
-  public readonly subtitle: InputSignal<string | undefined> = input<string | undefined> ( "" )
 
   public pauseOnHover = true
   public pauseOnFocus = true

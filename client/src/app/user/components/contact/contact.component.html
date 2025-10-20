@@ -1,8 +1,19 @@
 <div class="row align-items-stretch gx-0" id="contact">
-  <div class="col-lg-6">
-    <div class="contact-img bg-center bg-cover" [style]="'background: url(' + img ( ) + ')'"></div>
+  <div class="col-12 col-lg-6 half-page-banner bg-cover bg-center min-height-300">
+    <img src="/api/img/contact-bg.jpg?w=640&f=webp"
+      srcset="
+        /api/img/contact-bg.jpg?w=320&f=webp 320w,
+        /api/img/contact-bg.jpg?w=640&f=webp 640w,
+        /api/img/contact-bg.jpg?w=1024&f=webp 1024w
+      "
+      sizes="(max-width: 600px) 100vw, 600px"
+      alt="Contact Us Banner"
+      loading="lazy"
+      decoding="async"
+      class="w-100 h-100 bg-top-center bg-img-fit"
+    />
   </div>
-  <div class="col-lg-6">
+  <div class="col-12 col-md-6">
     <div class="p-5 h-100">
       <header>
         <p class="text-serif mb-0 text-primary">Contact Us</p>

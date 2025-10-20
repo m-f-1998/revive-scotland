@@ -16,9 +16,18 @@
       <div class="d-flex flex-row flex-wrap justify-content-center">
         <div class="card m-2 event-card">
           <img
-            [src]="event.image ? event.image : 'assets/img/placeholder.jpg'"
+            [attr.src]="'/api/img/' + event.image + '?w=640&f=webp'"
+            [attr.srcset]="
+              '/api/img/' + event.image + '?w=320&f=webp 320w, ' +
+              '/api/img/' + event.image + '?w=640&f=webp 640w, ' +
+              '/api/img/' + event.image + '?w=1024&f=webp 1024w'
+            "
+            sizes="(max-width: 600px) 100vw, 600px"
+            [attr.alt]="event.title || 'Event image'"
+            loading="lazy"
+            decoding="async"
             class="card-img-top event-image"
-            onerror="this.src='assets/img/placeholder.jpg'">
+          />
           <div class="card-body">
             <div class="card-title">
               <h4>{{event.title}}</h4>
@@ -59,9 +68,18 @@
       <div class="d-flex flex-row flex-wrap justify-content-center">
         <div class="card m-2 event-card">
           <img
-            [src]="event.logo ? event.logo.original.url : 'assets/img/placeholder.jpg'"
+            [attr.src]="'/api/img/' + event.logo.original.url + '?w=640&f=webp'"
+            [attr.srcset]="
+              '/api/img/' + event.logo.original.url + '?w=320&f=webp 320w, ' +
+              '/api/img/' + event.logo.original.url + '?w=640&f=webp 640w, ' +
+              '/api/img/' + event.logo.original.url + '?w=1024&f=webp 1024w'
+            "
+            sizes="(max-width: 600px) 100vw, 600px"
+            [attr.alt]="event.title || 'Event image'"
+            loading="lazy"
+            decoding="async"
             class="card-img-top event-image"
-            onerror="this.src='assets/img/placeholder.jpg'">
+          />
           <div class="card-body">
             <div class="card-title">
               <h4>{{event.name.text}}</h4>

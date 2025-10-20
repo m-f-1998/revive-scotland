@@ -1,6 +1,17 @@
 <div class="row align-items-stretch gx-0" id="adoration">
   <div class="col-lg-6 half-page-banner bg-cover bg-center min-height-300">
-    <img class="w-100 h-100" [src]="img" alt="Adoration Missions Banner">
+    <img src="/api/img/adoration.jpg?w=640&f=webp"
+      srcset="
+        /api/img/adoration.jpg?w=320&f=webp 320w,
+        /api/img/adoration.jpg?w=640&f=webp 640w,
+        /api/img/adoration.jpg?w=1024&f=webp 1024w
+      "
+      sizes="(max-width: 600px) 100vw, 600px"
+      alt="Adoration Missions Banner"
+      loading="lazy"
+      decoding="async"
+      class="w-100 h-100"
+    />
   </div>
   <div class="col-lg-6">
     <div class="d-flex flex-column p-5 justify-content-center text-lg-end">

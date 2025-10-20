@@ -1,26 +1,32 @@
 <div class="w-100">
-  @if(subtitle()) {
-    <div class="text-center header d-flex flex-column justify-content-center align-items-center header-2 min-height-500">
-      <h2 class="fw-bold m-0 slider-header">Revive Scotland</h2>
-      <h4 class="fw-bold m-0 slider-subheader">{{subtitle()}}</h4>
-    </div>
-  } @else {
-    <ngb-carousel #carousel
-      [interval]="5000"
-      class="w-100"
-      [showNavigationArrows]="false"
-      (slide)="onSlide($event)">
-      @for (img of slides(); track img; let i = $index) {
-        <ng-template ngbSlide>
-          <div class="border-radius-15 bg-secondary-subtle">
-              <img [src]="slides()?.[i]?.image" alt="Revive Scotland Header" class="img-fluid slider-image w-100 object-fit-cover filter-50">
-              <div class="carousel-caption">
-                <h1>{{slides()?.[i]?.title}}</h1>
-                <p class="caption-text">{{slides()?.[i]?.content}}</p>
-              </div>
-          </div>
-        </ng-template>
-      }
-    </ngb-carousel>
-  }
+  <ngb-carousel #carousel
+    [interval]="5000"
+    class="w-100"
+    [showNavigationArrows]="false"
+    (slide)="onSlide($event)">
+    @for (img of slides(); track img; let i = $index) {
+      <ng-template ngbSlide>
+        <div class="border-radius-15 bg-secondary-subtle">
+            <img
+              [attr.src]="'/api/img/' + img.image + '?w=640&f=webp'"
+              [attr.srcset]="
+                '/api/img/' + img.image + '?w=320&f=webp 320w, ' +
+                '/api/img/' + img.image + '?w=640&f=webp 640w, ' +
+                '/api/img/' + img.image + '?w=1024&f=webp 1024w'
+              "
+              sizes="(max-width: 600px) 100vw, 600px"
+              alt="Revive Scotland Header"
+              loading="eager"
+              preload
+              decoding="async"
+              class="img-fluid slider-image w-100 object-fit-cover filter-50"
+            />
+            <div class="carousel-caption">
+              <h1>{{slides()?.[i]?.title}}</h1>
+              <p class="caption-text">{{slides()?.[i]?.content}}</p>
+            </div>
+        </div>
+      </ng-template>
+    }
+  </ngb-carousel>
 </div>

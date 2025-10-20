@@ -1,7 +1,18 @@
 <nav class="navbar navbar-expand-lg">
   <div class="container">
     <a class="navbar-brand" href="/">
-      <img src="assets/img/logo.png" width="100px">
+      <img src="/api/img/logo.png?w=640&f=webp"
+        srcset="
+          /api/img/logo.png?w=320&f=webp 320w,
+          /api/img/logo.png?w=640&f=webp 640w,
+          /api/img/logo.png?w=1024&f=webp 1024w
+        "
+        sizes="(max-width: 600px) 100vw, 600px"
+        alt="Site Logo"
+        loading="lazy"
+        width="100"
+        decoding="async"
+      />
     </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
