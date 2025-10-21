@@ -6,8 +6,8 @@ import cors from "cors"
 import { router as mailerRouter } from "./routes/mailer.js"
 import { router as staticRouter } from "./routes/static.js"
 import { router as eventRouter } from "./routes/events.js"
+import { router as imagesRouter } from "./routes/images.js"
 import { randomBytes } from "crypto"
-import { rateLimit } from "express-rate-limit"
 
 const app = express ( )
 
@@ -82,6 +82,9 @@ app.use ( helmet ( {
         "'self'",
         "https://www.google.com"
       ],
+      mediaSrc: [
+        "'self'"
+      ],
       manifestSrc: [
         "'self'"
       ],
@@ -92,16 +95,9 @@ app.use ( helmet ( {
   ieNoOpen: true
 } ) )
 
-app.use ( "/assets", rateLimit ( {
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: "Too many requests, please try again later.",
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-} ) )
-
-app.use ( eventRouter )
-app.use ( mailerRouter )
+app.use ( "/api/events", eventRouter )
+app.use ( "/api/mailer", mailerRouter )
+app.use ( "/api/img", imagesRouter )
 app.use ( staticRouter )
 
 app.listen ( 3000, ( ) => {

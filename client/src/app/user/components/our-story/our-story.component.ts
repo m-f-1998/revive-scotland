@@ -12,8 +12,6 @@ import { IconService } from "@revive/src/app/services/icons.service"
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class OurStoryComponent implements OnInit, OnDestroy {
-  public image = "assets/img/priest.jpg"
-
   public ourStory = [
     {
       title: "Our Journey",
