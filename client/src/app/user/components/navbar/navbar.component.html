@@ -31,28 +31,19 @@
             Upcoming Events
           </a>
         }
-        <a class="nav-link clickable" href="https://www.revive-consecrations.co.uk/" target="_blank" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
-          <fa-icon [icon]="iconSvc.getIcon('fas', 'globe')" />
-          Revive Consecrations
-        </a>
         @if (url() === "") {
-          <div ngbDropdown>
-            <a class="nav-link clickable" ngbDropdownToggle>
-              <fa-icon [icon]="iconSvc.getIcon('fas', 'cross')" />
-              Missions
-            </a>
-            <div ngbDropdownMenu>
-              <a ngbDropdownItem (click)="scrollTo('#pilgrimage')">
-                Pilgrimages
-              </a>
-              <a ngbDropdownItem (click)="scrollTo('#adoration')">
-                Adoration
-              </a>
-              <a ngbDropdownItem (click)="scrollTo('#weekends')">
-                Revive Weekends
-              </a>
-            </div>
-          </div>
+          <a class="nav-link clickable" (click)="scrollTo('#pilgrimage')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
+            <fa-icon [icon]="iconSvc.getIcon('fas', 'cross')" />
+            Pilgrimages
+          </a>
+          <a class="nav-link clickable" (click)="scrollTo('#adoration')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
+            <fa-icon [icon]="iconSvc.getIcon('fas', 'praying-hands')" />
+            Adoration
+          </a>
+          <a class="nav-link clickable" (click)="scrollTo('#weekends')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
+            <fa-icon [icon]="iconSvc.getIcon('fas', 'user-friends')" />
+            Revive Weekends
+          </a>
         }
       </ul>
     </div>
