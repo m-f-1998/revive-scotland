@@ -4,6 +4,22 @@
     <div class="page-header-image"></div>
     <div class="container">
       <div class="content-center">
+        <div class="profile-image">
+          <a href="/">
+            <img [attr.src]="'/api/img/' + imagePath + '?w=640&f=webp'"
+              [attr.srcset]="
+                '/api/img/' + imagePath + '?w=320&f=webp 320w, ' +
+                '/api/img/' + imagePath + '?w=640&f=webp 640w, ' +
+                '/api/img/' + imagePath + '?w=1024&f=webp 1024w'
+              "
+              sizes="(max-width: 600px) 100vw, 600px"
+              alt="Error Image"
+              loading="lazy"
+              decoding="async"
+              class="object-fit-cover"
+            />
+          </a>
+        </div>
         <div class="h2 title">{{error}}</div>
         <p>{{description}}</p>
         <div class="d-flex justify-content-center gap-2 flex-wrap">

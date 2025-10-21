@@ -36,30 +36,30 @@ export class HomeComponent {
     {
       title: "Revive Scotland",
       content: "We are dedicated to reviving the faith in people's hearts through the power of the Holy Spirit. We deliver this through formation, community and prayer; mainly Pilgrimages, Revive Weekends and Eucharistic Adoration.",
-      image: "hero-bg-1.jpg"
+      image: "kinloss/event-image-2.jpg"
     },
     {
       title: "Join the Prayer",
       content: "Revive exists to give people a real and transformational HOPE, through a FAITH filled lifestyle centered on the sacraments, catechesis and real authentic friendships as a way to encounter God's LOVE.",
-      image: "hero-bg-2.jpg"
+      image: "kinloss/event-image-10.jpg"
     },
     {
       title: "God is Love",
       content: "'Let anyone who is thirsty come to me and drink. Whoever believes in me, as Scripture has said, rivers of living water will flow from within them. By this he meant the Holy Spirit' (Jn 7:38-39)",
-      image: "hero-bg-3.jpg"
+      image: "kinloss/event-image-12.jpg"
     }
   ]
 
   public imageURLs: Array<string> = [
-    "hero-bg-1.jpg",
-    "hero-bg-2.jpg",
-    "hero-bg-3.jpg",
-    "hero-bg-4.jpg",
-    "hero-bg-5.jpg",
-    "hero-bg-6.jpg",
-    "hero-bg-7.jpg",
-    "hero-bg-8.jpg",
-    "hero-bg-9.jpg",
-    "hero-bg-10.jpg"
+    "kinloss/event-image-14.jpg",
+    "kinloss/event-image-3.jpg",
+    "kinloss/event-image-13.jpg",
+    "kinloss/event-image-4.jpg",
+    "kinloss/event-image-6.jpg",
+    "kinloss/event-image-7.jpg",
+    "kinloss/event-image-8.jpg",
+    "kinloss/event-image-9.jpg",
+    "kinloss/event-image-11.jpg",
+    "kinloss/event-image-5.jpg"
   ]
 }

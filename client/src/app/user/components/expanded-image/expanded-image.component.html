@@ -5,7 +5,18 @@
   <div id="images" class="carousel slide">
     <div class="carousel-inner">
       <div class="carousel-item active">
-        <img [src]="this.imageURLs [ this.index ]" class="img-big d-block w-100">
+        <img [attr.src]="'/api/img/' + imageURLs [ this.index ] + '?w=640&f=webp'"
+          [attr.srcset]="
+            '/api/img/' + imageURLs [ this.index ] + '?w=320&f=webp 320w, ' +
+            '/api/img/' + imageURLs [ this.index ] + '?w=640&f=webp 640w, ' +
+            '/api/img/' + imageURLs [ this.index ] + '?w=1024&f=webp 1024w'
+          "
+          sizes="(max-width: 600px) 100vw, 600px"
+          alt="Image {{ index + 1 }} - Expanded"
+          loading="lazy"
+          decoding="async"
+          class="img-big d-block w-100"
+        />
       </div>
     </div>
     <button class="carousel-control-prev" type="button" data-bs-target="#images" data-bs-slide="prev" (click)="prevImage()">

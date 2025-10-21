@@ -15,6 +15,7 @@ import { IconService } from "../../services/icons.service"
 export class ErrorComponent {
   public error = "500 Internal Server Error"
   public description = "Something went wrong."
+  public imagePath = "skye/event-image-4.jpg"
 
   public readonly iconSvc: IconService = inject ( IconService )
   private readonly route: ActivatedRoute = inject ( ActivatedRoute )

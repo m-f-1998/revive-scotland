@@ -40,12 +40,12 @@ export class EventsComponent implements OnInit {
     {
       title: "Upcoming Events",
       content: "Revive Scotland",
-      image: "hero-bg-4.jpg"
+      image: "skye/event-image-1.jpg"
     },
     {
       title: "Upcoming Events",
       content: "Revive Scotland",
-      image: "hero-bg-5.jpg"
+      image: "skye/event-image-3.jpg"
     },
   ]
 

@@ -30,21 +30,44 @@ const SUPPORTED_FORMATS = [ "webp", "avif", "jpeg", "png" ]
 sharp.cache ( true ) // Enable sharp cache
 sharp.concurrency ( cpus ( ).length )
 
-router.get ( "/:filename", ( req: Request, res: Response ) => {
+router.get ( "/*filename", ( req: Request, res: Response ) => {
   try {
-    const { filename } = req.params
+    const filename = ( req.params [ "filename" ] as unknown as string [ ] ).join ( "/" )
+
+    // Make sure the filename is safe
+    if ( !filename || !/^[a-zA-Z0-9_\/\-]+\.[a-zA-Z0-9]+$/.test ( filename ) ) {
+      res.status ( 400 ).json ( { error: "Invalid filename" } )
+      return
+    }
+
+    if ( filename.includes ( ".." ) || filename.startsWith ( "/" ) || filename.endsWith ( "/" ) ) {
+      res.status ( 400 ).json ( { error: "Traversal attack detected" } )
+      return
+    }
     const { w, h, f, q } = req.query
 
     const width = w ? parseInt ( w as string, 10 ) : null
     const height = h ? parseInt ( h as string, 10 ) : null
     const format = SUPPORTED_FORMATS.includes ( f as string ) ? ( f as string ) : "webp"
-    const quality = q ? parseInt ( q as string, 10 ) : 60
+    const quality = q ? parseInt ( q as string, 10 ) : 80
 
     // ✅ Path to original image
     const inputPath = join ( IMAGE_DIR, filename )
     if ( !fs.existsSync ( inputPath ) ) {
       console.log ( "Image not found:", inputPath )
       res.status ( 404 ).send ( "Image not found" )
+      return
+    }
+
+    // Check if image or mp4
+    // Only allow mp4, jpg, jpeg, png, webp, avif
+    const ext = filename.split ( "." ).pop ( )?.toLowerCase ( )
+    if ( ext === "mp4" ) {
+      res.type ( "video/mp4" )
+      fs.createReadStream ( inputPath ).pipe ( res )
+      return
+    } else if ( !ext || ![ "jpg", "jpeg", "png", "webp", "avif" ].includes ( ext ) ) {
+      res.status ( 400 ).send ( "Unsupported file type" )
       return
     }
 

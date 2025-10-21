@@ -82,6 +82,9 @@ app.use ( helmet ( {
         "'self'",
         "https://www.google.com"
       ],
+      mediaSrc: [
+        "'self'"
+      ],
       manifestSrc: [
         "'self'"
       ],
