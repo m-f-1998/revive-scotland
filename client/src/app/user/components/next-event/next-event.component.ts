@@ -37,33 +37,19 @@ export class NextEventComponent {
   private readonly changeDetector: ChangeDetectorRef = inject ( ChangeDetectorRef )
 
   public constructor (  ) {
-    this.eventSvc.getNextEvent ( ).then ( nextEvent => {
+    this.eventSvc.getNextEvent ( ).then ( ( nextEvent: any ) => {
       if ( nextEvent ) {
-        this.nextEvent.set ( nextEvent.start! )
-        this.title.set ( nextEvent.title )
+        this.nextEvent.set ( new Date ( nextEvent.start.local ) )
+        this.title.set ( nextEvent.name.text )
 
-        // if ( nextEvent.url ) {
-        //   this.eventLink.set ( nextEvent.url )
-        // }
+        if ( nextEvent.url ) {
+          this.eventLink.set ( nextEvent.url )
+        }
 
-        if ( nextEvent.location_name ) {
-          const location = nextEvent.location_name
-          if ( nextEvent.address?.road ) {
-            location.concat ( `${nextEvent.address.road}` )
-          }
-          if ( nextEvent.address?.village ) {
-            location.concat ( `, ${nextEvent.address.village}` )
-          }
-          if ( nextEvent.address?.county ) {
-            location.concat ( `, ${nextEvent.address.county}` )
-          }
-          if ( nextEvent.address?.country ) {
-            location.concat ( `, ${nextEvent.address.country}` )
-          }
-          if ( nextEvent.address?.postcode ) {
-            location.concat ( `, ${nextEvent.address.postcode}` )
-          }
-          this.locationName.set ( location )
+        if ( nextEvent.venue ) {
+          this.locationName.set ( nextEvent.venue.address.localized_address_display )
+        } else {
+          this.locationName.set ( "Online Event" )
         }
 
         setInterval ( ( ) => {

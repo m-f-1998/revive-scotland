@@ -8,6 +8,7 @@ import { IconService } from "@revive/src/app/services/icons.service"
     FaIconComponent
   ],
   templateUrl: "./contact.component.html",
+  styleUrl: "./contact.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class ContactComponent {

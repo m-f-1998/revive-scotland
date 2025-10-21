@@ -13,12 +13,14 @@ import { NextEventComponent } from "@components/next-event/next-event.component"
 import { NavbarComponent } from "../components/navbar/navbar.component"
 import { Header } from "../../interfaces/headers.interface"
 import { HeadersService } from "../../services/headers.service"
+import { ImageSliderComponent } from "../components/image-slider/image-slider.component"
 
 @Component ( {
   selector: "app-home",
   imports: [
     SliderComponent,
     TestimonyComponent,
+    ImageSliderComponent,
     AboutUsComponent,
     OurStoryComponent,
     PilgrimageComponent,
@@ -35,6 +37,18 @@ import { HeadersService } from "../../services/headers.service"
 } )
 export class HomeComponent {
   public slides: WritableSignal<Header [ ]> = signal ( [ ] )
+  public imageURLs: Array<string> = [
+    "kinloss/event-image-14.jpg",
+    "kinloss/event-image-3.jpg",
+    "kinloss/event-image-13.jpg",
+    "kinloss/event-image-4.jpg",
+    "kinloss/event-image-6.jpg",
+    "kinloss/event-image-7.jpg",
+    "kinloss/event-image-8.jpg",
+    "kinloss/event-image-9.jpg",
+    "kinloss/event-image-11.jpg",
+    "kinloss/event-image-5.jpg"
+  ]
 
   public readonly headersSvc: HeadersService = inject ( HeadersService )
 

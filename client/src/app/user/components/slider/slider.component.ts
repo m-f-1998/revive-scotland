@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, WritableSignal, signal, viewChild, Signal, input, InputSignal } from "@angular/core"
 import { NgbCarousel, NgbCarouselModule, NgbSlideEvent } from "@ng-bootstrap/ng-bootstrap"
-import { Header } from "@revive/src/app/interfaces/headers.interface"
+
+type Slide = { title: string; content: string; image: string }
 
 @Component ( {
   selector: "app-slider",
@@ -12,7 +13,7 @@ import { Header } from "@revive/src/app/interfaces/headers.interface"
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class SliderComponent {
-  public readonly slides: InputSignal<Header[] | undefined> = input<Header[] | undefined> ( [ ] )
+  public readonly slides: InputSignal<Slide[] | undefined> = input<Slide[] | undefined> ( [ ] )
 
   public pauseOnHover = true
   public pauseOnFocus = true

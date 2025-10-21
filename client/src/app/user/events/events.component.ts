@@ -5,14 +5,27 @@ import { DatesService } from "@services/dates.service"
 import { EventsService } from "@services/events.service"
 import { ContactComponent } from "@components/contact/contact.component"
 import { SliderComponent } from "@components/slider/slider.component"
+import { FormlyFieldConfig } from "@ngx-formly/core"
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
 import { QuestionnaireComponent } from "./questionnaire/questionnaire.component"
-import { IconService } from "@services/icons.service"
-import { FormlyService } from "@services/formly.service"
+import { IconService } from "../../services/icons.service"
+import { FormlyService } from "../../services/formly.service"
 import { NavbarComponent } from "../components/navbar/navbar.component"
-import { Event } from "../../interfaces/events.interface"
-import { HeadersService } from "../../services/headers.service"
 import { Header } from "../../interfaces/headers.interface"
+import { HeadersService } from "../../services/headers.service"
+import { Event } from "../../interfaces/events.interface"
+
+export interface Questionnaire {
+  title: string
+  description: string
+  price?: number
+  location: string
+  image: string
+  start: Date
+  end: Date
+  fields?: FormlyFieldConfig [ ]
+  url?: string
+}
 
 @Component ( {
   selector: "app-events",

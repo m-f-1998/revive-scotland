@@ -1,33 +1,32 @@
-@if (slides ( )?.length) {
-  <div class="w-100">
-    <ngb-carousel #carousel
-      [interval]="5000"
-      class="w-100"
-      [showNavigationArrows]="false"
-      (slide)="onSlide($event)">
-      @for (img of slides(); track img; let i = $index) {
-        <ng-template ngbSlide>
-          <div class="border-radius-15 bg-secondary-subtle">
+<div class="w-100">
+  <ngb-carousel #carousel
+    [interval]="5000"
+    class="w-100"
+    [showNavigationArrows]="false"
+    (slide)="onSlide($event)">
+    @for (img of slides(); track img; let i = $index) {
+      <ng-template ngbSlide>
+        <div class="border-radius-15 bg-secondary-subtle">
             <img
-              [attr.src]="'/api/img/' + img.filename + '?w=640&f=webp'"
+              [attr.src]="'/api/img/' + img.image + '?w=1024&f=webp'"
               [attr.srcset]="
-                '/api/img/' + img.filename + '?w=320&f=webp 320w, ' +
-                '/api/img/' + img.filename + '?w=640&f=webp 640w, ' +
-                '/api/img/' + img.filename + '?w=1024&f=webp 1024w'
+                '/api/img/' + img.image + '?w=320&f=webp 320w, ' +
+                '/api/img/' + img.image + '?w=640&f=webp 640w, ' +
+                '/api/img/' + img.image + '?w=1024&f=webp 1024w'
               "
               sizes="(max-width: 600px) 100vw, 600px"
               alt="Revive Scotland Header"
-              loading="lazy"
+              loading="eager"
+              preload
               decoding="async"
               class="img-fluid slider-image w-100 object-fit-cover filter-50"
             />
             <div class="carousel-caption">
               <h1>{{slides()?.[i]?.title}}</h1>
-              <p class="caption-text">{{slides()?.[i]?.description}}</p>
+              <p class="caption-text">{{slides()?.[i]?.content}}</p>
             </div>
-          </div>
-        </ng-template>
-      }
-    </ngb-carousel>
-  </div>
-}
+        </div>
+      </ng-template>
+    }
+  </ngb-carousel>
+</div>

@@ -1,0 +1,25 @@
+.scroll-container {
+  background-color: #333;
+  white-space: nowrap;
+  padding: 10px;
+  flex-direction: row;
+  display: flex;
+  overflow-y: scroll;
+}
+
+div.scroll-container img {
+  padding: 10px;
+}
+
+div.scroll-container img:hover {
+  transform: scale(1.05);
+  transition: all 1s;
+}
+
+.img-expand {
+  max-width: 600px;
+  max-height: 400px;
+  object-fit: contain;
+  cursor: pointer;
+  border-radius: 20px;
+}

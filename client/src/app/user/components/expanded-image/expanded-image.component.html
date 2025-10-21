@@ -1,0 +1,31 @@
+<div class="modal-header">
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" (click)="this.close()"></button>
+</div>
+<div class="modal-body" style="padding: 0">
+  <div id="images" class="carousel slide">
+    <div class="carousel-inner">
+      <div class="carousel-item active">
+        <img [attr.src]="'/api/img/' + imageURLs [ this.index ] + '?w=640&f=webp'"
+          [attr.srcset]="
+            '/api/img/' + imageURLs [ this.index ] + '?w=320&f=webp 320w, ' +
+            '/api/img/' + imageURLs [ this.index ] + '?w=640&f=webp 640w, ' +
+            '/api/img/' + imageURLs [ this.index ] + '?w=1024&f=webp 1024w'
+          "
+          sizes="(max-width: 600px) 100vw, 600px"
+          alt="Image {{ index + 1 }} - Expanded"
+          loading="lazy"
+          decoding="async"
+          class="img-big d-block w-100"
+        />
+      </div>
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#images" data-bs-slide="prev" (click)="prevImage()">
+      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Previous</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#images" data-bs-slide="next" (click)="nextImage()">
+      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Next</span>
+    </button>
+  </div>
+</div>

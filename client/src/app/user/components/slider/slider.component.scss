@@ -1,3 +1,28 @@
+.header {
+	background-size: cover;
+	background-position: center;
+}
+
+.slider-header {
+	font-size: 4rem;
+	color: white;
+	text-shadow:
+		3px 3px 0 var(--bs-primary),
+		-3px 3px 0 var(--bs-primary),
+		-3px -3px 0 var(--bs-primary),
+		3px -3px 0 var(--bs-primary);
+}
+
+.slider-subheader {
+	font-size: 3rem;
+	color: white;
+	text-shadow:
+		3px 3px 0 var(--bs-primary),
+		-3px 3px 0 var(--bs-primary),
+		-3px -3px 0 var(--bs-primary),
+		3px -3px 0 var(--bs-primary);
+}
+
 .slider-image {
 	max-height: 700px;
 }
