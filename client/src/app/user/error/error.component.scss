@@ -26,7 +26,7 @@
 	}
 	.page-header-image {
 		position: absolute;
-		background: url("/assets/img/hero-bg-3.jpg") center/cover no-repeat;
+		// background: url("/api/img/skye/event-image-4.jpg?w=640&f=webp") center/cover no-repeat;
 		width: 100%;
 		height: 100%;
 		z-index: -1;
@@ -114,4 +114,42 @@
 
 .home-link {
 	background-color: gray;
+}
+
+.profile-image a {
+	position: relative;
+}
+
+.profile-image {
+	display: flex;
+	justify-content: center;
+}
+
+.profile-image a:before {
+	content: "";
+	border: 15px solid rgba(55, 140, 63, 0.6);
+	border-radius: 50%;
+	height: 180px;
+	width: 180px;
+	position: absolute;
+	left: 0;
+	-webkit-animation: pulsate 1.6s ease-out;
+	animation: pulsate 1.6s ease-out;
+	-webkit-animation-iteration-count: infinite;
+	animation-iteration-count: infinite;
+	opacity: 0;
+	z-index: 99;
+}
+
+.profile-image img {
+	position: relative;
+	border-radius: 50%;
+	height: 180px;
+	width: 180px;
+	padding: 0;
+	margin: 0;
+	border: 15px solid transparent;
+	z-index: 9999;
+	object-position: right;
+	transition: all 0.3s ease-out;
 }

@@ -1,6 +1,22 @@
 <div class="row align-items-stretch gx-0" id="weekends">
   <div class="col-12 col-lg-6 half-page-banner bg-cover bg-center min-height-300">
-    <img class="w-100 h-100 bg-top-right bg-img-fit" [src]="img" alt="Our Story Banner">
+    <div class="d-flex justify-content-center align-items-center w-100 h-100">
+      <video width="640" height="360" controls>
+        <source [src]="videoUrl" type="video/mp4" />
+        <img src="/api/img/pilgrimage.jpg?w=640&f=webp"
+          srcset="
+            /api/img/pilgrimage.jpg?w=320&f=webp 320w,
+            /api/img/pilgrimage.jpg?w=640&f=webp 640w,
+            /api/img/pilgrimage.jpg?w=1024&f=webp 1024w
+          "
+          sizes="(max-width: 600px) 100vw, 600px"
+          alt="Revive Weekends Banner"
+          loading="lazy"
+          decoding="async"
+          class="w-100 h-100 bg-top-right bg-img-fit"
+        />
+      </video>
+    </div>
   </div>
   <div class="col-12 col-md-6 order-lg-first">
     <div class="d-flex flex-column p-5 justify-content-center text-lg-end">

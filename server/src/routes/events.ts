@@ -9,7 +9,7 @@ export const router = Router ( )
 const envPath = resolve ( process.cwd ( ), ".env" )
 config ( { path: envPath, quiet: true } )
 
-router.use ( "/api/events", rateLimit ( { // limit each IP to 100 requests per hour
+router.use ( rateLimit ( { // limit each IP to 100 requests per hour
   windowMs: 60 * 60 * 1000,
   max: 100,
   message: "Too many requests, please try again later.",
@@ -19,7 +19,7 @@ router.use ( "/api/events", rateLimit ( { // limit each IP to 100 requests per h
 
 const cache = new Map<string, any> ( )
 
-router.get ( "/api/events", async ( _req: Request, res: Response ) => {
+router.get ( "/", async ( _req: Request, res: Response ) => {
   try {
     if ( !process.env [ "EVENTBRITE_OAUTH_TOKEN" ] ) {
       res.status ( 500 ).json ( { message: "Eventbrite OAuth token not configured." } )

@@ -6,8 +6,4 @@ import { ChangeDetectionStrategy, Component } from "@angular/core"
   styleUrl: "./pilgrimage.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
-export class PilgrimageComponent {
-
-  public img = "assets/img/pilgrimage.jpg"
-
-}
+export class PilgrimageComponent { }

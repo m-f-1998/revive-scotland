@@ -1,5 +1,17 @@
 <section class="pilgrimage-section position-relative" id="pilgrimage">
-  <img [src]="img" alt="Pilgrimage background" class="background-img" />
+  <img
+    src="/api/img/revive-weekends.jpg?w=640&f=webp"
+    srcset="
+      /api/img/revive-weekends.jpg?w=320&f=webp 320w,
+      /api/img/revive-weekends.jpg?w=640&f=webp 640w,
+      /api/img/revive-weekends.jpg?w=1024&f=webp 1024w
+    "
+    sizes="(max-width: 600px) 100vw, 600px"
+    alt="Pilgrimage background"
+    loading="lazy"
+    decoding="async"
+    class="background-img"
+  />
   <div class="primary-overlay py-5 position-relative z-index-10">
     <div class="overlay-content py-5">
       <div class="container py-5 text-white text-center pilgrimage-text">
