@@ -19,32 +19,26 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav">
-        @if (url() !== "") {
-          <a class="nav-link clickable" routerLink="/" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
-            <fa-icon [icon]="iconSvc.getIcon('fas', 'home')" />
-            Home
-          </a>
-        }
-        @if (url() !== "/events") {
-          <a class="nav-link clickable" routerLink="/events" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
-            <fa-icon [icon]="iconSvc.getIcon('fas', 'calendar')" />
-            Upcoming Events
-          </a>
-        }
-        @if (url() === "") {
-          <a class="nav-link clickable" (click)="scrollTo('#pilgrimage')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
-            <fa-icon [icon]="iconSvc.getIcon('fas', 'cross')" />
-            Pilgrimages
-          </a>
-          <a class="nav-link clickable" (click)="scrollTo('#adoration')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
-            <fa-icon [icon]="iconSvc.getIcon('fas', 'praying-hands')" />
-            Adoration
-          </a>
-          <a class="nav-link clickable" (click)="scrollTo('#weekends')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
-            <fa-icon [icon]="iconSvc.getIcon('fas', 'user-friends')" />
-            Revive Weekends
-          </a>
-        }
+        <button class="nav-link clickable" (click)="goTo('/')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [class.active]="url() === ''" [disabled]="url() === ''">
+          <fa-icon [icon]="iconSvc.getIcon('fas', 'home')" />
+          Home
+        </button>
+        <button class="nav-link clickable" (click)="goTo('/events')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [class.active]="url() === '/events'" [disabled]="url() === '/events'">
+          <fa-icon [icon]="iconSvc.getIcon('fas', 'calendar')" />
+          Events
+        </button>
+        <button class="nav-link clickable" (click)="goTo('/', '#pilgrimage')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
+          <fa-icon [icon]="iconSvc.getIcon('fas', 'cross')" />
+          Pilgrimages
+        </button>
+        <button class="nav-link clickable" (click)="goTo('/', '#adoration')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
+          <fa-icon [icon]="iconSvc.getIcon('fas', 'praying-hands')" />
+          Adoration
+        </button>
+        <button class="nav-link clickable" (click)="goTo('/', '#weekends')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
+          <fa-icon [icon]="iconSvc.getIcon('fas', 'user-friends')" />
+          Revive Weekends
+        </button>
       </ul>
     </div>
   </div>

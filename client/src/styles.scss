@@ -182,3 +182,8 @@ textarea.form-control {
 video {
   max-width: 100%;
 }
+
+.navbar-nav .nav-link.active,.navbar-nav .nav-link.show {
+  font-weight: 700;
+  color: var(--bs-nav-link-disabled-color) !important;
+}
