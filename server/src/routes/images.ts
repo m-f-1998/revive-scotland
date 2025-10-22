@@ -63,34 +63,55 @@ router.get ( "/*filename", ( req: Request, res: Response ) => {
     // Only allow mp4, jpg, jpeg, png, webp, avif
     const ext = filename.split ( "." ).pop ( )?.toLowerCase ( )
     if ( ext === "mp4" ) {
-      res.type ( "video/mp4" )
-      fs.createReadStream ( inputPath ).pipe ( res )
-      return
+      const stat = fs.statSync ( inputPath )
+      const fileSize = stat.size
+      const range = req.headers.range
+
+      if ( range ) {
+        const parts = range.replace ( /bytes=/, "" ).split ( "-" )
+        const start = parseInt ( parts [ 0 ], 10 )
+        const end = parts [ 1 ] ? parseInt ( parts [ 1 ], 10 ) : fileSize - 1
+        const chunkSize = end - start + 1
+        const file = fs.createReadStream ( inputPath, { start, end } )
+
+        res.writeHead ( 206, {
+          "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+          "Accept-Ranges": "bytes",
+          "Content-Length": chunkSize,
+          "Content-Type": "video/mp4",
+        } )
+        file.pipe ( res )
+      } else {
+        res.writeHead ( 200, {
+          "Content-Length": fileSize,
+          "Content-Type": "video/mp4",
+        } )
+        fs.createReadStream ( inputPath ).pipe ( res )
+      }
     } else if ( !ext || ![ "jpg", "jpeg", "png", "webp", "avif" ].includes ( ext ) ) {
       res.status ( 400 ).send ( "Unsupported file type" )
-      return
+    } else {
+      // ✅ Sharp pipeline
+      let transformer = sharp ( inputPath )
+        .resize ( width, height, { fit: "inside", withoutEnlargement: true } )
+
+      switch ( format ) {
+        case "jpeg":
+          transformer = transformer.jpeg ( { quality, progressive: true } )
+          break
+        case "png":
+          transformer = transformer.png ( { quality } )
+          break
+        case "avif":
+          transformer = transformer.avif ( { quality } )
+          break
+        default:
+          transformer = transformer.webp ( { quality } )
+      }
+
+      res.type ( format )
+      transformer.pipe ( res )
     }
-
-    // ✅ Sharp pipeline
-    let transformer = sharp ( inputPath )
-      .resize ( width, height, { fit: "inside", withoutEnlargement: true } )
-
-    switch ( format ) {
-      case "jpeg":
-        transformer = transformer.jpeg ( { quality, progressive: true } )
-        break
-      case "png":
-        transformer = transformer.png ( { quality } )
-        break
-      case "avif":
-        transformer = transformer.avif ( { quality } )
-        break
-      default:
-        transformer = transformer.webp ( { quality } )
-    }
-
-    res.type ( format )
-    transformer.pipe ( res )
   } catch ( err ) {
     console.error ( err )
     res.status ( 500 ).send ( "Error processing image" )
