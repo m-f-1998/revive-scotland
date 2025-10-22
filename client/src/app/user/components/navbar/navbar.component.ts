@@ -36,4 +36,11 @@ export class NavbarComponent implements OnInit {
       document.querySelector ( id )?.scrollIntoView ( { behavior: "smooth" } )
     } )
   }
+
+  public goTo ( path: string, id?: string ) {
+    this.router.navigate ( [ path ] )
+    if ( id ) {
+      this.scrollTo ( id )
+    }
+  }
 }
