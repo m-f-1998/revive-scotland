@@ -13,6 +13,7 @@
     "tsc-verify": "npx --yes tsc --noEmit"
   },
   "dependencies": {
+    "@google-analytics/data": "^5.2.1",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
