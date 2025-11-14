@@ -3,11 +3,12 @@ import express from "express"
 import helmet from "helmet"
 
 import cors from "cors"
+import { randomBytes } from "crypto"
+
 import { router as mailerRouter } from "./routes/mailer.js"
 import { router as staticRouter } from "./routes/static.js"
-import { router as eventRouter } from "./routes/events.js"
 import { router as imagesRouter } from "./routes/images.js"
-import { randomBytes } from "crypto"
+import { router as adminRouter } from "./routes/admin.js"
 
 const app = express ( )
 
@@ -20,6 +21,7 @@ app.use ( express.urlencoded ( { limit: "1mb", extended: true } ) )
 app.use ( cors ( {
   origin: [
     "http://localhost:3000",
+    "http://localhost:4200",
     "https://revivescotland.co.uk"
   ],
   methods: [ "GET", "POST" ],
@@ -95,9 +97,9 @@ app.use ( helmet ( {
   ieNoOpen: true
 } ) )
 
-app.use ( "/api/events", eventRouter )
 app.use ( "/api/mailer", mailerRouter )
 app.use ( "/api/img", imagesRouter )
+app.use ( "/api/admin", adminRouter )
 app.use ( staticRouter )
 
 app.listen ( 3000, ( ) => {

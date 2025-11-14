@@ -10,6 +10,7 @@ import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
 import { QuestionnaireComponent } from "./questionnaire/questionnaire.component"
 import { IconService } from "../../services/icons.service"
 import { FormlyService } from "../../services/formly.service"
+import { NavbarComponent } from "../components/navbar/navbar.component"
 
 export interface Questionnaire {
   title: string
@@ -29,7 +30,8 @@ export interface Questionnaire {
     FooterComponent,
     FaIconComponent,
     ContactComponent,
-    SliderComponent
+    SliderComponent,
+    NavbarComponent
   ],
   templateUrl: "./events.component.html",
   styleUrl: "./events.component.scss",

@@ -8,18 +8,18 @@ import { parse } from "date-fns"
 export class ApiService {
   private readonly httpClient: HttpClient = inject ( HttpClient )
 
-  public get ( path: string, body: any = { },  ) {
+  public get ( path: string, body: any = { }, headers: HttpHeaders = new HttpHeaders ( ) ) {
     const address = ( isDevMode ( ) ? "http://localhost:3000" : "" ) + path
-    let headers = new HttpHeaders ( )
+    let httpHeaders = headers
 
     if ( !( body instanceof FormData ) ) {
-      headers = headers.append ( "Content-Type", "application/json" )
+      httpHeaders = httpHeaders.append ( "Content-Type", "application/json" )
     }
 
     return new Promise ( ( resolve, reject ) => {
       this.httpClient.get ( address, {
         params: body,
-        headers,
+        headers: httpHeaders,
         responseType: "json"
       } as object ).subscribe ( {
         next: response => {

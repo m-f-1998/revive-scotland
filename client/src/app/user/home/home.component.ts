@@ -11,6 +11,7 @@ import { FooterComponent } from "@components/footer/footer.component"
 import { ReviveWeekendsComponent } from "@components/revive-weekends/revive-weekends.component"
 import { NextEventComponent } from "@components/next-event/next-event.component"
 import { ImageSliderComponent } from "../components/image-slider/image-slider.component"
+import { NavbarComponent } from "../components/navbar/navbar.component"
 
 @Component ( {
   selector: "app-home",
@@ -26,7 +27,8 @@ import { ImageSliderComponent } from "../components/image-slider/image-slider.co
     ContactComponent,
     FooterComponent,
     ReviveWeekendsComponent,
-    NextEventComponent
+    NextEventComponent,
+    NavbarComponent
   ],
   templateUrl: "./home.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush

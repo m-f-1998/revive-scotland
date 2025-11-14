@@ -1,4 +1,4 @@
-import { ApplicationConfig, CSP_NONCE, provideZonelessChangeDetection } from "@angular/core"
+import { ApplicationConfig, CSP_NONCE, inject, provideAppInitializer, provideZonelessChangeDetection } from "@angular/core"
 import { provideRouter } from "@angular/router"
 import { routes } from "./app.routes"
 import { provideHttpClient, withFetch } from "@angular/common/http"
@@ -7,6 +7,7 @@ import { provideToastr } from "@m-f-1998/ngx-toastr"
 import { RECAPTCHA_LOADER_OPTIONS, RECAPTCHA_V3_SITE_KEY } from "ng-recaptcha-2"
 import { withFormlyBootstrap } from "@ngx-formly/bootstrap"
 import { FormlyConfig } from "./formly/formly-config"
+import { AuthService } from "./services/auth.service"
 
 const nonce = document.querySelector ( 'meta[name="csp-nonce"]' )?.getAttribute ( "content" )
 
@@ -17,6 +18,12 @@ const appConfig: ApplicationConfig = {
     provideHttpClient (
       withFetch ( )
     ),
+    provideAppInitializer ( ( ) => {
+      const initializerFn = ( ( authSvc: AuthService ) => async ( ) => {
+        await authSvc.loadAuth ( )
+      } ) ( inject ( AuthService ) )
+      return initializerFn ( )
+    } ),
     provideFormlyCore ( [
       new FormlyConfig ( ),
       ...withFormlyBootstrap ( )

@@ -63,9 +63,21 @@
                   "maximumError": "2MB"
                 }
               ],
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environments.ts",
+                  "with": "src/environments/environments.ts"
+                }
+              ],
               "outputHashing": "all"
             },
             "development": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environments.ts",
+                  "with": "src/environments/environments.ts"
+                }
+              ],
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
@@ -83,6 +95,7 @@
               "buildTarget": "revivescotland:build:production"
             },
             "development": {
+              "proxyConfig": "./proxy/proxy.dev.json",
               "buildTarget": "revivescotland:build:development"
             }
           },

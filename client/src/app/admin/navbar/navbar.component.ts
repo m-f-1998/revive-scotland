@@ -4,9 +4,10 @@ import { NavigationEnd, Router } from "@angular/router"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap"
 import { IconService } from "@revive/src/app/services/icons.service"
+import { AuthService } from "../../services/auth.service"
 
 @Component ( {
-  selector: "app-navbar",
+  selector: "app-admin-navbar",
   imports: [
     NgbDropdownModule,
     FaIconComponent
@@ -14,12 +15,13 @@ import { IconService } from "@revive/src/app/services/icons.service"
   templateUrl: "./navbar.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
-export class NavbarComponent implements OnInit {
+export class AdminNavbarComponent implements OnInit {
   public url: WritableSignal<string> = signal ( "" )
 
   public readonly location: Location = inject ( Location )
   public readonly iconSvc: IconService = inject ( IconService )
   private readonly router: Router = inject ( Router )
+  private readonly authSvc: AuthService = inject ( AuthService )
 
   public ngOnInit ( ) {
     this.router.events.subscribe ( event => {
@@ -41,5 +43,10 @@ export class NavbarComponent implements OnInit {
     if ( id ) {
       this.scrollTo ( id )
     }
+  }
+
+  public async logout ( ) {
+    await this.authSvc.logout ( )
+    this.router.navigate ( [ "/" ] )
   }
 }
