@@ -8,6 +8,7 @@ import { DashboardData, OverviewMetrics } from "../../interfaces/analytics.inter
 import { AnalyticsService } from "../../services/analytics.service"
 import { ChartData, ChartOptions } from "chart.js"
 import { DecimalPipe } from "@angular/common"
+import { ToastrService } from "@m-f-1998/ngx-toastr"
 
 @Component ( {
   selector: "app-admin-dashboard",
@@ -60,6 +61,7 @@ export class DashboardComponent implements OnInit {
   public readonly adminSvc: AuthService = inject ( AuthService )
   public readonly iconSvc: IconService = inject ( IconService )
   private readonly analyticsSvc: AnalyticsService = inject ( AnalyticsService )
+  private readonly toastrSvc: ToastrService = inject ( ToastrService )
 
   public ngOnInit ( ): void {
     this.analyticsSvc.getDashboardData ( ).then ( data => {
@@ -70,7 +72,7 @@ export class DashboardComponent implements OnInit {
       this.prepareDeviceChartData ( data )
     } ).catch ( error => {
       console.error ( "Error loading dashboard data:", error )
-      this.loading.set ( false )
+      this.toastrSvc.error ( "Failed to load dashboard data. Please try again later." )
     } ).finally ( ( ) => {
       this.loading.set ( false )
     } )

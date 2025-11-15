@@ -8,10 +8,17 @@ router.use ( "/analytics", analyticsRouter )
 
 import admin, { ServiceAccount } from "firebase-admin"
 import serviceAccount from "../revive-scotland-firebase.json" with { type: "json" }
+import { rateLimit } from "express-rate-limit"
 
 admin.initializeApp ( {
   credential: admin.credential.cert ( serviceAccount as ServiceAccount )
 } )
+
+router.use ( rateLimit ( {
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: "Too many requests from this IP, please try again later."
+} ) )
 
 router.get ( "/role", async ( req: Request, res: Response ) => {
   const uid = req.query [ "uid" ] as string

@@ -1,7 +1,14 @@
 import { BetaAnalyticsDataClient } from "@google-analytics/data"
 import { Router, Request, Response } from "express"
+import { rateLimit } from "express-rate-limit"
 
 export const router: Router = Router ( )
+
+router.use ( rateLimit ( {
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: "Too many requests from this IP, please try again later."
+} ) )
 
 const analyticsDataClient = new BetaAnalyticsDataClient ( )
 const projectID = "477989791"

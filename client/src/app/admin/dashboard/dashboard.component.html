@@ -23,7 +23,7 @@
             Welcome{{ authSvc.currentUser()?.displayName ? ', ' + authSvc.currentUser()?.displayName : '' }}! 👋
           </h1>
           <p class="lead text-muted mb-0">
-            Your analytics overview for the last 90 days is ready.
+            Your analytics overview for the last 90 days is ready. Data is refreshed daily.
           </p>
           @if (authSvc.currentUser()?.email) {
             <small class="text-secondary">
