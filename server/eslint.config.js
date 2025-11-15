@@ -30,6 +30,7 @@ export default tseslint.config (
       },
     },
     rules: {
+      "@typescript-eslint/no-namespace": "off",
       "@typescript-eslint/no-explicit-any": "off",
       "import/extensions": [
         "error",

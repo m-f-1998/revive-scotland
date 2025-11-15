@@ -2,9 +2,11 @@ import { Router } from "express"
 import type { Request, Response } from "express"
 
 import { router as analyticsRouter } from "./admin/analytics.js"
+import { router as fileExplorerRouter } from "./admin/fileExplorer.js"
 
 export const router: Router = Router ( )
 router.use ( "/analytics", analyticsRouter )
+router.use ( "/file-explorer", fileExplorerRouter )
 
 import admin, { ServiceAccount } from "firebase-admin"
 import serviceAccount from "../revive-scotland-firebase.json" with { type: "json" }
@@ -13,6 +15,8 @@ import { rateLimit } from "express-rate-limit"
 admin.initializeApp ( {
   credential: admin.credential.cert ( serviceAccount as ServiceAccount )
 } )
+
+export default admin
 
 router.use ( rateLimit ( {
   windowMs: 15 * 60 * 1000, // 15 minutes
