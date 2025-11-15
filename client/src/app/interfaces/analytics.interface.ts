@@ -1,13 +1,13 @@
 export interface OverviewMetrics {
-  activeUsers: string
-  sessions: string
-  avgSessionDuration: string
+  activeUsers: number
+  sessions: number
+  avgSessionDuration: number
   engagementRate: string
-  conversions: string
+  conversions: number
 }
 
 export interface TrendDataPoint {
-  date: string // YYYYMMDD format
+  date: number
   activeUsers: number
   sessions: number
 }
@@ -33,7 +33,7 @@ export interface TrafficSourceData {
 export interface DashboardData {
   overview: OverviewMetrics
   trendData: TrendDataPoint [ ]
-  geoData: GeographyData [ ]
+  geographyData: GeographyData [ ]
   deviceData: DeviceData [ ]
   trafficSourceData: TrafficSourceData [ ]
 }

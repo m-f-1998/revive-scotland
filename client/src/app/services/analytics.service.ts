@@ -27,6 +27,6 @@ export class AnalyticsService {
   }
 
   private getData ( ): Promise<DashboardData> {
-    return this.apiSvc.get ( "/admin/analytics" ) as Promise<DashboardData>
+    return this.apiSvc.get ( "/api/admin/analytics" ) as Promise<DashboardData>
   }
 }

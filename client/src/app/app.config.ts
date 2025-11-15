@@ -8,6 +8,7 @@ import { RECAPTCHA_LOADER_OPTIONS, RECAPTCHA_V3_SITE_KEY } from "ng-recaptcha-2"
 import { withFormlyBootstrap } from "@ngx-formly/bootstrap"
 import { FormlyConfig } from "./formly/formly-config"
 import { AuthService } from "./services/auth.service"
+import { provideCharts, withDefaultRegisterables } from "ng2-charts"
 
 const nonce = document.querySelector ( 'meta[name="csp-nonce"]' )?.getAttribute ( "content" )
 
@@ -28,6 +29,7 @@ const appConfig: ApplicationConfig = {
       new FormlyConfig ( ),
       ...withFormlyBootstrap ( )
     ] ),
+    provideCharts ( withDefaultRegisterables ( ) ),
     provideToastr ( {
       positionClass: "toast-bottom-right",
       preventDuplicates: true,
