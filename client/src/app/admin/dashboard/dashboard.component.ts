@@ -58,7 +58,6 @@ export class DashboardComponent implements OnInit {
   }
 
   public readonly authSvc: AuthService = inject ( AuthService )
-  public readonly adminSvc: AuthService = inject ( AuthService )
   public readonly iconSvc: IconService = inject ( IconService )
   private readonly analyticsSvc: AnalyticsService = inject ( AnalyticsService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )

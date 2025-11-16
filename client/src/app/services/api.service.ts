@@ -32,17 +32,17 @@ export class ApiService {
     } )
   }
 
-  public post ( path: string, body: any = { } ) {
+  public post ( path: string, body: any = { }, headers: HttpHeaders = new HttpHeaders ( ) ) {
     const address = ( isDevMode ( ) ? "http://localhost:3000" : "" ) + path
-    let headers = new HttpHeaders ( )
+    let httpHeaders = headers
 
     if ( !( body instanceof FormData ) ) {
-      headers = headers.append ( "Content-Type", "application/json" )
+      httpHeaders = httpHeaders.append ( "Content-Type", "application/json" )
     }
 
     return new Promise ( ( resolve, reject ) => {
       this.httpClient.post ( address, body, {
-        headers,
+        headers: httpHeaders,
         responseType: "json"
       } as object ).subscribe ( {
         next: response => {

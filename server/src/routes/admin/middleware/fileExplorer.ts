@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express"
-import admin from "../../admin.js"
 import { auth } from "firebase-admin"
+import { getAuth } from "../../../routes/admin.js"
 
 declare global {
   namespace Express {
@@ -22,7 +22,7 @@ export const checkFirebaseAuth = async ( req: Request, res: Response, next: Next
 
   try {
     // Verify the token
-    const decodedToken = await admin.auth ( ).verifyIdToken ( idToken )
+    const decodedToken = await getAuth ( ).verifyIdToken ( idToken )
 
     // Attach the user's info to the request object
     // This now contains uid, email, etc.
@@ -53,19 +53,19 @@ export const validateS3Key = ( req: Request, res: Response, next: NextFunction )
     return
   }
 
-  const key = req.body.key || req.query [ "key" ]
-  if ( key && !key.startsWith ( req.user.s3Path ) ) {
+  const key = req.body?.key || req.query [ "key" ]
+  if ( key && !key.startsWith ( req.user?.s3Path ) ) {
     res.status ( 403 ).send ( "Forbidden: Access denied to this resource." )
     return
   }
 
   // Also check keys for rename/move
-  if ( req.body.oldKey && !req.body.oldKey.startsWith ( req.user.s3Path ) ) {
+  if ( req.body?.oldKey && !req.body?.oldKey.startsWith ( req.user?.s3Path ) ) {
     res.status ( 403 ).send ( "Forbidden: Access denied to source resource." )
     return
   }
 
-  if ( req.body.newKey && !req.body.newKey.startsWith ( req.user.s3Path ) ) {
+  if ( req.body?.newKey && !req.body?.newKey.startsWith ( req.user?.s3Path ) ) {
     res.status ( 403 ).send ( "Forbidden: Access denied to target resource." )
     return
   }

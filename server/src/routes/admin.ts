@@ -16,7 +16,17 @@ admin.initializeApp ( {
   credential: admin.credential.cert ( serviceAccount as ServiceAccount )
 } )
 
-export default admin
+export const getAuth = ( ): admin.auth.Auth => {
+  return admin.auth ( )
+}
+
+export const getFirestore = ( ): admin.firestore.Firestore => {
+  return admin.firestore ( )
+}
+
+export const incrementValue = ( value: number ): admin.firestore.FieldValue => {
+  return admin.firestore.FieldValue.increment ( value )
+}
 
 router.use ( rateLimit ( {
   windowMs: 15 * 60 * 1000, // 15 minutes

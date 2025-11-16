@@ -13,7 +13,7 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 
 import { addUserPath, checkFirebaseAuth, validateS3Key } from "./middleware/fileExplorer.js"
-import admin from "../admin.js"
+import { getFirestore, incrementValue } from "../admin.js"
 
 const R2_ACCOUNT_ID = process.env [ "R2_ACCOUNT_ID" ]
 const R2_ACCESS_KEY_ID = process.env [ "R2_ACCESS_KEY_ID" ]
@@ -35,7 +35,6 @@ const s3Client = new S3Client ( {
     secretAccessKey: R2_SECRET_ACCESS_KEY,
   }
 } )
-const db = admin.firestore ( )
 
 export const router = Router ( )
 
@@ -184,9 +183,9 @@ const listAllKeys = async ( prefix: string ) => {
 /**
  * 3. DELETE A FILE
  */
-router.delete ( "/delete", async ( req: Request, res: Response ) => {
+router.post ( "/delete", async ( req: Request, res: Response ) => {
   const { key, isFolder } = req.body // Full S3 key
-  const userRef = db.collection ( "users" ).doc ( req.user!.uid )
+  const userRef = getFirestore ( ).collection ( "users" ).doc ( req.user!.uid )
 
   if ( !key ) {
     res.status ( 400 ).send ( "Missing 'key' for deletion." )
@@ -206,7 +205,7 @@ router.delete ( "/delete", async ( req: Request, res: Response ) => {
 
       // 2. Calculate total size and delete all objects
       totalSizeDeleted = files.reduce ( ( acc, file ) => acc + file.size, 0 )
-      const deletePromises = files.map ( file => 
+      const deletePromises = files.map ( file =>
         s3Client.send ( new DeleteObjectCommand ( { Bucket: R2_BUCKET_NAME, Key: file.key } ) )
       )
       await Promise.all ( deletePromises )
@@ -237,7 +236,7 @@ router.delete ( "/delete", async ( req: Request, res: Response ) => {
 
     if ( totalSizeDeleted > 0 ) {
       await userRef.set ( { // Use set(merge:true) for safety
-        storageUsed: admin.firestore.FieldValue.increment ( -Number ( totalSizeDeleted ) )
+        storageUsed: incrementValue ( -Number ( totalSizeDeleted ) )
       }, { merge: true } )
     }
 
@@ -336,7 +335,7 @@ router.get ( "/quota", async ( req: Request, res: Response ) => {
 
   try {
     // 1. Fetch the user's quota doc from Firestore
-    const userRef = db.collection ( "users" ).doc ( req.user!.uid )
+    const userRef = getFirestore ( ).collection ( "users" ).doc ( req.user!.uid )
     const userDoc = await userRef.get ( )
 
     let storageUsed = 0
@@ -349,7 +348,16 @@ router.get ( "/quota", async ( req: Request, res: Response ) => {
       max: MAX_STORAGE_BYTES,
       remaining: MAX_STORAGE_BYTES - storageUsed,
     } )
-  } catch ( error ) {
+  } catch ( error: any ) {
+    // If not found, assume zero usage
+    if ( error.code === 5 ) {
+      res.json ( {
+        used: 0,
+        max: MAX_STORAGE_BYTES,
+        remaining: MAX_STORAGE_BYTES,
+      } )
+      return
+    }
     console.error ( "Error getting quota:", error )
     res.status ( 500 ).send ( "Failed to get quota." )
   }
@@ -361,7 +369,7 @@ router.get ( "/quota", async ( req: Request, res: Response ) => {
  */
 router.post ( "/upload-complete", async ( req: Request, res: Response ) => {
   const { key } = req.body // Only need the key
-  const userRef = db.collection ( "users" ).doc ( req.user!.uid )
+  const userRef = getFirestore ( ).collection ( "users" ).doc ( req.user!.uid )
 
   if ( !key ) {
     res.status ( 400 ).send ( "Missing 'key'." )
@@ -379,9 +387,20 @@ router.post ( "/upload-complete", async ( req: Request, res: Response ) => {
 
     // 2. UPDATE QUOTA (with the *server-verified* size)
     if ( fileSize > 0 ) {
-      await userRef.set ( {
-        storageUsed: admin.firestore.FieldValue.increment ( Number ( fileSize ) )
-      }, { merge: true } )
+      try {
+        await userRef.set ( {
+          storageUsed: incrementValue ( Number ( fileSize ) )
+        }, { merge: true } )
+      } catch ( error: any ) {
+        if ( error.code === 5 ) {
+          // User doc doesn't exist yet, create it
+          await userRef.set ( {
+            storageUsed: Number ( fileSize )
+          } )
+        } else {
+          throw error // Rethrow other errors
+        }
+      }
     }
 
     res.status ( 200 ).send ( { message: "Quota updated." } )
@@ -389,6 +408,18 @@ router.post ( "/upload-complete", async ( req: Request, res: Response ) => {
     if ( error.name === "NotFound" || error.$metadata?.httpStatusCode === 404 ) {
       res.status ( 404 ).send ( "Upload not found. Could not update quota." )
       return
+    }
+    if ( error.code === 5 ) {
+      // User doc doesn't exist yet, create it with zero usage
+      try {
+        await userRef.set ( {
+          storageUsed: 0
+        } )
+        res.status ( 200 ).send ( { message: "Quota initialized." } )
+        return
+      } catch ( e ) {
+        console.error ( "Error initializing quota for new user.", e )
+      }
     }
     console.error ( "Error updating quota:", error )
     res.status ( 500 ).send ( "Failed to update quota." )
