@@ -57,6 +57,16 @@ export class FormlyService {
     return this.CustomField ( key, "textarea", { ...expressions, props }, focus )
   }
 
+  public SelectInput (
+    key: string,
+    props: FormlyProps = { },
+    expressions: FormlyExpressions = { },
+    focus: boolean = false
+  ): FormlyFieldConfig {
+    if ( !props.options ) props.options = [ ]
+    return this.CustomField ( key, "select", { ...expressions, props }, focus )
+  }
+
   private Input (
     key: string,
     type: string,

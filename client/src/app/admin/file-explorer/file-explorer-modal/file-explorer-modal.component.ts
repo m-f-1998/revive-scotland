@@ -1,13 +1,18 @@
 import { ChangeDetectionStrategy, Component, inject, Input, OnInit } from "@angular/core"
 import { FormGroup } from "@angular/forms"
+import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
 import { FileEntry } from "@revive/src/app/interfaces/fileExplorer.interface"
 import { FormlyService } from "@revive/src/app/services/formly.service"
+import { IconService } from "@revive/src/app/services/icons.service"
 
 @Component ( {
   selector: "app-admin-file-explorer-modal",
-  imports: [ FormlyForm ],
+  imports: [
+    FormlyForm,
+    FaIconComponent
+  ],
   templateUrl: "./file-explorer-modal.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
@@ -23,6 +28,7 @@ export class FileExplorerModalComponent implements OnInit {
   public fields: FormlyFieldConfig [ ] = [ ]
   public model: any = { }
 
+  public readonly iconSvc: IconService = inject ( IconService )
   private readonly activeModal: NgbActiveModal = inject ( NgbActiveModal )
   private readonly formlySvc: FormlyService = inject ( FormlyService )
 
@@ -39,10 +45,29 @@ export class FileExplorerModalComponent implements OnInit {
 
   public ngOnInit ( ): void {
     if ( this.type === "rename" ) {
+      let defaultValue = this.file.name
+      if ( !this.isFolder ) {
+        const lastDotIndex = this.file.name.lastIndexOf ( "." )
+        if ( lastDotIndex > 0 ) {
+          defaultValue = this.file.name.slice ( 0, lastDotIndex )
+        }
+      }
       this.fields = [
         this.formlySvc.TextInput ( "rename", {
-          label: "New Name / Destination Path (relative to root)",
-          placeholder: this.isFolder ? "e.g., documents/new-folder/" : "e.g., documents/new-file.txt",
+          label: "New Name for " + ( this.isFolder ? "Folder" : "File" ),
+          placeholder: "e.g., new-name.txt"
+        }, {
+          defaultValue,
+          validators: {
+            validFilename: {
+              expression: ( c: any ) => {
+                const value: string = c.value || ""
+                const invalidChars = /[\\\/:*?"<>|]/ // Common invalid filename characters
+                return !invalidChars.test ( value )
+              },
+              message: ( ) => `The name contains invalid characters (\\ / : * ? " < > |).`
+            }
+          }
         } )
       ]
     } else if ( this.type === "createFolder" ) {
@@ -51,6 +76,17 @@ export class FileExplorerModalComponent implements OnInit {
           label: "Folder Name",
           description: this.currentPath,
           placeholder: "e.g., new-project/",
+        }, {
+          validators: {
+            validFolderName: {
+              expression: ( c: any ) => {
+                const value: string = c.value || ""
+                const invalidChars = /[\\\/:*?"<>|]/ // Common invalid folder name characters
+                return !invalidChars.test ( value ) && !value.endsWith ( "/" )
+              },
+              message: ( ) => `The folder name contains invalid characters (\\ / : * ? " < > |) or ends with a slash (/).`
+            }
+          }
         } )
       ]
     }

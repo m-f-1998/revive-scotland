@@ -23,6 +23,9 @@ const R2_BUCKET_NAME = process.env [ "R2_BUCKET_NAME" ]
 // This is the crucial part for R2
 const R2_ENDPOINT = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
 
+const MAX_STORAGE_GB = 5
+const MAX_STORAGE_BYTES = MAX_STORAGE_GB * 1024 * 1024 * 1024
+
 if ( !R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET_NAME ) {
   throw new Error ( "R2 configuration is missing in environment variables." )
 }
@@ -111,10 +114,32 @@ router.get ( "/list", async ( req: Request, res: Response ) => {
  */
 router.post ( "/upload-url", async ( req: Request, res: Response ) => {
   // key is the FULL S3 path (e.g., users/uid/docs/file.txt)
-  const { key, contentType } = req.body
+  const key = req.body?.key as string
+  const contentType = req.body?.contentType as string
+  const fileSize = req.body?.fileSize as number
 
-  if ( !key || !contentType ) {
-    res.status ( 400 ).send ( "Missing key or contentType." )
+  if ( !key || !contentType || !fileSize ) {
+    res.status ( 400 ).send ( "Missing key, contentType, or fileSize." )
+    return
+  }
+
+  try {
+    const userRef = getFirestore ( ).collection ( "users" ).doc ( req.user!.uid )
+    const userDoc = await userRef.get ( )
+
+    let storageUsed = 0
+    if ( userDoc.exists ) {
+      storageUsed = userDoc.data ( )?. [ "storageUsed" ] || 0
+    }
+
+    const projectedUsage = storageUsed + Number ( fileSize || 0 )
+    if ( projectedUsage > MAX_STORAGE_BYTES ) {
+      res.status ( 403 ).send ( "Upload would exceed your storage quota." )
+      return
+    }
+  } catch {
+    // If quota check fails, block the upload for safety
+    res.status ( 500 ).send ( "Failed to verify storage quota." )
     return
   }
 
@@ -123,9 +148,11 @@ router.post ( "/upload-url", async ( req: Request, res: Response ) => {
       Bucket: R2_BUCKET_NAME,
       Key: key,
       ContentType: contentType,
+      ContentLength: fileSize
     } )
-    // This URL is valid for 10 minutes
-    const uploadUrl = await getSignedUrl ( s3Client, command, { expiresIn: 600 } )
+
+    // This URL is valid for 2 minutes
+    const uploadUrl = await getSignedUrl ( s3Client, command, { expiresIn: 120 } )
     res.json ( { uploadUrl } )
   } catch ( error ) {
     console.error ( "Error generating upload URL:", error )
@@ -138,16 +165,28 @@ router.post ( "/upload-url", async ( req: Request, res: Response ) => {
  * S3 folders are just 0-byte objects with a trailing slash.
  */
 router.post ( "/create-folder", async ( req: Request, res: Response ) => {
-  const { key } = req.body // e.g., users/uid/new-folder/
+  const key = req.body?.key as string // e.g., users/uid/new-folder/
+
+  if ( !key ) {
+    res.status ( 400 ).send ( "Missing 'key' for folder creation." )
+    return
+  }
+
   if ( !key.endsWith ( "/" ) ) {
     res.status ( 400 ).send ( "Folder key must end with /" )
+    return
+  }
+
+  const invalidChars = /[\\\/:*?"<>|]/ // Common invalid filename characters
+  if ( invalidChars.test ( key.substring ( key.lastIndexOf ( "/" ) + 1 ) ) ) {
+    res.status ( 400 ).send ( "Folder key contains invalid characters." )
     return
   }
 
   try {
     const command = new PutObjectCommand ( {
       Bucket: R2_BUCKET_NAME,
-      Key: key,
+      Key: key
     } )
     await s3Client.send ( command )
     res.status ( 201 ).send ( { message: "Folder created." } )
@@ -184,13 +223,15 @@ const listAllKeys = async ( prefix: string ) => {
  * 3. DELETE A FILE
  */
 router.post ( "/delete", async ( req: Request, res: Response ) => {
-  const { key, isFolder } = req.body // Full S3 key
-  const userRef = getFirestore ( ).collection ( "users" ).doc ( req.user!.uid )
+  const key = req.body?.key as string // Full S3 key
+  const isFolder = req.body?.isFolder
 
   if ( !key ) {
     res.status ( 400 ).send ( "Missing 'key' for deletion." )
     return
   }
+
+  const userRef = getFirestore ( ).collection ( "users" ).doc ( req.user!.uid )
 
   try {
     let totalSizeDeleted = 0
@@ -249,11 +290,34 @@ router.post ( "/delete", async ( req: Request, res: Response ) => {
 } )
 
 /**
- * 4. RENAME A FILE / 5. MOVE A FILE
+ * 4. RENAME A FILE OR FOLDER
  * S3 has no "rename" or "move". It's a COPY + DELETE operation.
  */
 router.post ( "/rename", async ( req: Request, res: Response ) => {
-  const { oldKey, newKey, isFolder } = req.body
+  const oldKey = req.body?.oldKey as string
+  const newKey = req.body?.newKey as string
+  const isFolder = req.body?.isFolder
+
+  if ( !oldKey || !newKey ) {
+    res.status ( 400 ).send ( "Missing 'oldKey' or 'newKey'." )
+    return
+  }
+
+  if ( oldKey === newKey ) {
+    res.status ( 400 ).send ( "'oldKey' and 'newKey' cannot be the same." )
+    return
+  }
+
+  if ( oldKey.includes ( ".." ) || newKey.includes ( ".." ) ) {
+    res.status ( 400 ).send ( "Invalid key with path traversal." )
+    return
+  }
+
+  const invalidChars = /[\\\/:*?"<>|]/ // Common invalid filename characters
+  if ( invalidChars.test ( newKey.substring ( newKey.lastIndexOf ( "/" ) + 1 ) ) ) {
+    res.status ( 400 ).send ( "New key contains invalid characters." )
+    return
+  }
 
   try {
     if ( isFolder ) {
@@ -297,6 +361,8 @@ router.post ( "/rename", async ( req: Request, res: Response ) => {
       } )
       await s3Client.send ( deleteCommand )
     }
+
+    res.status ( 200 ).send ( { message: "Rename/Move successful." } )
   } catch ( error ) {
     console.error ( "Error renaming file:", error )
     res.status ( 500 ).send ( "Failed to rename file." )
@@ -304,12 +370,18 @@ router.post ( "/rename", async ( req: Request, res: Response ) => {
 } )
 
 /**
- * 6. CREATE A SHARED PUBLIC LINK (Presigned URL)
+ * 5. CREATE A SHARED PUBLIC LINK (Presigned URL)
  */
 router.post ( "/share-url", async ( req: Request, res: Response ) => {
-  const { key } = req.body
+  const key = req.body?.key as string
+
+  if ( !key ) {
+    res.status ( 400 ).send ( "Missing 'key' for sharing." )
+    return
+  }
+
   // Default to 1 day expiry, but could be passed from client
-  const expiresIn = req.body.expiresIn || 86400 // 24 hours
+  const expiresIn = req.body?.expiresIn || 86400 // 24 hours
 
   try {
     const command = new GetObjectCommand ( {
@@ -326,13 +398,10 @@ router.post ( "/share-url", async ( req: Request, res: Response ) => {
 } )
 
 /**
- * 7. GET USER QUOTA / SPACE LEFT (MODIFIED FOR QUOTA)
+ * 6. GET USER QUOTA / SPACE LEFT (MODIFIED FOR QUOTA)
  * Reads from Firestore. Fast, efficient, and free.
  */
 router.get ( "/quota", async ( req: Request, res: Response ) => {
-  const MAX_STORAGE_GB = 5
-  const MAX_STORAGE_BYTES = MAX_STORAGE_GB * 1024 * 1024 * 1024
-
   try {
     // 1. Fetch the user's quota doc from Firestore
     const userRef = getFirestore ( ).collection ( "users" ).doc ( req.user!.uid )
@@ -364,11 +433,17 @@ router.get ( "/quota", async ( req: Request, res: Response ) => {
 } )
 
 /**
- * 8. NEW (REQUIRED FOR QUOTA): UPLOAD COMPLETE
+ * 7. NEW (REQUIRED FOR QUOTA): UPLOAD COMPLETE
  * Called by the client AFTER a successful S3 upload.
  */
 router.post ( "/upload-complete", async ( req: Request, res: Response ) => {
-  const { key } = req.body // Only need the key
+  const key = req.body?.key as string // Only need the key
+
+  if ( !key ) {
+    res.status ( 400 ).send ( "Missing 'key'." )
+    return
+  }
+
   const userRef = getFirestore ( ).collection ( "users" ).doc ( req.user!.uid )
 
   if ( !key ) {
@@ -377,31 +452,12 @@ router.post ( "/upload-complete", async ( req: Request, res: Response ) => {
   }
 
   try {
-    // 1. GET METADATA (find the real size)
-    const headCommand = new HeadObjectCommand ( {
-      Bucket: R2_BUCKET_NAME,
-      Key: key,
-    } )
-    const s3Object = await s3Client.send ( headCommand )
-    const fileSize = s3Object.ContentLength || 0
-
-    // 2. UPDATE QUOTA (with the *server-verified* size)
-    if ( fileSize > 0 ) {
-      try {
-        await userRef.set ( {
-          storageUsed: incrementValue ( Number ( fileSize ) )
-        }, { merge: true } )
-      } catch ( error: any ) {
-        if ( error.code === 5 ) {
-          // User doc doesn't exist yet, create it
-          await userRef.set ( {
-            storageUsed: Number ( fileSize )
-          } )
-        } else {
-          throw error // Rethrow other errors
-        }
-      }
-    }
+    const userPrefix = req.user!.s3Path!
+    const allFiles = await listAllKeys ( userPrefix )
+    const totalSize = allFiles.reduce ( ( acc, file ) => acc + file.size, 0 )
+    await userRef.set ( {
+      storageUsed: totalSize
+    }, { merge: true } )
 
     res.status ( 200 ).send ( { message: "Quota updated." } )
   } catch ( error: any ) {
@@ -427,11 +483,15 @@ router.post ( "/upload-complete", async ( req: Request, res: Response ) => {
 } )
 
 /**
- * 9. VIEW FILE (For logged-in user)
+ * 8. VIEW FILE (For logged-in user)
  * This is just another presigned URL, typically with a shorter expiry.
  */
 router.get ( "/view-url", async ( req, res ) => {
-  const { key } = req.query // Get from query param
+  const key = req.query?. [ "key" ] as string // Get from query param
+  if ( !key ) {
+    res.status ( 400 ).send ( "Missing 'key'." )
+    return
+  }
 
   try {
     const command = new GetObjectCommand ( {

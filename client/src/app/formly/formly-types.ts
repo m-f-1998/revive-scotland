@@ -21,6 +21,7 @@ export interface FormlyProps {
   placeholder?: string
   disableNext?: boolean
   disablePrevious?: boolean
+  options?: Array<{ label: string; value: any }>
   procedureOnStart?: string
   procedureOnFinish?: string
   hidden?: boolean

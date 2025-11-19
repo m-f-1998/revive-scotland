@@ -3,7 +3,7 @@
     @if (type === "delete") {
       Delete Confirmation
     } @else if (type === "rename") {
-      Rename / Move
+      Rename
     } @else if (type === "createFolder") {
       Create New folder
     }
@@ -20,30 +20,22 @@
       }
     </p>
   } @else if (type === "rename") {
-    <!-- <label for="newKey" class="form-label fw-semibold text-muted">New Name / Destination Path (relative to root)</label>
-    <div class="input-group">
-      <span class="input-group-text user-select-all">{{ userS3Path }}</span>
-      <input
-        id="newKey"
-        type="text"
-        [(ngModel)]="modalState.update(m => ({ ...m, inputValue: $event }))"
-        class="form-control"
-        placeholder="e.g., documents/new-file.txt"
-      >
-    </div> -->
     <formly-form [form]="form" [fields]="fields" [model]="model" />
   } @else if (type === "createFolder") {
     <formly-form [form]="form" [fields]="fields" [model]="model" />
   }
 </div>
 <div class="modal-footer">
-  <button [class]="completeClass" (click)="completeAction()">
+  <button [class]="completeClass" (click)="completeAction()" [disabled]="type !== 'delete' && form.invalid">
     @if (type === "delete") {
+      <fa-icon [icon]="iconSvc.getIcon('fas', 'trash')" />
       Delete Permanently
     } @else if (type === "rename") {
-      Confirm Change
+      <fa-icon [icon]="iconSvc.getIcon('fas', 'edit')" />
+      Confirm
     } @else if (type === "createFolder") {
-      Create Folder
+      <fa-icon [icon]="iconSvc.getIcon('fas', 'folder-plus')" />
+      Create
     }
   </button>
 </div>

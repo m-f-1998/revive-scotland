@@ -13,7 +13,7 @@
             <p class="text-sm font-monospace text-muted mb-1">
               Storage Used: <span class="fw-semibold">{{ fileExplorerSvc.formatBytes(quota().used) }}</span> / {{ fileExplorerSvc.formatBytes(quota().max) }}
             </p>
-            <div class="progress" style="width: 100%; min-width: 250px; height: 8px;">
+            <div class="progress d-none d-sm-block" style="width: 100%; min-width: 250px; height: 8px;">
               <div
                 class="progress-bar bg-primary"
                 role="progressbar"
@@ -32,27 +32,40 @@
       <nav aria-label="breadcrumb">
         <ol class="breadcrumb p-2 rounded-3 shadow-sm m-0">
           @for (crumb of breadcrumbs(); track crumb.path) {
-            @if (crumb.path !== currentPath()) {
-              <li class="breadcrumb-item" aria-current="page">
+            <li class="breadcrumb-item" aria-current="page">
+              @if (crumb.path !== currentPath()) {
                 <a (click)="listPath(crumb.path)" class="text-decoration-none text-primary fw-bold cursor-pointer">
                   {{ crumb.label }}
                 </a>
-              </li>
-            }
+              } @else {
+                <span class="fw-bold text-secondary">
+                  {{ crumb.label }}
+                </span>
+              }
+            </li>
           }
         </ol>
       </nav>
 
-      <div class="d-flex flex-wrap gap-2">
-        <input type="file" #fileInput (change)="onFileSelected($event)" class="d-none">
+      <div class="d-flex flex-wrap gap-2 justify-content-end">
+        <input type="file" #fileInput (change)="onFileSelected($event);" multiple class="d-none">
 
-        <button
-          (click)="fileInput.click()"
-          [disabled]="loading()"
-          class="btn btn-primary btn-sm shadow-sm transition-transform">
-          <fa-icon [icon]="iconSvc.getIcon('fas', 'cloud-upload-alt')" class="me-1" />
-          Upload File
-        </button>
+        <div ngbDropdown>
+          <button type="button" class="btn btn-primary btn-sm shadow-sm transition-transform" ngbDropdownToggle [disabled]="loading()">
+            <fa-icon [icon]="iconSvc.getIcon('fas', 'cloud-upload-alt')" class="me-1" />
+            Upload
+          </button>
+          <div ngbDropdownMenu>
+            <button ngbDropdownItem (click)="fileInput.webkitdirectory=false; fileInput.click()">
+              <fa-icon [icon]="iconSvc.getIcon('fas', 'file-upload')" class="me-2" />
+              File
+            </button>
+            <button ngbDropdownItem (click)="fileInput.webkitdirectory=true; fileInput.click()">
+              <fa-icon [icon]="iconSvc.getIcon('fas', 'folder')" class="me-2" />
+              Folder
+            </button>
+          </div>
+        </div>
 
         <button
           (click)="openModal('createFolder')"
@@ -80,11 +93,6 @@
           </div>
           <p class="mt-2">Loading files and folders...</p>
         </div>
-      } @else if (errorMessage()) {
-        <div class="alert alert-danger mb-0 rounded-0 border-0 border-start border-5 border-danger" role="alert">
-          <p class="fw-bold mb-0">Error:</p>
-          <p class="mb-0">{{ errorMessage() }}</p>
-        </div>
       } @else {
         <div class="table-responsive">
           <table class="table table-striped table-hover mb-0">
@@ -98,7 +106,7 @@
             </thead>
             <tbody>
               @if (currentPath() !== '') {
-                <tr class="cursor-pointer">
+                <tr class="cursor-pointer" (dragover)="onDragOver($event)" (drop)="upAFolder($event)">
                   <td class="text-primary fw-semibold">
                     <a (click)="goUp()" class="text-decoration-none text-primary fw-semibold d-flex align-items-center cursor-pointer">
                       <fa-icon [icon]="iconSvc.getIcon('fas', 'arrow-up')" class="me-2" />
@@ -112,7 +120,7 @@
               }
 
               @for (file of fileList(); track file.key) {
-                <tr class="cursor-pointer">
+                <tr class="cursor-pointer" [draggable]="!file.isFolder" (dragstart)="!file.isFolder ? onDragStart($event, file) : null" (dragover)="file.isFolder ? onDragOver($event) : null" (drop)="file.isFolder ? onDrop($event, file): null">
                   <td>
                     <a (click)="file.isFolder ? navigateTo(file.name) : viewFile(file.key)" class="d-flex align-items-center text-decoration-none">
                       @if (file.isFolder) {
@@ -120,7 +128,7 @@
                       } @else {
                         <fa-icon [icon]="iconSvc.getIcon('fas', 'file-alt')" class="me-2 text-info" />
                       }
-                      <span [class]="{ 'fw-bold text-primary': file.isFolder, 'text-decoration-underline': file.isFolder }">
+                      <span [class]="{ 'fw-bold text-primary': file.isFolder }">
                         {{ file.name }}
                       </span>
                     </a>
