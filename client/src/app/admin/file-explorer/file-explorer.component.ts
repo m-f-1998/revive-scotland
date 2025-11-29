@@ -4,7 +4,7 @@ import { AuthService } from "../../services/auth.service"
 import { FileEntry, Quota } from "../../interfaces/fileExplorer.interface"
 import { FileExplorerService } from "../../services/fileExplorer.service"
 import { ApiService } from "../../services/api.service"
-import { NgbDropdownModule, NgbModal } from "@ng-bootstrap/ng-bootstrap"
+import { NgbActiveModal, NgbDropdownModule, NgbModal } from "@ng-bootstrap/ng-bootstrap"
 import { FileExplorerModalComponent } from "./file-explorer-modal/file-explorer-modal.component"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { DatePipe } from "@angular/common"
@@ -29,6 +29,7 @@ export class FileExplorerComponent {
   public readonly authSvc: AuthService = inject ( AuthService )
   public readonly fileExplorerSvc: FileExplorerService = inject ( FileExplorerService )
   public readonly iconSvc: IconService = inject ( IconService )
+  public readonly activeModal: NgbActiveModal | null = inject ( NgbActiveModal, { optional: true } )
 
   public readonly fileInput: Signal<ElementRef<HTMLInputElement> | undefined> = viewChild ( "fileInput" )
 
@@ -40,6 +41,9 @@ export class FileExplorerComponent {
   public quota: WritableSignal<Quota> = signal<Quota> ( { used: 0, max: 1073741824, remaining: 0 } ) // Default 1GB max
 
   public breadcrumbs = computed ( ( ) => this.fileExplorerSvc.formatPathToBreadcrumbs ( this.currentPath ( ) ) )
+
+  public isSelectionMode: boolean = false
+  public readonly allowedMimeTypes: string [ ] = [ "image/jpeg", "image/png", "image/webp", "image/gif" ]
 
   private draggedFile: FileEntry | null = null
 
@@ -55,6 +59,52 @@ export class FileExplorerComponent {
       this.listPath ( this.currentPath ( ) )
       this.fetchQuota ( )
     } )
+  }
+
+  public closeSelectionMode ( ) {
+    if ( !this.activeModal ) return
+    this.activeModal.dismiss ( )
+  }
+
+  public async selectFile ( fileEntry: FileEntry ) {
+    if ( !this.activeModal ) return
+
+    if ( fileEntry.isFolder ) {
+      this.navigateTo ( fileEntry.name )
+      return
+    }
+
+    if ( this.isSelectionMode ) {
+      if ( !fileEntry.contentType || !this.allowedMimeTypes.includes ( fileEntry.contentType ) ) {
+        this.toastrSvc.error ( "Only image files can be selected for the Hero Editor." )
+        return
+      }
+
+      this.loading.set ( true )
+      try {
+        // Create a short-lived direct URL
+        // Use /share-url with a very long expiry for "permanent" links
+        const response = await this.apiSvc.get ( `${this.baseRoute}/share-url`, {
+          key: fileEntry.key,
+          expiresIn: 0
+        }, new HttpHeaders ( {
+          "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || "" }`
+        } ) )
+        const data = response as { shareUrl: string }
+
+        // Close the modal and pass the permanent URL back
+        this.activeModal.close ( data.shareUrl )
+
+      } catch ( err ) {
+        console.error ( "Select file error:", err )
+        this.toastrSvc.error ( "Failed to generate permanent file URL" )
+      } finally {
+        this.loading.set ( false )
+      }
+    } else {
+      // Default behavior: view the file (uses /view-url with short expiry)
+      await this.viewFile ( fileEntry.key )
+    }
   }
 
   public async listPath ( relativePath: string = "" ) {
@@ -149,7 +199,7 @@ export class FileExplorerComponent {
       this.loading.set ( true )
       try {
         const expiry = model.expiry || 86400
-        const response = await this.apiSvc.post ( `${this.baseRoute}/share-url`, {
+        const response = await this.apiSvc.get ( `${this.baseRoute}/share-url`, {
           key,
           expiresIn: expiry
         }, new HttpHeaders ( {

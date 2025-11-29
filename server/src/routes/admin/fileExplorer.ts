@@ -7,10 +7,10 @@ import {
   PutObjectCommand,
   DeleteObjectCommand,
   CopyObjectCommand,
-  GetObjectCommand,
   HeadObjectCommand
 } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
+import { randomUUID } from "crypto"
 
 import { addUserPath, checkFirebaseAuth, validateS3Key } from "./middleware/fileExplorer.js"
 import { getFirestore, incrementValue } from "../admin.js"
@@ -19,6 +19,7 @@ const R2_ACCOUNT_ID = process.env [ "R2_ACCOUNT_ID" ]
 const R2_ACCESS_KEY_ID = process.env [ "R2_ACCESS_KEY_ID" ]
 const R2_SECRET_ACCESS_KEY = process.env [ "R2_SECRET_ACCESS_KEY" ]
 const R2_BUCKET_NAME = process.env [ "R2_BUCKET_NAME" ]
+const PUBLIC_DOMAIN = process.env [ "PUBLIC_DOMAIN" ] || "https://revivescotland.co.uk"
 
 // This is the crucial part for R2
 const R2_ENDPOINT = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
@@ -64,7 +65,7 @@ router.get ( "/list", async ( req: Request, res: Response ) => {
 
   // Ensure path doesn't try to go up (e.g. '../')
   if ( relativePath.includes ( ".." ) ) {
-    res.status ( 400 ).send ( "Invalid path." )
+    res.status ( 400 ).json ( "Invalid path." )
     return
   }
 
@@ -91,20 +92,31 @@ router.get ( "/list", async ( req: Request, res: Response ) => {
     } ) )
 
     // Files (Contents)
-    const files = ( data.Contents || [] )
-      .filter ( f => f.Key !== prefix ) // Don't include the folder "object" itself
-      .map ( f => ( {
-        name: f.Key?.replace ( prefix, "" ),
-        key: f.Key,
-        lastModified: f.LastModified,
-        size: f.Size, // In bytes
-        isFolder: false,
-      } ) )
+    const files: Promise<any> [ ] = [ ]
+    for ( const f of ( data.Contents || [ ] ).filter ( f => f.Key !== prefix ) ) {
+      files.push ( ( async ( ) => {
+        const head = await s3Client.send (
+          new HeadObjectCommand ( {
+            Bucket: R2_BUCKET_NAME,
+            Key: f.Key!,
+          } )
+        )
 
-    res.json ( [ ...folders, ...files ] )
+        return {
+          name: f.Key?.replace ( prefix, "" ),
+          key: f.Key,
+          lastModified: f.LastModified,
+          size: f.Size, // In bytes
+          isFolder: false,
+          contentType: head.ContentType // Will be fetched on demand if needed
+        }
+      } ) ( ) )
+    }
+
+    res.json ( [ ...folders, ...( await Promise.all ( files ) ) ] )
   } catch ( error ) {
     console.error ( "Error listing files:", error )
-    res.status ( 500 ).send ( "Failed to list files." )
+    res.status ( 500 ).json ( "Failed to list files." )
   }
 } )
 
@@ -119,7 +131,7 @@ router.post ( "/upload-url", async ( req: Request, res: Response ) => {
   const fileSize = req.body?.fileSize as number
 
   if ( !key || !contentType || !fileSize ) {
-    res.status ( 400 ).send ( "Missing key, contentType, or fileSize." )
+    res.status ( 400 ).json ( "Missing key, contentType, or fileSize." )
     return
   }
 
@@ -134,12 +146,12 @@ router.post ( "/upload-url", async ( req: Request, res: Response ) => {
 
     const projectedUsage = storageUsed + Number ( fileSize || 0 )
     if ( projectedUsage > MAX_STORAGE_BYTES ) {
-      res.status ( 403 ).send ( "Upload would exceed your storage quota." )
+      res.status ( 403 ).json ( "Upload would exceed your storage quota." )
       return
     }
   } catch {
     // If quota check fails, block the upload for safety
-    res.status ( 500 ).send ( "Failed to verify storage quota." )
+    res.status ( 500 ).json ( "Failed to verify storage quota." )
     return
   }
 
@@ -156,7 +168,7 @@ router.post ( "/upload-url", async ( req: Request, res: Response ) => {
     res.json ( { uploadUrl } )
   } catch ( error ) {
     console.error ( "Error generating upload URL:", error )
-    res.status ( 500 ).send ( "Failed to generate URL." )
+    res.status ( 500 ).json ( "Failed to generate URL." )
   }
 } )
 
@@ -168,18 +180,18 @@ router.post ( "/create-folder", async ( req: Request, res: Response ) => {
   const key = req.body?.key as string // e.g., users/uid/new-folder/
 
   if ( !key ) {
-    res.status ( 400 ).send ( "Missing 'key' for folder creation." )
+    res.status ( 400 ).json ( "Missing 'key' for folder creation." )
     return
   }
 
   if ( !key.endsWith ( "/" ) ) {
-    res.status ( 400 ).send ( "Folder key must end with /" )
+    res.status ( 400 ).json ( "Folder key must end with /" )
     return
   }
 
   const invalidChars = /[\\\/:*?"<>|]/ // Common invalid filename characters
   if ( invalidChars.test ( key.substring ( key.lastIndexOf ( "/" ) + 1 ) ) ) {
-    res.status ( 400 ).send ( "Folder key contains invalid characters." )
+    res.status ( 400 ).json ( "Folder key contains invalid characters." )
     return
   }
 
@@ -192,7 +204,7 @@ router.post ( "/create-folder", async ( req: Request, res: Response ) => {
     res.status ( 201 ).send ( { message: "Folder created." } )
   } catch ( error ) {
     console.error ( "Error creating folder:", error )
-    res.status ( 500 ).send ( "Failed to create folder." )
+    res.status ( 500 ).json ( "Failed to create folder." )
   }
 } )
 
@@ -227,7 +239,7 @@ router.post ( "/delete", async ( req: Request, res: Response ) => {
   const isFolder = req.body?.isFolder
 
   if ( !key ) {
-    res.status ( 400 ).send ( "Missing 'key' for deletion." )
+    res.status ( 400 ).json ( "Missing 'key' for deletion." )
     return
   }
 
@@ -273,6 +285,14 @@ router.post ( "/delete", async ( req: Request, res: Response ) => {
         Key: key,
       } )
       await s3Client.send ( deleteCommand )
+
+      const db = getFirestore ( )
+      const querySnapshot = await db.collection ( "shared_links" ).where ( "key", "==", key ).get ( )
+      const batch = db.batch ( )
+      querySnapshot.forEach ( doc => {
+        batch.delete ( doc.ref )
+      } )
+      await batch.commit ( )
     }
 
     if ( totalSizeDeleted > 0 ) {
@@ -284,7 +304,7 @@ router.post ( "/delete", async ( req: Request, res: Response ) => {
     res.status ( 200 ).send ( { message: "Delete successful." } )
   } catch ( error: any ) {
     console.error ( "Error deleting file/folder:", error )
-    res.status ( 500 ).send ( "Failed to delete resource." )
+    res.status ( 500 ).json ( "Failed to delete resource." )
     return
   }
 } )
@@ -299,23 +319,23 @@ router.post ( "/rename", async ( req: Request, res: Response ) => {
   const isFolder = req.body?.isFolder
 
   if ( !oldKey || !newKey ) {
-    res.status ( 400 ).send ( "Missing 'oldKey' or 'newKey'." )
+    res.status ( 400 ).json ( "Missing 'oldKey' or 'newKey'." )
     return
   }
 
   if ( oldKey === newKey ) {
-    res.status ( 400 ).send ( "'oldKey' and 'newKey' cannot be the same." )
+    res.status ( 400 ).json ( "'oldKey' and 'newKey' cannot be the same." )
     return
   }
 
   if ( oldKey.includes ( ".." ) || newKey.includes ( ".." ) ) {
-    res.status ( 400 ).send ( "Invalid key with path traversal." )
+    res.status ( 400 ).json ( "Invalid key with path traversal." )
     return
   }
 
   const invalidChars = /[\\\/:*?"<>|]/ // Common invalid filename characters
   if ( invalidChars.test ( newKey.substring ( newKey.lastIndexOf ( "/" ) + 1 ) ) ) {
-    res.status ( 400 ).send ( "New key contains invalid characters." )
+    res.status ( 400 ).json ( "New key contains invalid characters." )
     return
   }
 
@@ -365,35 +385,50 @@ router.post ( "/rename", async ( req: Request, res: Response ) => {
     res.status ( 200 ).send ( { message: "Rename/Move successful." } )
   } catch ( error ) {
     console.error ( "Error renaming file:", error )
-    res.status ( 500 ).send ( "Failed to rename file." )
+    res.status ( 500 ).json ( "Failed to rename file." )
   }
 } )
 
 /**
  * 5. CREATE A SHARED PUBLIC LINK (Presigned URL)
  */
-router.post ( "/share-url", async ( req: Request, res: Response ) => {
-  const key = req.body?.key as string
+router.get ( "/share-url", async ( req: Request, res: Response ) => {
+  const key = req.query?. [ "key" ] as string
 
   if ( !key ) {
-    res.status ( 400 ).send ( "Missing 'key' for sharing." )
+    res.status ( 400 ).json ( "Missing 'key' for sharing." )
     return
   }
 
   // Default to 1 day expiry, but could be passed from client
-  const expiresIn = req.body?.expiresIn || 86400 // 24 hours
+  const expiresIn = Number ( req.query?. [ "expiresIn" ] ) || 86400 // 24 hours
 
   try {
-    const command = new GetObjectCommand ( {
-      Bucket: R2_BUCKET_NAME,
-      Key: key,
+    const shareId = randomUUID ( )
+
+    // Calculate expiry date
+    let expiresAt = null
+    if ( expiresIn > 0 ) {
+      expiresAt = new Date ( Date.now ( ) + ( expiresIn * 1000 ) )
+    }
+
+    // Save to Firestore
+    await getFirestore ( ).collection ( "shared_links" ).doc ( shareId ).set ( {
+      key: key,
+      uid: req.user!.uid,
+      createdAt: new Date ( ),
+      expiresAt: expiresAt, // Null means permanent
+      type: expiresIn === 0 ? "hero_editor" : "share" // Optional: metadata
     } )
-    // This URL is valid for the specified duration
-    const shareUrl = await getSignedUrl ( s3Client, command, { expiresIn } )
+
+    // Return the URL for your domain
+    // Assuming you mount the public router at /api/public
+    const shareUrl = `${PUBLIC_DOMAIN}/api/public/s/${shareId}`
+
     res.json ( { shareUrl } )
   } catch ( error ) {
     console.error ( "Error generating share URL:", error )
-    res.status ( 500 ).send ( "Failed to generate URL." )
+    res.status ( 500 ).json ( "Failed to generate URL." )
   }
 } )
 
@@ -428,7 +463,7 @@ router.get ( "/quota", async ( req: Request, res: Response ) => {
       return
     }
     console.error ( "Error getting quota:", error )
-    res.status ( 500 ).send ( "Failed to get quota." )
+    res.status ( 500 ).json ( "Failed to get quota." )
   }
 } )
 
@@ -440,14 +475,14 @@ router.post ( "/upload-complete", async ( req: Request, res: Response ) => {
   const key = req.body?.key as string // Only need the key
 
   if ( !key ) {
-    res.status ( 400 ).send ( "Missing 'key'." )
+    res.status ( 400 ).json ( "Missing 'key'." )
     return
   }
 
   const userRef = getFirestore ( ).collection ( "users" ).doc ( req.user!.uid )
 
   if ( !key ) {
-    res.status ( 400 ).send ( "Missing 'key'." )
+    res.status ( 400 ).json ( "Missing 'key'." )
     return
   }
 
@@ -462,7 +497,7 @@ router.post ( "/upload-complete", async ( req: Request, res: Response ) => {
     res.status ( 200 ).send ( { message: "Quota updated." } )
   } catch ( error: any ) {
     if ( error.name === "NotFound" || error.$metadata?.httpStatusCode === 404 ) {
-      res.status ( 404 ).send ( "Upload not found. Could not update quota." )
+      res.status ( 404 ).json ( "Upload not found. Could not update quota." )
       return
     }
     if ( error.code === 5 ) {
@@ -478,31 +513,38 @@ router.post ( "/upload-complete", async ( req: Request, res: Response ) => {
       }
     }
     console.error ( "Error updating quota:", error )
-    res.status ( 500 ).send ( "Failed to update quota." )
+    res.status ( 500 ).json ( "Failed to update quota." )
   }
 } )
-
 /**
- * 8. VIEW FILE (For logged-in user)
- * This is just another presigned URL, typically with a shorter expiry.
+ * 8. VIEW FILE (For Admin Preview)
+ * Enforces a 15-minute expiry.
  */
-router.get ( "/view-url", async ( req, res ) => {
-  const key = req.query?. [ "key" ] as string // Get from query param
+router.get ( "/view-url", async ( req: Request, res: Response ) => {
+  const key = req.query?. [ "key" ] as string
   if ( !key ) {
-    res.status ( 400 ).send ( "Missing 'key'." )
+    res.status ( 400 ).json ( "Missing 'key'." )
     return
   }
 
   try {
-    const command = new GetObjectCommand ( {
-      Bucket: R2_BUCKET_NAME,
-      Key: key as string
+    const shareId = randomUUID ( )
+
+    // Hardcoded 15 minutes for admin previews
+    const expiresAt = new Date ( Date.now ( ) + ( 15 * 60 * 1000 ) )
+
+    await getFirestore ( ).collection ( "shared_links" ).doc ( shareId ).set ( {
+      key: key,
+      uid: req.user!.uid,
+      createdAt: new Date ( ),
+      expiresAt: expiresAt,
+      type: "admin_view"
     } )
-    // This URL is valid for 15 minutes
-    const viewUrl = await getSignedUrl ( s3Client, command, { expiresIn: 900 } )
+
+    const viewUrl = `${PUBLIC_DOMAIN}/api/public/s/${shareId}`
     res.json ( { viewUrl } )
   } catch ( error ) {
     console.error ( "Error generating view URL:", error )
-    res.status ( 500 ).send ( "Failed to generate URL." )
+    res.status ( 500 ).json ( "Failed to generate URL." )
   }
 } )

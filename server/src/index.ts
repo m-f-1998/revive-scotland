@@ -6,9 +6,10 @@ import cors from "cors"
 import { randomBytes } from "crypto"
 
 import { router as mailerRouter } from "./routes/mailer.js"
-import { router as staticRouter } from "./routes/static.js"
+import { isDevMode, router as staticRouter } from "./routes/static.js"
 import { router as imagesRouter } from "./routes/images.js"
 import { router as adminRouter } from "./routes/admin.js"
+import { router as publicRouter } from "./routes/admin/public.js"
 
 const app = express ( )
 
@@ -24,7 +25,7 @@ app.use ( cors ( {
     "http://localhost:4200",
     "https://revivescotland.co.uk"
   ],
-  methods: [ "GET", "POST" ],
+  methods: [ "GET", "POST", "DELETE" ],
   allowedHeaders: [ "Content-Type", "Authorization" ],
   credentials: true
 } ) )
@@ -40,6 +41,7 @@ app.use ( helmet ( {
     action: "deny"
   },
   hidePoweredBy: true,
+  crossOriginResourcePolicy: isDevMode ( ) ? false : { policy: "same-origin" },
   hsts: {
     maxAge: 31536000,
     includeSubDomains: true,
@@ -100,6 +102,7 @@ app.use ( helmet ( {
 app.use ( "/api/mailer", mailerRouter )
 app.use ( "/api/img", imagesRouter )
 app.use ( "/api/admin", adminRouter )
+app.use ( "/api/public", publicRouter )
 app.use ( staticRouter )
 
 app.listen ( 3000, ( ) => {

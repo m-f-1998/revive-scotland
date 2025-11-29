@@ -4,6 +4,7 @@ export interface FileEntry {
   isFolder: boolean
   lastModified?: Date
   size?: number
+  contentType?: string
 }
 
 export interface Quota {

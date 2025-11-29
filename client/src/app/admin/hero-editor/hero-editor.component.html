@@ -1,0 +1,73 @@
+<app-admin-navbar />
+<div class="container my-4">
+  <h2 class="mb-4">🖼️ Hero Image Editor</h2>
+  <formly-form [form]="form" [model]="model" [fields]="fields" />
+  <p class="text-muted">Configure up to {{ maxHeroes }} hero images for this page, including optional titles and descriptions.</p>
+  <hr>
+
+  @if (loading()) {
+    <div class="text-center p-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-2">Loading data...</p>
+    </div>
+  } @else {
+    <div>
+      @for (hero of heroData().heroes; track $index) {
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+              Hero Slot #{{ $index + 1 }}
+            </h5>
+            <button class="btn btn-sm btn-danger" (click)="removeHero(hero.id)">
+              <fa-icon [icon]="iconSvc.getIcon('fas', 'trash')" />
+              Remove
+            </button>
+          </div>
+          <div class="card-body row g-3">
+
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label fw-bold">Title <span class="text-muted">(Optional)</span></label>
+                <input type="text" class="form-control" [value]="hero.title" name="title-{{hero.id}}" placeholder="Hero Title (Max 100 characters)">
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Description <span class="text-muted">(Optional)</span></label>
+                <textarea class="form-control" [value]="hero.description" name="desc-{{hero.id}}" placeholder="Brief description (Max 500 characters)"></textarea>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Image URL</label>
+              <input type="text" class="form-control" [value]="hero.url" name="url-{{hero.id}}" placeholder="Enter custom URL or select file" readonly>
+              <button class="btn btn-primary mt-3" type="button" (click)="openFileSelector(hero)">
+                <fa-icon [icon]="iconSvc.getIcon('fas', 'folder-open')" />
+                Select File
+              </button>
+
+              @if (hero.url) {
+                <div class="image-preview mt-3">
+                  <label class="form-label fw-bold">Image Preview</label>
+                  <div class="d-flex justify-content-center">
+                    <img [src]="hero.url" alt="Hero Image Preview" class="img-fluid border rounded" style="max-height: 200px; object-fit: contain;">
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+      <div class="d-flex justify-content-between mt-4">
+        <button class="btn btn-success" (click)="addNewHero()" [disabled]="heroData().heroes.length >= maxHeroes">
+          <fa-icon [icon]="iconSvc.getIcon('fas', 'plus-circle')" /> Add New Hero ({{ heroData().heroes.length }}/{{ maxHeroes }})
+        </button>
+        @if (heroData().heroes.length > 0) {
+          <button class="btn btn-primary" (click)="saveHeroData()" [disabled]="loading()">
+            <fa-icon [icon]="iconSvc.getIcon('fas', 'save')" /> Save All Heroes
+          </button>
+        }
+      </div>
+    </div>
+  }
+</div>

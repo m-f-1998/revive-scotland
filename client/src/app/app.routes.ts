@@ -5,6 +5,8 @@ import { ErrorComponent } from "./user/error/error.component"
 import { DashboardComponent } from "./admin/dashboard/dashboard.component"
 import { FileExplorerComponent } from "./admin/file-explorer/file-explorer.component"
 import { authGuard } from "../guards/auth.guard"
+import { HeroEditorComponent } from "./admin/hero-editor/hero-editor.component"
+import { EventEditorComponent } from "./admin/event-editor/event-editor.component"
 
 export const routes: Routes = [
   {
@@ -30,6 +32,14 @@ export const routes: Routes = [
       {
         path: "fileExplorer",
         component: FileExplorerComponent
+      },
+      {
+        path: "heroEditor",
+        component: HeroEditorComponent
+      },
+      {
+        path: "eventEditor",
+        component: EventEditorComponent
       }
     ],
     canActivate: [ authGuard ]

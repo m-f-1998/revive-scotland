@@ -55,6 +55,30 @@ export class ApiService {
     } )
   }
 
+  public delete ( path: string, body: any = { }, headers: HttpHeaders = new HttpHeaders ( ) ) {
+    const address = ( isDevMode ( ) ? "http://localhost:3000" : "" ) + path
+    let httpHeaders = headers
+
+    if ( !( body instanceof FormData ) ) {
+      httpHeaders = httpHeaders.append ( "Content-Type", "application/json" )
+    }
+
+    return new Promise ( ( resolve, reject ) => {
+      this.httpClient.delete ( address, {
+        headers: httpHeaders,
+        body: body,
+        responseType: "json"
+      } as object ).subscribe ( {
+        next: response => {
+          resolve ( this.parseObj ( response ) )
+        },
+        error: error => {
+          reject ( error )
+        }
+      } )
+    } )
+  }
+
   private parseObj ( obj: any ): any {
     const res = obj
     if ( res instanceof Object ) {
