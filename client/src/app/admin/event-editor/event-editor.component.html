@@ -1,1 +1,46 @@
 <app-admin-navbar />
+<div class="container my-4">
+  <h2 class="mb-4">
+    <fa-icon [icon]="iconSvc.getIcon('fas', 'calendar-alt')" />
+    Event Editor
+  </h2>
+  <hr>
+
+  @if (loading()) {
+    <div class="text-center p-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-2">Loading data...</p>
+    </div>
+  } @else {
+    <div>
+      @for (event of eventData().events; track $index) {
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+              {{ eventForm()[$index].model.title || `Event #${$index + 1}` }}
+            </h5>
+            <button class="btn btn-sm btn-danger" (click)="removeEvent(event.id)">
+              <fa-icon [icon]="iconSvc.getIcon('fas', 'trash')" />
+              Remove
+            </button>
+          </div>
+          <div class="card-body row g-3">
+            <formly-form [form]="eventForm()[$index].form" [model]="eventForm()[$index].model" [fields]="eventForm()[$index].fields" />
+          </div>
+        </div>
+      }
+      <div class="d-flex justify-content-between mt-4">
+        <button class="btn btn-success" (click)="addNewEvent()">
+          <fa-icon [icon]="iconSvc.getIcon('fas', 'plus-circle')" /> Add New Event
+        </button>
+        @if (eventData().events.length > 0) {
+          <button class="btn btn-primary" (click)="saveEventData()" [disabled]="loading()">
+            <fa-icon [icon]="iconSvc.getIcon('fas', 'save')" /> Save All Events
+          </button>
+        }
+      </div>
+    </div>
+  }
+</div>

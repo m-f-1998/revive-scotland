@@ -4,11 +4,13 @@ import type { Request, Response } from "express"
 import { router as analyticsRouter } from "./admin/analytics.js"
 import { router as fileExplorerRouter } from "./admin/fileExplorer.js"
 import { router as heroEditorRouter } from "./admin/heroEditor.js"
+import { router as eventsRouter } from "./admin/events.js"
 
 export const router: Router = Router ( )
 router.use ( "/analytics", analyticsRouter )
 router.use ( "/file-explorer", fileExplorerRouter )
 router.use ( "/hero-editor", heroEditorRouter )
+router.use ( "/events", eventsRouter )
 
 import admin, { ServiceAccount } from "firebase-admin"
 import serviceAccount from "../revive-scotland-firebase.json" with { type: "json" }

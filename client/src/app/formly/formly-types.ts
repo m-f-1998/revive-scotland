@@ -37,3 +37,8 @@ export interface FormlyText extends FormlyProps {
   rows?: number
   includeMaxDescription?: boolean
 }
+
+export interface FormlyDate extends FormlyProps {
+  minDate?: string
+  maxDate?: string
+}

@@ -1,6 +1,9 @@
 <app-admin-navbar />
 <div class="container my-4">
-  <h2 class="mb-4">🖼️ Hero Image Editor</h2>
+  <h2 class="mb-4">
+    <fa-icon [icon]="iconSvc.getIcon('fas', 'image')" />
+    Hero Image Editor
+  </h2>
   <formly-form [form]="form" [model]="model" [fields]="fields" />
   <p class="text-muted">Configure up to {{ maxHeroes }} hero images for this page, including optional titles and descriptions.</p>
   <hr>

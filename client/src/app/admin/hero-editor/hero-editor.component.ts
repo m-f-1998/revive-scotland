@@ -92,7 +92,7 @@ export class HeroEditorComponent implements OnInit {
       }
 
       // POST data to the new Firestore backend router
-      await this.apiSvc.delete ( `/api/admin/hero-editor/${this.model.pageID}`, this.heroData ( ), new HttpHeaders ( {
+      await this.apiSvc.delete ( `/api/admin/hero-editor/${this.model.pageID}`, { }, new HttpHeaders ( {
         "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || "" }`
       } ) )
       this.toastrSvc.success ( "Hero removed successfully!" )

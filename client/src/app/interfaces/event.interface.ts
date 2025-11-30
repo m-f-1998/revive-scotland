@@ -1,7 +1,7 @@
 import { FormlyFieldConfig } from "@ngx-formly/core"
 
 export interface Event {
-  id?: string
+  id: string
   title: string
   description: string
   location: string

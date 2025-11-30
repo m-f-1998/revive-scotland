@@ -1,0 +1,26 @@
+<div class="input-group">
+  @if (control) {
+    <input
+      [id]="(props.attributes?. [ 'id' ] || id || '').toString ( )"
+      maxlength="10"
+      class="form-control"
+      [class.is-invalid]="formControl.invalid && (formControl.touched || formControl.dirty)"
+      [class.readonly]="this.field.props?.readonly || false"
+      [minDate]="minDate()"
+      [maxDate]="maxDate()"
+      (closed)="formControl.markAsTouched()"
+      (click)="(this.field.props?.readonly || false) || d.isOpen() ? undefined : openPopup()"
+      [ngModel]="dateModel()"
+      (ngModelChange)="onDateChange($event)"
+      (input)="onDateInput($event)"
+      placeholder="dd/mm/yyyy"
+      name="d"
+      ngbDatepicker
+      #d="ngbDatepicker"
+      [readOnly]="this.field.props?.readonly || false">
+    <button [id]="id+'btn'" (click)="this.field.props?.readonly || false ? undefined : openPopup();" class="input-group-append btn btn-secondary calendar"
+      type="button" [class.iqx-invalid]="formControl.errors && showError" [disabled]="this.field.props?.readonly || false">
+      <fa-icon [icon]="iconSvc.getIcon('fas', 'calendar')" [fixedWidth]="true" />
+    </button>
+  }
+</div>

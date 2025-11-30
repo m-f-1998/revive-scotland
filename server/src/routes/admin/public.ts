@@ -46,7 +46,7 @@ router.get ( "/s/:id", async ( req: Request, res: Response ) => {
 
     if ( data?. [ "expiresAt" ] ) {
       const now = new Date ( )
-      const expiry = data [ "expiresAt" ].toDate () // Firestore Timestamp conversion
+      const expiry = data [ "expiresAt" ].toDate ( ) // Firestore Timestamp conversion
       if ( now > expiry ) {
         res.status ( 410 ).send ( "This link has expired." )
         return
