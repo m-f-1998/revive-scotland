@@ -12,13 +12,15 @@ import { AuthService } from "../../services/auth.service"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
 import { FormGroup } from "@angular/forms"
 import { FormlyService } from "../../services/formly.service"
+import { AdminFooterComponent } from "../footer/footer.component"
 
 @Component ( {
   selector: "app-admin-hero-editor",
   imports: [
     AdminNavbarComponent,
     FaIconComponent,
-    FormlyForm
+    FormlyForm,
+    AdminFooterComponent
   ],
   templateUrl: "./hero-editor.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush

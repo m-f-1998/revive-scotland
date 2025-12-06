@@ -2,10 +2,12 @@
   <input
     type="text"
     [formControl]="inputControl"
+    [class.is-invalid]="formControl.invalid && (formControl.touched || formControl.dirty)"
     [id]="id"
+    [required]="props.required || false"
     [placeholder]="props.placeholder || 'Search for an address...'"
     class="w-100 form-control"
-    (input)="searchAddress()">
+    (input)="searchAddress($event.target.value)">
 
   @if (searchResults().length > 0) {
     <div class="mt-3 w-100">
@@ -21,5 +23,9 @@
       <fa-icon [icon]="iconSvc.getIcon('fas', 'spinner')" animation="spin" />
       Loading...
     </div>
+  }
+
+  @if (formControl.invalid && (formControl.dirty || formControl.touched)) {
+    <formly-validation-message [field]="field" class="invalid-feedback ng-star-inserted" />
   }
 </div>

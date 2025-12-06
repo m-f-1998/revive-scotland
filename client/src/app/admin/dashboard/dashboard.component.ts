@@ -9,6 +9,7 @@ import { AnalyticsService } from "../../services/analytics.service"
 import { ChartData, ChartOptions } from "chart.js"
 import { DecimalPipe } from "@angular/common"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
+import { AdminFooterComponent } from "../footer/footer.component"
 
 @Component ( {
   selector: "app-admin-dashboard",
@@ -16,7 +17,8 @@ import { ToastrService } from "@m-f-1998/ngx-toastr"
     AdminNavbarComponent,
     FaIconComponent,
     BaseChartDirective,
-    DecimalPipe
+    DecimalPipe,
+    AdminFooterComponent
   ],
   templateUrl: "./dashboard.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush

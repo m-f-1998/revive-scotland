@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, signal, WritableSignal, inject } from "@angular/core"
+import { Component, ChangeDetectionStrategy, signal, WritableSignal, inject, OnInit } from "@angular/core"
 import { FormControl, FormGroup, ReactiveFormsModule } from "@angular/forms"
 import { FieldType, FormlyFieldConfig, FormlyModule } from "@ngx-formly/core"
 import { NominatimResult } from "./address-lookup.interface"
@@ -18,12 +18,10 @@ import { FormlyService } from "../../services/formly.service"
   templateUrl: "./address-lookup.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
-export class AddressAutocompleteComponent extends FieldType<FormlyFieldConfig> {
+export class AddressAutocompleteComponent extends FieldType<FormlyFieldConfig> implements OnInit {
   public selectAddressForm: FormGroup = new FormGroup ( { } )
   public selectAddressFields: FormlyFieldConfig [ ] = [ ]
   public selectAddressModel: any = { }
-
-  public inputControl = new FormControl ( this.model?.formattedAddress || "", { nonNullable: true } )
 
   public searchResults: WritableSignal<NominatimResult[]> = signal ( [] )
   public loading: WritableSignal<boolean> = signal ( false )
@@ -37,9 +35,6 @@ export class AddressAutocompleteComponent extends FieldType<FormlyFieldConfig> {
 
   public constructor ( ) {
     super ( )
-    if ( this.model?.formattedAddress ) {
-      this.inputControl.setValue ( this.model.formattedAddress )
-    }
     this.selectAddressFields = [
       this.formlySvc.SelectInput ( "addressSelection", {
         label: "Autocomplete Results",
@@ -55,11 +50,21 @@ export class AddressAutocompleteComponent extends FieldType<FormlyFieldConfig> {
     ]
   }
 
-  public searchAddress ( ) {
+  public get inputControl ( ): FormControl {
+    return this.formControl as FormControl
+  }
+
+  public ngOnInit ( ): void {
+    const modelValue = this.formControl?.value || ""
+    this.inputControl.setValue ( modelValue )
+  }
+
+  public searchAddress ( value?: string ): void {
     clearTimeout ( this.debounceTimer )
     const query = this.inputControl.value.trim ( )
 
     this.formControl.setValue ( null )
+    this.inputControl.setValue ( value ?? null )
 
     if ( query.length < 3 ) {
       this.searchResults.set ( [ ] )
@@ -85,6 +90,11 @@ export class AddressAutocompleteComponent extends FieldType<FormlyFieldConfig> {
         }
 
         const results: NominatimResult [ ] = await response.json ( )
+        if ( Array.isArray ( results ) && ( results.length === 1 && results [ 0 ].display_name === this.inputControl.value ) ) {
+          this.selectAddress ( results [ 0 ] )
+          return
+        }
+
         this.searchResults.set ( results )
         this.selectAddressFields [ 0 ].props = {
           ...this.selectAddressFields [ 0 ].props,
@@ -108,21 +118,23 @@ export class AddressAutocompleteComponent extends FieldType<FormlyFieldConfig> {
 
   public selectAddress ( result: NominatimResult ) {
     this.inputControl.setValue ( result.display_name )
+    this.inputControl.markAsTouched ( )
+    this.inputControl.markAsDirty ( )
     this.searchResults.set ( [ ] )
 
-    const address = result.address
+    // const address = result.address
 
-    const newModel = {
-      formattedAddress: result.display_name,
-      street: `${address.house_number ? address.house_number + " " : ""}${address.road || ""}`,
-      city: address.city || address.town || address.village || "",
-      state: address.state || "",
-      zip: address.postcode || "",
-      country: address.country || "",
-      latitude: result.lat,
-      longitude: result.lon,
-    }
+    // const newModel = {
+    //   formattedAddress: result.display_name,
+    //   street: `${address.house_number ? address.house_number + " " : ""}${address.road || ""}`,
+    //   city: address.city || address.town || address.village || "",
+    //   state: address.state || "",
+    //   zip: address.postcode || "",
+    //   country: address.country || "",
+    //   latitude: result.lat,
+    //   longitude: result.lon,
+    // }
 
-    this.formControl.setValue ( newModel )
+    this.formControl.setValue ( result.display_name )
   }
 }

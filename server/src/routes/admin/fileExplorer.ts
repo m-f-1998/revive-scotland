@@ -401,7 +401,13 @@ router.get ( "/share-url", async ( req: Request, res: Response ) => {
   }
 
   // Default to 1 day expiry, but could be passed from client
-  const expiresIn = Number ( req.query?. [ "expiresIn" ] ) || 86400 // 24 hours
+  let expiresIn = Number ( req.query?. [ "expiresIn" ] )
+  if ( isNaN ( expiresIn ) || expiresIn === undefined ) {
+    expiresIn = 86400 // 24 hours default
+  }
+  if ( expiresIn === 0 ) {
+    expiresIn = 0 // Permanent link
+  }
 
   try {
     const shareId = randomUUID ( )
@@ -548,3 +554,30 @@ router.get ( "/view-url", async ( req: Request, res: Response ) => {
     res.status ( 500 ).json ( "Failed to generate URL." )
   }
 } )
+
+export const cleanupSharedLinks = async ( ) => {
+  try {
+    const { getFirestore } = await import ( "../admin.js" )
+    const db = getFirestore ( )
+    const now = new Date ( )
+    const snapshot = await db.collection ( "shared_links" )
+      .where ( "expiresAt", "<=", now )
+      .get ( )
+
+    const batch = db.batch ( )
+    snapshot.forEach ( doc => {
+      batch.delete ( doc.ref )
+    } )
+
+    await batch.commit ( )
+    console.log ( `Cleaned up ${snapshot.size} expired shared links.` )
+  } catch ( error ) {
+    console.error ( "Error cleaning up shared links:", error )
+  }
+}
+
+// Schedule cleanup every hour
+setInterval ( cleanupSharedLinks, 60 * 60 * 1000 ) // Every hour
+
+// Initial cleanup on startup
+cleanupSharedLinks ( )

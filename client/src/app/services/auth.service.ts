@@ -4,6 +4,7 @@ import { Router } from "@angular/router"
 import { FirebaseApp, initializeApp } from "firebase/app"
 import { Auth, getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut, User } from "firebase/auth"
 import { environment } from "@revive/src/environments/environments"
+import { ToastrService } from "@m-f-1998/ngx-toastr"
 
 @Injectable ( {
   providedIn: "root"
@@ -17,6 +18,7 @@ export class AuthService {
   private currentUser$: WritableSignal<User | null> = signal ( null )
   private provider = new GoogleAuthProvider ( )
   private loading$: WritableSignal<boolean> = signal ( true )
+  private readonly toastrSvc: ToastrService = inject ( ToastrService )
 
   public get currentUser ( ) {
     return this.currentUser$.asReadonly ( )
@@ -29,7 +31,7 @@ export class AuthService {
   public async login ( ) {
     try {
       const userCredential = await signInWithPopup ( this.auth, this.provider )
-      await this.apiSvc.get ( "/api/admin/role", { uid: userCredential.user.uid } )
+      await this.apiSvc.get ( "/api/admin/newSession", { uid: userCredential.user.uid } )
       await this.apiSvc.get ( "/api/admin/isAdmin", { uid: userCredential.user.uid } )
       return userCredential.user
     } catch {
@@ -40,6 +42,10 @@ export class AuthService {
   }
 
   public logout ( ) {
+    this.apiSvc.get ( "/api/admin/logout", { uid: this.currentUser$ ( )?.uid || "" } ).catch ( ( ) => {
+      // Ignore errors during logout
+    } )
+    this.currentUser$.set ( null )
     return signOut ( this.auth )
   }
 
@@ -66,9 +72,22 @@ export class AuthService {
 
     this.auth = dynamicInjector.get ( FIREBASE_AUTH )
 
-    onAuthStateChanged ( this.auth, user => {
-      this.currentUser$.set ( user ) // Will be null if not logged in
-      this.loading$.set ( false )
+    onAuthStateChanged ( this.auth, async user => {
+      // Check if the user session is still valid on the server
+      try {
+        if ( user ) {
+          await this.apiSvc.get ( "/api/admin/verify", { uid: user?.uid || "" } )
+          this.currentUser$.set ( user ) // Will be null if not logged in
+          this.loading$.set ( false )
+        } else {
+          this.currentUser$.set ( null )
+          this.loading$.set ( false )
+        }
+      } catch {
+        this.toastrSvc.error ( "Session has expired. Please log in again." )
+        this.logout ( )
+        this.router.navigate ( [ "/" ] )
+      }
     } )
   }
 }

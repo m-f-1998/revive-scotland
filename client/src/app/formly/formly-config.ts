@@ -31,7 +31,7 @@ export class FormlyConfig implements ConfigOption {
   ]
 
   public validationMessages = [
-    { name: "required", message: "This field is Required" },
+    { name: "required", message: "This Field is Required" },
     { name: "minLength", message: ( _: any, field: FormlyFieldConfig ) => {
       return `Should have a minimum of ${field.props?.minLength ?? 0} characters.`
     } },

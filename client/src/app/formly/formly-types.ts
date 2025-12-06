@@ -39,6 +39,6 @@ export interface FormlyText extends FormlyProps {
 }
 
 export interface FormlyDate extends FormlyProps {
-  minDate?: string
-  maxDate?: string
+  minDate?: Date
+  maxDate?: Date
 }

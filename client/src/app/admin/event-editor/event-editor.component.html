@@ -17,17 +17,25 @@
     <div>
       @for (event of eventData().events; track $index) {
         <div class="card mb-4 shadow-sm">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-              {{ eventForm()[$index].model.title || `Event #${$index + 1}` }}
-            </h5>
+          <div class="card-header d-flex justify-content-between align-items-center" (click)="isCollapsed = !isCollapsed" style="cursor: pointer;">
+            <div class="d-flex flex-row">
+              @if (isCollapsed) {
+                <fa-icon [icon]="iconSvc.getIcon('fas', 'chevron-circle-down')" class="me-2" />
+              } @else {
+                <fa-icon [icon]="iconSvc.getIcon('fas', 'chevron-circle-up')" class="me-2" />
+              }
+              <h5 class="mb-0">
+                {{ eventForm()[$index].model.title || `Event #${$index + 1}` }}
+              </h5>
+            </div>
             <button class="btn btn-sm btn-danger" (click)="removeEvent(event.id)">
               <fa-icon [icon]="iconSvc.getIcon('fas', 'trash')" />
-              Remove
             </button>
           </div>
-          <div class="card-body row g-3">
-            <formly-form [form]="eventForm()[$index].form" [model]="eventForm()[$index].model" [fields]="eventForm()[$index].fields" />
+          <div [ngbCollapse]="isCollapsed">
+            <div class="card-body row g-3">
+              <formly-form [form]="eventForm()[$index].form" [model]="eventForm()[$index].model" [fields]="eventForm()[$index].fields" />
+            </div>
           </div>
         </div>
       }
@@ -36,7 +44,7 @@
           <fa-icon [icon]="iconSvc.getIcon('fas', 'plus-circle')" /> Add New Event
         </button>
         @if (eventData().events.length > 0) {
-          <button class="btn btn-primary" (click)="saveEventData()" [disabled]="loading()">
+          <button class="btn btn-primary" (click)="saveEventData()" [disabled]="loading() || someFormInvalid()">
             <fa-icon [icon]="iconSvc.getIcon('fas', 'save')" /> Save All Events
           </button>
         }
@@ -44,3 +52,4 @@
     </div>
   }
 </div>
+<app-admin-footer />

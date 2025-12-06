@@ -67,22 +67,24 @@ router.post ( "/", checkFirebaseAuth, async ( req: Request, res: Response ) => {
     webpageUrl?: string
 
     contactFormFields?: any [ ]
-  } ) => ( {
-    id: event.id,
-    title: String ( event.title || "" ).substring ( 0, 100 ),
-    description: String ( event.description || "" ).substring ( 0, 500 ),
-    location: String ( event.location || "" ).substring ( 0, 200 ),
-    imageUrl: event.imageUrl ? String ( event.imageUrl ).trim ( ) : undefined,
-    startDate: new Date ( event.startDate ),
-    endDate: new Date ( event.endDate ),
+  } ) => {
+    return {
+      id: event.id,
+      title: String ( event.title || "" ).substring ( 0, 100 ),
+      description: String ( event.description || "" ).substring ( 0, 500 ),
+      location: String ( event.location || "" ).substring ( 0, 200 ),
+      imageUrl: event.imageUrl ? String ( event.imageUrl ).trim ( ) : undefined,
+      startDate: event.startDate,
+      endDate: event.endDate,
 
-    actionType: event.actionType === "contact" ? "contact" : "webpage",
-    webpageUrl: event.actionType === "webpage" && event.webpageUrl ? String ( event.webpageUrl ).trim ( ) : undefined,
+      actionType: event.actionType === "contact" ? "contact" : "webpage",
+      webpageUrl: event.actionType === "webpage" && event.webpageUrl ? String ( event.webpageUrl ).trim ( ) : undefined,
 
-    contactFormFields: event.actionType === "contact" && Array.isArray ( event.contactFormFields )
-      ? event.contactFormFields
-      : [ ]
-  } ) )
+      contactFormFields: event.actionType === "contact" && Array.isArray ( event.contactFormFields )
+        ? event.contactFormFields
+        : [ ]
+    }
+  } )
 
   try {
     const eventsCollection = getFirestore ( ).collection ( "events" )

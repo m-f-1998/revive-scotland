@@ -38,7 +38,64 @@ router.use ( rateLimit ( {
   message: "Too many requests from this IP, please try again later."
 } ) )
 
-router.get ( "/role", async ( req: Request, res: Response ) => {
+router.get ( "/logout", async ( req: Request, res: Response ) => {
+  const uid = req.query [ "uid" ] as string
+
+  if ( !uid ) {
+    return res.status ( 400 ).json ( { error: "Missing uid parameter" } )
+  }
+
+  try {
+    await admin.auth ( ).revokeRefreshTokens ( uid )
+
+    const firestore = getFirestore ( ).collection ( "users" ).doc ( uid )
+    await firestore.update ( {
+      sessionExpiry: admin.firestore.FieldValue.delete ( )
+    } )
+
+    return res.status ( 200 ).json ( { message: "User logged out successfully" } )
+  } catch ( error ) {
+    console.error ( "Error logging out user:", error )
+    return res.status ( 500 ).json ( { error: "Internal server error" } )
+  }
+} )
+
+router.get ( "/verify", async ( req: Request, res: Response ) => {
+  const uid = req.query [ "uid" ] as string
+
+  if ( !uid ) {
+    return res.status ( 400 ).json ( { error: "Missing uid parameter" } )
+  }
+
+  try {
+    const firestore = getFirestore ( ).collection ( "users" ).doc ( uid )
+    const doc = await firestore.get ( )
+
+    if ( !doc.exists ) {
+      return res.status ( 404 ).json ( { error: "User session not found" } )
+    }
+
+    const data = doc.data ( )
+    const sessionExpiry: admin.firestore.Timestamp = data?. [ "sessionExpiry" ]
+
+    if ( !sessionExpiry ) {
+      // If doc found but no sessionExpiry, the session was revoked with Google
+      // Can assume a new session is being created
+      return res.status ( 200 ).json ( { message: "Session is valid" } )
+    }
+
+    if ( sessionExpiry.toDate ( ) < new Date ( ) ) {
+      return res.status ( 401 ).json ( { error: "Session has expired" } )
+    }
+
+    return res.status ( 200 ).json ( { message: "Session is valid" } )
+  } catch ( error ) {
+    console.error ( "Error verifying user session:", error )
+    return res.status ( 500 ).json ( { error: "Internal server error" } )
+  }
+} )
+
+router.get ( "/newSession", async ( req: Request, res: Response ) => {
   const uid = req.query [ "uid" ] as string
 
   if ( !uid ) {
@@ -59,6 +116,13 @@ router.get ( "/role", async ( req: Request, res: Response ) => {
     if ( !user.customClaims?. [ "role" ] || user.customClaims [ "role" ] !== role ) {
       await admin.auth ( ).setCustomUserClaims ( uid, { role } )
     }
+
+    // Store the Session Expiry time here in Firestore
+    const firestore = getFirestore ( ).collection ( "users" ).doc ( uid )
+    await firestore.set ( {
+      lastLogin: admin.firestore.FieldValue.serverTimestamp ( ),
+      sessionExpiry: admin.firestore.Timestamp.fromDate ( new Date ( Date.now ( ) + 7 * 24 * 60 * 60 * 1000 ) ) // 7 days
+    }, { merge: true } )
 
     return res.status ( 200 ).json ( { uid: user.uid, role } )
   } catch ( error ) {

@@ -10,13 +10,17 @@ import { FormlyService } from "../../services/formly.service"
 import { HttpHeaders } from "@angular/common/http"
 import { AuthService } from "../../services/auth.service"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
+import { NgbCollapse } from "@ng-bootstrap/ng-bootstrap"
+import { AdminFooterComponent } from "../footer/footer.component"
 
 @Component ( {
   selector: "app-admin-event-editor",
   imports: [
     AdminNavbarComponent,
     FaIconComponent,
-    FormlyForm
+    FormlyForm,
+    NgbCollapse,
+    AdminFooterComponent
   ],
   templateUrl: "./event-editor.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -25,6 +29,7 @@ export class EventEditorComponent implements OnInit {
   public loading: WritableSignal<boolean> = signal ( true )
   public eventForm: WritableSignal<Array<{ form: FormGroup; model: any; fields: FormlyFieldConfig [ ] }>> = signal ( [ ] )
   public eventData: WritableSignal<{ events: Event[] }> = signal ( { events: [ ] } )
+  public isCollapsed: boolean = false
 
   public readonly iconSvc: IconService = inject ( IconService )
   private readonly apiSvc: ApiService = inject ( ApiService )
@@ -67,17 +72,19 @@ export class EventEditorComponent implements OnInit {
     if ( this.loading ( ) ) return
     // Create the new event data from the forms
     const updatedEventData: { events: Event [ ] } = {
-      events: this.eventForm ( ).map ( ef => ( {
-        id: ef.model.id || `event-${Date.now ( )}-${Math.floor ( Math.random ( ) * 1000 )}`,
-        title: ef.model.title,
-        description: ef.model.description,
-        location: ef.model.location,
-        imageUrl: ef.model.imageUrl,
-        startDate: ef.model.startDate?.toISOString ( ) || null,
-        endDate: ef.model.endDate?.toISOString ( ) || null,
-        actionType: ef.model.actionType,
-        webpageUrl: ef.model.webpageUrl
-      } ) )
+      events: this.eventForm ( ).map ( ef => {
+        return {
+          id: ef.model.id || `event-${Date.now ( )}-${Math.floor ( Math.random ( ) * 1000 )}`,
+          title: ef.model.title,
+          description: ef.model.description,
+          location: ef.model?.location || "",
+          imageUrl: ef.model.imageUrl,
+          startDate: ef.model.startDate?.toISOString ( ) || null,
+          endDate: ef.model.endDate?.toISOString ( ) || null,
+          actionType: ef.model.actionType,
+          webpageUrl: ef.model.webpageUrl
+        }
+      } )
     }
 
     if ( updatedEventData.events.some ( e => !e.title ) ) {
@@ -118,12 +125,15 @@ export class EventEditorComponent implements OnInit {
     }
   }
 
+  public someFormInvalid ( ): boolean {
+    return this.eventForm ( ).some ( ef => ef.form.invalid )
+  }
+
   private async loadEventData ( ): Promise<void> {
     try {
       const events = ( await this.apiSvc.get ( "/api/admin/events" ) ) as { events: Event [ ] }
       this.eventData.set ( events )
       this.eventForm.set ( events.events.map ( event => {
-        console.log ( new Date ( event.startDate ), event.startDate )
         return {
           form: new FormGroup ( { } ),
           model: {
@@ -165,12 +175,14 @@ export class EventEditorComponent implements OnInit {
       this.formlySvc.DateInput ( "startDate", {
         label: "Start Date",
         placeholder: "Select start date",
-        required: true
+        required: true,
+        minDate: new Date ( )
       }, { } ),
       this.formlySvc.DateInput ( "endDate", {
         label: "End Date",
         placeholder: "Select end date",
-        required: true
+        required: true,
+        minDate: new Date ( )
       }, { } ),
       this.formlySvc.ImagePickerInput ( "imageUrl", {
         label: "Event Image",

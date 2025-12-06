@@ -125,7 +125,10 @@ export class ApiService {
       "dd/MM/yyyy",
       "yyyy-MM-dd HH:mm:ss",
       "yyyy-MM-dd HH:mm",
-      "yyyy-MM-dd HH:mm:ss.SSSSSS"
+      "yyyy-MM-dd HH:mm:ss.SSSSSS",
+      "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+      "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+      "yyyy-MM-dd'T'HH:mm:ss'Z'"
     ] ) {
       try {
         const res = parse ( value, format, new Date ( ) )
