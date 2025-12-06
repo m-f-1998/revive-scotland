@@ -117,43 +117,10 @@ export class FileExplorerModalComponent implements OnInit {
     }
 
     this.close ( this.model )
-
-    // this.loading.set ( true )
-    // this.closeModal ( )
-
-    // if ( !key.endsWith ( "/" ) ) { key += "/" }
-
-    // const fullKey = this.userS3Path + key
-
-    // try {
-    //   await this.apiSvc.post ( `${this.baseRoute}/create-folder`, {
-    //     key: fullKey
-    //   } )
-    //   this.listPath ( this.currentPath ( ) )
-    //   this.loading.set ( false )
-    // } catch ( err: any ) {
-    //   console.error ( "Create folder error:", err )
-    //   this.errorMessage.set ( `Failed to create folder: ${err.error?.message || err.message}` )
-    //   this.loading.set ( false )
-    // }
   }
 
   public deleteFileOrFolder ( ) {
-    // this.loading.set ( true )
-    // this.closeModal ( )
-
     this.close ( this.model )
-
-    // try {
-    //   await this.apiSvc.post ( `${this.baseRoute}/delete`, {
-    //     key: file.key,
-    //     isFolder: file.isFolder
-    //   } )
-    // } catch ( err: any ) {
-    //   console.error ( "Delete error:", err )
-    //   this.errorMessage.set ( `Failed to delete resource: ${err.error?.message || err.message}` )
-    //   this.loading.set ( false )
-    // }
   }
 
   public renameFileOrFolder ( ) {
@@ -163,29 +130,5 @@ export class FileExplorerModalComponent implements OnInit {
     }
 
     this.close ( this.model )
-    // this.loading.set ( true )
-    // this.closeModal ( )
-
-    // let finalNewRelativeKey = newRelativeKey.trim ( )
-
-    // if ( file.isFolder && !finalNewRelativeKey.endsWith ( "/" ) ) {
-    //   finalNewRelativeKey += "/"
-    // }
-
-    // const newKey = this.userS3Path + finalNewRelativeKey
-
-    // try {
-    //   await this.apiSvc.post ( `${this.baseRoute}/rename`, {
-    //     oldKey: file.key,
-    //     newKey: newKey,
-    //     isFolder: file.isFolder
-    //   } )
-    //   this.listPath ( this.currentPath ( ) )
-    //   this.loading.set ( false )
-    // } catch ( err: any ) {
-    //   console.error ( "Rename error:", err )
-    //   this.errorMessage.set ( `Failed to rename/move: ${err.error?.message || err.message}` )
-    //   this.loading.set ( false )
-    // }
   }
 }

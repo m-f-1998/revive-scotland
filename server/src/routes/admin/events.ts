@@ -27,7 +27,25 @@ router.get ( "/", async ( _req: Request, res: Response ) => {
       return res.json ( { events: [ ] } )
     }
 
-    return res.json ( doc.data ( ) )
+    const data = doc.data ( ) as { events: any [ ] } | undefined
+
+    if ( data && Array.isArray ( data.events ) ) {
+      const currentTime = new Date ( )
+
+      data.events = data.events.filter ( ( event: { endDate: string } ) => {
+        if ( typeof event.endDate === "string" ) {
+          const eventEndDate = new Date ( event.endDate )
+          if ( !isNaN ( eventEndDate.getTime ( ) ) ) {
+            return eventEndDate >= currentTime
+          }
+        }
+        return true
+      } )
+    }
+
+    await docRef.set ( data || { events: [ ] } )
+
+    return res.json ( data || { events: [ ] } )
   } catch ( error ) {
     console.error ( "Error fetching events data:", error )
     return res.status ( 500 ).send ( "Failed to fetch events configuration." )

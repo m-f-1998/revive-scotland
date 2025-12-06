@@ -58,8 +58,10 @@ export class FileExplorerComponent {
 
   public constructor ( ) {
     effect ( ( ) => {
-      this.listPath ( this.currentPath ( ) )
-      this.fetchQuota ( )
+      if ( this.authSvc.currentUser ( ) ) {
+        this.listPath ( this.currentPath ( ) )
+        this.fetchQuota ( )
+      }
     } )
   }
 
