@@ -36,7 +36,7 @@ export class FooterComponent {
         await this.authSvc.login ( )
         await this.router.navigate ( [ "/admin/dashboard" ] )
       } catch {
-        this.toastrSvc.error ( "Login failed. If you believe this is an error, please contact support." )
+        this.toastrSvc.error ( "Login Unauthorized" )
       }
     }
   }
