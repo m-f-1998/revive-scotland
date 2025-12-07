@@ -16,6 +16,7 @@ export class AuthService {
   private readonly injector: Injector = inject ( Injector )
 
   private currentUser$: WritableSignal<User | null> = signal ( null )
+  private profilePhoto$: WritableSignal<string | null> = signal ( null )
   private provider = new GoogleAuthProvider ( )
   private loading$: WritableSignal<boolean> = signal ( true )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
@@ -76,7 +77,10 @@ export class AuthService {
       // Check if the user session is still valid on the server
       try {
         if ( user ) {
-          await this.apiSvc.get ( "/api/admin/verify", { uid: user?.uid || "" } )
+          const res = await this.apiSvc.get ( "/api/admin/verify", { uid: user?.uid || "" } ) as { uid: string; role: string; profilePhoto: string | null }
+          if ( res.profilePhoto ) {
+            this.profilePhoto$.set ( res.profilePhoto )
+          }
           this.currentUser$.set ( user ) // Will be null if not logged in
           this.loading$.set ( false )
         } else {

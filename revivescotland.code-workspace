@@ -19,6 +19,8 @@
 			"**/*.cpuprofile": true,
 		},
 		"editor.defaultFormatter": "dbaeumer.vscode-eslint",
-		"editor.formatOnSave": true
+		"editor.formatOnSave": true,
+		"html.format.contentUnformatted": "",
+		"html.format.enable": false
 	}
 }

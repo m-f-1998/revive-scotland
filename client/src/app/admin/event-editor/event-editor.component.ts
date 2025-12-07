@@ -7,7 +7,7 @@ import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
 import { FormGroup } from "@angular/forms"
 import { ApiService } from "../../services/api.service"
 import { FormlyService } from "../../services/formly.service"
-import { HttpHeaders } from "@angular/common/http"
+import { HttpErrorResponse, HttpHeaders } from "@angular/common/http"
 import { AuthService } from "../../services/auth.service"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { NgbCollapse } from "@ng-bootstrap/ng-bootstrap"
@@ -82,7 +82,8 @@ export class EventEditorComponent implements OnInit {
           startDate: ef.model.startDate?.toISOString ( ) || null,
           endDate: ef.model.endDate?.toISOString ( ) || null,
           actionType: ef.model.actionType,
-          webpageUrl: ef.model.webpageUrl
+          webpageUrl: ef.model.webpageUrl,
+          contactFormFields: ef.model.contactFormFields || [ ]
         }
       } )
     }
@@ -99,8 +100,12 @@ export class EventEditorComponent implements OnInit {
       } ) )
       this.eventData.set ( updatedEventData )
       this.toastrSvc.success ( "Event data saved successfully!" )
-    } catch {
-      this.toastrSvc.error ( "Failed to save event data." )
+    } catch ( e: any ) {
+      if ( e instanceof HttpErrorResponse && e.error ) {
+        this.toastrSvc.error ( `Failed to save event data: ${e.error}` )
+      } else {
+        this.toastrSvc.error ( "Failed to save event data." )
+      }
     } finally {
       this.loading.set ( false )
     }
@@ -126,7 +131,9 @@ export class EventEditorComponent implements OnInit {
   }
 
   public someFormInvalid ( ): boolean {
-    return this.eventForm ( ).some ( ef => ef.form.invalid )
+    return this.eventForm ( ).some ( ef => {
+      return ef.form.invalid
+    } )
   }
 
   private async loadEventData ( ): Promise<void> {
@@ -207,11 +214,20 @@ export class EventEditorComponent implements OnInit {
         },
         expressions: {
           "props.required": ( formlyField: FormlyFieldConfig ) => formlyField.model.actionType === "webpage",
-          hide ( formlyField: FormlyFieldConfig ) {
-            return formlyField.model.actionType !== "webpage"
-          }
+          hide: ( formlyField: FormlyFieldConfig ) => formlyField.model.actionType !== "webpage"
         }
-      } )
+      } ),
+      {
+        key: "contactFormFields",
+        type: "repeat",
+        props: {
+          addText: "Add Field",
+        },
+        expressions: {
+          "props.required": ( formlyField: FormlyFieldConfig ) => ( formlyField.form?.value || { } ).actionType === "contact",
+          hide: ( formlyField: FormlyFieldConfig ) => ( formlyField.form?.value || { } ).actionType !== "contact"
+        }
+      }
     ]
   }
 }

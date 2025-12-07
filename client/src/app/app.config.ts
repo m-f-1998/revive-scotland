@@ -9,6 +9,7 @@ import { withFormlyBootstrap } from "@ngx-formly/bootstrap"
 import { FormlyConfig } from "./formly/formly-config"
 import { AuthService } from "./services/auth.service"
 import { provideCharts, withDefaultRegisterables } from "ng2-charts"
+import { environment } from "../environments/environments"
 
 const nonce = document.querySelector ( 'meta[name="csp-nonce"]' )?.getAttribute ( "content" )
 
@@ -41,7 +42,7 @@ const appConfig: ApplicationConfig = {
     } ),
     {
       provide: RECAPTCHA_V3_SITE_KEY,
-      useValue: "6LebYqIqAAAAAPIyOGWY_YD4i55xHdhpO9tOvK5r"
+      useValue: environment.recaptcha.siteKey
     }
   ]
 }

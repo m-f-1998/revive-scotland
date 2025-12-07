@@ -78,17 +78,23 @@ router.get ( "/verify", async ( req: Request, res: Response ) => {
     const data = doc.data ( )
     const sessionExpiry: admin.firestore.Timestamp = data?. [ "sessionExpiry" ]
 
+    const user = {
+      uid,
+      role: data?. [ "role" ] || "viewer",
+      profilePhoto: data?. [ "profilePhoto" ] || null
+    }
+
     if ( !sessionExpiry ) {
       // If doc found but no sessionExpiry, the session was revoked with Google
       // Can assume a new session is being created
-      return res.status ( 200 ).json ( { message: "Session is valid" } )
+      return res.status ( 200 ).json ( user )
     }
 
     if ( sessionExpiry.toDate ( ) < new Date ( ) ) {
       return res.status ( 401 ).json ( { error: "Session has expired" } )
     }
 
-    return res.status ( 200 ).json ( { message: "Session is valid" } )
+    return res.status ( 200 ).json ( user )
   } catch ( error ) {
     console.error ( "Error verifying user session:", error )
     return res.status ( 500 ).json ( { error: "Internal server error" } )
@@ -119,6 +125,18 @@ router.get ( "/newSession", async ( req: Request, res: Response ) => {
 
     // Store the Session Expiry time here in Firestore
     const firestore = getFirestore ( ).collection ( "users" ).doc ( uid )
+
+    // Get photoURL
+    const doc = await firestore.get ( )
+
+    if ( doc.exists ) {
+      if ( !( doc.data ( )?. [ "profilePhoto" ] || null ) ) {
+        await cacheProfileImage ( user.photoURL || "" )
+      }
+    } else {
+      await cacheProfileImage ( user.photoURL || "" )
+    }
+
     await firestore.set ( {
       lastLogin: admin.firestore.FieldValue.serverTimestamp ( ),
       sessionExpiry: admin.firestore.Timestamp.fromDate ( new Date ( Date.now ( ) + 7 * 24 * 60 * 60 * 1000 ) ) // 7 days
@@ -153,3 +171,9 @@ router.get ( "/isAdmin", async ( req: Request, res: Response ) => {
     return res.status ( 500 ).json ( { error: "Internal server error" } )
   }
 } )
+
+const cacheProfileImage = async ( url: string ) => {
+  const res = await fetch ( url )
+  const buffer = await res.arrayBuffer ( )
+  return Buffer.from ( buffer ).toString ( "base64" )
+}

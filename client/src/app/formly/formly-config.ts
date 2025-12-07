@@ -7,6 +7,7 @@ import { DatePickerComponent } from "./date-picker/date-picker.component"
 import { AddressAutocompleteComponent } from "./address-lookup/address-lookup.component"
 import { ValidWebPageURL } from "./validators/URL.validator"
 import { ImagePickerComponent } from "./image-picker/image-picker.component"
+import { RepeatFieldComponent } from "./repeat-formly-field/repeat-formly-field.component"
 
 @Injectable ( {
   providedIn: "root"
@@ -27,6 +28,10 @@ export class FormlyConfig implements ConfigOption {
       name: "image-picker",
       component: ImagePickerComponent,
       extends: "input"
+    },
+    {
+      name: "repeat",
+      component: RepeatFieldComponent,
     }
   ]
 

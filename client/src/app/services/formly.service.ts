@@ -39,6 +39,13 @@ export class FormlyService {
     return this.Input ( key, "email", props, expressions, focus )
   }
 
+  public TelInput ( key: string, props: FormlyProps = { }, expressions: FormlyExpressions = { }, focus: boolean = false ): FormlyFieldConfig {
+    expressions.validators = {
+      validation: [ "ValidPhoneNumber" ]
+    }
+    return this.Input ( key, "tel", props, expressions, focus )
+  }
+
   public CheckboxInput (
     key: string,
     props: FormlyProps = { },

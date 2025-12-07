@@ -72,37 +72,51 @@ router.post ( "/", checkFirebaseAuth, async ( req: Request, res: Response ) => {
   }
 
   // Sanitize and validate fields (e.g., ensure titles are short, dates are valid)
-  const sanitizedEvents = eventsData.events.map ( ( event: {
-    id: string
-    title: string
-    description: string
-    location: string
-    imageUrl?: string
-    startDate: Date
-    endDate: Date
+  let sanitizedEvents: any [ ] = [ ]
+  try {
+    sanitizedEvents = eventsData.events.map ( ( event: {
+      id: string
+      title: string
+      description: string
+      location: string
+      imageUrl?: string
+      startDate: Date
+      endDate: Date
 
-    actionType: "webpage" | "contact"
-    webpageUrl?: string
+      actionType: "webpage" | "contact"
+      webpageUrl?: string
 
-    contactFormFields?: any [ ]
-  } ) => {
-    return {
-      id: event.id,
-      title: String ( event.title || "" ).substring ( 0, 100 ),
-      description: String ( event.description || "" ).substring ( 0, 500 ),
-      location: String ( event.location || "" ).substring ( 0, 200 ),
-      imageUrl: event.imageUrl ? String ( event.imageUrl ).trim ( ) : undefined,
-      startDate: event.startDate,
-      endDate: event.endDate,
-
-      actionType: event.actionType === "contact" ? "contact" : "webpage",
-      webpageUrl: event.actionType === "webpage" && event.webpageUrl ? String ( event.webpageUrl ).trim ( ) : undefined,
-
-      contactFormFields: event.actionType === "contact" && Array.isArray ( event.contactFormFields )
-        ? event.contactFormFields
-        : [ ]
-    }
-  } )
+      contactFormFields?: any [ ]
+    } ) => {
+      const model: any = {
+        id: event.id,
+        title: String ( event.title || "" ).substring ( 0, 100 ),
+        description: String ( event.description || "" ).substring ( 0, 500 ),
+        location: String ( event.location || "" ).substring ( 0, 200 ),
+        imageUrl: event.imageUrl ? String ( event.imageUrl ).trim ( ) : undefined,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        actionType: event.actionType === "contact" ? "contact" : "webpage"
+      }
+      if ( model.actionType === "contact" ) {
+        if ( !Array.isArray ( event.contactFormFields ) || event.contactFormFields.length === 0 ) {
+          throw "Contact form events must have at least one contact form field."
+        }
+        model.contactFormFields = Array.isArray ( event.contactFormFields )
+          ? event.contactFormFields
+          : [ ]
+      }
+      if ( model.actionType === "webpage" ) {
+        if ( !event.webpageUrl ) {
+          throw "Webpage events must have a webpage URL."
+        }
+        model.webpageUrl = String ( event.webpageUrl ).trim ( )
+      }
+      return model
+    } )
+  } catch ( error ) {
+    return res.status ( 400 ).send ( error )
+  }
 
   try {
     const eventsCollection = getFirestore ( ).collection ( "events" )
