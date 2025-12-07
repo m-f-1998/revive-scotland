@@ -14,12 +14,13 @@ router.use ( "/events", eventsRouter )
 
 import admin, { ServiceAccount } from "firebase-admin"
 import { rateLimit } from "express-rate-limit"
-import { access } from "fs/promises"
+import { access, readFile } from "fs/promises"
 
 let serviceAccount: any
 try {
   await access ( "../revive-scotland-firebase.json" )
-  serviceAccount = ( await import ( "../revive-scotland-firebase.json", { assert: { type: "json" } } ) ).default
+  const json = await readFile ( "../revive-scotland-firebase.json", "utf-8" )
+  serviceAccount = JSON.parse ( json )
 } catch { }
 
 admin.initializeApp ( {
