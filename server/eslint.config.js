@@ -55,7 +55,8 @@ export default tseslint.config (
         {
           "ignore": [
             ".ts$",
-            ".js$"
+            ".js$",
+            ".json$"
           ], // Ignore unresolved imports that end with .ts or .js
         }
       ],
