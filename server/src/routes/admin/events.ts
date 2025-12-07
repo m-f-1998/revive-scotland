@@ -125,6 +125,27 @@ router.post ( "/", checkFirebaseAuth, async ( req: Request, res: Response ) => {
     // Save the entire object, overwriting previous data
     await docRef.set ( { events: sanitizedEvents } )
 
+    const shared_links = getFirestore ( ).collection ( "shared_links" )
+    const snapshot = await shared_links.where ( "type", "==", "hero_editor" ).get ( )
+
+    snapshot.forEach ( async doc => {
+      const id = doc.id
+      const expectedUrlEnding = `/api/public/s/${id}`
+      const isInHeroes = sanitizedEvents.some ( ( hero: any ) => {
+        return hero.imageUrl.endsWith ( expectedUrlEnding )
+      } )
+
+      const events = getFirestore ( ).collection ( "heroes" )
+      const eventsSnapshot = ( await events.doc ( "home" ).get ( ) ).data ( )?. [ "heroes" ] || [ ]
+      const isInEvents = eventsSnapshot.some ( ( hero: any ) => {
+        return hero.url && hero.url.endsWith ( expectedUrlEnding )
+      } )
+
+      if ( !isInHeroes && !isInEvents ) {
+        await shared_links.doc ( id ).delete ( )
+      }
+    } )
+
     return res.status ( 200 ).send ( { message: `Events data saved successfully.` } )
   } catch ( error ) {
     console.error ( "Error saving events data:", error )

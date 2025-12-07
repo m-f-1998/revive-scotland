@@ -88,8 +88,28 @@ router.post ( "/:pageId", checkFirebaseAuth, async ( req: Request, res: Response
     const heroesCollection = getFirestore ( ).collection ( "heroes" )
     const docRef = heroesCollection.doc ( pageID )
 
-    // Save the entire object, overwriting previous data
     await docRef.set ( { heroes: sanitizedHeroes } )
+
+    const shared_links = getFirestore ( ).collection ( "shared_links" )
+    const snapshot = await shared_links.where ( "type", "==", "hero_editor" ).get ( )
+
+    snapshot.forEach ( async doc => {
+      const id = doc.id
+      const expectedUrlEnding = `/api/public/s/${id}`
+      const isInHeroes = sanitizedHeroes.some ( ( hero: any ) => {
+        return hero.url.endsWith ( expectedUrlEnding )
+      } )
+
+      const events = getFirestore ( ).collection ( "events" )
+      const eventsSnapshot = ( await events.doc ( "default" ).get ( ) ).data ( )?. [ "events" ] || [ ]
+      const isInEvents = eventsSnapshot.some ( ( event: any ) => {
+        return event.imageUrl && event.imageUrl.endsWith ( expectedUrlEnding )
+      } )
+
+      if ( !isInHeroes && !isInEvents ) {
+        await shared_links.doc ( id ).delete ( )
+      }
+    } )
 
     return res.status ( 200 ).send ( { message: `Hero data for '${pageID}' saved successfully.` } )
   } catch ( error ) {

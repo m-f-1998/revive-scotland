@@ -1,3 +1,6 @@
+import { FormGroup } from "@angular/forms"
+import { FormlyFieldConfig } from "@ngx-formly/core"
+
 export interface HeroEntry {
   id: string
   url: string // The permanent/long-lived signed URL
@@ -6,5 +9,8 @@ export interface HeroEntry {
 }
 
 export interface PageHeroData {
-  heroes: HeroEntry [ ]
+  id: string
+  fields: FormlyFieldConfig [ ]
+  model: any
+  form: FormGroup
 }
