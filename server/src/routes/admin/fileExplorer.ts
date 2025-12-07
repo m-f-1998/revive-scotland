@@ -42,9 +42,6 @@ const s3Client = new S3Client ( {
 
 export const router = Router ( )
 
-// Apply auth middleware to all routes in this router
-router.use ( checkFirebaseAuth, addUserPath, validateS3Key )
-
 router.use ( rateLimit ( {
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 300, // limit each IP to 300 requests per windowMs
@@ -54,6 +51,9 @@ router.use ( rateLimit ( {
   }
 } ) )
 
+// Apply auth middleware to all routes in this router
+router.use ( checkFirebaseAuth, addUserPath, validateS3Key )
+
 /**
  * 1. NAVIGATE FOLDER STRUCTURE
  * Lists files and folders for a given path.
@@ -61,10 +61,10 @@ router.use ( rateLimit ( {
 router.get ( "/list", async ( req: Request, res: Response ) => {
   const userPath = req.user!.s3Path!
   // 'path' query param is relative to user's root (e.g., '/documents' or '/')
-  const relativePath = req.query [ "path" ] as string || "/"
+  const relativePath = req.query [ "path" ] || "/"
 
   // Ensure path doesn't try to go up (e.g. '../')
-  if ( relativePath.includes ( ".." ) ) {
+  if ( relativePath && ( typeof relativePath !== "string" || relativePath.includes ( ".." ) ) ) {
     res.status ( 400 ).json ( "Invalid path." )
     return
   }

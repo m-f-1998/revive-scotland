@@ -115,7 +115,8 @@ router.post ( "/", checkFirebaseAuth, async ( req: Request, res: Response ) => {
       return model
     } )
   } catch ( error ) {
-    return res.status ( 400 ).send ( error )
+    console.error ( "Error processing events data:", error )
+    return res.status ( 400 ).send ( "Error processing events data." )
   }
 
   try {

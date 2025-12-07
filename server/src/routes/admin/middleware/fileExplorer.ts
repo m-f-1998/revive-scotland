@@ -71,8 +71,8 @@ export const validateS3Key = ( req: Request, res: Response, next: NextFunction )
   }
 
   // The check for '..' is in the router, but adding a check here provides defense-in-depth.
-  const relativePath = req.query [ "path" ] as string
-  if ( relativePath && relativePath.includes ( ".." ) ) {
+  const relativePath = req.query [ "path" ]
+  if ( relativePath && ( typeof relativePath !== "string" || relativePath.includes ( ".." ) ) ) {
     res.status ( 400 ).send ( "Invalid path provided." )
     return
   }

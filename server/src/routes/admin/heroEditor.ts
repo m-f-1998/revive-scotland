@@ -38,7 +38,7 @@ router.get ( "/:pageId", async ( req: Request, res: Response ) => {
 
     return res.json ( doc.data ( ) )
   } catch ( error ) {
-    console.error ( `Error fetching hero data for ${pageID}:`, error )
+    console.error ( "Error fetching hero data:", error )
     return res.status ( 500 ).send ( "Failed to fetch hero configuration." )
   }
 } )
@@ -113,7 +113,7 @@ router.post ( "/:pageId", checkFirebaseAuth, async ( req: Request, res: Response
 
     return res.status ( 200 ).send ( { message: `Hero data for '${pageID}' saved successfully.` } )
   } catch ( error ) {
-    console.error ( `Error saving hero data for ${pageID}:`, error )
+    console.error ( "Error saving hero data", error )
     return res.status ( 500 ).send ( "Failed to save hero configuration." )
   }
 } )
@@ -137,7 +137,7 @@ router.delete ( "/:pageId", checkFirebaseAuth, async ( req: Request, res: Respon
 
     return res.status ( 200 ).send ( { message: `Hero data for '${pageID}' deleted successfully.` } )
   } catch ( error ) {
-    console.error ( `Error deleting hero data for ${pageID}:`, error )
+    console.error ( "Error deleting hero data:", error )
     return res.status ( 500 ).send ( "Failed to delete hero configuration." )
   }
 } )
