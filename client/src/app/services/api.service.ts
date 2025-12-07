@@ -8,18 +8,18 @@ import { parse } from "date-fns"
 export class ApiService {
   private readonly httpClient: HttpClient = inject ( HttpClient )
 
-  public get ( path: string, body: any = { },  ) {
+  public get ( path: string, body: any = { }, headers: HttpHeaders = new HttpHeaders ( ) ) {
     const address = ( isDevMode ( ) ? "http://localhost:3000" : "" ) + path
-    let headers = new HttpHeaders ( )
+    let httpHeaders = headers
 
     if ( !( body instanceof FormData ) ) {
-      headers = headers.append ( "Content-Type", "application/json" )
+      httpHeaders = httpHeaders.append ( "Content-Type", "application/json" )
     }
 
     return new Promise ( ( resolve, reject ) => {
       this.httpClient.get ( address, {
         params: body,
-        headers,
+        headers: httpHeaders,
         responseType: "json"
       } as object ).subscribe ( {
         next: response => {
@@ -32,17 +32,41 @@ export class ApiService {
     } )
   }
 
-  public post ( path: string, body: any = { } ) {
+  public post ( path: string, body: any = { }, headers: HttpHeaders = new HttpHeaders ( ) ) {
     const address = ( isDevMode ( ) ? "http://localhost:3000" : "" ) + path
-    let headers = new HttpHeaders ( )
+    let httpHeaders = headers
 
     if ( !( body instanceof FormData ) ) {
-      headers = headers.append ( "Content-Type", "application/json" )
+      httpHeaders = httpHeaders.append ( "Content-Type", "application/json" )
     }
 
     return new Promise ( ( resolve, reject ) => {
       this.httpClient.post ( address, body, {
-        headers,
+        headers: httpHeaders,
+        responseType: "json"
+      } as object ).subscribe ( {
+        next: response => {
+          resolve ( this.parseObj ( response ) )
+        },
+        error: error => {
+          reject ( error )
+        }
+      } )
+    } )
+  }
+
+  public delete ( path: string, body: any = { }, headers: HttpHeaders = new HttpHeaders ( ) ) {
+    const address = ( isDevMode ( ) ? "http://localhost:3000" : "" ) + path
+    let httpHeaders = headers
+
+    if ( !( body instanceof FormData ) ) {
+      httpHeaders = httpHeaders.append ( "Content-Type", "application/json" )
+    }
+
+    return new Promise ( ( resolve, reject ) => {
+      this.httpClient.delete ( address, {
+        headers: httpHeaders,
+        body: body,
         responseType: "json"
       } as object ).subscribe ( {
         next: response => {
@@ -101,7 +125,10 @@ export class ApiService {
       "dd/MM/yyyy",
       "yyyy-MM-dd HH:mm:ss",
       "yyyy-MM-dd HH:mm",
-      "yyyy-MM-dd HH:mm:ss.SSSSSS"
+      "yyyy-MM-dd HH:mm:ss.SSSSSS",
+      "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+      "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+      "yyyy-MM-dd'T'HH:mm:ss'Z'"
     ] ) {
       try {
         const res = parse ( value, format, new Date ( ) )

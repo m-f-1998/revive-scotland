@@ -1,0 +1,41 @@
+<div class="modal-header">
+  <h5 class="modal-title fw-bold">
+    @if (type === "delete") {
+      Delete Confirmation
+    } @else if (type === "rename") {
+      Rename
+    } @else if (type === "createFolder") {
+      Create New folder
+    }
+  </h5>
+  <button type="button" class="btn-close" (click)="dismiss()"></button>
+</div>
+<div class="modal-body">
+  @if (type === "delete" ) {
+    <p class="mb-0">
+      Are you sure you want to delete <span class="fw-bold text-danger">{{ name }}</span>?
+      This action is permanent and cannot be undone.
+      @if (isFolder) {
+        Note: This will recursively delete all contents of this folder.
+      }
+    </p>
+  } @else if (type === "rename") {
+    <formly-form [form]="form" [fields]="fields" [model]="model" />
+  } @else if (type === "createFolder") {
+    <formly-form [form]="form" [fields]="fields" [model]="model" />
+  }
+</div>
+<div class="modal-footer">
+  <button [class]="completeClass" (click)="completeAction()" [disabled]="type !== 'delete' && form.invalid">
+    @if (type === "delete") {
+      <fa-icon [icon]="iconSvc.getIcon('fas', 'trash')" />
+      Delete Permanently
+    } @else if (type === "rename") {
+      <fa-icon [icon]="iconSvc.getIcon('fas', 'edit')" />
+      Confirm
+    } @else if (type === "createFolder") {
+      <fa-icon [icon]="iconSvc.getIcon('fas', 'folder-plus')" />
+      Create
+    }
+  </button>
+</div>

@@ -1,0 +1,32 @@
+<div [class.is-invalid]="formControl.invalid && (formControl.touched || formControl.dirty)" class="card p-3 mb-3">
+  <div class="d-flex flex-row justify-content-between">
+    <h5 class="m-0 align-self-center">
+      Form Fields
+      @if (props.required) {
+        <span>*</span>
+      }
+    </h5>
+    <button type="button" class="btn btn-primary" (click)="addField()">
+      <fa-icon [icon]="iconSvc.getIcon('fas', 'plus')" /> Add Field
+    </button>
+  </div>
+  <hr />
+
+  @for (field of formControl.value || []; track $index) {
+    <div class="card mb-2 p-2">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          {{ getSummary(field) }}
+        </div>
+        <div class="d-flex flex-row gap-3">
+          <button type="button" class="btn btn-sm btn-primary" (click)="edit($index)">
+            <fa-icon [icon]="iconSvc.getIcon('fas', 'edit')" />
+          </button>
+          <button type="button" class="btn btn-sm btn-danger" (click)="removeField($index)">
+            <fa-icon [icon]="iconSvc.getIcon('fas', 'trash-alt')" />
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

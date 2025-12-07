@@ -21,6 +21,7 @@ export interface FormlyProps {
   placeholder?: string
   disableNext?: boolean
   disablePrevious?: boolean
+  options?: Array<{ label: string; value: any }>
   procedureOnStart?: string
   procedureOnFinish?: string
   hidden?: boolean
@@ -35,4 +36,9 @@ export interface FormlyText extends FormlyProps {
   minLength?: number
   rows?: number
   includeMaxDescription?: boolean
+}
+
+export interface FormlyDate extends FormlyProps {
+  minDate?: Date
+  maxDate?: Date
 }

@@ -1,10 +1,11 @@
-<app-slider [slides]="slides" />
+<app-navbar />
+<app-slider [defaultSlides]="slides" pageid="events" />
 @if (loading()) {
   <div class="d-flex flex-column align-items-center m-3">
     <fa-icon [icon]="iconSvc.getIcon('fas', 'spinner')" animation="spin" size="2x" class="mb-2" />
     Loading...
   </div>
-} @else if (events().length === 0 && questionnaires.length === 0) {
+} @else if (events().length === 0) {
   <div class="d-flex flex-column align-items-center m-3">
     <fa-icon [icon]="iconSvc.getIcon('fas', 'info-circle')" size="2x" class="mb-2" />
     <p>No Events Found</p>
@@ -12,15 +13,15 @@
   </div>
 } @else {
   <div class="m-3">
-    @for (event of questionnaires; track $index) {
+    @for (event of events(); track $index) {
       <div class="d-flex flex-row flex-wrap justify-content-center">
         <div class="card m-2 event-card">
           <img
-            [attr.src]="'/api/img/' + event.image + '?w=640&f=webp'"
+            [attr.src]="event.imageUrl"
             [attr.srcset]="
-              '/api/img/' + event.image + '?w=320&f=webp 320w, ' +
-              '/api/img/' + event.image + '?w=640&f=webp 640w, ' +
-              '/api/img/' + event.image + '?w=1024&f=webp 1024w'
+              event.imageUrl + '?w=320&f=webp 320w, ' +
+              event.imageUrl + '?w=640&f=webp 640w, ' +
+              event.imageUrl + '?w=1024&f=webp 1024w'
             "
             sizes="(max-width: 600px) 100vw, 600px"
             [attr.alt]="event.title || 'Event image'"
@@ -38,104 +39,29 @@
             <div class="card-text d-flex flex-column gap-2 mb-4">
               <div>
                 <fa-icon [icon]="iconSvc.getIcon('fas', 'calendar')" class="me-2" />
-                @if(dateSvc.sameDay(event.start, event.end)) {
-                  {{dateSvc.reformat(event.start, 'E do LLL yyyy h:mma')}} - {{dateSvc.reformat(event.end, 'h:mma')}}
+                @if(dateSvc.sameDay(event.startDate, event.endDate)) {
+                  {{this.dateSvc.reformat (event.startDate, 'E do LLL yyyy h:mma')}} - {{this.dateSvc.reformat (event.endDate, 'h:mma')}}
                 } @else {
-                  {{dateSvc.reformat(event.start, 'E do LLL yyyy')}} - {{dateSvc.reformat(event.end, 'E do LLL yyyy')}}
+                  {{this.dateSvc.reformat (event.startDate, 'E do LLL yyyy')}} - {{this.dateSvc.reformat (event.endDate, 'E do LLL yyyy')}}
                 }
               </div>
               <div>
                 <fa-icon [icon]="iconSvc.getIcon('fas', 'map-marker')" class="me-2" />
                 {{event.location}}
               </div>
-              @if (event.price) {
-                <div>
-                  <fa-icon [icon]="iconSvc.getIcon('fas', 'money-bill')" class="me-2" />
-                  £{{event.price}} approx.
-                </div>
-              }
             </div>
             <div class="d-flex gap-2">
-              <button (click)="openQuestionnaire(event)" class="btn btn-primary">
-                Express your interest...
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    }
-    @for (event of events(); track $index) {
-      <div class="d-flex flex-row flex-wrap justify-content-center">
-        <div class="card m-2 event-card">
-          <img
-            [attr.src]="'/api/img/' + event.logo.original.url + '?w=640&f=webp'"
-            [attr.srcset]="
-              '/api/img/' + event.logo.original.url + '?w=320&f=webp 320w, ' +
-              '/api/img/' + event.logo.original.url + '?w=640&f=webp 640w, ' +
-              '/api/img/' + event.logo.original.url + '?w=1024&f=webp 1024w'
-            "
-            sizes="(max-width: 600px) 100vw, 600px"
-            [attr.alt]="event.title || 'Event image'"
-            loading="lazy"
-            decoding="async"
-            class="card-img-top event-image"
-          />
-          <div class="card-body">
-            <div class="card-title">
-              <h4>{{event.name.text}}</h4>
-            </div>
-            <figcaption class="figure-caption mt-2 mb-3">
-              {{event.description.text}}
-            </figcaption>
-            <div class="card-text d-flex flex-column gap-2 mb-4">
-              <div>
-                <fa-icon [icon]="iconSvc.getIcon('fas', 'user')" class="me-2" />
-                Registered Places: {{event.ticket_classes[0].quantity_sold}}/{{event.capacity}}
-              </div>
-              <div>
-                <fa-icon [icon]="iconSvc.getIcon('fas', 'calendar')" class="me-2" />
-                @if(dateSvc.sameDay(event.start.local, event.end.local)) {
-                  {{this.dateSvc.reformat (event.start.local, 'E do LLL yyyy h:mma')}} - {{this.dateSvc.reformat (event.end.local, 'h:mma')}}
-                } @else {
-                  {{this.dateSvc.reformat (event.start.local, 'E do LLL yyyy')}} - {{this.dateSvc.reformat (event.end.local, 'E do LLL yyyy')}}
-                }
-              </div>
-              <div>
-                <fa-icon [icon]="iconSvc.getIcon('fas', 'map-marker')" class="me-2" />
-                @if (event.venue) {
-                  <a [href]="'https://www.google.com/maps/place/' + event.venue.latitude.toString() + ',' + event.venue.longitude.toString()" target="_blank">
-                    {{event.venue.name}}, {{event.venue.address.localized_address_display}}
-                  </a>
-                } @else {
-                  Online Event
-                }
-              </div>
-              @if (event.ticket_classes) {
-                @if (!event.ticket_classes[0].free) {
-                  <div>
-                    <fa-icon [icon]="iconSvc.getIcon('fas', 'money-bill')" class="me-2" />
-                    Price: {{event.ticket_classes[0].cost.display}}&nbsp;
-                    <i>(Online Booking Fee: {{event.ticket_classes[0].fee.display}})</i>
-                  </div>
-                }
+              @if (event.actionType === 'webpage' && event.webpageUrl) {
+                <a [href]="event.webpageUrl" class="btn btn-primary" target="_blank">
+                  <fa-icon [icon]="iconSvc.getIcon('fas', 'info-circle')" />
+                  More Info
+                </a>
+              } @else if (event.actionType === 'contact') {
+                <button type="button" class="btn btn-primary" (click)="openContactForm(event)">
+                  <fa-icon [icon]="iconSvc.getIcon('fas', 'envelope')" />
+                  Contact Organiser
+                </button>
               }
-              @if (event.refund_policy) {
-                <div>
-                  <fa-icon [icon]="iconSvc.getIcon('fas', 'info-circle')" class="me-2" />Refund Policy:&nbsp;
-                  <small class="text-muted" [innerHTML]="event.refund_policy.refund_policy_description"></small>
-                </div>
-              }
-            </div>
-            <div class="mb-3 d-flex flex-column gap-2">
-              <small class="text-muted">
-                Eventbrite is a third-party platform. Please refer to the event page for the most up-to-date information.
-                Price shown above does not include Eventbrite admin fee. This fee is non-refundable.
-              </small>
-            </div>
-            <div class="d-flex gap-2">
-              <a [href]="event.url" class="btn btn-primary" target="_blank">
-                Go To Event...
-              </a>
             </div>
           </div>
         </div>

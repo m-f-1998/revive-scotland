@@ -1,40 +1,51 @@
 import { inject, Injectable } from "@angular/core"
 import { ApiService } from "./api.service"
 
+export interface ReviveEvent {
+  id: string
+  title: string
+  description: string
+  location: string
+  imageUrl?: string
+  startDate: Date
+  endDate: Date
+
+  actionType: "webpage" | "contact"
+  webpageUrl?: string
+
+  contactFormFields?: any [ ]
+}
+
 @Injectable ( {
   providedIn: "root"
 } )
 export class EventsService {
-  private eventbrite: Array<any> | undefined
+  private events: Array<ReviveEvent> | undefined
+
   private readonly apiSvc: ApiService = inject ( ApiService )
 
-  public async getEvents ( ): Promise<any> {
-    if ( !this.eventbrite ) {
+  public async getEvents ( ): Promise<ReviveEvent [ ]> {
+    if ( !this.events ) {
       await this.initialize ( )
     }
-    return this.eventbrite
+    return this.events!
   }
 
-  public async getNextEvent ( ): Promise<any> {
-    if ( !this.eventbrite ) {
+  public async getNextEvent ( ): Promise<ReviveEvent | undefined> {
+    if ( !this.events ) {
       await this.initialize ( )
     }
-    return this.eventbrite! [ 0 ]
+    return this.events! [ 0 ]
   }
 
-  private initialize ( ) {
-    return this.apiSvc.get ( "/api/events" ).then ( ( response: any ) => {
-      this.eventbrite = response.filter ( ( x: any ) => {
-        return x.status === "live"
-      } ).sort ( ( a: any, b: any ) => {
-        if ( a.start.local > b.start.local ) {
-          return 1
-        }
-        if ( a.start.local < b.start.local ) {
-          return -1
-        }
-        return 0
+  private async initialize ( ) {
+    try {
+      const response = await this.apiSvc.get ( "/api/admin/events" ) as { events: ReviveEvent [ ] }
+      this.events = ( response.events || [ ] ).sort ( ( a, b ) => {
+        return new Date ( a.startDate ).getTime ( ) - new Date ( b.startDate ).getTime ( )
       } )
-    } )
+    } catch {
+      this.events = [ ]
+    }
   }
 }

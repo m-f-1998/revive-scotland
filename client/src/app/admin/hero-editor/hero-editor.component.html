@@ -1,0 +1,49 @@
+<app-admin-navbar />
+<div class="container my-4" style="min-height: 80vh;">
+  <h2 class="mb-4">
+    <fa-icon [icon]="iconSvc.getIcon('fas', 'image')" />
+    Hero Image Editor
+  </h2>
+  <formly-form [form]="form" [model]="model" [fields]="fields" />
+  <p class="text-muted">Configure up to {{ maxHeroes }} hero images for this page, including optional titles and descriptions.</p>
+  <hr>
+
+  @if (loading()) {
+    <div class="text-center p-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-2">Loading data...</p>
+    </div>
+  } @else {
+    <div>
+      @for (hero of heroData(); track $index) {
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+              Hero Slot #{{ $index + 1 }}
+            </h5>
+            <button class="btn btn-sm btn-danger" (click)="removeHero(hero.id)">
+              <fa-icon [icon]="iconSvc.getIcon('fas', 'trash')" />
+              Remove
+            </button>
+          </div>
+          <div class="card-body row g-3">
+            <formly-form [form]="hero.form" [model]="hero.model" [fields]="hero.fields" />
+          </div>
+        </div>
+      }
+      <div class="d-flex justify-content-between mt-4">
+        <button class="btn btn-success" (click)="addNewHero()" [disabled]="heroData().length >= maxHeroes">
+          <fa-icon [icon]="iconSvc.getIcon('fas', 'plus-circle')" /> Add New Hero ({{ heroData().length }}/{{ maxHeroes }})
+        </button>
+        @if (heroData().length > 0) {
+          <button class="btn btn-primary" (click)="saveHeroData()" [disabled]="loading()">
+            <fa-icon [icon]="iconSvc.getIcon('fas', 'save')" /> Save All Heroes
+          </button>
+        }
+      </div>
+    </div>
+  }
+</div>
+<app-admin-footer />

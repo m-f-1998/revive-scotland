@@ -1,6 +1,6 @@
 import { Location } from "@angular/common"
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
-import { NavigationEnd, Router, RouterLink } from "@angular/router"
+import { NavigationEnd, Router } from "@angular/router"
 import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap"
 import { IconService } from "@revive/src/app/services/icons.service"
@@ -8,7 +8,6 @@ import { IconService } from "@revive/src/app/services/icons.service"
 @Component ( {
   selector: "app-navbar",
   imports: [
-    RouterLink,
     NgbDropdownModule,
     FaIconComponent
   ],

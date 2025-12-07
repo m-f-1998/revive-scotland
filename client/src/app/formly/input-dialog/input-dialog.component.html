@@ -1,0 +1,22 @@
+
+<div class="modal-header">
+  <h4 class="modal-title">{{title}}</h4>
+  <button type="button" class="btn-close" aria-label="Close" (click)="close()"></button>
+</div>
+
+<div class="modal-body pb-0">
+  @if (body) {
+    <p [innerHTML]="body"></p>
+  }
+  <formly-form [form]="this.form" [model]="this.model" [fields]="this.fields" />
+  @if (description) {
+    <p [innerHTML]="description"></p>
+  }
+</div>
+
+<div class="modal-footer">
+  <button type="submit" class="btn btn-primary" (click)="confirm()" [disabled]="this.form.invalid">
+    <fa-icon [icon]="iconSvc.getIcon('fas', 'save')" />&nbsp;
+    {{confirmText}}
+  </button>
+</div>

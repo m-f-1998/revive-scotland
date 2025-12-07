@@ -1,29 +1,45 @@
-import { ChangeDetectionStrategy, Component, HostListener, inject } from "@angular/core"
-import { RouterOutlet } from "@angular/router"
-import { NavbarComponent } from "./user/components/navbar/navbar.component"
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
+import { NavigationEnd, Router, RouterOutlet } from "@angular/router"
 import { FaConfig, FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { IconService } from "./services/icons.service"
+import { AuthService } from "./services/auth.service"
 
 @Component ( {
   selector: "app-root",
   imports: [
     RouterOutlet,
-    NavbarComponent,
     FaIconComponent
   ],
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.scss",
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    "(window:scroll)": "onScroll()"
+  }
 } )
-export class AppComponent {
+export class AppComponent implements OnInit {
+  public currentPath: WritableSignal<string> = signal ( window.location.pathname )
+
   public readonly iconSvc: IconService = inject ( IconService )
+  public readonly authSvc: AuthService = inject ( AuthService )
+  public readonly router: Router = inject ( Router )
   private readonly faConfig: FaConfig = inject ( FaConfig )
 
   public constructor ( ) {
+    // Listen for changes to the route
+    this.router.events.subscribe ( event => {
+      if ( event instanceof NavigationEnd ) {
+        this.currentPath.set ( this.router.url )
+      }
+    } )
     this.faConfig.autoAddCss = false
   }
 
-  @HostListener ( "window:scroll", [ "$event.target" ] ) public onScroll ( ) {
+  public ngOnInit ( ) {
+    this.currentPath.set ( this.router.url )
+  }
+
+  public onScroll ( ) {
     const element = document.getElementById ( "scrollTop" )
     if ( window.scrollY >= 1000 ) {
       if ( element ) element.classList.add ( "visible" )

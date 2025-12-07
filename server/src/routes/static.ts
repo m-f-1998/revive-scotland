@@ -3,6 +3,7 @@ import type { Response } from "express"
 import { join } from "path"
 import { existsSync } from "fs"
 import { readFile } from "fs/promises"
+import { rateLimit } from "express-rate-limit"
 
 export const router = Router ( )
 
@@ -11,6 +12,18 @@ router.use ( express.static ( join ( process.cwd ( ), "../client" ), {
   etag: true,
   index: false,
 } ) )
+
+export const isDevMode = ( ): boolean => {
+  return process.env [ "DEV_MODE" ] === "true" || process.env [ "DEV_MODE" ] === "1"
+}
+
+if ( !isDevMode ( ) ) {
+  router.use ( rateLimit ( {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 500, // limit each IP to 500 requests per windowMs
+    message: "Too many requests from this IP, please try again later."
+  } ) )
+}
 
 router.get ( "*get", async ( _req: Request, res: Response ) => {
   const indexPath = join ( process.cwd ( ), "../client/index.html" )

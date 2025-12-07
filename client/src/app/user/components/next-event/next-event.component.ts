@@ -1,6 +1,6 @@
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, signal, WritableSignal } from "@angular/core"
-import { EventsService } from "@services/events.service"
+import { EventsService, ReviveEvent } from "@services/events.service"
 import { intervalToDuration } from "date-fns"
 
 interface TimeRemaining {
@@ -19,9 +19,7 @@ interface TimeRemaining {
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class NextEventComponent {
-  public nextEvent: WritableSignal<Date> = signal ( new Date ( 1900, 1, 1 ) )
-  public today: WritableSignal<Date> = signal ( new Date ( ) )
-
+  public readonly nextEvent: WritableSignal<ReviveEvent | null> = signal ( null )
   public readonly timeRemaining: WritableSignal<TimeRemaining> = signal ( {
     months: "0",
     days: "0",
@@ -30,27 +28,13 @@ export class NextEventComponent {
     seconds: "0"
   } )
 
-  public readonly locationName: WritableSignal<string> = signal ( "" )
-  public readonly eventLink: WritableSignal<string> = signal ( "" )
-  public readonly title: WritableSignal<string> = signal ( "Next Event" )
   private readonly eventSvc: EventsService = inject ( EventsService )
   private readonly changeDetector: ChangeDetectorRef = inject ( ChangeDetectorRef )
 
   public constructor (  ) {
-    this.eventSvc.getNextEvent ( ).then ( ( nextEvent: any ) => {
+    this.eventSvc.getNextEvent ( ).then ( ( nextEvent: ReviveEvent | undefined ) => {
       if ( nextEvent ) {
-        this.nextEvent.set ( new Date ( nextEvent.start.local ) )
-        this.title.set ( nextEvent.name.text )
-
-        if ( nextEvent.url ) {
-          this.eventLink.set ( nextEvent.url )
-        }
-
-        if ( nextEvent.venue ) {
-          this.locationName.set ( nextEvent.venue.address.localized_address_display )
-        } else {
-          this.locationName.set ( "Online Event" )
-        }
+        this.nextEvent.set ( nextEvent )
 
         setInterval ( ( ) => {
           this.getTimeRemaining ( )
@@ -60,10 +44,14 @@ export class NextEventComponent {
     } )
   }
 
+  public get validNextEvent ( ) : boolean {
+    return this.nextEvent ( ) !== null && this.nextEvent ( )!.startDate > new Date ( )
+  }
+
   public getTimeRemaining ( ) {
     const diff = intervalToDuration ( {
       start: new Date ( ),
-      end: this.nextEvent ( )
+      end: new Date ( this.nextEvent ( )?.startDate ?? new Date ( ) )
     } )
 
     this.timeRemaining.set ( {

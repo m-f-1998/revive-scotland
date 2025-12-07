@@ -8,11 +8,11 @@
       <ng-template ngbSlide>
         <div class="border-radius-15 bg-secondary-subtle">
             <img
-              [attr.src]="'/api/img/' + img.image + '?w=1024&f=webp'"
+              [attr.src]="img.image.startsWith ( 'http' ) ? img.image : '/api/img/' + img.image"
               [attr.srcset]="
-                '/api/img/' + img.image + '?w=320&f=webp 320w, ' +
-                '/api/img/' + img.image + '?w=640&f=webp 640w, ' +
-                '/api/img/' + img.image + '?w=1024&f=webp 1024w'
+                img.image.startsWith ( 'http' ) ? '' : '/api/img/' + img.image + '?w=320&f=webp 320w, ' +
+                img.image.startsWith ( 'http' ) ? '' : '/api/img/' + img.image + '?w=640&f=webp 640w, ' +
+                img.image.startsWith ( 'http' ) ? '' : '/api/img/' + img.image + '?w=1024&f=webp 1024w'
               "
               sizes="(max-width: 600px) 100vw, 600px"
               alt="Revive Scotland Header"
@@ -22,8 +22,8 @@
               class="img-fluid slider-image w-100 object-fit-cover filter-50"
             />
             <div class="carousel-caption">
-              <h1>{{slides()?.[i]?.title}}</h1>
-              <p class="caption-text">{{slides()?.[i]?.content}}</p>
+              <h1>{{slides()[i]?.title}}</h1>
+              <p class="caption-text">{{slides()[i]?.content}}</p>
             </div>
         </div>
       </ng-template>

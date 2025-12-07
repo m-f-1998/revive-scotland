@@ -34,17 +34,20 @@ router.post ( "/", async ( req: Request, res: Response ) => {
 
   try {
     const response = await fetch (
-      "https://www.google.com/recaptcha/api/siteverify",
+      "https://recaptchaenterprise.googleapis.com/v1/projects/revive-scotland/assessments?key=" + ( process.env [ "RECAPTCHA_API_KEY" ] || "" ),
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Type": "application/json",
+          "Referer": process.env [ "PUBLIC_DOMAIN" ] || ""
         },
-        body: new URLSearchParams ( {
-          secret: process.env [ "RECAPTCHA_SECRET_KEY" ] || "",
-          response: recaptchaToken,
-          remoteip: req.ip || "",
-        } ).toString ( )
+        body: JSON.stringify ( {
+          event: {
+            token: recaptchaToken,
+            siteKey: process.env [ "RECAPTCHA_SITE" ] || "",
+            expectedAction: "contactForm"
+          }
+        } )
       }
     )
 
@@ -54,7 +57,7 @@ router.post ( "/", async ( req: Request, res: Response ) => {
     }
 
     const data: any = await response.json ( )
-    if ( !data.success || data.score < 0.5 ) {
+    if ( !data.tokenProperties.valid || data.riskAnalysis.score < 0.5 ) {
       console.warn ( "reCAPTCHA verification failed:", data )
       res.status ( 400 ).json ( { message: "reCAPTCHA failed." } )
       return

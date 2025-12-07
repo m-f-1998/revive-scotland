@@ -1,0 +1,15 @@
+<div class="form-control border-0 p-0">
+  <input type="text" class="form-control" [value]="this.formControl.value" name="url-{{this.id}}" placeholder="URL of Selected File" readonly>
+  <button class="btn btn-primary mt-3" type="button" (click)="openFileSelector()">
+    <fa-icon [icon]="iconSvc.getIcon('fas', 'folder-open')" />
+    Select File
+  </button>
+
+  @if (this.formControl.value) {
+    <div class="image-preview mt-3">
+      <div class="d-flex justify-content-center">
+        <img [src]="this.formControl.value" alt="Hero Image Preview" class="img-fluid border rounded" style="max-height: 200px; object-fit: contain;">
+      </div>
+    </div>
+  }
+</div>

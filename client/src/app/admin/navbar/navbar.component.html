@@ -1,0 +1,45 @@
+<nav class="navbar navbar-expand-lg">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <img src="/api/img/logo.png?w=640&f=webp"
+        srcset="
+          /api/img/logo.png?w=320&f=webp 320w,
+          /api/img/logo.png?w=640&f=webp 640w,
+          /api/img/logo.png?w=1024&f=webp 1024w
+        "
+        sizes="(max-width: 600px) 100vw, 600px"
+        alt="Site Logo"
+        loading="lazy"
+        width="100"
+        decoding="async"
+      />
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav">
+        <button class="nav-link clickable" (click)="goTo('/admin/dashboard')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [class.active]="url() === '/admin/dashboard'" [disabled]="url() === '/admin/dashboard'">
+          <fa-icon [icon]="iconSvc.getIcon('fas', 'gauge-high')" />
+          Dashboard
+        </button>
+        <button class="nav-link clickable" (click)="goTo('/admin/fileExplorer')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [class.active]="url() === '/admin/fileExplorer'" [disabled]="url() === '/admin/fileExplorer'">
+          <fa-icon [icon]="iconSvc.getIcon('fas', 'folder-open')" />
+          File Explorer
+        </button>
+        <button class="nav-link clickable" (click)="goTo('/admin/heroEditor')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [class.active]="url() === '/admin/heroEditor'" [disabled]="url() === '/admin/heroEditor'">
+          <fa-icon [icon]="iconSvc.getIcon('fas', 'image')" />
+          Hero Editor
+        </button>
+        <button class="nav-link clickable" (click)="goTo('/admin/eventEditor')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [class.active]="url() === '/admin/eventEditor'" [disabled]="url() === '/admin/eventEditor'">
+          <fa-icon [icon]="iconSvc.getIcon('fas', 'calendar-days')" />
+          Event Editor
+        </button>
+        <button class="nav-link clickable" (click)="logout()" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
+          <fa-icon [icon]="iconSvc.getIcon('fas', 'right-from-bracket')" />
+          Logout
+        </button>
+      </ul>
+    </div>
+  </div>
+</nav>

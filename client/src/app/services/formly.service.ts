@@ -1,6 +1,7 @@
 import { Injectable } from "@angular/core"
 import { FormlyFieldConfig } from "@ngx-formly/core"
 import {
+  FormlyDate,
   FormlyExpressions,
   FormlyProps,
   FormlyText,
@@ -38,6 +39,13 @@ export class FormlyService {
     return this.Input ( key, "email", props, expressions, focus )
   }
 
+  public TelInput ( key: string, props: FormlyProps = { }, expressions: FormlyExpressions = { }, focus: boolean = false ): FormlyFieldConfig {
+    expressions.validators = {
+      validation: [ "ValidPhoneNumber" ]
+    }
+    return this.Input ( key, "tel", props, expressions, focus )
+  }
+
   public CheckboxInput (
     key: string,
     props: FormlyProps = { },
@@ -55,6 +63,42 @@ export class FormlyService {
     focus: boolean = false
   ): FormlyFieldConfig {
     return this.CustomField ( key, "textarea", { ...expressions, props }, focus )
+  }
+
+  public SelectInput (
+    key: string,
+    props: FormlyProps = { },
+    expressions: FormlyExpressions = { },
+    focus: boolean = false
+  ): FormlyFieldConfig {
+    if ( !props.options ) props.options = [ ]
+    return this.CustomField ( key, "select", { ...expressions, props }, focus )
+  }
+
+  public DateInput ( key: string, props: FormlyDate = { }, expressions: FormlyExpressions = { }, focus: boolean = false ): FormlyFieldConfig {
+    expressions.validators = {
+      validation: [ "ValidDate" ]
+    }
+    expressions.name = key
+    return this.CustomField ( key, "datepicker", { ...expressions, props }, focus )
+  }
+
+  public AddressAutocompleteInput (
+    key: string,
+    props: FormlyProps = { },
+    expressions: FormlyExpressions = { },
+    focus: boolean = false
+  ): FormlyFieldConfig {
+    return this.CustomField ( key, "address-autocomplete", { ...expressions, props }, focus )
+  }
+
+  public ImagePickerInput (
+    key: string,
+    props: FormlyProps = { },
+    expressions: FormlyExpressions = { },
+    focus: boolean = false
+  ): FormlyFieldConfig {
+    return this.CustomField ( key, "image-picker", { ...expressions, props }, focus )
   }
 
   private Input (
