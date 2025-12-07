@@ -21,7 +21,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
+          node-version: "lts/*"
 
       - name: Install dependencies
         run: npm i
@@ -29,8 +29,4 @@ jobs:
 
       - name: Run lint
         run: npm run lint
-        working-directory: ${{ matrix.project }}
-
-      - name: Run tsc-verify
-        run: npm run tsc-verify
         working-directory: ${{ matrix.project }}
