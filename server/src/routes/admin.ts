@@ -13,8 +13,14 @@ router.use ( "/hero-editor", heroEditorRouter )
 router.use ( "/events", eventsRouter )
 
 import admin, { ServiceAccount } from "firebase-admin"
-import serviceAccount from "../revive-scotland-firebase.json" with { type: "json" }
 import { rateLimit } from "express-rate-limit"
+import { access } from "fs/promises"
+
+let serviceAccount: any
+try {
+  await access ( "../revive-scotland-firebase.json" )
+  serviceAccount = ( await import ( "../revive-scotland-firebase.json", { assert: { type: "json" } } ) ).default
+} catch { }
 
 admin.initializeApp ( {
   credential: admin.credential.cert ( serviceAccount as ServiceAccount )
