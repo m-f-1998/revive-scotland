@@ -42,6 +42,9 @@ app.use ( helmet ( {
   },
   hidePoweredBy: true,
   crossOriginResourcePolicy: isDevMode ( ) ? false : { policy: "same-origin" },
+  crossOriginOpenerPolicy: {
+    policy: "same-origin-allow-popups"
+  },
   hsts: {
     maxAge: 31536000,
     includeSubDomains: true,
@@ -69,22 +72,29 @@ app.use ( helmet ( {
         "https://static.cloudflareinsights.com",
         "https://www.google.com",
         "https://www.gstatic.com",
+        "https://apis.google.com"
         // ( _req, res ) => `'nonce-${( res as Response ).locals[ "cspNonce" ]}'`
+      ],
+      scriptSrcAttr: [
+        "'unsafe-inline'"
       ],
       imgSrc: [
         "'self'",
         "data:",
         "https://\*.jsdelivr.net",
+        "https://lh3.googleusercontent.com"
       ],
       connectSrc: [
         "'self'",
         "https://\*.google-analytics.com",
         "https://\*.google.com",
-        "https://cloudflareinsights.com"
+        "https://cloudflareinsights.com",
+        "https://identitytoolkit.googleapis.com",
       ],
       frameSrc: [
         "'self'",
-        "https://www.google.com"
+        "https://www.google.com",
+        "https://revive-scotland-admin.firebaseapp.com"
       ],
       mediaSrc: [
         "'self'"

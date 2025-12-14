@@ -1,6 +1,8 @@
 import { BetaAnalyticsDataClient } from "@google-analytics/data"
 import { Router, Request, Response } from "express"
 import { rateLimit } from "express-rate-limit"
+import { GoogleAuth } from "google-auth-library"
+import serviceAccount from "../../revive-scotland-firebase.json" with { type: "json" }
 
 export const router: Router = Router ( )
 
@@ -10,7 +12,14 @@ router.use ( rateLimit ( {
   message: "Too many requests from this IP, please try again later."
 } ) )
 
-const analyticsDataClient = new BetaAnalyticsDataClient ( )
+const auth = new GoogleAuth ( {
+  credentials: serviceAccount,
+  scopes: "https://www.googleapis.com/auth/analytics.readonly"
+} )
+
+const analyticsDataClient = new BetaAnalyticsDataClient ( {
+  auth
+} )
 const projectID = "477989791"
 const dateRanges = [ { startDate: "90daysAgo", endDate: "today" } ]
 
