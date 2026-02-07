@@ -1,84 +1,92 @@
-<app-navbar />
-<app-slider [defaultSlides]="slides" pageid="events" />
-@if (loading()) {
-  <div class="d-flex flex-column align-items-center m-3">
-    <fa-icon [icon]="iconSvc.getIcon('fas', 'spinner')" animation="spin" size="2x" class="mb-2" />
-    Loading...
-  </div>
-} @else if (events().length === 0) {
-  <div class="d-flex flex-column align-items-center m-3">
-    <fa-icon [icon]="iconSvc.getIcon('fas', 'info-circle')" size="2x" class="mb-2" />
-    <p>No Events Found</p>
-    <p class="m-0">Check back later for updates!!</p>
-  </div>
-} @else {
-  <div class="m-3">
-    @for (event of events(); track $index) {
-      <div class="d-flex flex-row flex-wrap justify-content-center">
-        <div class="card m-2 event-card">
-          <img
-            [attr.src]="event.imageUrl"
-            [attr.srcset]="
-              event.imageUrl + '?w=320&f=webp 320w, ' +
-              event.imageUrl + '?w=640&f=webp 640w, ' +
-              event.imageUrl + '?w=1024&f=webp 1024w'
-            "
-            sizes="(max-width: 600px) 100vw, 600px"
-            [attr.alt]="event.title || 'Event image'"
-            loading="lazy"
-            decoding="async"
-            class="card-img-top event-image"
-          />
-          <div class="card-body">
-            <div class="card-title">
-              <h4>{{event.title}}</h4>
-            </div>
-            <figcaption class="figure-caption mt-2 mb-3">
-              {{event.description}}
-            </figcaption>
-            <div class="card-text d-flex flex-column gap-2 mb-4">
-              <div>
-                <fa-icon [icon]="iconSvc.getIcon('fas', 'calendar')" class="me-2" />
-                @if(dateSvc.sameDay(event.startDate, event.endDate)) {
-                  {{this.dateSvc.reformat (event.startDate, 'E do LLL yyyy h:mma')}} - {{this.dateSvc.reformat (event.endDate, 'h:mma')}}
-                } @else {
-                  {{this.dateSvc.reformat (event.startDate, 'E do LLL yyyy')}} - {{this.dateSvc.reformat (event.endDate, 'E do LLL yyyy')}}
+<div class="d-flex flex-column min-height-100">
+  <app-navbar />
+  <app-slider [defaultSlides]="slides" pageid="events" />
+  @if (loading()) {
+    <div class="d-flex flex-column align-items-center m-3">
+      <fa-icon [icon]="iconSvc.getIcon('fas', 'spinner')" animation="spin" size="2x" class="mb-2" />
+      Loading...
+    </div>
+  } @else if (events().length === 0) {
+    <div class="d-flex flex-column align-items-center justify-content-center flex-grow-1 m-3">
+      <fa-icon [icon]="iconSvc.getIcon('fas', 'info-circle')" size="2x" class="mb-2" />
+      <p>No Events Found</p>
+      <p class="m-0">Check back later for updates!!</p>
+    </div>
+  } @else {
+    <div class="m-3">
+      @for (event of events(); track $index) {
+        <div class="d-flex flex-row flex-wrap justify-content-center">
+          <div class="card m-2 event-card">
+            <img
+              [attr.src]="event.imageUrl"
+              [attr.srcset]="
+                event.imageUrl + '?w=320&f=webp 320w, ' +
+                event.imageUrl + '?w=640&f=webp 640w, ' +
+                event.imageUrl + '?w=1024&f=webp 1024w'
+              "
+              sizes="(max-width: 600px) 100vw, 600px"
+              [attr.alt]="event.title || 'Event image'"
+              loading="lazy"
+              decoding="async"
+              class="card-img-top event-image"
+            />
+            <div class="card-body">
+              <div class="card-title">
+                <h4>{{event.title}}</h4>
+              </div>
+              <figcaption class="figure-caption mt-2 mb-3">
+                {{event.description}}
+              </figcaption>
+              <div class="card-text d-flex flex-column gap-2 mb-4">
+                <div>
+                  <fa-icon [icon]="iconSvc.getIcon('fas', 'calendar')" class="me-2" />
+                  @if(dateSvc.sameDay(event.startDate, event.endDate)) {
+                    {{this.dateSvc.reformat (event.startDate, 'E do LLL yyyy h:mma')}} - {{this.dateSvc.reformat (event.endDate, 'h:mma')}}
+                  } @else {
+                    {{this.dateSvc.reformat (event.startDate, 'E do LLL yyyy')}} - {{this.dateSvc.reformat (event.endDate, 'E do LLL yyyy')}}
+                  }
+                </div>
+                <div>
+                  <fa-icon [icon]="iconSvc.getIcon('fas', 'map-marker')" class="me-2" />
+                  {{event.location}}
+                </div>
+              </div>
+              <div class="d-flex gap-2">
+                @if (event.actionType === 'webpage' && event.webpageUrl) {
+                  <a [href]="event.webpageUrl" class="btn btn-primary" target="_blank">
+                    <fa-icon [icon]="iconSvc.getIcon('fas', 'info-circle')" />
+                    More Info
+                  </a>
+                } @else if (event.actionType === 'contact') {
+                  <button type="button" class="btn btn-primary" (click)="openContactForm(event)">
+                    <fa-icon [icon]="iconSvc.getIcon('fas', 'envelope')" />
+                    Contact Organiser
+                  </button>
+                }
+                @if (event.imageUrl) {
+                  <button type="button" class="btn btn-secondary" (click)="openPoster(event.imageUrl)">
+                    <fa-icon [icon]="iconSvc.getIcon('fas', 'expand')" />
+                    View Poster
+                  </button>
                 }
               </div>
-              <div>
-                <fa-icon [icon]="iconSvc.getIcon('fas', 'map-marker')" class="me-2" />
-                {{event.location}}
-              </div>
-            </div>
-            <div class="d-flex gap-2">
-              @if (event.actionType === 'webpage' && event.webpageUrl) {
-                <a [href]="event.webpageUrl" class="btn btn-primary" target="_blank">
-                  <fa-icon [icon]="iconSvc.getIcon('fas', 'info-circle')" />
-                  More Info
-                </a>
-              } @else if (event.actionType === 'contact') {
-                <button type="button" class="btn btn-primary" (click)="openContactForm(event)">
-                  <fa-icon [icon]="iconSvc.getIcon('fas', 'envelope')" />
-                  Contact Organiser
-                </button>
-              }
             </div>
           </div>
         </div>
-      </div>
-    }
-  </div>
-  <figure class="p-4 p-lg-5 text-center m-0 bg-body-tertiary">
-    <blockquote class="blockquote mb-4">
-      <p class="text-serif">
-        Prayer, as a means of drawing ever new strength from Christ, is concretely and urgently needed.
-      </p>
-    </blockquote>
-    <figcaption class="blockquote-footer mb-0">
-      <cite class="text-small">Benedict XVI</cite>
-    </figcaption>
-  </figure>
+      }
+    </div>
+    <figure class="p-4 p-lg-5 text-center m-0 bg-body-tertiary">
+      <blockquote class="blockquote mb-4">
+        <p class="text-serif">
+          Prayer, as a means of drawing ever new strength from Christ, is concretely and urgently needed.
+        </p>
+      </blockquote>
+      <figcaption class="blockquote-footer mb-0">
+        <cite class="text-small">Benedict XVI</cite>
+      </figcaption>
+    </figure>
 
-  <app-contact />
-}
-<app-footer />
+    <app-contact />
+  }
+  <app-footer />
+</div>

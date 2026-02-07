@@ -75,13 +75,6 @@ html, body {
   min-height: 100vh;
 }
 
-app-events {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  flex-grow: 1;
-}
-
 .index-forward {
   position: relative;
   z-index: 99;

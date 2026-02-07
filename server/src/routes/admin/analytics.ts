@@ -112,6 +112,17 @@ const fetchGeographyData = async ( ) => {
   const [ response ] = await analyticsDataClient.runReport ( {
     property: `properties/${projectID}`,
     dateRanges: dateRanges,
+    dimensionFilter: {
+      notExpression: {
+        filter: {
+          fieldName: "country",
+          inListFilter: {
+            values: [ "China", "Russia", "Ukraine", "India", "Pakistan", "Bangladesh", "Brazil", "Nigeria", "Indonesia", "Vietnam", "Thailand", "Philippines", "Turkey", "Egypt", "Iran", "Mexico", "South Africa", "Argentina", "Colombia", "Peru", "Venezuela", "Morocco", "Algeria", "Iraq", "Saudi Arabia", "Syria", "Afghanistan", "Cuba", "North Korea", "Myanmar", "Sudan" ],
+            caseSensitive: false
+          }
+        }
+      }
+    },
     // Use 'country' and 'city' dimensions
     dimensions: [ { name: "country" }, { name: "city" } ],
     metrics: [ { name: "activeUsers" }, { name: "sessions" } ],

@@ -55,6 +55,10 @@ export class EventsComponent implements OnInit {
     this.getEvents ( )
   }
 
+  public openPoster ( imageUrl: string ) {
+    window.open ( imageUrl, "_blank" )
+  }
+
   public async openContactForm ( event: ReviveEvent ) {
     const modalRef = this.modalSvc.open ( InputDialogComponent, {
       centered: true

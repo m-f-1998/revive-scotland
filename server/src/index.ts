@@ -91,7 +91,8 @@ app.use ( helmet ( {
         "https://cloudflareinsights.com",
         "https://identitytoolkit.googleapis.com",
         "https://nominatim.openstreetmap.org",
-        "https://\*.r2.cloudflarestorage.com"
+        "https://\*.r2.cloudflarestorage.com",
+        "https://\*.googleapis.com"
       ],
       frameSrc: [
         "'self'",
