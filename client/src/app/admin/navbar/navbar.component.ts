@@ -1,16 +1,15 @@
 import { Location } from "@angular/common"
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
 import { NavigationEnd, Router } from "@angular/router"
-import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap"
-import { IconService } from "@revive/src/app/services/icons.service"
 import { AuthService } from "../../services/auth.service"
+import { IconComponent } from "../../icon/icon.component"
 
 @Component ( {
   selector: "app-admin-navbar",
   imports: [
     NgbDropdownModule,
-    FaIconComponent
+    IconComponent
   ],
   templateUrl: "./navbar.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -19,7 +18,6 @@ export class AdminNavbarComponent implements OnInit {
   public url: WritableSignal<string> = signal ( "" )
 
   public readonly location: Location = inject ( Location )
-  public readonly iconSvc: IconService = inject ( IconService )
   private readonly router: Router = inject ( Router )
   private readonly authSvc: AuthService = inject ( AuthService )
 

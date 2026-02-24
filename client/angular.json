@@ -17,7 +17,17 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "crossOrigin": "anonymous",
+            "stylePreprocessorOptions": {
+              "sass": {
+                "silenceDeprecations": [
+                  "import",
+                  "global-builtin",
+                  "color-functions",
+                  "abs-percent",
+                  "if-function"
+                ]
+              }
+            },
             "outputPath": "dist",
             "index": "src/index.html",
             "browser": "src/main.ts",
@@ -33,34 +43,21 @@
               }
             ],
             "styles": [
-              "src/styles.scss",
-              "@fortawesome/fontawesome-svg-core/styles.css",
-              "bootstrap/dist/css/bootstrap.min.css",
-              "node_modules/@m-f-1998/ngx-toastr/toastr.css"
-            ],
-            "scripts": [
-              "./node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
+              "src/styles.scss"
             ]
           },
           "configurations": {
             "production": {
-              "optimization": {
-                "scripts": true,
-                "styles": {
-                  "minify": true,
-                  "inlineCritical": false
-                }
-              },
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "3MB",
-                  "maximumError": "5MB"
+                  "maximumWarning": "750kb",
+                  "maximumError": "1.5mb"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "1MB",
-                  "maximumError": "2MB"
+                  "maximumWarning": "50kb",
+                  "maximumError": "100kb"
                 }
               ],
               "fileReplacements": [
@@ -69,6 +66,22 @@
                   "with": "src/environments/environments.ts"
                 }
               ],
+              "optimization": {
+                "scripts": true,
+                "fonts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                }
+              },
+              "aot": true,
+              "sourceMap": {
+                "scripts": true,
+                "styles": true,
+                "hidden": false
+              },
+              "namedChunks": false,
+              "extractLicenses": true,
               "outputHashing": "all"
             },
             "development": {
@@ -87,9 +100,6 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
-          "options": {
-            "hmr": false
-          },
           "configurations": {
             "production": {
               "buildTarget": "revivescotland:build:production"

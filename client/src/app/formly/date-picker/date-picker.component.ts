@@ -2,11 +2,10 @@ import { ChangeDetectionStrategy, Component, Injectable, OnInit, signal, Writabl
 import { FieldType } from "@ngx-formly/core"
 import { NgbDateParserFormatter, NgbDateStruct, NgbInputDatepicker } from "@ng-bootstrap/ng-bootstrap"
 import { addYears, subYears } from "date-fns"
-import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms"
 import { isWithinInterval } from "date-fns"
-import { IconService } from "../../services/icons.service"
 import { DatesService } from "../../services/dates.service"
+import { IconComponent } from "../../icon/icon.component"
 
 /**
  * This Service handles how the date is rendered and parsed from keyboard i.e. in the bound input field.
@@ -38,9 +37,9 @@ class CustomDateParserFormatter extends NgbDateParserFormatter {
   selector: "app-formly-date-picker",
   imports: [
     NgbInputDatepicker,
-    FormsModule,
     ReactiveFormsModule,
-    FaIconComponent
+    FormsModule,
+    IconComponent
   ],
   templateUrl: "./date-picker.component.html",
   providers: [
@@ -49,7 +48,6 @@ class CustomDateParserFormatter extends NgbDateParserFormatter {
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class DatePickerComponent extends FieldType implements OnInit {
-  public readonly iconSvc: IconService = inject ( IconService )
   public readonly datesSvc: DatesService = inject ( DatesService )
 
   public control: FormControl | undefined

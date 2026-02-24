@@ -3,20 +3,19 @@ import { AdminNavbarComponent } from "../navbar/navbar.component"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { ApiService } from "../../services/api.service"
 import { HeroEntry, PageHeroData } from "../../interfaces/heroEditor.interface"
-import { FaIconComponent } from "@fortawesome/angular-fontawesome"
-import { IconService } from "../../services/icons.service"
 import { HttpHeaders } from "@angular/common/http"
 import { AuthService } from "../../services/auth.service"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
 import { FormGroup } from "@angular/forms"
 import { FormlyService } from "../../services/formly.service"
 import { AdminFooterComponent } from "../footer/footer.component"
+import { IconComponent } from "../../icon/icon.component"
 
 @Component ( {
   selector: "app-admin-hero-editor",
   imports: [
     AdminNavbarComponent,
-    FaIconComponent,
+    IconComponent,
     FormlyForm,
     AdminFooterComponent
   ],
@@ -33,7 +32,6 @@ export class HeroEditorComponent implements OnInit {
   public model: any = { }
   public fields: FormlyFieldConfig [ ] = [ ]
 
-  public readonly iconSvc: IconService = inject ( IconService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
   private readonly apiSvc: ApiService = inject ( ApiService )
   private readonly authSvc: AuthService = inject ( AuthService )

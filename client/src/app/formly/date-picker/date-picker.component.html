@@ -20,7 +20,7 @@
       [readOnly]="this.field.props?.readonly || false">
     <button [id]="id+'btn'" (click)="this.field.props?.readonly || false ? undefined : openPopup();" class="input-group-append btn btn-secondary calendar"
       type="button" [class.iqx-invalid]="formControl.errors && showError" [disabled]="this.field.props?.readonly || false">
-      <fa-icon [icon]="iconSvc.getIcon('fas', 'calendar')" [fixedWidth]="true" />
+      <app-icon icon="calendar" [fixedWidth]="true" />
     </button>
   }
 </div>

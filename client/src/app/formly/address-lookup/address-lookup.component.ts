@@ -1,18 +1,18 @@
 import { Component, ChangeDetectionStrategy, signal, WritableSignal, inject, OnInit } from "@angular/core"
 import { FormControl, FormGroup, ReactiveFormsModule } from "@angular/forms"
-import { FieldType, FormlyFieldConfig, FormlyModule } from "@ngx-formly/core"
+import { FieldType, FormlyFieldConfig, FormlyForm, FormlyValidationMessage } from "@ngx-formly/core"
 import { NominatimResult } from "./address-lookup.interface"
-import { FaIconComponent } from "@fortawesome/angular-fontawesome"
-import { IconService } from "../../services/icons.service"
 import { FormlyService } from "../../services/formly.service"
+import { IconComponent } from "../../icon/icon.component"
 
 // Define the custom field component for address autocomplete
 @Component ( {
   selector: "app-formly-address-autocomplete",
   imports: [
+    FormlyForm,
     ReactiveFormsModule,
-    FormlyModule,
-    FaIconComponent
+    FormlyValidationMessage,
+    IconComponent
   ],
   standalone: true,
   templateUrl: "./address-lookup.component.html",
@@ -27,7 +27,6 @@ export class AddressAutocompleteComponent extends FieldType<FormlyFieldConfig> i
   public loading: WritableSignal<boolean> = signal ( false )
   public focusedIndex: WritableSignal<number> = signal ( -1 )
 
-  public readonly iconSvc: IconService = inject ( IconService )
   private readonly formlySvc: FormlyService = inject ( FormlyService )
 
   private debounceTimer: any

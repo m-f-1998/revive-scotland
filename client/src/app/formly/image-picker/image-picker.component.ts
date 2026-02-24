@@ -1,23 +1,18 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit } from "@angular/core"
 import { FieldType } from "@ngx-formly/core"
-import { IconService } from "../../services/icons.service"
-import { FaIconComponent } from "@fortawesome/angular-fontawesome"
-import { FormsModule, ReactiveFormsModule } from "@angular/forms"
 import { FileExplorerComponent } from "../../admin/file-explorer/file-explorer.component"
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
+import { IconComponent } from "../../icon/icon.component"
 
 @Component ( {
   selector: "app-formly-image-picker",
   imports: [
-    FormsModule,
-    ReactiveFormsModule,
-    FaIconComponent
+    IconComponent
   ],
   templateUrl: "./image-picker.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class ImagePickerComponent extends FieldType implements OnInit {
-  public readonly iconSvc: IconService = inject ( IconService )
   private readonly modalSvc: NgbModal = inject ( NgbModal )
 
   public ngOnInit ( ): void {

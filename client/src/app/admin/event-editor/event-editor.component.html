@@ -1,7 +1,7 @@
 <app-admin-navbar />
 <div class="container my-4" style="min-height: 80vh;">
   <h2 class="mb-4">
-    <fa-icon [icon]="iconSvc.getIcon('fas', 'calendar-alt')" />
+    <app-icon icon="calendar-alt" />
     Event Editor
   </h2>
   <hr>
@@ -20,16 +20,16 @@
           <div class="card-header d-flex justify-content-between align-items-center" (click)="isCollapsed = !isCollapsed" style="cursor: pointer;">
             <div class="d-flex flex-row">
               @if (isCollapsed) {
-                <fa-icon [icon]="iconSvc.getIcon('fas', 'chevron-circle-down')" class="me-2" />
+                <app-icon icon="chevron-circle-down" class="me-2" />
               } @else {
-                <fa-icon [icon]="iconSvc.getIcon('fas', 'chevron-circle-up')" class="me-2" />
+                <app-icon icon="chevron-circle-up" class="me-2" />
               }
               <h5 class="mb-0">
                 {{ eventForm()[$index].model.title || `Event #${$index + 1}` }}
               </h5>
             </div>
             <button class="btn btn-sm btn-danger" (click)="removeEvent(event.id)">
-              <fa-icon [icon]="iconSvc.getIcon('fas', 'trash')" />
+              <app-icon icon="trash" />
             </button>
           </div>
           <div [ngbCollapse]="isCollapsed">
@@ -41,11 +41,11 @@
       }
       <div class="d-flex justify-content-between mt-4">
         <button class="btn btn-success" (click)="addNewEvent()">
-          <fa-icon [icon]="iconSvc.getIcon('fas', 'plus-circle')" /> Add New Event
+          <app-icon icon="plus-circle" /> Add New Event
         </button>
         @if (eventData().events.length > 0) {
           <button class="btn btn-primary" (click)="saveEventData()" [disabled]="loading() || someFormInvalid()">
-            <fa-icon [icon]="iconSvc.getIcon('fas', 'save')" /> Save All Events
+            <app-icon icon="save" /> Save All Events
           </button>
         }
       </div>

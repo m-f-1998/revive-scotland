@@ -8,19 +8,18 @@ import { NgbActiveModal, NgbDropdownModule, NgbModal } from "@ng-bootstrap/ng-bo
 import { FileExplorerModalComponent } from "./file-explorer-modal/file-explorer-modal.component"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { DatePipe } from "@angular/common"
-import { FaIconComponent } from "@fortawesome/angular-fontawesome"
-import { IconService } from "../../services/icons.service"
 import { HttpErrorResponse, HttpHeaders } from "@angular/common/http"
 import { FormlyService } from "../../services/formly.service"
 import { InputDialogComponent } from "../../formly/input-dialog/input-dialog.component"
 import { AdminFooterComponent } from "../footer/footer.component"
+import { IconComponent } from "../../icon/icon.component"
 
 @Component ( {
   selector: "app-admin-file-explorer",
   imports: [
     AdminNavbarComponent,
     DatePipe,
-    FaIconComponent,
+    IconComponent,
     NgbDropdownModule,
     AdminFooterComponent
   ],
@@ -30,7 +29,6 @@ import { AdminFooterComponent } from "../footer/footer.component"
 export class FileExplorerComponent {
   public readonly authSvc: AuthService = inject ( AuthService )
   public readonly fileExplorerSvc: FileExplorerService = inject ( FileExplorerService )
-  public readonly iconSvc: IconService = inject ( IconService )
   public readonly activeModal: NgbActiveModal | null = inject ( NgbActiveModal, { optional: true } )
 
   public readonly fileInput: Signal<ElementRef<HTMLInputElement> | undefined> = viewChild ( "fileInput" )

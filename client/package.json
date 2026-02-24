@@ -1,6 +1,6 @@
 {
   "name": "revivescotland",
-  "version": "1.1.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "prestart": "npm i",
@@ -9,41 +9,42 @@
     "build:prod": "ng build --configuration production",
     "lint": "npx --yes eslint",
     "lint:fix": "npx --yes eslint --fix",
-    "tsc-verify": "npx --yes tsc --noEmit"
+    "tsc-verify": "npx --yes tsc --noEmit",
+    "stats": "ng build --configuration production --stats-json"
   },
   "private": true,
   "dependencies": {
-    "@angular/cdk": "^21.1.2",
+    "@angular/cdk": "^21.1.5",
     "@angular/common": "^21.0.5",
     "@angular/compiler": "^21.0.5",
     "@angular/core": "^21.0.5",
-    "@angular/forms": "^21.1.2",
+    "@angular/forms": "^21.1.5",
     "@angular/platform-browser": "^21.0.5",
-    "@angular/platform-browser-dynamic": "^21.1.2",
-    "@angular/router": "^21.1.2",
+    "@angular/platform-browser-dynamic": "^21.1.5",
+    "@angular/router": "^21.1.5",
     "@fortawesome/angular-fontawesome": "^4.0.0",
-    "@fortawesome/free-brands-svg-icons": "^7.1.0",
-    "@fortawesome/free-solid-svg-icons": "^7.1.0",
+    "@fortawesome/free-brands-svg-icons": "^7.2.0",
+    "@fortawesome/free-solid-svg-icons": "^7.2.0",
     "@m-f-1998/ngx-toastr": "^1.0.3",
     "@ng-bootstrap/ng-bootstrap": "^20.0.0",
-    "@ngx-formly/bootstrap": "^7.0.1",
+    "@ngx-formly/bootstrap": "^7.1.0",
     "@ngx-formly/core": "^7.0.0",
     "bootstrap": "^5.3.8",
     "chart.js": "^4.5.1",
     "date-fns": "^4.1.0",
-    "firebase": "^12.8.0",
+    "firebase": "^12.9.0",
     "ng-recaptcha-2": "^21.0.1",
     "ng2-charts": "^8.0.0"
   },
   "devDependencies": {
-    "@angular/build": "^21.1.2",
-    "@angular/cli": "^21.1.2",
+    "@angular/build": "^21.1.5",
+    "@angular/cli": "^21.1.5",
     "@angular/compiler-cli": "^21.0.5",
-    "@angular/localize": "^21.1.2",
-    "@ngx-formly/schematics": "^7.0.1",
-    "@stylistic/eslint-plugin": "^5.7.1",
+    "@angular/localize": "^21.1.5",
+    "@ngx-formly/schematics": "^7.1.0",
+    "@stylistic/eslint-plugin": "^5.9.0",
     "angular-eslint": "^21.2.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.54.0"
+    "typescript-eslint": "^8.56.1"
   }
 }

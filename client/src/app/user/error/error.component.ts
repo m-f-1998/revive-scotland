@@ -1,15 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject } from "@angular/core"
 import { ActivatedRoute, Router } from "@angular/router"
-import { FontAwesomeModule } from "@fortawesome/angular-fontawesome"
-import { IconService } from "../../services/icons.service"
 import { AuthService } from "../../services/auth.service"
 import { NavbarComponent } from "../components/navbar/navbar.component"
+import { IconComponent } from "../../icon/icon.component"
 
 @Component ( {
   selector: "app-error",
   imports: [
-    FontAwesomeModule,
-    NavbarComponent
+    NavbarComponent,
+    IconComponent
   ],
   templateUrl: "./error.component.html",
   styleUrl: "./error.component.scss",
@@ -21,7 +20,6 @@ export class ErrorComponent {
   public imagePath = "skye/event-image-4.jpg"
 
   public readonly authSvc: AuthService = inject ( AuthService )
-  public readonly iconSvc: IconService = inject ( IconService )
   private readonly route: ActivatedRoute = inject ( ActivatedRoute )
   private readonly router: Router = inject ( Router )
 

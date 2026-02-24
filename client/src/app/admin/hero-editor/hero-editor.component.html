@@ -1,7 +1,7 @@
 <app-admin-navbar />
 <div class="container my-4" style="min-height: 80vh;">
   <h2 class="mb-4">
-    <fa-icon [icon]="iconSvc.getIcon('fas', 'image')" />
+    <app-icon icon="image" />
     Hero Image Editor
   </h2>
   <formly-form [form]="form" [model]="model" [fields]="fields" />
@@ -24,7 +24,7 @@
               Hero Slot #{{ $index + 1 }}
             </h5>
             <button class="btn btn-sm btn-danger" (click)="removeHero(hero.id)">
-              <fa-icon [icon]="iconSvc.getIcon('fas', 'trash')" />
+              <app-icon icon="trash" />
               Remove
             </button>
           </div>
@@ -35,11 +35,11 @@
       }
       <div class="d-flex justify-content-between mt-4">
         <button class="btn btn-success" (click)="addNewHero()" [disabled]="heroData().length >= maxHeroes">
-          <fa-icon [icon]="iconSvc.getIcon('fas', 'plus-circle')" /> Add New Hero ({{ heroData().length }}/{{ maxHeroes }})
+          <app-icon icon="plus-circle" /> Add New Hero ({{ heroData().length }}/{{ maxHeroes }})
         </button>
         @if (heroData().length > 0) {
           <button class="btn btn-primary" (click)="saveHeroData()" [disabled]="loading()">
-            <fa-icon [icon]="iconSvc.getIcon('fas', 'save')" /> Save All Heroes
+            <app-icon icon="save" /> Save All Heroes
           </button>
         }
       </div>

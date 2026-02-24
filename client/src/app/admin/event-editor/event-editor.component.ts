@@ -1,7 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
 import { AdminNavbarComponent } from "../navbar/navbar.component"
-import { FaIconComponent } from "@fortawesome/angular-fontawesome"
-import { IconService } from "../../services/icons.service"
 import { Event } from "../../interfaces/event.interface"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
 import { FormGroup } from "@angular/forms"
@@ -12,12 +10,13 @@ import { AuthService } from "../../services/auth.service"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { NgbCollapse } from "@ng-bootstrap/ng-bootstrap"
 import { AdminFooterComponent } from "../footer/footer.component"
+import { IconComponent } from "../../icon/icon.component"
 
 @Component ( {
   selector: "app-admin-event-editor",
   imports: [
     AdminNavbarComponent,
-    FaIconComponent,
+    IconComponent,
     FormlyForm,
     NgbCollapse,
     AdminFooterComponent
@@ -31,7 +30,6 @@ export class EventEditorComponent implements OnInit {
   public eventData: WritableSignal<{ events: Event[] }> = signal ( { events: [ ] } )
   public isCollapsed: boolean = false
 
-  public readonly iconSvc: IconService = inject ( IconService )
   private readonly apiSvc: ApiService = inject ( ApiService )
   private readonly formlySvc: FormlyService = inject ( FormlyService )
   private readonly authSvc: AuthService = inject ( AuthService )

@@ -1,3 +1,32 @@
+@use "@m-f-1998/ngx-toastr/toastr" as *;
+@import "@fortawesome/fontawesome-svg-core/styles.css";
+
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/variables-dark";
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/root";
+
+@import "bootstrap/scss/reboot";
+@import "bootstrap/scss/containers";
+@import "bootstrap/scss/grid";
+@import "bootstrap/scss/helpers";
+
+@import "bootstrap/scss/transitions";
+@import "bootstrap/scss/modal";
+@import "bootstrap/scss/close";
+@import "bootstrap/scss/dropdown";
+@import "bootstrap/scss/carousel";
+
+@import "bootstrap/scss/buttons";
+@import "bootstrap/scss/nav";
+@import "bootstrap/scss/navbar";
+@import "bootstrap/scss/alert";
+@import "bootstrap/scss/card";
+@import "bootstrap/scss/utilities";
+@import "bootstrap/scss/utilities/api";
+
 html {
   min-width: 300px;
 }
@@ -192,4 +221,8 @@ tr[draggable="true"]:active {
 /* optional: highlight folder drop targets */
 tr.folder-drop-target {
   background-color: rgba(0, 123, 255, 0.1);
+}
+
+.list-unstyled {
+  list-style-type: none;
 }

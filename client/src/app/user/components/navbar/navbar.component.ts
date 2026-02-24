@@ -1,15 +1,14 @@
 import { Location } from "@angular/common"
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
 import { NavigationEnd, Router } from "@angular/router"
-import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap"
-import { IconService } from "@revive/src/app/services/icons.service"
+import { IconComponent } from "@revive/src/app/icon/icon.component"
 
 @Component ( {
   selector: "app-navbar",
   imports: [
     NgbDropdownModule,
-    FaIconComponent
+    IconComponent
   ],
   templateUrl: "./navbar.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -18,7 +17,6 @@ export class NavbarComponent implements OnInit {
   public url: WritableSignal<string> = signal ( "" )
 
   public readonly location: Location = inject ( Location )
-  public readonly iconSvc: IconService = inject ( IconService )
   private readonly router: Router = inject ( Router )
 
   public ngOnInit ( ) {

@@ -2,11 +2,7 @@ import { Routes } from "@angular/router"
 import { HomeComponent } from "./user/home/home.component"
 import { EventsComponent } from "./user/events/events.component"
 import { ErrorComponent } from "./user/error/error.component"
-import { DashboardComponent } from "./admin/dashboard/dashboard.component"
-import { FileExplorerComponent } from "./admin/file-explorer/file-explorer.component"
 import { authGuard } from "../guards/auth.guard"
-import { HeroEditorComponent } from "./admin/hero-editor/hero-editor.component"
-import { EventEditorComponent } from "./admin/event-editor/event-editor.component"
 
 export const routes: Routes = [
   {
@@ -24,25 +20,33 @@ export const routes: Routes = [
   },
   {
     path: "admin",
+    canActivate: [ authGuard ],
     children: [
       {
         path: "dashboard",
-        component: DashboardComponent
+        loadComponent: ( ) =>
+          import ( "./admin/dashboard/dashboard.component" )
+            .then ( m => m.DashboardComponent )
       },
       {
         path: "fileExplorer",
-        component: FileExplorerComponent
+        loadComponent: ( ) =>
+          import ( "./admin/file-explorer/file-explorer.component" )
+            .then ( m => m.FileExplorerComponent )
       },
       {
         path: "heroEditor",
-        component: HeroEditorComponent
+        loadComponent: ( ) =>
+          import ( "./admin/hero-editor/hero-editor.component" )
+            .then ( m => m.HeroEditorComponent )
       },
       {
         path: "eventEditor",
-        component: EventEditorComponent
+        loadComponent: ( ) =>
+          import ( "./admin/event-editor/event-editor.component" )
+            .then ( m => m.EventEditorComponent )
       }
-    ],
-    canActivate: [ authGuard ]
+    ]
   },
   {
     path: "error",

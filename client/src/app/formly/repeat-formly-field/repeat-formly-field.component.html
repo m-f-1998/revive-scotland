@@ -7,7 +7,7 @@
       }
     </h5>
     <button type="button" class="btn btn-primary" (click)="addField()">
-      <fa-icon [icon]="iconSvc.getIcon('fas', 'plus')" /> Add Field
+      <app-icon icon="plus" /> Add Field
     </button>
   </div>
   <hr />
@@ -20,10 +20,10 @@
         </div>
         <div class="d-flex flex-row gap-3">
           <button type="button" class="btn btn-sm btn-primary" (click)="edit($index)">
-            <fa-icon [icon]="iconSvc.getIcon('fas', 'edit')" />
+            <app-icon icon="edit" />
           </button>
           <button type="button" class="btn btn-sm btn-danger" (click)="removeField($index)">
-            <fa-icon [icon]="iconSvc.getIcon('fas', 'trash-alt')" />
+            <app-icon icon="trash-alt" />
           </button>
         </div>
       </div>

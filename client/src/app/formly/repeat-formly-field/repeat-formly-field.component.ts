@@ -3,15 +3,14 @@ import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
 import { FormlyFieldConfig } from "@ngx-formly/core"
 import { InputDialogComponent } from "../input-dialog/input-dialog.component"
 import { FormlyService } from "../../services/formly.service"
-import { FaIconComponent } from "@fortawesome/angular-fontawesome"
-import { IconService } from "../../services/icons.service"
 import { FieldType } from "@ngx-formly/bootstrap/form-field"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
+import { IconComponent } from "../../icon/icon.component"
 
 @Component ( {
   selector: "app-repeat-formly-field",
   imports: [
-    FaIconComponent
+    IconComponent
   ],
   templateUrl: "./repeat-formly-field.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -20,7 +19,6 @@ export class RepeatFieldComponent extends FieldType {
   public editingIndex: number | null = null
   public valuesInModel: WritableSignal<any[]> = signal ( [ ] )
 
-  public readonly iconSvc: IconService = inject ( IconService )
   private readonly modalSvc: NgbModal = inject ( NgbModal )
   private readonly formlySvc: FormlyService = inject ( FormlyService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )

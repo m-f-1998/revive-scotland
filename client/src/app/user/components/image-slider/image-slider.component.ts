@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, input, InputSignal, signal } from "@angular/core"
 import { NgbModal, NgbModalModule } from "@ng-bootstrap/ng-bootstrap"
 import { ExpandedImageComponent } from "@components/expanded-image/expanded-image.component"
-import { IconService } from "@services/icons.service"
 
 @Component ( {
   selector: "app-image-slider",
@@ -18,7 +17,6 @@ export class ImageSliderComponent {
   public zoom = 10
   public loading = signal ( false )
 
-  public readonly iconSvc: IconService = inject ( IconService )
   private readonly modalSvc: NgbModal = inject ( NgbModal )
 
   public expandImage ( index: number ) {

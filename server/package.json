@@ -13,31 +13,30 @@
     "tsc-verify": "npx --yes tsc --noEmit"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.978.0",
-    "@aws-sdk/s3-request-presigner": "^3.978.0",
+    "@aws-sdk/client-s3": "^3.997.0",
+    "@aws-sdk/s3-request-presigner": "^3.997.0",
     "@google-analytics/data": "^5.2.1",
     "body-parser": "^2.2.2",
     "cors": "^2.8.6",
-    "dotenv": "^17.2.3",
-    "eslint": "^9.39.2",
+    "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
-    "firebase-admin": "^13.6.0",
+    "firebase-admin": "^13.6.1",
     "google-auth-library": "^10.5.0",
     "helmet": "^8.1.0",
     "nodemailer": "^7.0.13",
-    "sanitize-html": "^2.17.0",
+    "sanitize-html": "^2.17.1",
     "sharp": "^0.34.5",
     "typescript": "^5.9.3"
   },
   "devDependencies": {
-    "@stylistic/eslint-plugin": "^5.7.1",
+    "@stylistic/eslint-plugin": "^5.9.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/helmet": "^0.0.48",
-    "@types/nodemailer": "^7.0.9",
+    "@types/nodemailer": "^7.0.11",
     "@types/sanitize-html": "^2.16.0",
     "eslint-plugin-import": "^2.32.0",
-    "typescript-eslint": "^8.54.0"
+    "typescript-eslint": "^8.56.1"
   }
 }

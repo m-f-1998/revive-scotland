@@ -1,17 +1,16 @@
 import { ChangeDetectionStrategy, Component, inject, Input, OnInit } from "@angular/core"
 import { FormGroup } from "@angular/forms"
-import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
+import { IconComponent } from "@revive/src/app/icon/icon.component"
 import { FileEntry } from "@revive/src/app/interfaces/fileExplorer.interface"
 import { FormlyService } from "@revive/src/app/services/formly.service"
-import { IconService } from "@revive/src/app/services/icons.service"
 
 @Component ( {
   selector: "app-admin-file-explorer-modal",
   imports: [
     FormlyForm,
-    FaIconComponent
+    IconComponent
   ],
   templateUrl: "./file-explorer-modal.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -28,7 +27,6 @@ export class FileExplorerModalComponent implements OnInit {
   public fields: FormlyFieldConfig [ ] = [ ]
   public model: any = { }
 
-  public readonly iconSvc: IconService = inject ( IconService )
   private readonly activeModal: NgbActiveModal = inject ( NgbActiveModal )
   private readonly formlySvc: FormlyService = inject ( FormlyService )
 

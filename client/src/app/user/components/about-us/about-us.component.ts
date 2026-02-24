@@ -1,15 +1,13 @@
-import { ChangeDetectionStrategy, Component, inject } from "@angular/core"
-import { FaIconComponent } from "@fortawesome/angular-fontawesome"
-import { IconService } from "@revive/src/app/services/icons.service"
+import { ChangeDetectionStrategy, Component } from "@angular/core"
+import { IconComponent } from "@revive/src/app/icon/icon.component"
 
 @Component ( {
   selector: "app-about-us",
   imports: [
-    FaIconComponent
+    IconComponent
   ],
   templateUrl: "./about-us.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class AboutUsComponent {
-  public iconSvc: IconService = inject ( IconService )
 }

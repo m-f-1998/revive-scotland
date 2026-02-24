@@ -3,7 +3,7 @@
 } @else {
   <div class="modal-header">
     <h5 class="modal-title">
-      <fa-icon [icon]="iconSvc.getIcon('fas', 'folder')" class="me-2" />
+      <app-icon icon="folder" class="me-2" />
       Select File
     </h5>
     <button type="button" class="btn-close" aria-label="Close" (click)="closeSelectionMode()"></button>
@@ -14,7 +14,7 @@
     @if (!isSelectionMode) {
       <div class="mb-4 p-4 shadow-sm rounded-3file-expl d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center border-bottom border-primary border-3">
         <h1 class="h3 fw-bold mb-3 mb-sm-0">
-          <fa-icon [icon]="iconSvc.getIcon('fas', 'folder')" />
+          <app-icon icon="folder" />
           File Explorer
         </h1>
 
@@ -64,16 +64,16 @@
 
         <div ngbDropdown>
           <button type="button" class="btn btn-primary btn-sm shadow-sm transition-transform" ngbDropdownToggle [disabled]="loading()">
-            <fa-icon [icon]="iconSvc.getIcon('fas', 'cloud-upload-alt')" class="me-1" />
+            <app-icon icon="cloud-upload-alt" class="me-1" />
             Upload
           </button>
           <div ngbDropdownMenu>
             <button ngbDropdownItem (click)="fileInput.webkitdirectory=false; fileInput.click()">
-              <fa-icon [icon]="iconSvc.getIcon('fas', 'file-upload')" class="me-2" />
+              <app-icon icon="file-upload" class="me-2" />
               File
             </button>
             <button ngbDropdownItem (click)="fileInput.webkitdirectory=true; fileInput.click()">
-              <fa-icon [icon]="iconSvc.getIcon('fas', 'folder')" class="me-2" />
+              <app-icon icon="folder" class="me-2" />
               Folder
             </button>
           </div>
@@ -83,7 +83,7 @@
           (click)="openModal('createFolder')"
           [disabled]="loading()"
           class="btn btn-success btn-sm shadow-sm transition-transform">
-          <fa-icon [icon]="iconSvc.getIcon('fas', 'folder-plus')" class="me-1" />
+          <app-icon icon="folder-plus" class="me-1" />
           New Folder
         </button>
         <button
@@ -91,7 +91,7 @@
           [disabled]="loading()"
           class="btn btn-info btn-sm shadow-sm transition-transform"
           title="Refresh List">
-          <fa-icon [icon]="iconSvc.getIcon('fas', 'refresh')" [animation]="loading() ? 'spin' : undefined" />
+          <app-icon icon="refresh" [iconAnimation]="loading() ? 'spin' : undefined" />
           Refresh
         </button>
       </div>
@@ -123,7 +123,7 @@
                 <tr class="cursor-pointer" (dragover)="onDragOver($event)" (drop)="upAFolder($event)">
                   <td class="text-primary fw-semibold">
                     <a (click)="goUp()" class="text-decoration-none text-primary fw-semibold d-flex align-items-center cursor-pointer">
-                      <fa-icon [icon]="iconSvc.getIcon('fas', 'arrow-up')" class="me-2" />
+                      <app-icon icon="arrow-up" class="me-2" />
                       ...
                     </a>
                   </td>
@@ -138,9 +138,9 @@
                   <td>
                     <a (click)="isSelectionMode ? null : (file.isFolder ? navigateTo(file.name) : viewFile(file.key))" class="d-flex align-items-center text-decoration-none">
                       @if (file.isFolder) {
-                        <fa-icon [icon]="iconSvc.getIcon('fas', 'folder')" class="me-2 text-warning" />
+                        <app-icon icon="folder" class="me-2 text-warning" />
                       } @else {
-                        <fa-icon [icon]="iconSvc.getIcon('fas', 'file-alt')" class="me-2 text-info" />
+                        <app-icon icon="file-alt" class="me-2 text-info" />
                       }
                       <span [class]="{ 'fw-bold text-primary': file.isFolder }">
                         {{ file.name }}
@@ -157,14 +157,14 @@
                     <td class="text-end">
                       <div class="btn-group" role="group">
                         <button (click)="openModal('rename', file)" title="Rename/Move" class="btn btn-outline-secondary btn-sm p-1 rounded-circle border-0">
-                          <fa-icon [icon]="iconSvc.getIcon('fas', 'pen-to-square')" />
+                          <app-icon icon="pen-to-square" />
                         </button>
                         <button (click)="openModal('delete', file)" title="Delete" class="btn btn-outline-danger btn-sm p-1 rounded-circle border-0">
-                          <fa-icon [icon]="iconSvc.getIcon('fas', 'trash')" />
+                          <app-icon icon="trash" />
                         </button>
                         @if (!file.isFolder) {
                           <button (click)="shareFile(file.key)" title="Share Link" class="btn btn-outline-info btn-sm p-1 rounded-circle border-0">
-                            <fa-icon [icon]="iconSvc.getIcon('fas', 'share')" />
+                            <app-icon icon="share" />
                           </button>
                         }
                       </div>
@@ -174,7 +174,7 @@
               } @empty {
                 <tr>
                   <td colspan="4" class="p-5 text-center text-secondary fs-6">
-                    <fa-icon [icon]="iconSvc.getIcon('fas', 'triangle-exclamation')" class="me-2" /> This folder is empty.
+                    <app-icon icon="triangle-exclamation" class="me-2" /> This folder is empty.
                   </td>
                 </tr>
               }

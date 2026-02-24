@@ -25,7 +25,7 @@
         @for (story of ourStory; track $index) {
           @if (story.bullet) {
             <li>
-              <fa-icon [icon]="iconSvc.getIcon('fas', 'check-circle')" class="check-icon" />
+              <app-icon icon="check-circle" class="check-icon" />
               <p class="mb-0 text-muted mb-2">{{story.description}}</p>
             </li>
           } @else {

@@ -1,18 +1,17 @@
 import { ChangeDetectionStrategy, Component, Input, OnDestroy, OnInit, inject } from "@angular/core"
 import { FormGroup } from "@angular/forms"
-import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
-import { IconService } from "../../services/icons.service"
 import { RecaptchaV3Module, ReCaptchaV3Service } from "ng-recaptcha-2"
 import { Subscription } from "rxjs"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
+import { IconComponent } from "../../icon/icon.component"
 
 @Component ( {
   selector: "iqx-input-dialog",
   imports: [
     FormlyForm,
-    FaIconComponent,
+    IconComponent,
     RecaptchaV3Module
   ],
   templateUrl: "./input-dialog.component.html",
@@ -32,7 +31,6 @@ export class InputDialogComponent implements OnInit, OnDestroy {
   public form = new FormGroup ( { } )
   public description = ""
 
-  public readonly iconSvc: IconService = inject ( IconService )
   private readonly activeModal: NgbActiveModal = inject ( NgbActiveModal )
   private readonly recaptchaSvc: ReCaptchaV3Service = inject ( ReCaptchaV3Service )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )

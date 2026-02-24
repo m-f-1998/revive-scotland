@@ -1,23 +1,22 @@
 import { ChangeDetectionStrategy, Component, inject, isDevMode, OnInit, signal, WritableSignal } from "@angular/core"
 import { FooterComponent } from "@components/footer/footer.component"
-import { FaIconComponent } from "@fortawesome/angular-fontawesome"
 import { DatesService } from "@services/dates.service"
 import { EventsService, ReviveEvent } from "@services/events.service"
 import { ContactComponent } from "@components/contact/contact.component"
 import { SliderComponent } from "@components/slider/slider.component"
-import { IconService } from "../../services/icons.service"
 import { FormlyService } from "../../services/formly.service"
 import { NavbarComponent } from "../components/navbar/navbar.component"
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
 import { InputDialogComponent } from "../../formly/input-dialog/input-dialog.component"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { ApiService } from "../../services/api.service"
+import { IconComponent } from "../../icon/icon.component"
 
 @Component ( {
   selector: "app-events",
   imports: [
     FooterComponent,
-    FaIconComponent,
+    IconComponent,
     ContactComponent,
     SliderComponent,
     NavbarComponent
@@ -45,7 +44,6 @@ export class EventsComponent implements OnInit {
 
   public readonly eventsSvc: EventsService = inject ( EventsService )
   public readonly dateSvc: DatesService = inject ( DatesService )
-  public readonly iconSvc: IconService = inject ( IconService )
   public readonly formlySvc: FormlyService = inject ( FormlyService )
   private readonly modalSvc: NgbModal = inject ( NgbModal )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )

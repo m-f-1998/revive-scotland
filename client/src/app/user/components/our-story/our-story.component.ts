@@ -1,11 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject, OnDestroy, OnInit, signal, WritableSignal } from "@angular/core"
-import { FaIconComponent } from "@fortawesome/angular-fontawesome"
-import { IconService } from "@revive/src/app/services/icons.service"
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, signal, WritableSignal } from "@angular/core"
+import { IconComponent } from "@revive/src/app/icon/icon.component"
 
 @Component ( {
   selector: "app-our-story",
   imports: [
-    FaIconComponent
+    IconComponent
   ],
   templateUrl: "./our-story.component.html",
   styleUrl: "./our-story.component.scss",
@@ -40,8 +39,6 @@ export class OurStoryComponent implements OnInit, OnDestroy {
 
   public readonly readmore: WritableSignal<boolean> = signal ( false )
   public readonly screenWidth: WritableSignal<number> = signal ( window.innerWidth )
-
-  public readonly iconSvc: IconService = inject ( IconService )
 
   public ngOnInit ( ) {
     window.addEventListener ( "resize", this.onResize.bind ( this ) )

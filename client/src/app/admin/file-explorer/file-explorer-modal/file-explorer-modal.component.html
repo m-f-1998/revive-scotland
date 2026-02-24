@@ -28,13 +28,13 @@
 <div class="modal-footer">
   <button [class]="completeClass" (click)="completeAction()" [disabled]="type !== 'delete' && form.invalid">
     @if (type === "delete") {
-      <fa-icon [icon]="iconSvc.getIcon('fas', 'trash')" />
+      <app-icon icon="trash" />
       Delete Permanently
     } @else if (type === "rename") {
-      <fa-icon [icon]="iconSvc.getIcon('fas', 'edit')" />
+      <app-icon icon="edit" />
       Confirm
     } @else if (type === "createFolder") {
-      <fa-icon [icon]="iconSvc.getIcon('fas', 'folder-plus')" />
+      <app-icon icon="folder-plus" />
       Create
     }
   </button>

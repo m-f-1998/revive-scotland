@@ -1,8 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
 import { AdminNavbarComponent } from "../navbar/navbar.component"
 import { AuthService } from "../../services/auth.service"
-import { FaIconComponent } from "@fortawesome/angular-fontawesome"
-import { IconService } from "../../services/icons.service"
 import { BaseChartDirective } from "ng2-charts"
 import { DashboardData, OverviewMetrics } from "../../interfaces/analytics.interface"
 import { AnalyticsService } from "../../services/analytics.service"
@@ -10,12 +8,13 @@ import { ChartData, ChartOptions } from "chart.js"
 import { DecimalPipe } from "@angular/common"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { AdminFooterComponent } from "../footer/footer.component"
+import { IconComponent } from "../../icon/icon.component"
 
 @Component ( {
   selector: "app-admin-dashboard",
   imports: [
     AdminNavbarComponent,
-    FaIconComponent,
+    IconComponent,
     BaseChartDirective,
     DecimalPipe,
     AdminFooterComponent
@@ -60,7 +59,6 @@ export class DashboardComponent implements OnInit {
   }
 
   public readonly authSvc: AuthService = inject ( AuthService )
-  public readonly iconSvc: IconService = inject ( IconService )
   private readonly analyticsSvc: AnalyticsService = inject ( AnalyticsService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
 
