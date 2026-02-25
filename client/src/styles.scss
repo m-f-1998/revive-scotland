@@ -1,4 +1,4 @@
-@use "@m-f-1998/ngx-toastr/toastr" as *;
+@import "@m-f-1998/ngx-toastr/toastr";
 @import "@fortawesome/fontawesome-svg-core/styles.css";
 
 @import "bootstrap/scss/functions";
@@ -17,7 +17,13 @@
 @import "bootstrap/scss/modal";
 @import "bootstrap/scss/close";
 @import "bootstrap/scss/dropdown";
+@import "bootstrap/scss/card";
 @import "bootstrap/scss/carousel";
+@import "bootstrap/scss/tables";
+@import "bootstrap/scss/breadcrumb";
+
+// Forms
+@import "bootstrap/scss/forms";
 
 @import "bootstrap/scss/buttons";
 @import "bootstrap/scss/nav";
@@ -205,11 +211,6 @@ video {
   max-width: 100%;
 }
 
-.navbar-nav .nav-link.active,.navbar-nav .nav-link.show {
-  font-weight: 700;
-  color: var(--bs-nav-link-disabled-color) !important;
-}
-
 tr[draggable="true"] {
   cursor: grab;
 }
@@ -225,4 +226,22 @@ tr.folder-drop-target {
 
 .list-unstyled {
   list-style-type: none;
+}
+
+.nav-link:hover:not(:disabled) {
+  color: var(--bs-primary) !important;
+  cursor: pointer;
+  background-color: rgba(var(--bs-primary-rgb), 0.1) !important;
+}
+
+
+.nav-link:disabled {
+  color: var(--bs-gray) !important;
+  cursor: not-allowed;
+  background-color: transparent !important;
+}
+
+.nav-link.active {
+  color: var(--bs-primary) !important;
+  background-color: rgba(var(--bs-primary-rgb), 0.1) !important;
 }

@@ -1,5 +1,6 @@
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, signal, WritableSignal } from "@angular/core"
+import { IconComponent } from "@revive/src/app/icon/icon.component"
 import { EventsService, ReviveEvent } from "@services/events.service"
 import { intervalToDuration } from "date-fns"
 
@@ -13,7 +14,9 @@ interface TimeRemaining {
 
 @Component ( {
   selector: "app-next-event",
-  imports: [],
+  imports: [
+    IconComponent
+  ],
   templateUrl: "./next-event.component.html",
   styleUrl: "./next-event.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush

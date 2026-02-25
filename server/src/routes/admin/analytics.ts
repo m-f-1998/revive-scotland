@@ -1,16 +1,7 @@
 import { BetaAnalyticsDataClient } from "@google-analytics/data"
-import { Router, Request, Response } from "express"
-import { rateLimit } from "express-rate-limit"
 import { GoogleAuth } from "google-auth-library"
 import serviceAccount from "../../revive-scotland-firebase.json" with { type: "json" }
-
-export const router: Router = Router ( )
-
-router.use ( rateLimit ( {
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: "Too many requests from this IP, please try again later."
-} ) )
+import { FastifyPluginAsync } from "fastify"
 
 const auth = new GoogleAuth ( {
   credentials: serviceAccount,
@@ -177,41 +168,42 @@ const fetchTrafficSourceData = async ( ) => {
   } ) )
 }
 
-router.get ( "/", async ( _req: Request, res: Response ) => {
-  try {
-    if ( cache && ( Date.now ( ) - lastCacheTime < cacheDurationMs ) ) {
-      res.json ( {
-        overview: cache [ 0 ],
-        trendData: cache [ 1 ],
-        geographyData: cache [ 2 ],
-        deviceData: cache [ 3 ],
-        trafficSourceData: cache [ 4 ],
+export const router: FastifyPluginAsync = async app => {
+  app.get ( "/", async ( _req, rep ) => {
+    try {
+      if ( cache && ( Date.now ( ) - lastCacheTime < cacheDurationMs ) ) {
+        return rep.send ( {
+          overview: cache [ 0 ],
+          trendData: cache [ 1 ],
+          geographyData: cache [ 2 ],
+          deviceData: cache [ 3 ],
+          trafficSourceData: cache [ 4 ],
+        } )
+      }
+
+      const [ overview, trendData, geographyData, deviceData, trafficSourceData ] = await Promise.all ( [
+        fetchOverviewMetrics ( ),
+        fetchTrendMetrics ( ),
+        fetchGeographyData ( ),
+        fetchDeviceData ( ),
+        fetchTrafficSourceData ( ),
+      ] )
+
+      // Update cache
+      cache = [ overview, trendData, geographyData, deviceData, trafficSourceData ]
+      lastCacheTime = Date.now ( )
+
+      // Send a single, clean object back to the Angular client
+      return rep.send ( {
+        overview,
+        trendData,
+        geographyData,
+        deviceData,
+        trafficSourceData
       } )
-      return
+    } catch ( error ) {
+      console.error ( "Error fetching analytics data:", error )
+      return rep.status ( 500 ).send ( "Failed to fetch analytics data." )
     }
-
-    const [ overview, trendData, geographyData, deviceData, trafficSourceData ] = await Promise.all ( [
-      fetchOverviewMetrics ( ),
-      fetchTrendMetrics ( ),
-      fetchGeographyData ( ),
-      fetchDeviceData ( ),
-      fetchTrafficSourceData ( ),
-    ] )
-
-    // Update cache
-    cache = [ overview, trendData, geographyData, deviceData, trafficSourceData ]
-    lastCacheTime = Date.now ( )
-
-    // Send a single, clean object back to the Angular client
-    res.json ( {
-      overview,
-      trendData,
-      geographyData,
-      deviceData,
-      trafficSourceData
-    } )
-  } catch ( error ) {
-    console.error ( "Error fetching analytics data:", error )
-    res.status ( 500 ).send ( "Failed to fetch analytics data." )
-  }
-} )
+  } )
+}

@@ -1,119 +1,114 @@
-import type { Request, Response } from "express"
-import { Router } from "express"
+import { config } from "dotenv"
+import { join, normalize, resolve } from "path"
 
-import { rateLimit } from "express-rate-limit"
+const envPath = resolve ( process.cwd ( ), ".env" )
+config ( { path: envPath, quiet: true } )
+
+const isDevMode = ( ) => process.env [ "DEV" ] === "true"
 
 import sharp from "sharp"
-import { join } from "path"
-import fs from "fs"
-import { cpus } from "os"
+import { createReadStream, existsSync, statSync } from "fs"
+import { FastifyPluginAsync } from "fastify"
 
-export const router = Router ( )
-
-router.use ( rateLimit ( {
-  windowMs: 60 * 1000, // 1 minute
-  max: 500, // Limit each IP to 500 requests per windowMs
-  standardHeaders: true, // Return rate limit info in the RateLimit-* headers
-  legacyHeaders: false, // Disable the X-RateLimit-* headers
-  message: {
-    status: 429,
-    message: "Too many requests, please try again later."
-  }
-} ) )
-
-// ✅ Adjust this to your actual image folder
 const IMAGE_DIR = join ( process.cwd ( ), "../", "assets", "img", )
 
-// ✅ Supported formats
 const SUPPORTED_FORMATS = [ "webp", "avif", "jpeg", "png" ]
 
-sharp.cache ( true ) // Enable sharp cache
-sharp.concurrency ( cpus ( ).length )
+sharp.cache ( !isDevMode ( ) )
+sharp.concurrency ( isDevMode ( ) ? 1 : 4 )
 
-router.get ( "/*filename", ( req: Request, res: Response ) => {
-  try {
-    const filename = ( req.params [ "filename" ] as unknown as string [ ] ).join ( "/" )
+export const router: FastifyPluginAsync = async app => {
+  app.get ( "/*", async ( req, rep ) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      const asset = req.params as { "*": string }
+      const filename = asset [ "*" ]
 
-    // Make sure the filename is safe
-    if ( !filename || !/^[a-zA-Z0-9_\/\-]+\.[a-zA-Z0-9]+$/.test ( filename ) ) {
-      res.status ( 400 ).json ( { error: "Invalid filename" } )
-      return
-    }
+      if ( !filename ) {
+        return rep.status ( 400 ).send ( "Filename is required" )
+      }
 
-    if ( filename.includes ( ".." ) || filename.startsWith ( "/" ) || filename.endsWith ( "/" ) ) {
-      res.status ( 400 ).json ( { error: "Traversal attack detected" } )
-      return
-    }
-    const { w, h, f, q } = req.query
+      const { w, h, f, q } = req.query as { w?: string; h?: string; f?: string; q?: string }
 
-    const width = w ? parseInt ( w as string, 10 ) : null
-    const height = h ? parseInt ( h as string, 10 ) : null
-    const format = SUPPORTED_FORMATS.includes ( f as string ) ? ( f as string ) : "webp"
-    const quality = q ? parseInt ( q as string, 10 ) : 80
+      const width = w ? parseInt ( w as string, 10 ) : null
+      const height = h ? parseInt ( h as string, 10 ) : null
+      const format = SUPPORTED_FORMATS.includes ( f as string ) ? ( f as string ) : "webp"
+      const quality = q ? parseInt ( q as string, 10 ) : 80
 
-    // ✅ Path to original image
-    const inputPath = join ( IMAGE_DIR, filename )
-    if ( !fs.existsSync ( inputPath ) ) {
-      console.log ( "Image not found:", inputPath )
-      res.status ( 404 ).send ( "Image not found" )
-      return
-    }
+      const safeFilename = normalize ( filename ).replace ( /^(\.\.(\/|\\|$))+/, "" )
+      const inputPath = join ( IMAGE_DIR, safeFilename )
+      if ( !existsSync ( inputPath ) ) {
+        console.log ( "Image not found:", inputPath )
+        return rep.status ( 404 ).send ( "Image not found" )
+      }
 
-    // Check if image or mp4
-    // Only allow mp4, jpg, jpeg, png, webp, avif
-    const ext = filename.split ( "." ).pop ( )?.toLowerCase ( )
-    if ( ext === "mp4" ) {
-      const stat = fs.statSync ( inputPath )
-      const fileSize = stat.size
-      const range = req.headers.range
+      // Check if image or mp4
+      // Only allow mp4, jpg, jpeg, png, webp, avif
+      const ext = filename.split ( "." ).pop ( )?.toLowerCase ( )
+      if ( ext === "mp4" ) {
+        const stat = statSync ( inputPath )
+        const fileSize = stat.size
+        const range = req.headers.range
 
-      if ( range ) {
-        const parts = range.replace ( /bytes=/, "" ).split ( "-" )
-        const start = parseInt ( parts [ 0 ], 10 )
-        const end = parts [ 1 ] ? parseInt ( parts [ 1 ], 10 ) : fileSize - 1
-        const chunkSize = end - start + 1
-        const file = fs.createReadStream ( inputPath, { start, end } )
+        if ( range ) {
+          const parts = range.replace ( /bytes=/, "" ).split ( "-" )
+          const start = parseInt ( parts [ 0 ], 10 )
+          const end = parts [ 1 ] ? parseInt ( parts [ 1 ], 10 ) : fileSize - 1
+          const chunkSize = end - start + 1
 
-        res.writeHead ( 206, {
-          "Content-Range": `bytes ${start}-${end}/${fileSize}`,
-          "Accept-Ranges": "bytes",
-          "Content-Length": chunkSize,
-          "Content-Type": "video/mp4",
-        } )
-        file.pipe ( res )
+          const file = createReadStream ( inputPath, { start, end } )
+
+          // In Fastify, use .header() and return the stream directly
+          return rep
+            .code ( 206 )
+            .headers ( {
+              "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+              "Accept-Ranges": "bytes",
+              "Content-Length": chunkSize,
+              "Content-Type": "video/mp4",
+              "Access-Control-Allow-Origin": "*" // To help with your previous CORS/Origin issue!
+            } )
+            .send ( file )
+        } else {
+          const file = createReadStream ( inputPath )
+
+          return rep
+            .code ( 200 )
+            .headers ( {
+              "Content-Length": fileSize,
+              "Content-Type": "video/mp4",
+              "Access-Control-Allow-Origin": "*"
+            } )
+            .send ( file )
+        }
+      } else if ( !ext || ![ "jpg", "jpeg", "png", "webp", "avif" ].includes ( ext ) ) {
+        return rep.status ( 400 ).send ( "Unsupported file type" )
       } else {
-        res.writeHead ( 200, {
-          "Content-Length": fileSize,
-          "Content-Type": "video/mp4",
-        } )
-        fs.createReadStream ( inputPath ).pipe ( res )
-      }
-    } else if ( !ext || ![ "jpg", "jpeg", "png", "webp", "avif" ].includes ( ext ) ) {
-      res.status ( 400 ).send ( "Unsupported file type" )
-    } else {
-      // ✅ Sharp pipeline
-      let transformer = sharp ( inputPath )
-        .resize ( width, height, { fit: "inside", withoutEnlargement: true } )
+        let transformer = sharp ( inputPath )
+          .resize ( width, height, { fit: "inside", withoutEnlargement: true } )
 
-      switch ( format ) {
-        case "jpeg":
-          transformer = transformer.jpeg ( { quality, progressive: true } )
-          break
-        case "png":
-          transformer = transformer.png ( { quality } )
-          break
-        case "avif":
-          transformer = transformer.avif ( { quality } )
-          break
-        default:
-          transformer = transformer.webp ( { quality } )
-      }
+        switch ( format ) {
+          case "jpeg":
+            transformer = transformer.jpeg ( { quality, progressive: true } )
+            break
+          case "png":
+            transformer = transformer.png ( { quality } )
+            break
+          case "avif":
+            transformer = transformer.avif ( { quality } )
+            break
+          default:
+            transformer = transformer.webp ( { quality } )
+        }
 
-      res.type ( format )
-      transformer.pipe ( res )
+        rep.type ( format )
+        rep.header ( "content-length", ( await transformer.toBuffer ( ) ).length )
+        rep.header ( "content-disposition", `inline; filename="${filename.replace ( /"/g, "" ).replace ( /\s/g, "_" )}"` )
+        return rep.send ( await transformer.toBuffer ( ) )
+      }
+    } catch ( err ) {
+      console.error ( err )
+      return rep.status ( 500 ).send ( "Error processing image" )
     }
-  } catch ( err ) {
-    console.error ( err )
-    res.status ( 500 ).send ( "Error processing image" )
-  }
-} )
+  } )
+}

@@ -88,9 +88,11 @@ export class AuthService {
           this.loading$.set ( false )
         }
       } catch {
-        this.toastrSvc.error ( "Session has expired. Please log in again." )
-        this.logout ( )
-        this.router.navigate ( [ "/" ] )
+        await this.logout ( )
+        await this.router.navigate ( [ "/" ] )
+        setTimeout ( ( ) => {
+          this.toastrSvc.error ( "Session has expired. Redirecting to login page." )
+        }, 500 )
       }
     } )
   }

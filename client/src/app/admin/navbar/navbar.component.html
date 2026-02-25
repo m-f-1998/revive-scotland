@@ -1,5 +1,8 @@
-<nav class="navbar navbar-expand-lg">
-  <div class="container">
+<nav class="navbar navbar-expand-sm h-100">
+  <div class="container-fluid">
+    <button class="navbar-toggler" type="button" (click)="toggleMenu()">
+      <span class="navbar-toggler-icon"></span>
+    </button>
     <a class="navbar-brand" href="/">
       <img src="/api/img/logo.png?w=640&f=webp"
         srcset="
@@ -14,31 +17,38 @@
         decoding="async"
       />
     </a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
+    <div class="collapse navbar-collapse" [ngbCollapse]="isMenuCollapsed()">
       <ul class="navbar-nav">
-        <button class="nav-link clickable" (click)="goTo('/admin/dashboard')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [class.active]="url() === '/admin/dashboard'" [disabled]="url() === '/admin/dashboard'">
-          <app-icon icon="gauge-high" />
-          Dashboard
-        </button>
-        <button class="nav-link clickable" (click)="goTo('/admin/fileExplorer')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [class.active]="url() === '/admin/fileExplorer'" [disabled]="url() === '/admin/fileExplorer'">
-          <app-icon icon="folder-open" />
-          File Explorer
-        </button>
-        <button class="nav-link clickable" (click)="goTo('/admin/heroEditor')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [class.active]="url() === '/admin/heroEditor'" [disabled]="url() === '/admin/heroEditor'">
-          <app-icon icon="image" />
-          Hero Editor
-        </button>
-        <button class="nav-link clickable" (click)="goTo('/admin/eventEditor')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [class.active]="url() === '/admin/eventEditor'" [disabled]="url() === '/admin/eventEditor'">
-          <app-icon icon="calendar-days" />
-          Event Editor
-        </button>
-        <button class="nav-link clickable" (click)="logout()" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
-          <app-icon icon="right-from-bracket" />
-          Logout
-        </button>
+        <li class="nav-item">
+          <a class="nav-link link show display-4" (click)="goTo('/admin/dashboard')" [class.active]="url() === '/admin/dashboard'">
+            <app-icon icon="gauge-high" />
+            Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link link show display-4" (click)="goTo('/admin/fileExplorer')" [class.active]="url() === '/admin/fileExplorer'">
+            <app-icon icon="folder-open" />
+            File Explorer
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link link show display-4" (click)="goTo('/admin/heroEditor')" [class.active]="url() === '/admin/heroEditor'">
+            <app-icon icon="image" />
+            Hero Editor
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link link show display-4" (click)="goTo('/admin/eventEditor')" [class.active]="url() === '/admin/eventEditor'">
+            <app-icon icon="calendar-days" />
+            Event Editor
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link link show display-4" (click)="logout()">
+            <app-icon icon="right-from-bracket" />
+            Logout
+          </a>
+        </li>
       </ul>
     </div>
   </div>

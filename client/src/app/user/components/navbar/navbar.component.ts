@@ -1,12 +1,13 @@
 import { Location } from "@angular/common"
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
 import { NavigationEnd, Router } from "@angular/router"
-import { NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap"
+import { NgbCollapse, NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap"
 import { IconComponent } from "@revive/src/app/icon/icon.component"
 
 @Component ( {
   selector: "app-navbar",
   imports: [
+    NgbCollapse,
     NgbDropdownModule,
     IconComponent
   ],
@@ -15,6 +16,8 @@ import { IconComponent } from "@revive/src/app/icon/icon.component"
 } )
 export class NavbarComponent implements OnInit {
   public url: WritableSignal<string> = signal ( "" )
+
+  public isMenuCollapsed: WritableSignal<boolean> = signal ( true )
 
   public readonly location: Location = inject ( Location )
   private readonly router: Router = inject ( Router )
@@ -28,16 +31,12 @@ export class NavbarComponent implements OnInit {
     this.url.set ( this.location.path ( ) )
   }
 
-  public scrollTo ( id: string ) {
-    requestAnimationFrame ( ( ) => {
-      document.querySelector ( id )?.scrollIntoView ( { behavior: "smooth" } )
-    } )
+  public goTo ( routerLink: string = "", id?: string ) {
+    this.isMenuCollapsed.set ( true )
+    this.router.navigate ( [ routerLink ], id ? { fragment: id } : undefined )
   }
 
-  public goTo ( path: string, id?: string ) {
-    this.router.navigate ( [ path ] )
-    if ( id ) {
-      this.scrollTo ( id )
-    }
+  public toggleMenu ( ) {
+    this.isMenuCollapsed.set ( !this.isMenuCollapsed ( ) )
   }
 }

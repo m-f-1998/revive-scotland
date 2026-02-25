@@ -1,0 +1,1 @@
+{"root":["./src/index.ts","./src/routes/admin.ts","./src/routes/images.ts","./src/routes/mailer.ts","./src/routes/static.ts","./src/routes/admin/analytics.ts","./src/routes/admin/events.ts","./src/routes/admin/fileexplorer.ts","./src/routes/admin/heroeditor.ts","./src/routes/admin/public.ts","./src/routes/admin/middleware/fileexplorer.ts","./package.json"],"version":"5.9.3"}

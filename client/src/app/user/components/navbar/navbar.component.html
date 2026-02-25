@@ -1,5 +1,8 @@
-<nav class="navbar navbar-expand-lg">
-  <div class="container">
+<nav class="navbar navbar-expand-sm h-100">
+  <div class="container-fluid">
+    <button class="navbar-toggler" type="button" (click)="toggleMenu()">
+      <span class="navbar-toggler-icon"></span>
+    </button>
     <a class="navbar-brand" href="/">
       <img src="/api/img/logo.png?w=640&f=webp"
         srcset="
@@ -14,31 +17,38 @@
         decoding="async"
       />
     </a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
+    <div class="collapse navbar-collapse" [ngbCollapse]="isMenuCollapsed()">
       <ul class="navbar-nav">
-        <button class="nav-link clickable" (click)="goTo('/')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [class.active]="url() === ''" [disabled]="url() === ''">
-          <app-icon icon="home" />
-          Home
-        </button>
-        <button class="nav-link clickable" (click)="goTo('/events')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [class.active]="url() === '/events'" [disabled]="url() === '/events'">
-          <app-icon icon="calendar" />
-          Events
-        </button>
-        <button class="nav-link clickable" (click)="goTo('/', '#pilgrimage')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
-          <app-icon icon="cross" />
-          Pilgrimages
-        </button>
-        <button class="nav-link clickable" (click)="goTo('/', '#adoration')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
-          <app-icon icon="praying-hands" />
-          Adoration
-        </button>
-        <button class="nav-link clickable" (click)="goTo('/', '#weekends')" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show">
-          <app-icon icon="user-friends" />
-          Revive Weekends
-        </button>
+        <li class="nav-item">
+          <a class="nav-link link show display-4" (click)="goTo('')" [class.active]="url() === ''">
+            <app-icon icon="home" />
+            Home
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link link show display-4" (click)="goTo('events')" [class.active]="url() === '/events'">
+            <app-icon icon="calendar" />
+            Events
+          </a>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link link show display-4" (click)="goTo('', 'pilgrimage')" [disabled]="url() !== ''">
+            <app-icon icon="cross" />
+            Pilgrimages
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link link show display-4" (click)="goTo('', 'adoration')" [disabled]="url() !== ''">
+            <app-icon icon="praying-hands" />
+            Adoration
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link link show display-4" (click)="goTo('', 'weekends')" [disabled]="url() !== ''">
+            <app-icon icon="user-friends" />
+            Revive Weekends
+          </button>
+        </li>
       </ul>
     </div>
   </div>

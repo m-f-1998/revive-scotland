@@ -1,4 +1,5 @@
 import {
+  faArrowRight,
   faArrowUp,
   faArrowUpLong,
   faBible,
@@ -44,6 +45,7 @@ import { faInstagram } from "@fortawesome/free-brands-svg-icons"
 
 const icons = {
   "fas": {
+    "arrow-right": faArrowRight,
     "arrow-up": faArrowUp,
     "arrow-up-long": faArrowUpLong,
     "bible": faBible,

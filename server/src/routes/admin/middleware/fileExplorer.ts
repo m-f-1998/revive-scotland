@@ -1,81 +1,81 @@
-import { Request, Response, NextFunction } from "express"
 import { auth } from "firebase-admin"
 import { getAuth } from "../../../routes/admin.js"
+import { FastifyReply, FastifyRequest } from "fastify"
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: auth.DecodedIdToken & { s3Path?: string }
+declare module "fastify" {
+  interface FastifyRequest {
+    user?: auth.DecodedIdToken & {
+      s3Path?: string
     }
   }
 }
 
-export const checkFirebaseAuth = async ( req: Request, res: Response, next: NextFunction ) => {
-  const authHeader = req.headers.authorization
+export const checkFirebaseAuth = async (
+  request: FastifyRequest,
+  reply: FastifyReply
+) => {
+  const authHeader = request.headers.authorization
 
-  if ( !authHeader || !authHeader.startsWith ( "Bearer " ) ) {
-    res.status ( 401 ).send ( "Unauthorized: No token provided." )
-    return
+  if ( !authHeader?.startsWith ( "Bearer " ) ) {
+    return reply.code ( 401 ).send ( "Unauthorized: No token provided." )
   }
 
   const idToken = authHeader.split ( "Bearer " ) [ 1 ]
 
   try {
-    // Verify the token
     const decodedToken = await getAuth ( ).verifyIdToken ( idToken )
 
-    // Attach the user's info to the request object
-    // This now contains uid, email, etc.
-    req.user = decodedToken
-
-    next ( )
+    request.user = decodedToken
   } catch ( error ) {
-    console.error ( "Error verifying Firebase token:", error )
-    res.status ( 403 ).send ( "Forbidden: Invalid token." )
+    request.log.error ( error )
+    return reply.code ( 403 ).send ( "Forbidden: Invalid token." )
   }
 }
 
 // Middleware to add the user's root S3 path
-export const addUserPath = ( req: Request, res: Response, next: NextFunction ) => {
-  if ( !req.user ) {
-    res.status ( 401 ).send ( "Unauthorized: User not authenticated." )
-    return
+export const addUserPath = async (
+  request: FastifyRequest,
+  reply: FastifyReply
+) => {
+  if ( !request.user ) {
+    return reply.code ( 401 ).send ( "Unauthorized: User not authenticated." )
   }
 
-  req.user.s3Path = `users/${req.user.uid}/`
-  next ( )
+  request.user.s3Path = `users/${request.user.uid}/`
 }
 
 // Security check to ensure a user isn't trying to access other folders
-export const validateS3Key = ( req: Request, res: Response, next: NextFunction ) => {
-  if ( !req.user || !req.user.s3Path ) {
-    res.status ( 401 ).send ( "Unauthorized: User not authenticated." )
-    return
+export const validateS3Key = async (
+  request: FastifyRequest,
+  reply: FastifyReply
+) => {
+  if ( !request.user?.s3Path ) {
+    return reply.code ( 401 ).send ( "Unauthorized: User not authenticated." )
   }
 
-  const key = req.body?.key || req.query [ "key" ]
-  if ( key && !key.startsWith ( req.user?.s3Path ) ) {
-    res.status ( 403 ).send ( "Forbidden: Access denied to this resource." )
-    return
+  const key =
+    ( request.body as any )?.key ||
+    ( request.query as any )?.key
+
+  if ( key && !key.startsWith ( request.user.s3Path ) ) {
+    return reply.code ( 403 ).send ( "Forbidden: Access denied to this resource." )
   }
 
-  // Also check keys for rename/move
-  if ( req.body?.oldKey && !req.body?.oldKey.startsWith ( req.user?.s3Path ) ) {
-    res.status ( 403 ).send ( "Forbidden: Access denied to source resource." )
-    return
+  const oldKey = ( request.body as any )?.oldKey
+  if ( oldKey && !oldKey.startsWith ( request.user.s3Path ) ) {
+    return reply.code ( 403 ).send ( "Forbidden: Access denied to source resource." )
   }
 
-  if ( req.body?.newKey && !req.body?.newKey.startsWith ( req.user?.s3Path ) ) {
-    res.status ( 403 ).send ( "Forbidden: Access denied to target resource." )
-    return
+  const newKey = ( request.body as any )?.newKey
+  if ( newKey && !newKey.startsWith ( request.user.s3Path ) ) {
+    return reply.code ( 403 ).send ( "Forbidden: Access denied to target resource." )
   }
 
-  // The check for '..' is in the router, but adding a check here provides defense-in-depth.
-  const relativePath = req.query [ "path" ]
-  if ( relativePath && ( typeof relativePath !== "string" || relativePath.includes ( ".." ) ) ) {
-    res.status ( 400 ).send ( "Invalid path provided." )
-    return
+  const relativePath = ( request.query as any )?.path
+  if (
+    relativePath &&
+    ( typeof relativePath !== "string" || relativePath.includes ( ".." ) )
+  ) {
+    return reply.code ( 400 ).send ( "Invalid path provided." )
   }
-
-  next ( )
 }

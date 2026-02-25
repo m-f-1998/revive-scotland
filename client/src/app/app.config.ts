@@ -1,5 +1,5 @@
 import { ApplicationConfig, CSP_NONCE, inject, provideAppInitializer, provideZonelessChangeDetection } from "@angular/core"
-import { provideRouter } from "@angular/router"
+import { provideRouter, withInMemoryScrolling } from "@angular/router"
 import { routes } from "./app.routes"
 import { provideHttpClient, withFetch } from "@angular/common/http"
 import { provideFormlyCore } from "@ngx-formly/core"
@@ -16,7 +16,10 @@ const nonce = document.querySelector ( 'meta[name="csp-nonce"]' )?.getAttribute 
 const appConfig: ApplicationConfig = {
   providers: [
     provideZonelessChangeDetection ( ),
-    provideRouter ( routes ),
+    provideRouter ( routes, withInMemoryScrolling ( {
+      anchorScrolling: "enabled",
+      scrollPositionRestoration: "enabled"
+    } ) ),
     provideHttpClient (
       withFetch ( )
     ),
