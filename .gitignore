@@ -3,3 +3,4 @@ node_modules
 vendor
 dist
 environments
+assets/.cache

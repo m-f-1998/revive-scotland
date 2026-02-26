@@ -7,8 +7,10 @@ config ( { path: envPath, quiet: true } )
 const isDevMode = ( ) => process.env [ "DEV" ] === "true"
 
 import sharp from "sharp"
-import { createReadStream, existsSync, statSync } from "fs"
+import { createReadStream } from "fs"
 import { FastifyPluginAsync } from "fastify"
+import { createHash } from "crypto"
+import { stat, access } from "fs/promises"
 
 const IMAGE_DIR = join ( process.cwd ( ), "../", "assets", "img", )
 
@@ -36,8 +38,11 @@ export const router: FastifyPluginAsync = async app => {
       const quality = q ? parseInt ( q as string, 10 ) : 80
 
       const safeFilename = normalize ( filename ).replace ( /^(\.\.(\/|\\|$))+/, "" )
+
       const inputPath = join ( IMAGE_DIR, safeFilename )
-      if ( !existsSync ( inputPath ) ) {
+      try {
+        await access ( inputPath )
+      } catch {
         console.log ( "Image not found:", inputPath )
         return rep.status ( 404 ).send ( "Image not found" )
       }
@@ -45,9 +50,14 @@ export const router: FastifyPluginAsync = async app => {
       // Check if image or mp4
       // Only allow mp4, jpg, jpeg, png, webp, avif
       const ext = filename.split ( "." ).pop ( )?.toLowerCase ( )
+      const stats = await stat ( inputPath )
+
+      const fileSignature = `${stats.mtimeMs}-${stats.size}`
+      const cacheKey = createHash ( "sha1" ).update ( `${safeFilename}-${fileSignature}-${width}-${height}-${format}-${quality}` ).digest ( "hex" )
+      const cachePath = join ( IMAGE_DIR, "../.cache", `${cacheKey}.${format}` )
+
       if ( ext === "mp4" ) {
-        const stat = statSync ( inputPath )
-        const fileSize = stat.size
+        const fileSize = stats.size
         const range = req.headers.range
 
         if ( range ) {
@@ -84,27 +94,46 @@ export const router: FastifyPluginAsync = async app => {
       } else if ( !ext || ![ "jpg", "jpeg", "png", "webp", "avif" ].includes ( ext ) ) {
         return rep.status ( 400 ).send ( "Unsupported file type" )
       } else {
+        const lastModified = stats.mtime.toUTCString ( )
+
+        if ( req.headers [ "if-none-match" ] === cacheKey ) {
+          return rep.code ( 304 ).send ( )
+        }
+
+        try {
+          await access ( cachePath )
+          return rep.send ( createReadStream ( cachePath ) )
+        } catch {
+          // Cache file does not exist, continue to generate it
+        }
+
         let transformer = sharp ( inputPath )
           .resize ( width, height, { fit: "inside", withoutEnlargement: true } )
 
+        const effort = isDevMode ( ) ? 1 : 4
         switch ( format ) {
           case "jpeg":
             transformer = transformer.jpeg ( { quality, progressive: true } )
             break
           case "png":
-            transformer = transformer.png ( { quality } )
+            transformer = transformer.png ( { quality, effort } )
             break
           case "avif":
-            transformer = transformer.avif ( { quality } )
+            transformer = transformer.avif ( { quality, effort } )
             break
           default:
-            transformer = transformer.webp ( { quality } )
+            transformer = transformer.webp ( { quality, effort } )
         }
 
+        await transformer.toFile ( cachePath )
+
         rep.type ( format )
-        rep.header ( "content-length", ( await transformer.toBuffer ( ) ).length )
+        rep.header ( "content-length", ( await stat ( cachePath ) ).size )
         rep.header ( "content-disposition", `inline; filename="${filename.replace ( /"/g, "" ).replace ( /\s/g, "_" )}"` )
-        return rep.send ( await transformer.toBuffer ( ) )
+        rep.header ( "cache-control", "public, max-age=31536000, immutable" )
+        rep.header ( "last-modified", lastModified )
+        rep.header ( "etag", cacheKey )
+        return rep.send ( createReadStream ( cachePath ) )
       }
     } catch ( err ) {
       console.error ( err )
