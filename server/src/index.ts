@@ -127,7 +127,7 @@ await app.register ( helmet, {
         "https://\*.jsdelivr.net",
         "https://lh3.googleusercontent.com",
         "https://googletagmanager.com",
-        "https://revivescotland.\*.r2.cloudflarestorage.com"
+        "https://\*.r2.cloudflarestorage.com"
       ],
       connectSrc: [
         "'self'",
