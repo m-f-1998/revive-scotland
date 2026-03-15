@@ -1,7 +1,8 @@
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3"
 import { getFirestore } from "../admin.js" // Your existing firebase admin export
-import { Readable } from "stream"
+// import { Readable } from "stream"
 import { FastifyPluginAsync } from "fastify"
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 
 // Duplicate env setup or import from a shared config file
 const R2_ACCOUNT_ID = process.env [ "R2_ACCOUNT_ID" ]
@@ -19,6 +20,13 @@ const s3Client = new S3Client ( {
   }
 } )
 
+interface CachedShare {
+  data?: FirebaseFirestore.DocumentData
+  expiresAt: number // timestamp in ms
+}
+
+const shareCache = new Map<string, CachedShare> ()
+
 export const router: FastifyPluginAsync = async app => {
   /**
    * PUBLIC ROUTE: /s/:id
@@ -33,39 +41,45 @@ export const router: FastifyPluginAsync = async app => {
 
     try {
       const docRef = getFirestore ( ).collection ( "shared_links" ).doc ( id )
-      const docSnap = await docRef.get ( )
-
-      if ( !docSnap.exists ) {
-        return rep.status ( 404 ).send ( "File not found or link has been revoked." )
+      let data
+      const cached = shareCache.get ( id )
+      if ( cached && Date.now ( ) < cached.expiresAt ) {
+        data = cached.data
+      } else {
+        shareCache.delete ( id )
+        const snap = await docRef.get ( )
+        if ( !snap.exists ) {
+          return rep.status ( 404 ).send ( "File not found or link has been revoked." )
+        }
+        data = snap.data ( )
       }
-
-      const data = docSnap.data ( )
 
       if ( data?. [ "expiresAt" ] ) {
         const now = new Date ( )
         const expiry = data [ "expiresAt" ].toDate ( ) // Firestore Timestamp conversion
         if ( now > expiry ) {
+          shareCache.delete ( id )
+          await docRef.delete ( )
           return rep.status ( 410 ).send ( "This link has expired." )
         }
+      }
+
+      if ( !data?. [ "key" ] ) {
+        return rep.status ( 500 ).send ( "Invalid share record." )
       }
 
       const command = new GetObjectCommand ( {
         Bucket: R2_BUCKET_NAME,
         Key: data?. [ "key" ],
       } )
-      const { Body, ContentType, ContentLength } = await s3Client.send ( command )
 
-      rep.header ( "content-type", ContentType || "application/octet-stream" )
-      if ( ContentLength ) {
-        rep.header ( "content-length", ContentLength.toString ( ) )
-      }
+      shareCache.set ( id, { data, expiresAt: Date.now ( ) + 60 * 1000 } ) // 1 min cache
 
-      rep.type ( ContentType || "application/octet-stream" )
-      if ( Body instanceof Readable ) {
-        return rep.send ( Body )
-      } else {
-        return rep.status ( 500 ).send ( "Error retrieving file stream." )
-      }
+      const signedUrl = await getSignedUrl ( s3Client, command, {
+        expiresIn: 60 * 5 // 5 minutes
+      } )
+
+      return rep.redirect ( signedUrl )
     } catch ( error ) {
       console.error ( "Public Share Error:", error )
       return rep.status ( 500 ).send ( "Error retrieving file." )

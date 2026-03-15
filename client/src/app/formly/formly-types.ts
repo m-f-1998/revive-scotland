@@ -1,16 +1,18 @@
 import { WritableSignal } from "@angular/core"
+import { AbstractControl } from "@angular/forms"
 import { FormlyFieldConfig } from "@ngx-formly/core"
 import { Observable } from "rxjs"
 
 export interface FormlyExpressions extends FormlyFieldConfig {
   className?: string
-  expressions?:  Record<string, string | ( ( field: FormlyFieldConfig ) => any ) | Observable<any>>
+  expressions?:  Record<string, string | ( ( field: FormlyFieldConfig ) => unknown ) | Observable<unknown>>
   hooks?: Record<string, ( ( field: FormlyFieldConfig ) => void ) | Observable<void>>
-  defaultValue?: any
-  validators?: any
-  fieldArray?: any
+  defaultValue?: unknown
+  validators?: { validation: string [ ] } | { [ key: string ]: { message: ( ) => string; expression: ( x: AbstractControl ) => boolean } }
+  fieldArray?: FormlyFieldConfig | ( ( field: FormlyFieldConfig ) => FormlyFieldConfig )
 }
 
+// Object literal may only specify known properties, and 'expression' does not exist in type '(control: AbstractControl<any, any, any>, field: FormlyFieldConfig<FormlyFieldProps & { [additionalProperties: string]: any; }>) => ValidationErrors | null'.ts(2353)
 export interface FormlyProps {
   required?: boolean
   loading?: WritableSignal<boolean>
@@ -21,7 +23,7 @@ export interface FormlyProps {
   placeholder?: string
   disableNext?: boolean
   disablePrevious?: boolean
-  options?: Array<{ label: string; value: any }>
+  options?: Array<{ label: string; value: unknown }>
   procedureOnStart?: string
   procedureOnFinish?: string
   hidden?: boolean

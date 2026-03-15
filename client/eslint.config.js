@@ -64,7 +64,7 @@ export default defineConfig (
       ],
       // "@typescript-eslint/promise-function-async": "error",
       "@typescript-eslint/require-await": "error",
-      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/naming-convention": [
         "error",
         {

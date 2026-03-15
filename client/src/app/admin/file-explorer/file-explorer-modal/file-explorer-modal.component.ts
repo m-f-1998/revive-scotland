@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, Input, OnInit } from "@angular/core"
-import { FormGroup } from "@angular/forms"
+import { AbstractControl, FormGroup } from "@angular/forms"
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
 import { IconComponent } from "@revive/src/app/icon/icon.component"
@@ -25,7 +25,7 @@ export class FileExplorerModalComponent implements OnInit {
 
   public form: FormGroup = new FormGroup ( { } )
   public fields: FormlyFieldConfig [ ] = [ ]
-  public model: any = { }
+  public model: Record<string, unknown> = { }
 
   private readonly activeModal: NgbActiveModal = inject ( NgbActiveModal )
   private readonly formlySvc: FormlyService = inject ( FormlyService )
@@ -58,8 +58,8 @@ export class FileExplorerModalComponent implements OnInit {
           defaultValue,
           validators: {
             validFilename: {
-              expression: ( c: any ) => {
-                const value: string = c.value || ""
+              expression: ( c: AbstractControl ) => {
+                const value: string = c.value as string || ""
                 const invalidChars = /[\\\/:*?"<>|]/ // Common invalid filename characters
                 return !invalidChars.test ( value )
               },
@@ -77,8 +77,8 @@ export class FileExplorerModalComponent implements OnInit {
         }, {
           validators: {
             validFolderName: {
-              expression: ( c: any ) => {
-                const value: string = c.value || ""
+              expression: ( c: AbstractControl ) => {
+                const value: string = c.value as string || ""
                 const invalidChars = /[\\\/:*?"<>|]/ // Common invalid folder name characters
                 return !invalidChars.test ( value ) && !value.endsWith ( "/" )
               },
@@ -104,12 +104,12 @@ export class FileExplorerModalComponent implements OnInit {
     this.activeModal.dismiss ( reason )
   }
 
-  public close ( result: any ): void {
+  public close ( result: Record<string, unknown> ): void {
     this.activeModal.close ( result )
   }
 
   public createFolder ( ) {
-    if ( !this.model?.folderName?.trim ( ) ) {
+    if ( !( this.model?. [ "folderName" ] as string ?? "" ).trim ( ) ) {
       this.dismiss ( "Folder name cannot be empty." )
       return
     }
@@ -122,7 +122,7 @@ export class FileExplorerModalComponent implements OnInit {
   }
 
   public renameFileOrFolder ( ) {
-    if ( !this.model.rename.trim ( ) ) {
+    if ( !( this.model?. [ "rename" ] as string ?? "" ).trim ( ) ) {
       this.dismiss ( "New key cannot be empty." )
       return
     }

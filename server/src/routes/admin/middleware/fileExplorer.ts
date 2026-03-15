@@ -53,25 +53,28 @@ export const validateS3Key = async (
     return reply.code ( 401 ).send ( "Unauthorized: User not authenticated." )
   }
 
-  const key =
-    ( request.body as any )?.key ||
-    ( request.query as any )?.key
+  console.log ( `Validating S3 key for user ${request.user.uid} with path prefix ${request.user.s3Path}` )
+
+  const body = request.body as { key?: string; oldKey?: string; newKey?: string } | undefined
+  const query = request.query as { key?: string; path?: string } | undefined
+
+  const { key: bodyKey, oldKey, newKey } = body ?? {}
+  const { key: queryKey, path: relativePath } = query ?? {}
+
+  const key = bodyKey || queryKey
 
   if ( key && !key.startsWith ( request.user.s3Path ) ) {
     return reply.code ( 403 ).send ( "Forbidden: Access denied to this resource." )
   }
 
-  const oldKey = ( request.body as any )?.oldKey
   if ( oldKey && !oldKey.startsWith ( request.user.s3Path ) ) {
     return reply.code ( 403 ).send ( "Forbidden: Access denied to source resource." )
   }
 
-  const newKey = ( request.body as any )?.newKey
   if ( newKey && !newKey.startsWith ( request.user.s3Path ) ) {
     return reply.code ( 403 ).send ( "Forbidden: Access denied to target resource." )
   }
 
-  const relativePath = ( request.query as any )?.path
   if (
     relativePath &&
     ( typeof relativePath !== "string" || relativePath.includes ( ".." ) )

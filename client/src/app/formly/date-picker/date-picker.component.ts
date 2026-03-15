@@ -79,7 +79,7 @@ export class DatePickerComponent extends FieldType implements OnInit {
     }
 
     if ( this.formControl ) {
-      this.formControl.valueChanges.subscribe ( ( value: any ) => {
+      this.formControl.valueChanges.subscribe ( value => {
         if ( !value ) {
           this.dateModel.set ( undefined )
           return

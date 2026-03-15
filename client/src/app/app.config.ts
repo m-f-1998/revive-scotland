@@ -58,7 +58,7 @@ if ( nonce ) {
   appConfig.providers.push ( {
     provide: RECAPTCHA_LOADER_OPTIONS,
     useValue: {
-      onBeforeLoad ( _url: any ) {
+      onBeforeLoad ( _url: string ) {
         return {
           url: _url,
           nonce,

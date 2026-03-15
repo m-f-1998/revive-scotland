@@ -82,7 +82,14 @@ export const router: FastifyPluginAsync = async app => {
       } ) )
 
       // Files (Contents)
-      const files: Promise<any> [ ] = [ ]
+      const files: Promise<{
+        name?: string
+        key?: string
+        lastModified?: Date
+        size?: number
+        isFolder: false
+        contentType?: string
+      }> [ ] = [ ]
       for ( const f of ( data.Contents || [ ] ).filter ( f => f.Key !== prefix ) ) {
         files.push ( ( async ( ) => {
           const head = await s3Client.send (
@@ -250,8 +257,9 @@ export const router: FastifyPluginAsync = async app => {
           } )
           const headData = await s3Client.send ( headCommand )
           totalSizeDeleted = headData.ContentLength || 0
-        } catch ( error: any ) {
-          if ( error.name === "NotFound" || error.$metadata?.httpStatusCode === 404 ) {
+        } catch ( error ) {
+          const { name, $metadata } = error as { name: string; $metadata?: { httpStatusCode?: number } }
+          if ( name === "NotFound" || $metadata?.httpStatusCode === 404 ) {
             // File already gone. This is OK, but we don't update quota.
             return rep.status ( 200 ).send ( { message: "File already deleted." } )
           }
@@ -280,7 +288,12 @@ export const router: FastifyPluginAsync = async app => {
       }
 
       return rep.status ( 200 ).send ( { message: "Delete successful." } )
-    } catch ( error: any ) {
+    } catch ( error ) {
+      const { name, $metadata } = error as { name: string; $metadata?: { httpStatusCode?: number } }
+      if ( name === "NotFound" || $metadata?.httpStatusCode === 404 ) {
+        // File already gone. This is OK, but we don't update quota.
+        return rep.status ( 200 ).send ( { message: "File already deleted." } )
+      }
       console.error ( "Error deleting file/folder:", error )
       return rep.status ( 500 ).send ( "Failed to delete resource." )
     }
@@ -423,14 +436,16 @@ export const router: FastifyPluginAsync = async app => {
         storageUsed = userDoc.data ( )?. [ "storageUsed" ] || 0
       }
 
+      console.log ( `User ${req.user!.uid} has used ${storageUsed} bytes of storage.` )
+
       return rep.status ( 200 ).send ( {
         used: storageUsed,
         max: MAX_STORAGE_BYTES,
         remaining: MAX_STORAGE_BYTES - storageUsed,
       } )
-    } catch ( error: any ) {
+    } catch ( error ) {
       // If not found, assume zero usage
-      if ( error.code === 5 ) {
+      if ( ( error as { code?: number } ).code === 5 ) {
         return rep.status ( 200 ).send ( {
           used: 0,
           max: MAX_STORAGE_BYTES,
@@ -468,11 +483,12 @@ export const router: FastifyPluginAsync = async app => {
       }, { merge: true } )
 
       return rep.status ( 200 ).send ( { message: "Quota updated." } )
-    } catch ( error: any ) {
-      if ( error.name === "NotFound" || error.$metadata?.httpStatusCode === 404 ) {
+    } catch ( error ) {
+      const { name, $metadata } = error as { name: string; $metadata?: { httpStatusCode?: number } }
+      if ( name === "NotFound" || $metadata?.httpStatusCode === 404 ) {
         return rep.status ( 404 ).send ( "Upload not found. Could not update quota." )
       }
-      if ( error.code === 5 ) {
+      if ( ( error as { code?: number } ).code === 5 ) {
         // User doc doesn't exist yet, create it with zero usage
         try {
           await userRef.set ( {

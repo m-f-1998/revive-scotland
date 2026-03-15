@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
+import { ChangeDetectionStrategy, Component, inject, isDevMode, OnInit, signal, WritableSignal } from "@angular/core"
 import { AdminNavbarComponent } from "../navbar/navbar.component"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { ApiService } from "../../services/api.service"
@@ -29,7 +29,7 @@ export class HeroEditorComponent implements OnInit {
   public loading: WritableSignal<boolean> = signal ( false )
 
   public form: FormGroup = new FormGroup ( { } )
-  public model: any = { }
+  public model: { pageID?: string } = { }
   public fields: FormlyFieldConfig [ ] = [ ]
 
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
@@ -53,9 +53,6 @@ export class HeroEditorComponent implements OnInit {
         defaultValue: "home"
       } )
     ]
-    this.model = {
-      pageID: "home"
-    }
     this.fetchHeroData ( )
   }
 
@@ -98,7 +95,7 @@ export class HeroEditorComponent implements OnInit {
 
   public async saveHeroData ( ) {
     if ( this.loading ( ) ) return
-    if ( this.heroData ( ).some ( hero => !hero.model?.url || hero.model?.url.trim ( ) === "" ) ) {
+    if ( this.heroData ( ).some ( hero => !hero.model?. [ "url" ] || ( hero.model?. [ "url" ] as string ?? "" ).trim ( ) === "" ) ) {
       this.toastrSvc.error ( "Please ensure all heroes have an image URL before saving." )
       return
     }
@@ -114,9 +111,9 @@ export class HeroEditorComponent implements OnInit {
         heroes: this.heroData ( ).map ( hero => {
           return {
             id: hero.id,
-            url: hero.model.url,
-            title: hero.model?.title || "",
-            description: hero.model?.description || ""
+            url: hero.model [ "url" ],
+            title: hero.model?. [ "title" ] || "",
+            description: hero.model?. [ "description" ] || ""
           }
         } )
       }, new HttpHeaders ( {
@@ -152,7 +149,9 @@ export class HeroEditorComponent implements OnInit {
         form: new FormGroup ( { } )
       } ) ) )
     } catch ( e ) {
-      console.error ( "Error fetching hero data:", e )
+      if ( isDevMode ( ) ) {
+        console.error ( "Error fetching hero data:", e )
+      }
       this.toastrSvc.error ( "Failed to load hero data." )
       this.heroData.set ( [ ] )
     } finally {

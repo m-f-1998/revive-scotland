@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from "@angular/common/http"
+import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http"
 import { inject, Injectable, isDevMode } from "@angular/core"
 import { parse } from "date-fns"
 
@@ -8,7 +8,11 @@ import { parse } from "date-fns"
 export class ApiService {
   private readonly httpClient: HttpClient = inject ( HttpClient )
 
-  public get ( path: string, body: any = { }, headers: HttpHeaders = new HttpHeaders ( ) ) {
+  public get (
+    path: string,
+    body: HttpParams | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>> = { },
+    headers: HttpHeaders = new HttpHeaders ( )
+  ) {
     const address = ( isDevMode ( ) ? "http://localhost:3000" : "" ) + path
     let httpHeaders = headers
 
@@ -32,7 +36,11 @@ export class ApiService {
     } )
   }
 
-  public post ( path: string, body: any = { }, headers: HttpHeaders = new HttpHeaders ( ) ) {
+  public post (
+    path: string,
+    body: unknown = { },
+    headers: HttpHeaders = new HttpHeaders ( )
+  ) {
     const address = ( isDevMode ( ) ? "http://localhost:3000" : "" ) + path
     let httpHeaders = headers
 
@@ -55,7 +63,11 @@ export class ApiService {
     } )
   }
 
-  public delete ( path: string, body: any = { }, headers: HttpHeaders = new HttpHeaders ( ) ) {
+  public delete (
+    path: string,
+    body: HttpParams | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>> = { },
+    headers: HttpHeaders = new HttpHeaders ( )
+  ) {
     const address = ( isDevMode ( ) ? "http://localhost:3000" : "" ) + path
     let httpHeaders = headers
 
@@ -78,26 +90,32 @@ export class ApiService {
       } )
     } )
   }
+  private parseObj<T>( obj: T ): T {
+    if ( obj && typeof obj === "object" ) {
+      const res = obj as Record<string, unknown>
 
-  private parseObj ( obj: any ): any {
-    const res = obj
-    if ( res instanceof Object ) {
       for ( const key of Object.keys ( res ) ) {
-        if ( res [ key ] ) {
-          if ( Array.isArray ( res [ key ] ) ) {
-            res [ key ] = res [ key ].map ( ( x: any ) => this.parseObj ( x ) )
-          } else if ( typeof obj [ key ] === "object" ) {
-            res [ key ] = this.parseObj ( res [ key ] )
-          } else if ( this.isNumber ( res [ key ] ) ) {
-            res [ key ] = Number ( res [ key ] )
-          } else if ( this.isBool ( res [ key ] ) ) {
-            res [ key ] = Boolean ( res [ key ] )
+        const value = res [ key ]
+
+        if ( value ) {
+          if ( Array.isArray ( value ) ) {
+            res [ key ] = value.map ( x => this.parseObj ( x ) )
+          } else if ( typeof value === "object" ) {
+            res [ key ] = this.parseObj ( value )
+          } else if ( typeof value === "string" && this.isNumber ( value ) ) {
+            res [ key ] = Number ( value )
+          } else if ( typeof value === "string" && this.isBool ( value ) ) {
+            res [ key ] = Boolean ( value )
           }
-          res [ key ] = this.checkDate ( res [ key ] )
+
+          if ( typeof res [ key ]  === "string" ) {
+            res [ key ] = this.checkDate ( res [ key ] )
+          }
         }
       }
     }
-    return res
+
+    return obj
   }
 
   private isBool = ( value: string ): boolean => {

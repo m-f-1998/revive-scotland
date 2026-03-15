@@ -25,7 +25,7 @@
                 <app-icon icon="chevron-circle-up" class="me-2" />
               }
               <h5 class="mb-0">
-                {{ eventForm()[$index].model.title || `Event #${$index + 1}` }}
+                {{ eventForm()[$index].model [ "title" ] || `Event #${$index + 1}` }}
               </h5>
             </div>
             <button class="btn btn-sm btn-danger" (click)="removeEvent(event.id)">

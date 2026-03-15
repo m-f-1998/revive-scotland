@@ -17,7 +17,7 @@ import { IconComponent } from "../../icon/icon.component"
 } )
 export class RepeatFieldComponent extends FieldType {
   public editingIndex: number | null = null
-  public valuesInModel: WritableSignal<any[]> = signal ( [ ] )
+  public valuesInModel: WritableSignal<unknown[]> = signal ( [ ] )
 
   private readonly modalSvc: NgbModal = inject ( NgbModal )
   private readonly formlySvc: FormlyService = inject ( FormlyService )
@@ -96,7 +96,7 @@ export class RepeatFieldComponent extends FieldType {
   }
 
   public removeField ( index: number ) {
-    const newValue = ( this.formControl?.value || [ ] ).filter ( ( _: any, i: number ) => i !== index )
+    const newValue = ( this.formControl?.value || [ ] ).filter ( ( _: unknown, i: number ) => i !== index )
     this.formControl?.setValue ( newValue )
     this.valuesInModel.set ( newValue )
   }

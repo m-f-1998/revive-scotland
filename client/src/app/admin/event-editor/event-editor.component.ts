@@ -26,7 +26,7 @@ import { IconComponent } from "../../icon/icon.component"
 } )
 export class EventEditorComponent implements OnInit {
   public loading: WritableSignal<boolean> = signal ( true )
-  public eventForm: WritableSignal<Array<{ form: FormGroup; model: any; fields: FormlyFieldConfig [ ] }>> = signal ( [ ] )
+  public eventForm: WritableSignal<Array<{ form: FormGroup; model: Record<string, unknown>; fields: FormlyFieldConfig [ ] }>> = signal ( [ ] )
   public eventData: WritableSignal<{ events: Event[] }> = signal ( { events: [ ] } )
   public isCollapsed: boolean = false
 
@@ -68,20 +68,21 @@ export class EventEditorComponent implements OnInit {
 
   public async saveEventData ( ) {
     if ( this.loading ( ) ) return
+
     // Create the new event data from the forms
-    const updatedEventData: { events: Event [ ] } = {
+    const updatedEventData = {
       events: this.eventForm ( ).map ( ef => {
         return {
-          id: ef.model.id || `event-${Date.now ( )}-${Math.floor ( Math.random ( ) * 1000 )}`,
-          title: ef.model.title,
-          description: ef.model.description,
-          location: ef.model?.location || "",
-          imageUrl: ef.model.imageUrl,
-          startDate: ef.model.startDate?.toISOString ( ) || null,
-          endDate: ef.model.endDate?.toISOString ( ) || null,
-          actionType: ef.model.actionType,
-          webpageUrl: ef.model.webpageUrl,
-          contactFormFields: ef.model.contactFormFields || [ ]
+          id: ( ef.model [ "id" ] as string ) || `event-${Date.now ( )}-${Math.floor ( Math.random ( ) * 1000 )}`,
+          title: ef.model [ "title" ] as string,
+          description: ef.model [ "description" ] as string,
+          location: ef.model?. [ "location" ] as string || "",
+          imageUrl: ef.model [ "imageUrl" ] as string,
+          startDate: ef.model [ "startDate" ] as Date,
+          endDate: ef.model [ "endDate" ] as Date,
+          actionType: ef.model [ "actionType" ] as "webpage" | "contact",
+          webpageUrl: ef.model [ "webpageUrl" ] as string,
+          contactFormFields: ef.model [ "contactFormFields" ] as FormlyFieldConfig [ ] || [ ]
         }
       } )
     }
@@ -98,7 +99,7 @@ export class EventEditorComponent implements OnInit {
       } ) )
       this.eventData.set ( updatedEventData )
       this.toastrSvc.success ( "Event data saved successfully!" )
-    } catch ( e: any ) {
+    } catch ( e ) {
       if ( e instanceof HttpErrorResponse && e.error ) {
         this.toastrSvc.error ( `Failed to save event data: ${e.error}` )
       } else {
@@ -117,7 +118,9 @@ export class EventEditorComponent implements OnInit {
     } ) )
     try {
       // POST data to the new Firestore backend router
-      await this.apiSvc.delete ( `/api/admin/events`, { }, new HttpHeaders ( {
+      await this.apiSvc.delete ( `/api/admin/events`, {
+        id
+      }, new HttpHeaders ( {
         "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || "" }`
       } ) )
       this.toastrSvc.success ( "Event removed successfully!" )

@@ -37,16 +37,16 @@ export class FormlyConfig implements ConfigOption {
 
   public validationMessages = [
     { name: "required", message: "This Field is Required" },
-    { name: "minLength", message: ( _: any, field: FormlyFieldConfig ) => {
+    { name: "minLength", message: ( _: unknown, field: FormlyFieldConfig ) => {
       return `Should have a minimum of ${field.props?.minLength ?? 0} characters.`
     } },
-    { name: "maxLength", message: ( _: any, field: FormlyFieldConfig ) => {
+    { name: "maxLength", message: ( _: unknown, field: FormlyFieldConfig ) => {
       return `Should have a maximum of ${field.props?.maxLength ?? 0} characters.`
     } },
-    { name: "min", message: ( _: any, field: FormlyFieldConfig ) => {
+    { name: "min", message: ( _: unknown, field: FormlyFieldConfig ) => {
       return `Minimum value is ${field.props?.min ?? 0}.`
     } },
-    { name: "max", message: ( _: any, field: FormlyFieldConfig ) => {
+    { name: "max", message: ( _: unknown, field: FormlyFieldConfig ) => {
       return `Maximum value is ${field.props?.max ?? 0}.`
     } },
     { name: "PasswordsDoNotMatch", message: "The 'New Password' field cannot match the 'Current Password' field" },

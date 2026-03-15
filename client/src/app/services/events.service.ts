@@ -1,5 +1,6 @@
 import { inject, Injectable } from "@angular/core"
 import { ApiService } from "./api.service"
+import { FormlyFieldConfig } from "@ngx-formly/core"
 
 export interface ReviveEvent {
   id: string
@@ -13,7 +14,7 @@ export interface ReviveEvent {
   actionType: "webpage" | "contact"
   webpageUrl?: string
 
-  contactFormFields?: any [ ]
+  contactFormFields?: FormlyFieldConfig [ ]
 }
 
 @Injectable ( {

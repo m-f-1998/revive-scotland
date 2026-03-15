@@ -17,13 +17,13 @@ import { IconComponent } from "../../icon/icon.component"
   templateUrl: "./input-dialog.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
-export class InputDialogComponent implements OnInit, OnDestroy {
+export class InputDialogComponent<T extends Record<string, unknown> = Record<string, unknown>> implements OnInit, OnDestroy {
   @Input ( ) public body = ""
   @Input ( ) public title = ""
   @Input ( ) public confirmText = "Confirm"
   @Input ( ) public cancelText = "Cancel"
   @Input ( ) public fields: FormlyFieldConfig [ ] = [ ]
-  @Input ( ) public model: any = { }
+  @Input ( ) public model: T = { } as T
   @Input ( ) public recaptchaActive = false
 
   public captchaToken: string | null = null

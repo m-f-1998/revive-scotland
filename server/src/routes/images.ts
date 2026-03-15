@@ -9,8 +9,7 @@ const isDevMode = ( ) => process.env [ "DEV" ] === "true"
 import sharp from "sharp"
 import { createReadStream } from "fs"
 import { FastifyPluginAsync } from "fastify"
-import { createHash } from "crypto"
-import { stat, access } from "fs/promises"
+import { stat } from "fs/promises"
 
 const IMAGE_DIR = join ( process.cwd ( ), "../", "assets", "img", )
 
@@ -34,30 +33,18 @@ export const router: FastifyPluginAsync = async app => {
 
       const width = w ? parseInt ( w as string, 10 ) : null
       const height = h ? parseInt ( h as string, 10 ) : null
-      const format = SUPPORTED_FORMATS.includes ( f as string ) ? ( f as string ) : "webp"
+      const format = f && SUPPORTED_FORMATS.includes ( f ) ? f : "webp"
       const quality = q ? parseInt ( q as string, 10 ) : 80
-
       const safeFilename = normalize ( filename ).replace ( /^(\.\.(\/|\\|$))+/, "" )
 
       const inputPath = join ( IMAGE_DIR, safeFilename )
-      try {
-        await access ( inputPath )
-      } catch {
-        console.log ( "Image not found:", inputPath )
-        return rep.status ( 404 ).send ( "Image not found" )
-      }
 
       // Check if image or mp4
       // Only allow mp4, jpg, jpeg, png, webp, avif
       const ext = filename.split ( "." ).pop ( )?.toLowerCase ( )
-      const stats = await stat ( inputPath )
-
-      const fileSignature = `${stats.mtimeMs}-${stats.size}`
-      const cacheKey = createHash ( "sha1" ).update ( `${safeFilename}-${fileSignature}-${width}-${height}-${format}-${quality}` ).digest ( "hex" )
-      const cachePath = join ( IMAGE_DIR, "../.cache", `${cacheKey}.${format}` )
 
       if ( ext === "mp4" ) {
-        const fileSize = stats.size
+        const fileSize = ( await stat ( inputPath ) ).size
         const range = req.headers.range
 
         if ( range ) {
@@ -72,11 +59,10 @@ export const router: FastifyPluginAsync = async app => {
           return rep
             .code ( 206 )
             .headers ( {
-              "Content-Range": `bytes ${start}-${end}/${fileSize}`,
-              "Accept-Ranges": "bytes",
-              "Content-Length": chunkSize,
-              "Content-Type": "video/mp4",
-              "Access-Control-Allow-Origin": "*" // To help with your previous CORS/Origin issue!
+              "content-range": `bytes ${start}-${end}/${fileSize}`,
+              "accept-ranges": "bytes",
+              "content-length": chunkSize,
+              "content-type": "video/mp4"
             } )
             .send ( file )
         } else {
@@ -85,58 +71,49 @@ export const router: FastifyPluginAsync = async app => {
           return rep
             .code ( 200 )
             .headers ( {
-              "Content-Length": fileSize,
-              "Content-Type": "video/mp4",
-              "Access-Control-Allow-Origin": "*"
+              "content-length": fileSize,
+              "content-type": "video/mp4"
             } )
             .send ( file )
         }
       } else if ( !ext || ![ "jpg", "jpeg", "png", "webp", "avif" ].includes ( ext ) ) {
         return rep.status ( 400 ).send ( "Unsupported file type" )
       } else {
-        const lastModified = stats.mtime.toUTCString ( )
+        // const lastModified = stats.mtime.toUTCString ( )
 
-        if ( req.headers [ "if-none-match" ] === cacheKey ) {
-          return rep.code ( 304 ).send ( )
-        }
+        rep.header ( "content-type", ext === "jpeg" ? "image/jpeg" : `image/${ext}` )
+        rep.header ( "content-disposition", `inline; filename="${filename.replace ( /"/g, "" ).replace ( /\s/g, "_" )}"` )
+        rep.header ( "cache-control", "public, max-age=31536000, immutable" )
+        // rep.header ( "etag", cacheKey )
+        // rep.header ( "last-modified", lastModified )
 
-        try {
-          await access ( cachePath )
-          return rep.send ( createReadStream ( cachePath ) )
-        } catch {
-          // Cache file does not exist, continue to generate it
-        }
-
-        let transformer = sharp ( inputPath )
+        const transformer = sharp ( inputPath )
           .resize ( width, height, { fit: "inside", withoutEnlargement: true } )
 
         const effort = isDevMode ( ) ? 1 : 4
-        switch ( format ) {
-          case "jpeg":
-            transformer = transformer.jpeg ( { quality, progressive: true } )
-            break
-          case "png":
-            transformer = transformer.png ( { quality, effort } )
-            break
-          case "avif":
-            transformer = transformer.avif ( { quality, effort } )
-            break
-          default:
-            transformer = transformer.webp ( { quality, effort } )
-        }
+        if ( format === "jpeg" ) transformer.jpeg ( { quality, progressive: true } )
+        else if ( format === "png" ) transformer.png ( { quality, effort } )
+        else if ( format === "avif" ) transformer.avif ( { quality, effort } )
+        else transformer.webp ( { quality, effort } )
 
-        await transformer.toFile ( cachePath )
-
-        rep.type ( format )
-        rep.header ( "content-length", ( await stat ( cachePath ) ).size )
-        rep.header ( "content-disposition", `inline; filename="${filename.replace ( /"/g, "" ).replace ( /\s/g, "_" )}"` )
-        rep.header ( "cache-control", "public, max-age=31536000, immutable" )
-        rep.header ( "last-modified", lastModified )
-        rep.header ( "etag", cacheKey )
-        return rep.send ( createReadStream ( cachePath ) )
+        return rep.status ( 200 ).send ( transformer )
       }
     } catch ( err ) {
-      console.error ( err )
+      if ( err instanceof Error && "code" in err ) {
+        if ( err.code === "ENOENT" ) {
+          return rep.status ( 404 ).send ( "Image not found" )
+        }
+        if ( err.code === "EISDIR" ) {
+          return rep.status ( 400 ).send ( "Invalid image path" )
+        }
+        if ( err.code === "EACCES" ) {
+          return rep.status ( 403 ).send ( "Permission denied" )
+        }
+      }
+
+      if ( isDevMode ( ) ) {
+        console.error ( `Error processing image ${req.url}:`, err )
+      }
       return rep.status ( 500 ).send ( "Error processing image" )
     }
   } )

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, Signal, signal, viewChild, WritableSignal } from "@angular/core"
+import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, isDevMode, Signal, signal, viewChild, WritableSignal } from "@angular/core"
 import { AdminNavbarComponent } from "../navbar/navbar.component"
 import { AuthService } from "../../services/auth.service"
 import { FileEntry, Quota } from "../../interfaces/fileExplorer.interface"
@@ -98,7 +98,9 @@ export class FileExplorerComponent {
         this.activeModal.close ( data.shareUrl )
 
       } catch ( err ) {
-        console.error ( "Select file error:", err )
+        if ( isDevMode ( ) ) {
+          console.error ( "Select file error:", err )
+        }
         this.toastrSvc.error ( "Failed to generate permanent file URL" )
       } finally {
         this.loading.set ( false )
@@ -123,8 +125,10 @@ export class FileExplorerComponent {
       } ) )
       this.fileList.set ( formattedData )
       this.loading.set ( false )
-    } catch ( err: any ) {
-      console.error ( "List error:", err )
+    } catch ( err ) {
+      if ( isDevMode ( ) ) {
+        console.error ( "List error:", err )
+      }
       this.toastrSvc.error ( "Failed to load directory" )
       this.loading.set ( false )
     }
@@ -138,7 +142,9 @@ export class FileExplorerComponent {
       const data = response as Quota
       this.quota.set ( data )
     } catch ( err ) {
-      console.error ( "Quota fetch error:", err )
+      if ( isDevMode ( ) ) {
+        console.error ( "Quota fetch error:", err )
+      }
     }
   }
 
@@ -164,8 +170,10 @@ export class FileExplorerComponent {
       const data = response as { viewUrl: string }
       window.open ( data.viewUrl, "_blank" )
       this.loading.set ( false )
-    } catch ( err: any ) {
-      console.error ( "View file error:", err )
+    } catch ( err ) {
+      if ( isDevMode ( ) ) {
+        console.error ( "View file error:", err )
+      }
       this.toastrSvc.error ( "Failed to view file" )
       this.loading.set ( false )
     }
@@ -212,8 +220,10 @@ export class FileExplorerComponent {
         await navigator.clipboard.writeText ( data.shareUrl )
 
         this.toastrSvc.success ( "Share URL copied to clipboard! (Link expires in 24 hours)" )
-      } catch ( err: any ) {
-        console.error ( "Share file error:", err )
+      } catch ( err ) {
+        if ( isDevMode ( ) ) {
+          console.error ( "Share file error:", err )
+        }
         this.toastrSvc.error ( "Failed to generate share URL" )
       }
     } ).catch ( ( ) => { } ).finally ( ( ) => {
@@ -359,8 +369,10 @@ export class FileExplorerComponent {
           } ) )
           this.listPath ( this.currentPath ( ) )
           this.fetchQuota ( )
-        } catch ( err: any ) {
-          console.error ( "Delete error:", err )
+        } catch ( err ) {
+          if ( isDevMode ( ) ) {
+            console.error ( "Delete error:", err )
+          }
           this.toastrSvc.error ( "Failed to delete resource" )
         }
       } else if ( type === "rename" ) {
@@ -385,7 +397,9 @@ export class FileExplorerComponent {
           } ) )
           this.listPath ( this.currentPath ( ) )
         } catch ( err ) {
-          console.error ( "Rename error:", err )
+          if ( isDevMode ( ) ) {
+            console.error ( "Rename error:", err )
+          }
           this.toastrSvc.error ( "Failed to rename/move" )
         }
       }
@@ -399,7 +413,7 @@ export class FileExplorerComponent {
     } )
   }
 
-  public onDragStart ( event: DragEvent, file: any ) {
+  public onDragStart ( event: DragEvent, file: FileEntry ) {
     this.draggedFile = file
     event.dataTransfer?.setData ( "text/plain", file.key )
   }
@@ -457,7 +471,9 @@ export class FileExplorerComponent {
       await this.fileExplorerSvc.moveFile ( sourceKey, this.userS3Path + targetFolderKey )
       this.listPath ( this.currentPath ( ) )
     } catch ( err ) {
-      console.error ( "Move error:", err )
+      if ( isDevMode ( ) ) {
+        console.error ( "Move error:", err )
+      }
       this.toastrSvc.error ( "Failed to move file" )
     } finally {
       this.draggedFile = null
@@ -508,6 +524,11 @@ export class FileExplorerComponent {
     try {
       await this.fileExplorerSvc.moveFile ( sourceKey, targetKey )
       this.listPath ( this.currentPath ( ) )
+    } catch ( err ) {
+      if ( isDevMode ( ) ) {
+        console.error ( "Move error:", err )
+      }
+      this.toastrSvc.error ( "Failed to move file" )
     } finally {
       this.draggedFile = null
       this.loading.set ( false )
@@ -536,8 +557,10 @@ export class FileExplorerComponent {
       } ) )
       const data = response as { uploadUrl: string }
       this.uploadToR2 ( data.uploadUrl, file, fullKey )
-    } catch ( err: any ) {
-      console.error ( "Upload URL error:", err )
+    } catch ( err ) {
+      if ( isDevMode ( ) ) {
+        console.error ( "Upload URL error:", err )
+      }
       if ( err instanceof HttpErrorResponse ) {
         this.toastrSvc.error ( err.error, "Upload Error" )
       } else {
@@ -561,8 +584,10 @@ export class FileExplorerComponent {
       } else {
         throw new Error ( "R2 upload failed: " + response.statusText )
       }
-    } catch ( err: any ) {
-      console.error ( "R2 upload failed:", err )
+    } catch ( err ) {
+      if ( isDevMode ( ) ) {
+        console.error ( "R2 upload failed:", err )
+      }
       this.toastrSvc.error ( "File upload failed" )
       this.loading.set ( false )
     }
@@ -577,7 +602,9 @@ export class FileExplorerComponent {
       this.fetchQuota ( )
       this.loading.set ( false )
     } catch ( err ) {
-      console.error ( "Upload complete error:", err )
+      if ( isDevMode ( ) ) {
+        console.error ( "Upload complete error:", err )
+      }
       this.toastrSvc.error ( "Upload succeeded, but failed to update quota. Please refresh." )
       this.loading.set ( false )
     }

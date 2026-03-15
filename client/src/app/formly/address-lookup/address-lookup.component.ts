@@ -21,7 +21,7 @@ import { IconComponent } from "../../icon/icon.component"
 export class AddressAutocompleteComponent extends FieldType<FormlyFieldConfig> implements OnInit {
   public selectAddressForm: FormGroup = new FormGroup ( { } )
   public selectAddressFields: FormlyFieldConfig [ ] = [ ]
-  public selectAddressModel: any = { }
+  public selectAddressModel: { addressSelection?: NominatimResult } = { }
 
   public searchResults: WritableSignal<NominatimResult[]> = signal ( [] )
   public loading: WritableSignal<boolean> = signal ( false )
@@ -29,7 +29,7 @@ export class AddressAutocompleteComponent extends FieldType<FormlyFieldConfig> i
 
   private readonly formlySvc: FormlyService = inject ( FormlyService )
 
-  private debounceTimer: any
+  private debounceTimer: ReturnType<typeof setTimeout> | undefined
   private readonly debounceTimeMs = 300
 
   public constructor ( ) {

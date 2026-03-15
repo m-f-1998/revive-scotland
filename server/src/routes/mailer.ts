@@ -42,12 +42,19 @@ export const router: FastifyPluginAsync = async app => {
         return rep.status ( 500 ).send ( { message: "reCAPTCHA verification failed." } )
       }
 
-      const data: any = await response.json ( )
+      const data = await response.json ( ) as {
+        tokenProperties: {
+          valid: boolean
+        }
+        riskAnalysis: {
+          score: number
+        }
+      }
       if ( !data.tokenProperties.valid || data.riskAnalysis.score < 0.5 ) {
         console.warn ( "reCAPTCHA verification failed:", data )
         return rep.status ( 400 ).send ( { message: "reCAPTCHA failed." } )
       }
-    } catch ( err: any ) {
+    } catch ( err ) {
       console.error ( "reCAPTCHA verification error:", err )
       return rep.status ( 500 ).send ( { message: "reCAPTCHA verification error." } )
     }
@@ -84,8 +91,8 @@ export const router: FastifyPluginAsync = async app => {
         encoding: "utf8"
       } )
       return rep.status ( 200 ).send ( { message: "Email sent successfully" } )
-    } catch ( err: any ) {
-      return rep.status ( 500 ).send ( { message: "Email send failed", error: err.message } )
+    } catch ( err ) {
+      return rep.status ( 500 ).send ( { message: "Email send failed", error: ( err as Error ).message } )
     }
   } )
 }

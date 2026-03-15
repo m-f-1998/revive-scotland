@@ -11,6 +11,6 @@ export interface HeroEntry {
 export interface PageHeroData {
   id: string
   fields: FormlyFieldConfig [ ]
-  model: any
+  model: Record<string, unknown>
   form: FormGroup
 }

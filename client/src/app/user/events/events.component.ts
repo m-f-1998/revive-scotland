@@ -66,7 +66,7 @@ export class EventsComponent implements OnInit {
     modalRef.componentInstance.confirmText = "Submit"
     modalRef.componentInstance.recaptchaActive = true
     modalRef.componentInstance.fields = event.contactFormFields || [ ]
-    await modalRef.result.then ( async ( result: any ) => {
+    await modalRef.result.then ( async ( result: Record<string, unknown> ) => {
       if ( result ) {
         if ( !modalRef.componentInstance.captchaToken ) {
           console.error ( "No reCAPTCHA token available." )
@@ -91,9 +91,11 @@ export class EventsComponent implements OnInit {
             recaptchaToken: modalRef.componentInstance.captchaToken
           } )
           this.toastrSvc.success ( "Your message has been sent successfully.", "Thank You!" )
-        } catch ( e: any ) {
-          this.toastrSvc.error ( e?.error?.message ?? "An Unexpected Error Occured", "Please Try Again Later" )
-          console.error ( e )
+        } catch ( e ) {
+          if ( isDevMode ( ) ) {
+            console.error ( e )
+          }
+          this.toastrSvc.error ( "An error occurred while sending your message. Please try again later.", "Error" )
         } finally {
           this.loading.set ( false )
         }
@@ -104,9 +106,9 @@ export class EventsComponent implements OnInit {
   private async getEvents ( ) {
     try {
       this.events.set ( await this.eventsSvc.getEvents ( ) )
-    } catch ( error: any ) {
+    } catch ( e ) {
       if ( isDevMode ( ) ) {
-        console.error ( error )
+        console.error ( e )
       }
     } finally {
       this.loading.set ( false )

@@ -2,6 +2,26 @@ import { FastifyPluginAsync } from "fastify"
 import { getFirestore } from "../admin.js"
 import { checkFirebaseAuth } from "./middleware/fileExplorer.js"
 
+interface Event {
+  id: string
+  title: string
+  description: string
+  location: string
+  imageUrl?: string
+  startDate: string
+  endDate: string
+
+  actionType: "webpage" | "contact"
+  webpageUrl?: string
+
+  contactFormFields?: Record<string, object> [ ]
+}
+
+let eventsCache: { events: Event [ ] } | null = null
+let cacheTime = 0
+
+const TTL = 60000
+
 export const router: FastifyPluginAsync = async app => {
   /**
    * GET /api/admin/events
@@ -9,6 +29,10 @@ export const router: FastifyPluginAsync = async app => {
    */
   app.get ( "/", async ( _req, rep ) => {
     try {
+      if ( eventsCache && Date.now ( ) - cacheTime < TTL ) {
+        return rep.send ( eventsCache )
+      }
+
       const eventsCollection = getFirestore ( ).collection ( "events" )
       const docRef = eventsCollection.doc ( "default" ) // Could be used to categorize by page in future
       const doc = await docRef.get ( )
@@ -17,23 +41,35 @@ export const router: FastifyPluginAsync = async app => {
         return rep.status ( 200 ).send ( { events: [ ] } )
       }
 
-      const data = doc.data ( ) as { events: any [ ] } | undefined
+      const data = doc.data ( ) as {
+        events: {
+          id: string
+          title: string
+          description: string
+          location: string
+          imageUrl?: string
+          startDate: string
+          endDate: string
+
+          actionType: "webpage" | "contact"
+          webpageUrl?: string
+        } [ ]
+      } | undefined
 
       if ( data && Array.isArray ( data.events ) ) {
         const currentTime = new Date ( )
 
-        data.events = data.events.filter ( ( event: { endDate: string } ) => {
-          if ( typeof event.endDate === "string" ) {
-            const eventEndDate = new Date ( event.endDate )
-            if ( !isNaN ( eventEndDate.getTime ( ) ) ) {
-              return eventEndDate >= currentTime
-            }
+        data.events = data.events.filter ( event => {
+          const eventEndDate = new Date ( event.endDate )
+          if ( !isNaN ( eventEndDate.getTime ( ) ) ) {
+            return eventEndDate >= currentTime
           }
           return true
         } )
       }
 
-      await docRef.set ( data || { events: [ ] } )
+      eventsCache = data ?? { events: [] }
+      cacheTime = Date.now ( )
 
       return rep.status ( 200 ).send ( data || { events: [ ] } )
     } catch ( error ) {
@@ -47,20 +83,7 @@ export const router: FastifyPluginAsync = async app => {
    * Saves (overwrites) the entire events data array.
    */
   app.post ( "/", { preHandler: checkFirebaseAuth }, async ( req, rep ) => {
-    const { events } = req.body as { events?: {
-      id: string
-      title: string
-      description: string
-      location: string
-      imageUrl?: string
-      startDate: Date
-      endDate: Date
-
-      actionType: "webpage" | "contact"
-      webpageUrl?: string
-
-      contactFormFields?: any [ ]
-    } [ ] }
+    const { events } = req.body as { events?: Event [ ] }
 
     if ( !events || !Array.isArray ( events ) ) {
       return rep.status ( 400 ).send ( "Invalid Events Data Format" )
@@ -75,10 +98,10 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     // Sanitize and validate fields (e.g., ensure titles are short, dates are valid)
-    let sanitizedEvents: any [ ] = [ ]
+    let sanitizedEvents: Event [ ] = [ ]
     try {
       sanitizedEvents = events.map ( event => {
-        const model: any = {
+        const model: Event = {
           id: event.id,
           title: String ( event.title || "" ).substring ( 0, 100 ),
           description: String ( event.description || "" ).substring ( 0, 500 ),
@@ -115,6 +138,7 @@ export const router: FastifyPluginAsync = async app => {
 
       // Save the entire object, overwriting previous data
       await docRef.set ( { events: sanitizedEvents } )
+      eventsCache = { events: sanitizedEvents }
 
       const shared_links = getFirestore ( ).collection ( "shared_links" )
       const snapshot = await shared_links.where ( "type", "==", "hero_editor" ).get ( )
@@ -122,13 +146,15 @@ export const router: FastifyPluginAsync = async app => {
       snapshot.forEach ( async doc => {
         const id = doc.id
         const expectedUrlEnding = `/api/public/s/${id}`
-        const isInHeroes = sanitizedEvents.some ( ( hero: any ) => {
-          return hero.imageUrl.endsWith ( expectedUrlEnding )
+        const isInHeroes = sanitizedEvents.some ( hero => {
+          return hero.imageUrl?.endsWith ( expectedUrlEnding )
         } )
 
         const events = getFirestore ( ).collection ( "heroes" )
-        const eventsSnapshot = ( await events.doc ( "home" ).get ( ) ).data ( )?. [ "heroes" ] || [ ]
-        const isInEvents = eventsSnapshot.some ( ( hero: any ) => {
+        const eventsSnapshot = ( ( await events.doc ( "home" ).get ( ) ).data ( )?. [ "heroes" ] || [ ] ) as {
+          url?: string
+        } [ ]
+        const isInEvents = eventsSnapshot.some ( hero => {
           return hero.url && hero.url.endsWith ( expectedUrlEnding )
         } )
 
@@ -148,12 +174,27 @@ export const router: FastifyPluginAsync = async app => {
    * DELETE /api/admin/events
    * Deletes the events data document.
    */
-  app.delete ( "/", { preHandler: checkFirebaseAuth }, async ( _req, rep ) => {
+  app.delete ( "/", { preHandler: checkFirebaseAuth }, async ( req, rep ) => {
     try {
-      const eventsCollection = getFirestore ( ).collection ( "events" )
-      const docRef = eventsCollection.doc ( "default" ) // Could be used to categorize by page in future
+      const { id } = req.body as { id?: string }
 
-      await docRef.delete ( )
+      if ( !id ) {
+        return rep.status ( 400 ).send ( { error: "Missing parameter" } )
+      }
+
+      const docRef = getFirestore ( ).collection ( "events" ).doc ( "default" )
+      const doc = await docRef.get ( )
+      const data = doc.data ( )
+
+      if ( !data?. [ "events" ] ) {
+        return rep.status ( 404 ).send ( { error: "Events data not found" } )
+      }
+
+      const filtered = data [ "events" ].filter ( ( e: { id: string } ) => e.id !== id )
+
+      await docRef.update ( { events: filtered } )
+
+      eventsCache = { events: filtered }
 
       return rep.status ( 200 ).send ( { message: `Events data deleted successfully.` } )
     } catch ( error ) {
