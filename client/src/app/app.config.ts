@@ -9,7 +9,7 @@ import { withFormlyBootstrap } from "@ngx-formly/bootstrap"
 import { FormlyConfig } from "./formly/formly-config"
 import { AuthService } from "./services/auth.service"
 import { provideCharts, withDefaultRegisterables } from "ng2-charts"
-import { environment } from "../environments/environments"
+import { environment } from "../environments/environment"
 
 const nonce = document.querySelector ( 'meta[name="csp-nonce"]' )?.getAttribute ( "content" )
 
