@@ -5,7 +5,11 @@ import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap"
 @Component ( {
   selector: "app-expanded-image",
   templateUrl: "./expanded-image.component.html",
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    "(document:keydown.arrowleft)": "prevImage()",
+    "(document:keydown.arrowright)": "nextImage()"
+  }
 } )
 export class ExpandedImageComponent {
   @Input ( ) public imageURLs: string [ ] = [ ]

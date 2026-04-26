@@ -2,7 +2,7 @@
   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" (click)="this.close()"></button>
 </div>
 <div class="modal-body" style="padding: 0;">
-  <video controls autoplay style="width:100%; height: auto; display:block; background: black;" [attr.src]="'/api/img/' + videoUrl">
+  <video controls autoplay style="width:100%; height: auto; display:block; background: black; max-height: 80vh; object-fit: contain;" [attr.src]="'/api/img/' + videoUrl">
     Your browser does not support HTML video.
   </video>
 </div>

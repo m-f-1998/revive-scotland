@@ -42,7 +42,7 @@ await app.register ( compress, {
 
 await app.register ( cors, {
   origin: ( origin, callback ) => {
-    const allowedOrigins = [ "http://localhost:4200", "http://localhost:3000", "https://revivescotland.co.uk" ]
+    const allowedOrigins = [ "http://localhost:4200", "http://localhost:3000", "https://revivescotland.co.uk", "https://dev.revivescotland.co.uk" ]
     if ( !origin || allowedOrigins.includes ( origin ) ) {
       callback ( null, true )
     } else {
