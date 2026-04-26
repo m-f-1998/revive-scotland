@@ -39,7 +39,6 @@ export class AdminNavbarComponent implements OnInit {
   }
 
   public toggleMenu ( ) {
-    console.log ( "Toggling menu" )
     this.isMenuCollapsed.set ( !this.isMenuCollapsed ( ) )
   }
 

@@ -37,6 +37,10 @@ html {
   min-width: 300px;
 }
 
+.navbar {
+  background-color: var(--bs-secondary-bg);
+}
+
 :root {
   --bs-blue: #0d6efd;
   --bs-indigo: #6610f2;
@@ -201,6 +205,10 @@ textarea.form-control {
 
 .bg-top-right {
   object-position: top right !important;
+}
+
+.bg-top-center {
+  object-position: top center !important;
 }
 
 .bg-img-fit {

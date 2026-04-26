@@ -2,6 +2,7 @@ import { Routes } from "@angular/router"
 import { HomeComponent } from "./user/home/home.component"
 import { EventsComponent } from "./user/events/events.component"
 import { ErrorComponent } from "./user/error/error.component"
+import { GalleryComponent } from "./user/gallery/gallery.component"
 import { authGuard } from "../guards/auth.guard"
 
 export const routes: Routes = [
@@ -12,6 +13,10 @@ export const routes: Routes = [
   {
     path: "events",
     component: EventsComponent
+  },
+  {
+    path: "gallery",
+    component: GalleryComponent
   },
   {
     path: "admin",

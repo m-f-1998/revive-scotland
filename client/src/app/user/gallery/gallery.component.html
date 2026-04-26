@@ -1,0 +1,33 @@
+<div class="min-height-100vh d-flex flex-column">
+  <app-navbar />
+
+  <div class="gallery-page container flex-grow-1">
+    <div class="toolbar">
+      <h2></h2>
+      <div class="btn-group">
+        <button class="btn" [class.active]="filter() === 'dunoon'" (click)="setFilter('dunoon')">Dunoon</button>
+        <button class="btn" [class.active]="filter() === 'kinloss'" (click)="setFilter('kinloss')">Kinloss</button>
+        <button class="btn" [class.active]="filter() === 'skye'" (click)="setFilter('skye')">Skye</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      @for ( item of filtered; track $index ) {
+        <div class="card" (click)="item.type === 'image' ? openImage($index) : openVideo(item.url)">
+          <div class="thumb">
+            @if ( item.type === 'image' ) {
+              <img [attr.src]="'/api/img/' + item.url + '?w=800&f=webp'" alt="Gallery image" loading="lazy" />
+            } @else {
+              <div class="video-thumb">
+                <app-icon icon="play-circle" />
+                <span>Play video</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <app-footer />
+</div>

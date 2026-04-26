@@ -4,3 +4,4 @@ vendor
 dist
 environments
 assets/.cache
+.DS_Store

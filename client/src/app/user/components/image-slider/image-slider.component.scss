@@ -1,25 +1,61 @@
-.scroll-container {
+.image-slider {
   background-color: #333;
-  white-space: nowrap;
-  padding: 10px;
-  flex-direction: row;
+  width: 100%;
+}
+
+.scroll-container {
   display: flex;
-  overflow-y: scroll;
+  flex-direction: column; /* Stack images on top, button on bottom */
+  overflow-x: auto;       /* The scrollbar will be at the very bottom of this div */
+  overflow-y: hidden;
+  width: 100%;
 }
 
-div.scroll-container img {
-  padding: 10px;
-}
-
-div.scroll-container img:hover {
-  transform: scale(1.05);
-  transition: all 1s;
+.image-track {
+  display: flex;
+  flex-direction: row;
+  padding: 20px;
+  gap: 15px;
+  /* This ensures the track is as wide as all images combined */
+  width: max-content;
 }
 
 .img-expand {
+  flex: 0 0 auto;
   max-width: 600px;
   max-height: 400px;
   object-fit: contain;
   cursor: pointer;
   border-radius: 20px;
+  transition: transform 0.3s;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+.sticky-button-row {
+  position: sticky;
+  left: 0;                /* Keeps it stuck to the left edge of the visible area */
+  width: 100%;            /* Width of the visible container */
+  padding: 10px 20px 20px;
+  background-color: #333; /* Matches background so images "slide behind" it if needed */
+  z-index: 10;
+
+  /* Flex to make the button inside span the whole sticky row */
+  display: flex;
+
+  .btn {
+    width: 100%;          /* Button spans the visible width */
+  }
+}
+
+/* Optional: Custom scrollbar styling to make it look cleaner */
+.scroll-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.scroll-container::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 10px;
 }
