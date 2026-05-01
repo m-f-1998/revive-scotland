@@ -1,9 +1,13 @@
 
 import { ChangeDetectionStrategy, Component, inject, Input } from "@angular/core"
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap"
+import { IconComponent } from "@revive/src/app/icon/icon.component"
 
 @Component ( {
   selector: "app-expanded-image",
+  imports: [
+    IconComponent
+  ],
   templateUrl: "./expanded-image.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {

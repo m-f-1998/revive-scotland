@@ -19,15 +19,19 @@
         />
       </div>
     </div>
-    <button class="carousel-control-prev" type="button" data-bs-target="#images" data-bs-slide="prev" (click)="prevImage()">
-      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-      <span class="visually-hidden">Previous</span>
-    </button>
-    <button class="carousel-control-next" type="button" data-bs-target="#images" data-bs-slide="next" (click)="nextImage()">
-      <span class="carousel-control-next-icon" aria-hidden="true"></span>
-      <span class="visually-hidden">Next</span>
-    </button>
   </div>
+</div>
+<div class="modal-footer">
+  <!-- Next, Previous and Download -->
+  <button type="button" class="btn btn-secondary" (click)="prevImage()">
+    <app-icon icon="chevron-left" />
+  </button>
+  <a [href]="'/api/img/' + imageURLs [ this.index ] + '?w=1024&f=webp'" class="btn btn-primary" download>
+    <app-icon icon="download" /> Download
+  </a>
+  <button type="button" class="btn btn-secondary" (click)="nextImage()">
+    <app-icon icon="chevron-right" />
+  </button>
 </div>
 
 <div style="display: none;">
