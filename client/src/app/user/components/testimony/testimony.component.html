@@ -1,10 +1,10 @@
 <div class="container-fluid p-0">
   <div class="row p-0 text-center align-items-stretch g-0">
-    @for (testimony of testimonies; track $index) {
+    @for (testimony of randomTestimonies; track $index) {
       <div class="col-lg-3 col-md-6">
         <div class="p-5 text-white h-100 bg-primary">
           <h3 class="h4">{{testimony.name}}</h3>
-          <p class="mb-0 text-small">{{testimony.testimony}}</p>
+          <blockquote class="mb-0 text-small fst-italic">“{{testimony.testimony}}”</blockquote>
         </div>
       </div>
     }

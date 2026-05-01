@@ -5,9 +5,9 @@
     <div class="toolbar">
       <h2></h2>
       <div class="btn-group">
-        <button class="btn" [class.active]="filter() === 'dunoon'" (click)="setFilter('dunoon')">Dunoon</button>
-        <button class="btn" [class.active]="filter() === 'kinloss'" (click)="setFilter('kinloss')">Kinloss</button>
-        <button class="btn" [class.active]="filter() === 'skye'" (click)="setFilter('skye')">Skye</button>
+        <button class="btn btn-primary" [class.active]="filter() === 'dunoon'" (click)="setFilter('dunoon')">Dunoon</button>
+        <button class="btn btn-primary" [class.active]="filter() === 'kinloss'" (click)="setFilter('kinloss')">Kinloss</button>
+        <button class="btn btn-primary" [class.active]="filter() === 'skye'" (click)="setFilter('skye')">Skye</button>
       </div>
     </div>
 
@@ -16,7 +16,7 @@
         <div class="card" (click)="item.type === 'image' ? openImage($index) : openVideo(item.url)">
           <div class="thumb">
             @if ( item.type === 'image' ) {
-              <img [attr.src]="'/api/img/' + item.url + '?w=800&f=webp'" alt="Gallery image" loading="lazy" />
+              <img #galleryImg [attr.src]="item.lqip" [attr.data-url]="item.url" [attr.data-src]="item.src" [attr.data-srcset]="item.srcset" [attr.sizes]="item.sizes" alt="Gallery image" loading="lazy" class="progressive" />
             } @else {
               <div class="video-thumb">
                 <app-icon icon="play-circle" />
