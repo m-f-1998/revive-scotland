@@ -1,15 +1,12 @@
 import { Location } from "@angular/common"
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
 import { NavigationEnd, Router } from "@angular/router"
-import { NgbCollapse, NgbDropdownModule } from "@ng-bootstrap/ng-bootstrap"
 import { AuthService } from "../../services/auth.service"
 import { IconComponent } from "../../icon/icon.component"
 
 @Component ( {
   selector: "app-admin-navbar",
   imports: [
-    NgbCollapse,
-    NgbDropdownModule,
     IconComponent
   ],
   templateUrl: "./navbar.component.html",

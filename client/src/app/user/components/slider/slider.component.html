@@ -1,32 +1,42 @@
-<div class="w-100">
-  <ngb-carousel #carousel
-    [interval]="5000"
-    class="w-100"
-    [showNavigationArrows]="false"
-    (slide)="onSlide($event)">
-    @for (img of slides(); track img; let i = $index) {
-      <ng-template ngbSlide>
-        <div class="border-radius-15 bg-secondary-subtle">
-            <img
-              [attr.src]="img.image.startsWith ( 'http' ) ? img.image : '/api/img/' + img.image"
-              [attr.srcset]="
-                img.image.startsWith ( 'http' ) ? '' : '/api/img/' + img.image + '?w=320&f=webp 320w, ' +
-                img.image.startsWith ( 'http' ) ? '' : '/api/img/' + img.image + '?w=640&f=webp 640w, ' +
-                img.image.startsWith ( 'http' ) ? '' : '/api/img/' + img.image + '?w=1024&f=webp 1024w'
-              "
-              sizes="(max-width: 600px) 100vw, 600px"
-              alt="Revive Scotland Header"
-              loading="eager"
-              fetchpriority="high"
-              decoding="sync"
-              class="img-fluid slider-image w-100 object-fit-cover filter-50"
-            />
-            <div class="carousel-caption">
-              <h1>{{slides()[i]?.title}}</h1>
-              <p class="caption-text">{{slides()[i]?.content}}</p>
-            </div>
-        </div>
-      </ng-template>
-    }
-  </ngb-carousel>
+<div class="carousel-container">
+  @for (img of slides(); track img; let i = $index) {
+    <div class="carousel-slide" [class.active]="i === activeSlide()">
+      <!-- Blurred backdrop fills letterbox bars -->
+      <img
+        aria-hidden="true"
+        [attr.src]="img.image.startsWith('http') ? img.image : '/api/img/' + img.image + '?w=640&f=webp&q=60'"
+        class="carousel-bg"
+      />
+      <!-- Main image at natural aspect ratio -->
+      <img
+        [attr.src]="img.image.startsWith('http') ? img.image : '/api/img/' + img.image + '?f=webp&q=92'"
+        [attr.srcset]="img.image.startsWith('http') ? '' :
+          '/api/img/' + img.image + '?w=640&f=webp&q=92 640w, ' +
+          '/api/img/' + img.image + '?w=1280&f=webp&q=92 1280w, ' +
+          '/api/img/' + img.image + '?f=webp&q=92 2x'"
+        sizes="100vw"
+        alt="Revive Scotland Header"
+        loading="eager"
+        decoding="async"
+        class="carousel-img"
+      />
+      <div class="carousel-caption">
+        <h1>{{img.title}}</h1>
+        <p class="caption-text text-sm sm:text-base">{{img.content}}</p>
+      </div>
+    </div>
+  }
+
+  @if (slides().length > 1) {
+    <div class="carousel-indicators">
+      @for (img of slides(); track $index; let i = $index) {
+        <button
+          class="carousel-indicator-dot"
+          [class.active]="i === activeSlide()"
+          (click)="goToSlide(i)"
+          [attr.aria-label]="'Go to slide ' + (i + 1)"
+        ></button>
+      }
+    </div>
+  }
 </div>

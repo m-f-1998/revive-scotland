@@ -8,7 +8,6 @@ import { FormlyService } from "../../services/formly.service"
 import { HttpErrorResponse, HttpHeaders } from "@angular/common/http"
 import { AuthService } from "../../services/auth.service"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
-import { NgbCollapse } from "@ng-bootstrap/ng-bootstrap"
 import { AdminFooterComponent } from "../footer/footer.component"
 import { IconComponent } from "../../icon/icon.component"
 
@@ -18,7 +17,6 @@ import { IconComponent } from "../../icon/icon.component"
     AdminNavbarComponent,
     IconComponent,
     FormlyForm,
-    NgbCollapse,
     AdminFooterComponent
   ],
   templateUrl: "./event-editor.component.html",

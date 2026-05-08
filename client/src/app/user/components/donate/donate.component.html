@@ -1,4 +1,4 @@
-<section class="donate-section position-relative" id="donate">
+<section class="relative overflow-hidden" id="donate">
   <img src="/api/img/donation.jpg?w=640&f=webp"
     srcset="
       /api/img/donation.jpg?w=320&f=webp 320w,
@@ -9,20 +9,18 @@
     alt="Donate Background"
     loading="lazy"
     decoding="async"
-    class="background-img"
+    class="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none"
   />
-  <div class="dark-overlay py-5">
-    <div class="overlay-content index-forward py-5">
-      <div class="container">
-        <div class="row align-items-center m-2">
-          <div class="col-lg-7 text-white">
-            <p class="lead text-serif mb-1">Support our Cause</p>
-            <h2 class="text-shadow mb-4">Help the Mission!</h2>
-            <p>Unless specified, donations received will go towards the costs of the project, as well as helping people who would otherwise be unable to attend the events that we run.</p>
-          </div>
-          <div class="col-lg-5">
-            <a id="donate-button" class="btn btn-primary w-100" href="https://buy.stripe.com/test_8wM3etg7vgrP4nK144">Donate now</a>
-          </div>
+  <div class="relative z-10 py-20" style="background-color: rgba(0,0,0,0.5);">
+    <div class="max-w-screen-xl mx-auto px-4">
+      <div class="grid grid-cols-1 lg:grid-cols-[7fr_5fr] gap-8 items-center">
+        <div class="text-white">
+          <p class="text-serif mb-1 opacity-90">Support our Cause</p>
+          <h2 class="font-bold mb-4 text-shadow">Help the Mission!</h2>
+          <p class="text-sm leading-relaxed opacity-90">Unless specified, donations received will go towards the costs of the project, as well as helping people who would otherwise be unable to attend the events that we run.</p>
+        </div>
+        <div>
+          <a id="donate-button" class="btn-primary w-full block text-center py-3 text-base font-semibold rounded" href="https://buy.stripe.com/test_8wM3etg7vgrP4nK144">Donate now</a>
         </div>
       </div>
     </div>

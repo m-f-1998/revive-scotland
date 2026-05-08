@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from "@angular/core"
 import { TermsComponent } from "../terms/terms.component"
-import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
+import { ModalService } from "@revive/src/app/services/modal.service"
 import { Router } from "@angular/router"
 import { DatesService } from "@services/dates.service"
 import { version } from "@revive/package.json"
@@ -18,7 +18,7 @@ export class FooterComponent {
   public me = "https://matthewfrankland.co.uk/"
   public version = version
 
-  public readonly modalSvc: NgbModal = inject ( NgbModal )
+  public readonly modalSvc: ModalService = inject ( ModalService )
   public readonly router: Router = inject ( Router )
   public readonly dateSvc: DatesService = inject ( DatesService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )

@@ -1,5 +1,6 @@
-<div class="row align-items-stretch gx-0" id="adoration">
-  <div class="col-lg-6 half-page-banner bg-cover bg-center min-height-300">
+<div class="grid grid-cols-1 lg:grid-cols-2" id="adoration">
+  <!-- Image -->
+  <div class="half-page-banner min-h-[20rem] lg:min-h-0">
     <img src="/api/img/adoration.jpg?w=640&f=webp"
       srcset="
         /api/img/adoration.jpg?w=320&f=webp 320w,
@@ -10,29 +11,18 @@
       alt="Adoration Missions Banner"
       loading="lazy"
       decoding="async"
-      class="w-100 h-100 object-fit-cover"
+      class="w-full h-full object-cover block"
     />
   </div>
-  <div class="col-lg-6 secondary-bg border-start">
-    <div class="d-flex flex-column p-5 justify-content-center text-lg-end">
-      <div class="w-100">
-        <p class="text-serif text-primary mb-0">
-          Sharing our Faith
-        </p>
-        <h2 class="text-uppercase mb-0">
-          {{title}}
-        </h2>
-        <div class="row">
-          <div class="col-lg-10 ms-auto">
-            <p class="text-muted mt-4 mb-0">​
-              We offer to run a parish adoration mission in which we work together with the parish priest to prepare and run continuous adoration for set periods of time either with the goal of increasing already existing adoration in the parish or to help begin this devotional practice. For more information on what a mission can look like, please
-              <a class="link text-decoration-none" (click)="goToContact()">
-                Contact Us
-              </a>.
-            </p>
-          </div>
-        </div>
-      </div>
+  <!-- Content -->
+  <div class="secondary-bg border-l border-gray-200 flex flex-col p-10 justify-center lg:text-right">
+    <p class="text-serif text-primary mb-0">Sharing our Faith</p>
+    <h2 class="uppercase tracking-wider mb-0">{{title}}</h2>
+    <div class="lg:ml-auto lg:max-w-[80%]">
+      <p class="text-muted text-sm mt-4 mb-0 leading-relaxed">
+        We offer to run a parish adoration mission in which we work together with the parish priest to prepare and run continuous adoration for set periods of time either with the goal of increasing already existing adoration in the parish or to help begin this devotional practice. For more information on what a mission can look like, please
+        <a class="text-primary hover:text-primary-hover cursor-pointer" (click)="goToContact()">Contact Us</a>.
+      </p>
     </div>
   </div>
 </div>

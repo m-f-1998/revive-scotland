@@ -1,6 +1,6 @@
 
 import { ChangeDetectionStrategy, Component, inject, Input } from "@angular/core"
-import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap"
+import { DialogRef } from "@angular/cdk/dialog"
 import { IconComponent } from "@revive/src/app/icon/icon.component"
 
 @Component ( {
@@ -19,10 +19,10 @@ export class ExpandedImageComponent {
   @Input ( ) public imageURLs: string [ ] = [ ]
   @Input ( ) public index: number = 0
 
-  public readonly activeRouter: NgbActiveModal = inject ( NgbActiveModal )
+  private readonly dialogRef: DialogRef = inject ( DialogRef )
 
   public close ( ) {
-    this.activeRouter.dismiss ( )
+    this.dialogRef.close ( )
   }
 
   public nextImage ( ) {

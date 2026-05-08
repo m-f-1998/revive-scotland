@@ -1,4 +1,4 @@
-<section class="pilgrimage-section position-relative" id="pilgrimage">
+<section class="relative overflow-hidden" id="pilgrimage">
   <img
     src="/api/img/pilgrimage.jpg?w=640&f=webp"
     srcset="
@@ -10,16 +10,14 @@
     alt="Pilgrimage background"
     loading="lazy"
     decoding="async"
-    class="background-img"
+    class="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none"
   />
-  <div class="primary-overlay py-5 position-relative z-index-10">
-    <div class="overlay-content py-5">
-      <div class="container py-5 text-white text-center pilgrimage-text">
-        <h2 class="text-xl text-shadow mb-4">Pilgrimages</h2>
-        <p class="lead mb-1">
-          All our pilgrimages are in a true spirit of simplicity where we forgo the luxuries and pleasures of the world in order to be able to appreciate the basic things in life. All pilgrimages include daily mass and prayer time and a series of formational talks. We are also able to design and lead pilgrimages suited for parish, youth and other groups. Please contact us directly if you wish to set up a custom pilgrimage.
-        </p>
-      </div>
+  <div class="relative z-10 py-24" style="background-color: rgba(88, 64, 57, 0.5);">
+    <div class="max-w-screen-md mx-auto px-4 text-center text-white" style="backdrop-filter: blur(5px) saturate(70%);">
+      <h2 class="text-4xl sm:text-6xl font-bold mb-6">Pilgrimages</h2>
+      <p class="text-lg leading-relaxed">
+        All our pilgrimages are in a true spirit of simplicity where we forgo the luxuries and pleasures of the world in order to be able to appreciate the basic things in life. All pilgrimages include daily mass and prayer time and a series of formational talks. We are also able to design and lead pilgrimages suited for parish, youth and other groups. Please contact us directly if you wish to set up a custom pilgrimage.
+      </p>
     </div>
   </div>
 </section>

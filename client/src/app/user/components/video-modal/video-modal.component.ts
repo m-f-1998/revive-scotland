@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, Input } from "@angular/core"
-import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap"
+import { DialogRef } from "@angular/cdk/dialog"
 
 @Component ( {
   selector: "app-video-modal",
@@ -9,9 +9,9 @@ import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap"
 export class VideoModalComponent {
   @Input ( ) public videoUrl: string = ""
 
-  public readonly activeRouter: NgbActiveModal = inject ( NgbActiveModal )
+  private readonly dialogRef: DialogRef = inject ( DialogRef )
 
   public close ( ) {
-    this.activeRouter.dismiss ( )
+    this.dialogRef.close ( )
   }
 }

@@ -1,5 +1,6 @@
-<div class="row align-items-stretch gx-0" id="contact">
-  <div class="col-12 col-lg-6 half-page-banner bg-cover bg-center min-height-300 secondary-bg border-end">
+<div class="grid grid-cols-1 lg:grid-cols-2" id="contact">
+  <!-- Image -->
+  <div class="half-page-banner min-h-[20rem] lg:min-h-0">
     <img src="/api/img/contact.jpg?w=640&f=webp"
       srcset="
         /api/img/contact.jpg?w=320&f=webp 320w,
@@ -10,42 +11,35 @@
       alt="Contact Us Banner"
       loading="lazy"
       decoding="async"
-      class="w-100 h-100 bg-top-center bg-img-fit"
+      class="w-full h-full object-cover block object-top"
     />
   </div>
-  <div class="col-12 col-md-6">
-    <div class="p-5 h-100">
-      <header>
-        <p class="text-serif mb-0 text-primary">Contact Us</p>
-        <h2 class="text-uppercase">Reach Out</h2>
-        <p class="text-muted">If you have any questions, we would love to hear from you! Feel free to contact us via email or phone.</p>
-      </header>
-      <ul class="list-unstyled mb-0 text-muted p-0">
-        <li class="mb-2">
-          <a class="reset-anchor" href="tel:+447883824055">
-            <span>
-              <app-icon icon="phone" />
-              &nbsp;+447883824055
-            </span>
-          </a>
-        </li>
-        <li class="mb-2">
-          <a class="reset-anchor" href="mailto:luca@revivescotland.co.uk">
-            <span>
-              <app-icon icon="envelope" />
-              &nbsp;luca&#64;revivescotland.co.uk
-            </span>
-          </a>
-        </li>
-        <li class="mb-2">
-          <a class="reset-anchor" href="https://www.instagram.com/revive.scotland">
-            <span>
-              <app-icon icon="instagram" />
-              &nbsp;&#64;revivescotland
-            </span>
-          </a>
-        </li>
-      </ul>
-    </div>
+  <!-- Content -->
+  <div class="p-10 flex flex-col justify-center">
+    <header class="mb-6">
+      <p class="text-serif mb-0 text-primary">Contact Us</p>
+      <h2 class="uppercase tracking-wider mb-2">Reach Out</h2>
+      <p class="text-muted text-sm">If you have any questions, we would love to hear from you! Feel free to contact us via email or phone.</p>
+    </header>
+    <ul class="list-none p-0 space-y-3 text-muted">
+      <li>
+        <a class="flex items-center gap-2 text-primary hover:text-primary-hover transition-colors" href="tel:+447883824055">
+          <app-icon icon="phone" />
+          +447883824055
+        </a>
+      </li>
+      <li>
+        <a class="flex items-center gap-2 text-primary hover:text-primary-hover transition-colors" href="mailto:luca@revivescotland.co.uk">
+          <app-icon icon="envelope" />
+          luca&#64;revivescotland.co.uk
+        </a>
+      </li>
+      <li>
+        <a class="flex items-center gap-2 text-primary hover:text-primary-hover transition-colors" href="https://www.instagram.com/revive.scotland">
+          <app-icon icon="instagram" />
+          &#64;revivescotland
+        </a>
+      </li>
+    </ul>
   </div>
 </div>

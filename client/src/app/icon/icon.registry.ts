@@ -2,6 +2,7 @@ import {
   faArrowRight,
   faArrowUp,
   faArrowUpLong,
+  faBars,
   faBible,
   faCalendar,
   faCalendarAlt,
@@ -43,7 +44,8 @@ import {
   faSpinner,
   faTrash,
   faTrashAlt,
-  faUserFriends
+  faUserFriends,
+  faXmark
 } from "@fortawesome/free-solid-svg-icons"
 import { faInstagram } from "@fortawesome/free-brands-svg-icons"
 
@@ -52,6 +54,7 @@ const icons = {
     "arrow-right": faArrowRight,
     "arrow-up": faArrowUp,
     "arrow-up-long": faArrowUpLong,
+    "bars": faBars,
     "bible": faBible,
     "calendar": faCalendar,
     "calendar-alt": faCalendarAlt,
@@ -89,6 +92,7 @@ const icons = {
     "trash": faTrash,
     "trash-alt": faTrashAlt,
     "user-friends": faUserFriends,
+    "xmark": faXmark,
     "save": faSave,
     "share": faShare,
     "sign-out-alt": faSignOutAlt,

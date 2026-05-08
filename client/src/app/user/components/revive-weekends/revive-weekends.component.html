@@ -1,40 +1,16 @@
-<div class="row align-items-stretch gx-0" id="weekends">
-  <div class="col-12 col-md-6 half-page-banner bg-cover bg-center min-height-300 secondary-bg border-start">
-    <div class="d-flex justify-content-center align-items-center w-100 h-100 border-start">
-      <video width="640" height="360" controls playsinline style="background-color: black;">
-        <source src="/api/img/kinloss/kinloss-14.mp4" type="video/mp4" />
-        <!-- <img src="/api/img/revive-weekends.jpg?w=640&f=webp"
-          srcset="
-            /api/img/revive-weekends.jpg?w=320&f=webp 320w,
-            /api/img/revive-weekends.jpg?w=640&f=webp 640w,
-            /api/img/revive-weekends.jpg?w=1024&f=webp 1024w
-          "
-          sizes="(max-width: 600px) 100vw, 600px"
-          alt="Revive Weekends Banner"
-          loading="lazy"
-          decoding="async"
-          class="w-100 h-100 bg-top-right bg-img-fit"
-        /> -->
-      </video>
-    </div>
+<div class="grid grid-cols-1 md:grid-cols-2" id="weekends">
+  <!-- Video -->
+  <div class="secondary-bg border-l border-gray-200 flex items-center justify-center p-4 min-h-[20rem]">
+    <video width="640" height="360" controls playsinline class="max-w-full rounded" style="background-color: black; max-height: 600px;">
+      <source src="/api/img/kinloss/kinloss-14.mp4" type="video/mp4" />
+    </video>
   </div>
-  <div class="col-12 col-md-6 order-lg-first">
-    <div class="d-flex flex-column p-5 justify-content-center text-lg-end">
-      <div class="w-100">
-        <p class="text-serif text-primary mb-0">
-          Sharing our Faith
-        </p>
-        <h2 class="text-uppercase mb-0">
-          {{title}}
-        </h2>
-        <div class="row">
-          <div class="col-lg-10 ms-auto">
-            <p class="text-muted mt-4 mb-0">​
-              {{description}}
-            </p>
-          </div>
-        </div>
-      </div>
+  <!-- Content -->
+  <div class="flex flex-col p-10 justify-center md:text-right md:order-first">
+    <p class="text-serif text-primary mb-0">Sharing our Faith</p>
+    <h2 class="uppercase tracking-wider mb-0">{{title}}</h2>
+    <div class="md:ml-auto md:max-w-[80%]">
+      <p class="text-muted text-sm mt-4 mb-0 leading-relaxed">{{description}}</p>
     </div>
   </div>
 </div>

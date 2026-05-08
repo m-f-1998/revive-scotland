@@ -1,50 +1,45 @@
 <app-admin-navbar />
-<div class="container my-4" style="min-height: 80vh;">
-  <h2 class="mb-4">
+<div class="max-w-screen-xl mx-auto p-4 md:p-8" style="min-height: 80vh;">
+  <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
     <app-icon icon="calendar-alt" />
     Event Editor
   </h2>
-  <hr>
+  <hr class="border-gray-200 mb-6">
 
   @if (loading()) {
-    <div class="text-center p-5">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
+    <div class="flex flex-col items-center justify-center gap-2 p-10 text-gray-500">
+      <app-icon icon="spinner" iconAnimation="spin" iconSize="2x" />
       <p class="mt-2">Loading data...</p>
     </div>
   } @else {
     <div>
       @for (event of eventData().events; track $index) {
         <div class="card mb-4 shadow-sm">
-          <div class="card-header d-flex justify-content-between align-items-center" (click)="isCollapsed = !isCollapsed" style="cursor: pointer;">
-            <div class="d-flex flex-row">
-              @if (isCollapsed) {
-                <app-icon icon="chevron-circle-down" class="me-2" />
-              } @else {
-                <app-icon icon="chevron-circle-up" class="me-2" />
-              }
-              <h5 class="mb-0">
-                {{ eventForm()[$index].model [ "title" ] || `Event #${$index + 1}` }}
+          <div class="card-header flex justify-between items-center cursor-pointer" (click)="isCollapsed = !isCollapsed">
+            <div class="flex items-center gap-2">
+              <app-icon [icon]="isCollapsed ? 'chevron-circle-down' : 'chevron-circle-up'" />
+              <h5 class="mb-0 font-semibold">
+                {{ eventForm()[$index].model['title'] || 'Event #' + ($index + 1) }}
               </h5>
             </div>
-            <button class="btn btn-sm btn-danger" (click)="removeEvent(event.id)">
+            <button class="btn-danger btn-sm" (click)="$event.stopPropagation(); removeEvent(event.id)">
               <app-icon icon="trash" />
             </button>
           </div>
-          <div [ngbCollapse]="isCollapsed">
-            <div class="card-body row g-3">
+          <div [class.hidden]="isCollapsed">
+            <div class="card-body">
               <formly-form [form]="eventForm()[$index].form" [model]="eventForm()[$index].model" [fields]="eventForm()[$index].fields" />
             </div>
           </div>
         </div>
       }
-      <div class="d-flex justify-content-between mt-4">
-        <button class="btn btn-success" (click)="addNewEvent()">
+
+      <div class="flex justify-between mt-6">
+        <button class="btn-success" (click)="addNewEvent()">
           <app-icon icon="plus-circle" /> Add New Event
         </button>
         @if (eventData().events.length > 0) {
-          <button class="btn btn-primary" (click)="saveEventData()" [disabled]="loading() || someFormInvalid()">
+          <button class="btn-primary" (click)="saveEventData()" [disabled]="loading() || someFormInvalid()">
             <app-icon icon="save" /> Save All Events
           </button>
         }

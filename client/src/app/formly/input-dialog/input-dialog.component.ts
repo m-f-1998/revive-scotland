@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input, OnDestroy, OnInit, inject } from "@angular/core"
 import { FormGroup } from "@angular/forms"
-import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap"
+import { DialogRef } from "@angular/cdk/dialog"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
 import { RecaptchaV3Module, ReCaptchaV3Service } from "ng-recaptcha-2"
 import { Subscription } from "rxjs"
@@ -31,7 +31,7 @@ export class InputDialogComponent<T extends Record<string, unknown> = Record<str
   public form = new FormGroup ( { } )
   public description = ""
 
-  private readonly activeModal: NgbActiveModal = inject ( NgbActiveModal )
+  private readonly dialogRef: DialogRef = inject ( DialogRef )
   private readonly recaptchaSvc: ReCaptchaV3Service = inject ( ReCaptchaV3Service )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
 
@@ -58,14 +58,13 @@ export class InputDialogComponent<T extends Record<string, unknown> = Record<str
   }
 
   public close ( ) {
-    this.activeModal.dismiss ( )
+    this.dialogRef.close ( )
   }
 
   public confirm ( ) {
     if ( this.form.invalid ) {
       return
     }
-    this.activeModal.close ( this.model )
+    this.dialogRef.close ( this.model )
   }
-
 }

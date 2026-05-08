@@ -1,6 +1,11 @@
 import { Injectable } from "@angular/core"
-import { NgbDateStruct } from "@ng-bootstrap/ng-bootstrap"
 import { format, parse } from "date-fns"
+
+export interface NgbDateStruct {
+  year: number
+  month: number
+  day: number
+}
 
 @Injectable ( {
   providedIn: "root"

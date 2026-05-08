@@ -52,7 +52,6 @@ export class FormlyConfig implements ConfigOption {
     { name: "PasswordsDoNotMatch", message: "The 'New Password' field cannot match the 'Current Password' field" },
     { name: "invalidClassName", message: "Invalid Class Name" },
     { name: "invalidFormID", message: "Invalid Form ID" },
-    { name: "ngbDate", message: "Invalid Date" },
   ]
 
   public validators = [

@@ -1,9 +1,6 @@
-<nav class="navbar navbar-expand-sm h-100">
-  <div class="container-fluid">
-    <button class="navbar-toggler" type="button" (click)="toggleMenu()">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <a class="navbar-brand p-2" href="/">
+<nav class="bg-gray-100 shadow-sm">
+  <div class="max-w-screen-xl mx-auto px-4 flex items-center justify-between h-16">
+    <a href="/" class="flex-shrink-0">
       <img src="/api/img/logo.png?w=640&f=webp"
         srcset="
           /api/img/logo.png?w=320&f=webp 320w,
@@ -13,31 +10,60 @@
         sizes="(max-width: 600px) 100vw, 600px"
         alt="Site Logo"
         loading="lazy"
-        width="100"
+        width="80"
         decoding="async"
       />
     </a>
-    <div class="collapse navbar-collapse" [ngbCollapse]="isMenuCollapsed()">
-      <ul class="navbar-nav">
-        <li class="nav-item">
-          <a class="nav-link link show display-4 text-center" (click)="goTo('')" [class.active]="url() === ''">
-            <app-icon icon="home" />
-            Home
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link link show display-4 text-center" (click)="goTo('events')" [class.active]="url() === '/events'">
-            <app-icon icon="calendar" />
-            Events
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link link show display-4 text-center" (click)="goTo('gallery')" [class.active]="url() === '/gallery'">
-            <app-icon icon="image" />
-            Gallery
-          </a>
-        </li>
-      </ul>
-    </div>
+
+    <!-- Desktop nav -->
+    <ul class="hidden sm:flex gap-1">
+      <li>
+        <a class="nav-link" (click)="goTo('')" [class.active]="url() === ''">
+          <app-icon icon="home" />
+          Home
+        </a>
+      </li>
+      <li>
+        <a class="nav-link" (click)="goTo('events')" [class.active]="url() === '/events'">
+          <app-icon icon="calendar" />
+          Events
+        </a>
+      </li>
+      <li>
+        <a class="nav-link" (click)="goTo('gallery')" [class.active]="url() === '/gallery'">
+          <app-icon icon="image" />
+          Gallery
+        </a>
+      </li>
+    </ul>
+
+    <!-- Mobile toggle -->
+    <button class="sm:hidden p-2 rounded text-gray-600 hover:bg-gray-200 transition-colors" type="button" (click)="toggleMenu()" aria-label="Toggle navigation">
+      <app-icon [icon]="isMenuCollapsed() ? 'bars' : 'xmark'" />
+    </button>
+  </div>
+
+  <!-- Mobile menu -->
+  <div [class.hidden]="isMenuCollapsed()" class="sm:hidden border-t border-gray-200 bg-gray-100">
+    <ul class="flex flex-col py-2">
+      <li>
+        <a class="nav-link mx-2" (click)="goTo('')" [class.active]="url() === ''">
+          <app-icon icon="home" />
+          Home
+        </a>
+      </li>
+      <li>
+        <a class="nav-link mx-2" (click)="goTo('events')" [class.active]="url() === '/events'">
+          <app-icon icon="calendar" />
+          Events
+        </a>
+      </li>
+      <li>
+        <a class="nav-link mx-2" (click)="goTo('gallery')" [class.active]="url() === '/gallery'">
+          <app-icon icon="image" />
+          Gallery
+        </a>
+      </li>
+    </ul>
   </div>
 </nav>

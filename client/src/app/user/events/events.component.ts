@@ -6,7 +6,7 @@ import { ContactComponent } from "@components/contact/contact.component"
 import { SliderComponent } from "@components/slider/slider.component"
 import { FormlyService } from "../../services/formly.service"
 import { NavbarComponent } from "../components/navbar/navbar.component"
-import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
+import { ModalService } from "@revive/src/app/services/modal.service"
 import { InputDialogComponent } from "../../formly/input-dialog/input-dialog.component"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { ApiService } from "../../services/api.service"
@@ -45,7 +45,7 @@ export class EventsComponent implements OnInit {
   public readonly eventsSvc: EventsService = inject ( EventsService )
   public readonly dateSvc: DatesService = inject ( DatesService )
   public readonly formlySvc: FormlyService = inject ( FormlyService )
-  private readonly modalSvc: NgbModal = inject ( NgbModal )
+  private readonly modalSvc: ModalService = inject ( ModalService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
   private readonly apiSvc: ApiService = inject ( ApiService )
 

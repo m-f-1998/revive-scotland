@@ -1,7 +1,7 @@
 <div class="image-slider">
   <div class="scroll-container">
     <div class="image-track">
-      @for ( url of imageURLs(); track $index ) {
+      @for (url of imageURLs(); track $index) {
         <img [attr.src]="'/api/img/' + url + '?w=640&f=webp'"
           class="img-expand"
           (click)="expandImage($index)"
@@ -10,7 +10,7 @@
     </div>
 
     <div class="sticky-button-row">
-      <button class="btn btn-primary" (click)="goToGallery()">
+      <button class="btn-primary w-full" (click)="goToGallery()">
         <app-icon icon="image" />
         View Gallery
       </button>

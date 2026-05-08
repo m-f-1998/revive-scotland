@@ -4,7 +4,8 @@ import { AuthService } from "../../services/auth.service"
 import { FileEntry, Quota } from "../../interfaces/fileExplorer.interface"
 import { FileExplorerService } from "../../services/fileExplorer.service"
 import { ApiService } from "../../services/api.service"
-import { NgbActiveModal, NgbDropdownModule, NgbModal } from "@ng-bootstrap/ng-bootstrap"
+import { DialogRef } from "@angular/cdk/dialog"
+import { ModalService } from "@revive/src/app/services/modal.service"
 import { FileExplorerModalComponent } from "./file-explorer-modal/file-explorer-modal.component"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { DatePipe } from "@angular/common"
@@ -20,7 +21,6 @@ import { IconComponent } from "../../icon/icon.component"
     AdminNavbarComponent,
     DatePipe,
     IconComponent,
-    NgbDropdownModule,
     AdminFooterComponent
   ],
   templateUrl: "./file-explorer.component.html",
@@ -29,7 +29,7 @@ import { IconComponent } from "../../icon/icon.component"
 export class FileExplorerComponent {
   public readonly authSvc: AuthService = inject ( AuthService )
   public readonly fileExplorerSvc: FileExplorerService = inject ( FileExplorerService )
-  public readonly activeModal: NgbActiveModal | null = inject ( NgbActiveModal, { optional: true } )
+  public readonly activeModal: DialogRef | null = inject ( DialogRef, { optional: true } )
 
   public readonly fileInput: Signal<ElementRef<HTMLInputElement> | undefined> = viewChild ( "fileInput" )
 
@@ -44,11 +44,12 @@ export class FileExplorerComponent {
 
   public isSelectionMode: boolean = false
   public readonly allowedMimeTypes: string [ ] = [ "image/jpeg", "image/png", "image/webp", "image/gif" ]
+  public uploadDropdownOpen: WritableSignal<boolean> = signal ( false )
 
   private draggedFile: FileEntry | null = null
 
   private readonly apiSvc: ApiService = inject ( ApiService )
-  private readonly modalSvc: NgbModal = inject ( NgbModal )
+  private readonly modalSvc: ModalService = inject ( ModalService )
   private readonly formlySvc: FormlyService = inject ( FormlyService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
 
@@ -65,7 +66,7 @@ export class FileExplorerComponent {
 
   public closeSelectionMode ( ) {
     if ( !this.activeModal ) return
-    this.activeModal.dismiss ( )
+    this.activeModal.close ( )
   }
 
   public async selectFile ( fileEntry: FileEntry ) {

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, input, InputSignal, signal } from "@angular/core"
-import { NgbModal, NgbModalModule } from "@ng-bootstrap/ng-bootstrap"
+import { ModalService } from "@revive/src/app/services/modal.service"
 import { ExpandedImageComponent } from "@components/expanded-image/expanded-image.component"
 import { IconComponent } from "@revive/src/app/icon/icon.component"
 import { Router } from "@angular/router"
@@ -7,7 +7,6 @@ import { Router } from "@angular/router"
 @Component ( {
   selector: "app-image-slider",
   imports: [
-    NgbModalModule,
     IconComponent
   ],
   templateUrl: "./image-slider.component.html",
@@ -20,7 +19,7 @@ export class ImageSliderComponent {
   public zoom = 10
   public loading = signal ( false )
 
-  private readonly modalSvc: NgbModal = inject ( NgbModal )
+  private readonly modalSvc: ModalService = inject ( ModalService )
   private readonly router: Router = inject ( Router )
 
   public expandImage ( index: number ) {

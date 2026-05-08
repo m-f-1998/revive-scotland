@@ -5,11 +5,11 @@ import { provideHttpClient, withFetch } from "@angular/common/http"
 import { provideFormlyCore } from "@ngx-formly/core"
 import { provideToastr } from "@m-f-1998/ngx-toastr"
 import { RECAPTCHA_LOADER_OPTIONS, RECAPTCHA_V3_SITE_KEY } from "ng-recaptcha-2"
-import { withFormlyBootstrap } from "@ngx-formly/bootstrap"
 import { FormlyConfig } from "./formly/formly-config"
 import { AuthService } from "./services/auth.service"
 import { provideCharts, withDefaultRegisterables } from "ng2-charts"
 import { environment } from "../environments/environment"
+import { DialogModule } from "@angular/cdk/dialog"
 
 const nonce = document.querySelector ( 'meta[name="csp-nonce"]' )?.getAttribute ( "content" )
 
@@ -31,9 +31,9 @@ const appConfig: ApplicationConfig = {
     } ),
     provideFormlyCore ( [
       new FormlyConfig ( ),
-      ...withFormlyBootstrap ( )
     ] ),
     provideCharts ( withDefaultRegisterables ( ) ),
+    DialogModule,
     provideToastr ( {
       positionClass: "toast-bottom-right",
       preventDuplicates: true,

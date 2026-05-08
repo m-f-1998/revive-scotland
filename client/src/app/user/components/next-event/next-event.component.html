@@ -1,59 +1,51 @@
 @if (validNextEvent) {
-  <section class="bg-primary-shade text-white pb-3" id="events">
-    <div class="container">
-      <div class="row g-4 align-items-center">
+  <section class="bg-primary text-white py-8" id="events">
+    <div class="max-w-screen-xl mx-auto px-4">
+      <div class="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-8 items-center">
 
-        <div class="col-lg-4">
-          <span class="badge rounded-pill bg-white text-primary mb-2 px-3 py-2 text-uppercase fw-bold">Up Next</span>
-          <div class="mt-4">
-            <h2 class="display-5 fw-bold mb-3">{{nextEvent()?.title}}</h2>
-            <p class="opacity-75 fs-5 mb-4">
-              <app-icon icon="map-marker" class="me-2" />{{nextEvent()?.location}}
-            </p>
-          </div>
-
+        <!-- Left: Event info -->
+        <div>
+          <span class="inline-block bg-white text-primary text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-4">Up Next</span>
+          <h2 class="text-3xl font-bold mb-3">{{nextEvent()?.title}}</h2>
+          <p class="opacity-80 text-lg mb-6 flex items-center gap-2">
+            <app-icon icon="map-marker" />
+            {{nextEvent()?.location}}
+          </p>
           @if (nextEvent()?.webpageUrl) {
-            <a class="btn btn-outline-light btn-lg rounded-pill px-4 transition-all" [href]="nextEvent()?.webpageUrl" target="_blank">
-              Get Details <app-icon icon="arrow-right" class="ms-2" />
+            <a class="btn-outline-light rounded-full px-6 py-2.5 font-medium inline-flex items-center gap-2 transition-all hover:-translate-y-0.5"
+               [href]="nextEvent()?.webpageUrl" target="_blank">
+              Get Details <app-icon icon="arrow-right" />
             </a>
           }
         </div>
 
-        <div class="col-lg-8">
-          <div class="countdown-container p-3 p-md-5 rounded-4 bg-white bg-opacity-10 border border-white border-opacity-10 backdrop-blur">
-            <div class="d-flex justify-content-center justify-content-md-between text-center align-items-center">
+        <!-- Right: Countdown -->
+        <div class="p-6 md:p-10 rounded-2xl bg-white/10 border border-white/10 backdrop-blur-md">
+          <div class="flex justify-center md:justify-between items-center text-center gap-2 md:gap-4">
 
-              <div class="timer-segment">
-                <div class="timer-num">{{timeRemaining().months}}</div>
-                <div class="timer-label">MO</div>
-              </div>
-
-              <div class="timer-divider mx-2 mx-md-0">:</div>
-
-              <div class="timer-segment">
-                <div class="timer-num">{{timeRemaining().days}}</div>
-                <div class="timer-label">DAYS</div>
-              </div>
-
-              <div class="timer-divider mx-2 mx-md-0">:</div>
-
-              <div class="timer-segment">
-                <div class="timer-num">{{timeRemaining().hours}}</div>
-                <div class="timer-label">HRS</div>
-              </div>
-
-              <div class="timer-divider mx-2 mx-md-0 d-none d-sm-block">:</div>
-              <div class="timer-segment d-none d-sm-block">
-                <div class="timer-num">{{timeRemaining().minutes}}</div>
-                <div class="timer-label">MIN</div>
-              </div>
-
-              <div class="timer-divider mx-2 mx-md-0 d-none d-sm-block">:</div>
-              <div class="timer-segment d-none d-sm-block">
-                <div class="timer-num text-primary-light">{{timeRemaining().seconds}}</div>
-                <div class="timer-label">SEC</div>
-              </div>
-
+            <div class="flex-1">
+              <div class="timer-num">{{timeRemaining().months}}</div>
+              <div class="timer-label">MO</div>
+            </div>
+            <div class="timer-divider">:</div>
+            <div class="flex-1">
+              <div class="timer-num">{{timeRemaining().days}}</div>
+              <div class="timer-label">DAYS</div>
+            </div>
+            <div class="timer-divider">:</div>
+            <div class="flex-1">
+              <div class="timer-num">{{timeRemaining().hours}}</div>
+              <div class="timer-label">HRS</div>
+            </div>
+            <div class="timer-divider hidden sm:block">:</div>
+            <div class="flex-1 hidden sm:block">
+              <div class="timer-num">{{timeRemaining().minutes}}</div>
+              <div class="timer-label">MIN</div>
+            </div>
+            <div class="timer-divider hidden sm:block">:</div>
+            <div class="flex-1 hidden sm:block">
+              <div class="timer-num opacity-80">{{timeRemaining().seconds}}</div>
+              <div class="timer-label">SEC</div>
             </div>
           </div>
         </div>

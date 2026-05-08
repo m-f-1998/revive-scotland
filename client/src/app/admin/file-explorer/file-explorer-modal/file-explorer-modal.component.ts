@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, Input, OnInit } from "@angular/core"
 import { AbstractControl, FormGroup } from "@angular/forms"
-import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap"
+import { DialogRef } from "@angular/cdk/dialog"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
 import { IconComponent } from "@revive/src/app/icon/icon.component"
 import { FileEntry } from "@revive/src/app/interfaces/fileExplorer.interface"
@@ -27,7 +27,7 @@ export class FileExplorerModalComponent implements OnInit {
   public fields: FormlyFieldConfig [ ] = [ ]
   public model: Record<string, unknown> = { }
 
-  private readonly activeModal: NgbActiveModal = inject ( NgbActiveModal )
+  private readonly activeModal: DialogRef = inject ( DialogRef )
   private readonly formlySvc: FormlyService = inject ( FormlyService )
 
   public get completeClass ( ): string {
@@ -100,8 +100,8 @@ export class FileExplorerModalComponent implements OnInit {
     }
   }
 
-  public dismiss ( reason?: string ): void {
-    this.activeModal.dismiss ( reason )
+  public dismiss ( _reason?: string ): void {
+    this.activeModal.close ( undefined )
   }
 
   public close ( result: Record<string, unknown> ): void {

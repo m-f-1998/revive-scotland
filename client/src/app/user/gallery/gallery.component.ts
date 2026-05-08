@@ -1,5 +1,5 @@
 import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, OnDestroy, QueryList, ViewChildren, inject, signal, Renderer2 } from "@angular/core"
-import { NgbModal, NgbModalModule } from "@ng-bootstrap/ng-bootstrap"
+import { ModalService } from "@revive/src/app/services/modal.service"
 import { IconComponent } from "@revive/src/app/icon/icon.component"
 import { ExpandedImageComponent } from "@components/expanded-image/expanded-image.component"
 import { NavbarComponent } from "../components/navbar/navbar.component"
@@ -20,8 +20,7 @@ type MediaItem = {
   imports: [
     NavbarComponent,
     FooterComponent,
-    IconComponent,
-    NgbModalModule
+    IconComponent
   ],
   templateUrl: "./gallery.component.html",
   styleUrl: "./gallery.component.scss",
@@ -41,7 +40,7 @@ export class GalleryComponent implements AfterViewInit, OnDestroy {
 
   public filter = signal<"dunoon" | "kinloss" | "skye"> ( "dunoon" )
 
-  private readonly modalSvc: NgbModal = inject ( NgbModal )
+  private readonly modalSvc: ModalService = inject ( ModalService )
   private readonly renderer: Renderer2 = inject ( Renderer2 )
 
   private io: IntersectionObserver | null = null
@@ -113,10 +112,19 @@ export class GalleryComponent implements AfterViewInit, OnDestroy {
         const dataSrcset = img.getAttribute ( "data-srcset" )
         if ( dataSrc ) this.renderer.setAttribute ( img, "src", dataSrc )
         if ( dataSrcset ) this.renderer.setAttribute ( img, "srcset", dataSrcset )
-        this.renderer.removeClass ( img, "progressive" )
+        // Only remove the blur once the full-res image has actually loaded
+        const onLoad = ( ) => {
+          this.renderer.removeClass ( img, "progressive" )
+          img.removeEventListener ( "load", onLoad )
+        }
+        if ( img.complete && img.naturalWidth > 0 ) {
+          this.renderer.removeClass ( img, "progressive" )
+        } else {
+          img.addEventListener ( "load", onLoad )
+        }
         this.io!.unobserve ( img )
       }
-    }, { rootMargin: "300px 0px", threshold: 0.01 } )
+    }, { rootMargin: "400px 0px", threshold: 0.01 } )
   }
 
   private observeImages ( ) {

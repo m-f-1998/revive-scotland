@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit } from "@angular/core"
 import { FieldType } from "@ngx-formly/core"
 import { FileExplorerComponent } from "../../admin/file-explorer/file-explorer.component"
-import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
+import { ModalService } from "@revive/src/app/services/modal.service"
 import { IconComponent } from "../../icon/icon.component"
 
 @Component ( {
@@ -13,7 +13,7 @@ import { IconComponent } from "../../icon/icon.component"
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class ImagePickerComponent extends FieldType implements OnInit {
-  private readonly modalSvc: NgbModal = inject ( NgbModal )
+  private readonly modalSvc: ModalService = inject ( ModalService )
 
   public ngOnInit ( ): void {
     if ( !this.formControl?.value ) {

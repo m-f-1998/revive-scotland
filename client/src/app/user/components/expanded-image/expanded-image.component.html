@@ -1,40 +1,33 @@
 <div class="modal-header">
-  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" (click)="this.close()"></button>
+  <button type="button" class="btn-close" aria-label="Close" (click)="this.close()"></button>
 </div>
-<div class="modal-body" style="padding: 0">
-  <div id="images" class="carousel slide">
-    <div class="carousel-inner">
-      <div class="carousel-item active">
-        <img [attr.src]="'/api/img/' + imageURLs [ this.index ] + '?w=640&f=webp'"
-          [attr.srcset]="
-            '/api/img/' + imageURLs [ this.index ] + '?w=320&f=webp 320w, ' +
-            '/api/img/' + imageURLs [ this.index ] + '?w=640&f=webp 640w, ' +
-            '/api/img/' + imageURLs [ this.index ] + '?w=1024&f=webp 1024w'
-          "
-          sizes="(max-width: 600px) 100vw, 600px"
-          alt="Image {{ index + 1 }} - Expanded"
-          decoding="async"
-          class="img-big d-block w-100"
-          style="object-fit: contain; max-height: 80vh;"
-        />
-      </div>
-    </div>
-  </div>
+<div class="p-0">
+  <img [attr.src]="'/api/img/' + imageURLs[this.index] + '?w=640&f=webp'"
+    [attr.srcset]="
+      '/api/img/' + imageURLs[this.index] + '?w=320&f=webp 320w, ' +
+      '/api/img/' + imageURLs[this.index] + '?w=640&f=webp 640w, ' +
+      '/api/img/' + imageURLs[this.index] + '?w=1024&f=webp 1024w'
+    "
+    sizes="(max-width: 600px) 100vw, 600px"
+    alt="Image {{ index + 1 }} - Expanded"
+    decoding="async"
+    class="block w-full object-contain"
+    style="max-height: 80vh;"
+  />
 </div>
 <div class="modal-footer">
-  <!-- Next, Previous and Download -->
-  <button type="button" class="btn btn-secondary" (click)="prevImage()">
+  <button type="button" class="btn-secondary" (click)="prevImage()">
     <app-icon icon="chevron-left" />
   </button>
-  <a [href]="'/api/img/' + imageURLs [ this.index ] + '?w=1024&f=webp'" class="btn btn-primary" download>
+  <a [href]="'/api/img/' + imageURLs[this.index] + '?w=1024&f=webp'" class="btn-primary" download>
     <app-icon icon="download" /> Download
   </a>
-  <button type="button" class="btn btn-secondary" (click)="nextImage()">
+  <button type="button" class="btn-secondary" (click)="nextImage()">
     <app-icon icon="chevron-right" />
   </button>
 </div>
 
-<div style="display: none;">
+<div class="hidden">
   @if (imageURLs[index + 1]) {
     <img [src]="'/api/img/' + imageURLs[index + 1] + '?w=1024&f=webp'">
   }

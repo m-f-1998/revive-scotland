@@ -1,26 +1,51 @@
-<div class="min-height-100vh d-flex flex-column">
+<div class="min-h-screen flex flex-col">
   <app-navbar />
 
-  <div class="gallery-page container flex-grow-1">
-    <div class="toolbar">
-      <h2></h2>
-      <div class="btn-group">
-        <button class="btn btn-primary" [class.active]="filter() === 'dunoon'" (click)="setFilter('dunoon')">Dunoon</button>
-        <button class="btn btn-primary" [class.active]="filter() === 'kinloss'" (click)="setFilter('kinloss')">Kinloss</button>
-        <button class="btn btn-primary" [class.active]="filter() === 'skye'" (click)="setFilter('skye')">Skye</button>
-      </div>
+  <div class="flex-1 max-w-screen-xl mx-auto w-full px-4 py-10">
+    <div class="flex items-center justify-end mb-6 gap-2">
+      <button
+        [class]="filter() === 'dunoon' ? 'btn-primary shadow-lg scale-105' : 'btn-outline-secondary'"
+        (click)="setFilter('dunoon')">
+        Dunoon
+        @if (filter() === 'dunoon') { <app-icon icon="check-circle" /> }
+      </button>
+      <button
+        [class]="filter() === 'kinloss' ? 'btn-primary shadow-lg scale-105' : 'btn-outline-secondary'"
+        (click)="setFilter('kinloss')">
+        Kinloss
+        @if (filter() === 'kinloss') { <app-icon icon="check-circle" /> }
+      </button>
+      <button
+        [class]="filter() === 'skye' ? 'btn-primary shadow-lg scale-105' : 'btn-outline-secondary'"
+        (click)="setFilter('skye')">
+        Skye
+        @if (filter() === 'skye') { <app-icon icon="check-circle" /> }
+      </button>
     </div>
 
-    <div class="grid">
-      @for ( item of filtered; track $index ) {
-        <div class="card" (click)="item.type === 'image' ? openImage($index) : openVideo(item.url)">
-          <div class="thumb">
-            @if ( item.type === 'image' ) {
-              <img #galleryImg [attr.src]="item.lqip" [attr.data-url]="item.url" [attr.data-src]="item.src" [attr.data-srcset]="item.srcset" [attr.sizes]="item.sizes" alt="Gallery image" loading="lazy" class="progressive" />
+    <div class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
+      @for (item of filtered; track $index) {
+        <div class="rounded-xl overflow-hidden cursor-pointer transition-transform duration-200 hover:-translate-y-1.5 hover:shadow-2xl border border-white/5"
+             (click)="item.type === 'image' ? openImage($index) : openVideo(item.url)">
+          <div class="relative h-40 flex items-center justify-center bg-gradient-to-b from-gray-800/80 to-gray-900/60">
+            <!-- Shimmer skeleton shown while image loads -->
+            <div class="gallery-skeleton absolute inset-0"></div>
+
+            @if (item.type === 'image') {
+              <img #galleryImg
+                [attr.src]="item.lqip"
+                [attr.data-url]="item.url"
+                [attr.data-src]="item.src"
+                [attr.data-srcset]="item.srcset"
+                [attr.sizes]="item.sizes"
+                alt="Gallery image"
+                loading="lazy"
+                class="progressive gallery-img w-full h-full object-cover block absolute inset-0"
+              />
             } @else {
-              <div class="video-thumb">
-                <app-icon icon="play-circle" />
-                <span>Play video</span>
+              <div class="flex flex-col items-center gap-2 text-gray-300 relative z-10">
+                <app-icon icon="play-circle" iconSize="3x" />
+                <span class="text-sm">Play video</span>
               </div>
             }
           </div>
