@@ -12,11 +12,11 @@
 </div>
 <div class="modal-body">
   @if (type === "delete") {
-    <p class="text-sm text-gray-700">
-      Are you sure you want to delete <span class="font-bold text-red-600">{{ name }}</span>?
+    <p class="text-sm text-gray-700 dark:text-gray-200">
+      Are you sure you want to delete <span class="font-bold text-red-600 dark:text-red-400">{{ name }}</span>?
       This action is permanent and cannot be undone.
       @if (isFolder) {
-        <span class="block mt-1 text-gray-500">Note: This will recursively delete all contents of this folder.</span>
+        <span class="block mt-1 text-gray-500 dark:text-gray-400">Note: This will recursively delete all contents of this folder.</span>
       }
     </p>
   } @else if (type === "rename") {

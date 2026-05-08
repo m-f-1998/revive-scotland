@@ -15,9 +15,9 @@
     <div>
       @for (event of eventData().events; track $index) {
         <div class="card mb-4 shadow-sm">
-          <div class="card-header flex justify-between items-center cursor-pointer" (click)="isCollapsed = !isCollapsed">
+          <div class="card-header flex justify-between items-center cursor-pointer" (click)="toggleCollapsed($index)">
             <div class="flex items-center gap-2">
-              <app-icon [icon]="isCollapsed ? 'chevron-circle-down' : 'chevron-circle-up'" />
+              <app-icon [icon]="collapsedIndices.has($index) ? 'chevron-circle-down' : 'chevron-circle-up'" />
               <h5 class="mb-0 font-semibold">
                 {{ eventForm()[$index].model['title'] || 'Event #' + ($index + 1) }}
               </h5>
@@ -26,7 +26,7 @@
               <app-icon icon="trash" />
             </button>
           </div>
-          <div [class.hidden]="isCollapsed">
+          <div [class.hidden]="collapsedIndices.has($index)">
             <div class="card-body">
               <formly-form [form]="eventForm()[$index].form" [model]="eventForm()[$index].model" [fields]="eventForm()[$index].fields" />
             </div>

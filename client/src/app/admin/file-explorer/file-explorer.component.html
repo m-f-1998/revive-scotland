@@ -40,7 +40,7 @@
 
     <div class="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
       <nav aria-label="breadcrumb">
-        <ol class="breadcrumb bg-gray-100 rounded-lg px-3 py-2 shadow-sm m-0">
+        <ol class="breadcrumb bg-gray-100 dark:bg-slate-700 rounded-lg px-3 py-2 shadow-sm m-0">
           @for (crumb of breadcrumbs(); track crumb.path) {
             <li class="breadcrumb-item">
               @if (crumb.path !== currentPath()) {
@@ -65,11 +65,11 @@
             Upload
           </button>
           @if (uploadDropdownOpen()) {
-            <div class="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-xl border border-gray-100 z-50">
-              <button class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2" (click)="fileInput.webkitdirectory=false; fileInput.click(); uploadDropdownOpen.set(false)">
+            <div class="absolute right-0 mt-1 w-44 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-gray-200 dark:border-slate-600 z-50">
+              <button class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 dark:text-gray-200 flex items-center gap-2" (click)="fileInput.webkitdirectory=false; fileInput.click(); uploadDropdownOpen.set(false)">
                 <app-icon icon="file-upload" /> File
               </button>
-              <button class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2" (click)="fileInput.webkitdirectory=true; fileInput.click(); uploadDropdownOpen.set(false)">
+              <button class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 dark:text-gray-200 flex items-center gap-2" (click)="fileInput.webkitdirectory=true; fileInput.click(); uploadDropdownOpen.set(false)">
                 <app-icon icon="folder" /> Folder
               </button>
             </div>

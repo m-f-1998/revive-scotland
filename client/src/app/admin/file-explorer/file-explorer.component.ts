@@ -95,8 +95,12 @@ export class FileExplorerComponent {
         } ) )
         const data = response as { shareUrl: string }
 
-        // Close the modal and pass the permanent URL back
-        this.activeModal.close ( data.shareUrl )
+        // Store as a relative path so it works in dev/preview without cross-origin issues
+        const shareUrl = data.shareUrl
+        const relativePath = shareUrl.startsWith ( "http" )
+          ? new URL ( shareUrl ).pathname
+          : shareUrl
+        this.activeModal.close ( relativePath )
 
       } catch ( err ) {
         if ( isDevMode ( ) ) {
@@ -405,7 +409,7 @@ export class FileExplorerComponent {
         }
       }
     } ).catch ( ( err?: string ) => {
-      if ( err ) {
+      if ( err && err !== "dismissed" ) {
         this.toastrSvc.error ( err )
       }
       // Modal dismissed

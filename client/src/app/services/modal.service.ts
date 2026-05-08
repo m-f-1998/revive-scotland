@@ -5,12 +5,13 @@ import { ComponentType } from "@angular/cdk/portal"
 export class ModalRef<T = unknown, R = unknown> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public readonly componentInstance: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public readonly result: Promise<any>
 
   private resolveFn!: ( value: R ) => void
   private rejectFn!: ( reason: unknown ) => void
 
-  constructor ( private readonly cdkRef: import ( "@angular/cdk/dialog" ).DialogRef<R, T> ) {
+  public constructor ( private readonly cdkRef: import ( "@angular/cdk/dialog" ).DialogRef<R, T> ) {
     this.componentInstance = cdkRef.componentInstance as T
 
     this.result = new Promise<R> ( ( resolve, reject ) => {
@@ -19,7 +20,7 @@ export class ModalRef<T = unknown, R = unknown> {
     } )
 
     cdkRef.closed.subscribe ( {
-      next: ( result ) => {
+      next: result => {
         if ( result !== undefined ) {
           this.resolveFn ( result )
         } else {

@@ -1,4 +1,4 @@
-<nav class="bg-gray-100 shadow-sm">
+<nav class="bg-gray-100 dark:bg-slate-900 shadow-sm dark:shadow-slate-800">
   <div class="max-w-screen-xl mx-auto px-4 flex items-center justify-between h-16">
     <a href="/" class="flex-shrink-0">
       <img src="/api/img/logo.png?w=640&f=webp"
@@ -42,7 +42,7 @@
         </a>
       </li>
       <li>
-        <a class="nav-link" (click)="logout()">
+        <a class="btn-danger ml-2" (click)="logout()">
           <app-icon icon="right-from-bracket" />
           Logout
         </a>
@@ -50,13 +50,13 @@
     </ul>
 
     <!-- Mobile toggle -->
-    <button class="sm:hidden p-2 rounded text-gray-600 hover:bg-gray-200 transition-colors" type="button" (click)="toggleMenu()" aria-label="Toggle navigation">
+    <button class="sm:hidden p-2 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors" type="button" (click)="toggleMenu()" aria-label="Toggle navigation">
       <app-icon [icon]="isMenuCollapsed() ? 'bars' : 'xmark'" />
     </button>
   </div>
 
   <!-- Mobile menu -->
-  <div [class.hidden]="isMenuCollapsed()" class="sm:hidden border-t border-gray-200 bg-gray-100">
+  <div [class.hidden]="isMenuCollapsed()" class="sm:hidden border-t border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-900">
     <ul class="flex flex-col py-2">
       <li>
         <a class="nav-link mx-2" (click)="goTo('/admin/dashboard')" [class.active]="url() === '/admin/dashboard'">
@@ -83,7 +83,7 @@
         </a>
       </li>
       <li>
-        <a class="nav-link mx-2" (click)="logout()">
+        <a class="btn-danger mx-2 my-1" (click)="logout()">
           <app-icon icon="right-from-bracket" />
           Logout
         </a>

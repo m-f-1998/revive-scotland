@@ -1,0 +1,13 @@
+<input
+  [type]="props.type || 'text'"
+  [id]="id"
+  [formControl]="$any(formControl)"
+  [placeholder]="props.placeholder || ''"
+  [attr.minlength]="props.minLength || null"
+  [attr.maxlength]="props.maxLength || null"
+  [attr.min]="props.min ?? null"
+  [attr.max]="props.max ?? null"
+  [readonly]="props.readonly || false"
+  class="form-control"
+  [class.border-red-500]="showError"
+/>

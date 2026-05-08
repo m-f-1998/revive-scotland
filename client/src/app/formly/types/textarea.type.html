@@ -1,0 +1,10 @@
+<textarea
+  [id]="id"
+  [formControl]="$any(formControl)"
+  [placeholder]="props.placeholder || ''"
+  [rows]="props['rows'] || 4"
+  [attr.maxlength]="props.maxLength || null"
+  [readonly]="props.readonly || false"
+  class="form-control"
+  [class.border-red-500]="showError"
+></textarea>

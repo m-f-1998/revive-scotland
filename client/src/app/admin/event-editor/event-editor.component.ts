@@ -26,7 +26,7 @@ export class EventEditorComponent implements OnInit {
   public loading: WritableSignal<boolean> = signal ( true )
   public eventForm: WritableSignal<Array<{ form: FormGroup; model: Record<string, unknown>; fields: FormlyFieldConfig [ ] }>> = signal ( [ ] )
   public eventData: WritableSignal<{ events: Event[] }> = signal ( { events: [ ] } )
-  public isCollapsed: boolean = false
+  public collapsedIndices: Set<number> = new Set ( )
 
   private readonly apiSvc: ApiService = inject ( ApiService )
   private readonly formlySvc: FormlyService = inject ( FormlyService )
@@ -37,6 +37,14 @@ export class EventEditorComponent implements OnInit {
     this.loadEventData ( ).finally ( ( ) => {
       this.loading.set ( false )
     } )
+  }
+
+  public toggleCollapsed ( index: number ): void {
+    if ( this.collapsedIndices.has ( index ) ) {
+      this.collapsedIndices.delete ( index )
+    } else {
+      this.collapsedIndices.add ( index )
+    }
   }
 
   public addNewEvent ( ): void {
@@ -67,7 +75,6 @@ export class EventEditorComponent implements OnInit {
   public async saveEventData ( ) {
     if ( this.loading ( ) ) return
 
-    // Create the new event data from the forms
     const updatedEventData = {
       events: this.eventForm ( ).map ( ef => {
         return {
@@ -115,7 +122,6 @@ export class EventEditorComponent implements OnInit {
       events: data.events.filter ( ( e: Event ) => e.id !== id )
     } ) )
     try {
-      // POST data to the new Firestore backend router
       await this.apiSvc.delete ( `/api/admin/events`, {
         id
       }, new HttpHeaders ( {
@@ -130,28 +136,22 @@ export class EventEditorComponent implements OnInit {
   }
 
   public someFormInvalid ( ): boolean {
-    return this.eventForm ( ).some ( ef => {
-      return ef.form.invalid
-    } )
+    return this.eventForm ( ).some ( ef => ef.form.invalid )
   }
 
   private async loadEventData ( ): Promise<void> {
     try {
       const events = ( await this.apiSvc.get ( "/api/admin/events" ) ) as { events: Event [ ] }
       this.eventData.set ( events )
-      this.eventForm.set ( events.events.map ( event => {
-        return {
-          form: new FormGroup ( { } ),
-          model: {
-            ...event,
-            startDate: event.startDate ? new Date ( event.startDate ) : null,
-            endDate: event.endDate ? new Date ( event.endDate ) : null
-          },
-          fields: [
-            ...this.getEventFields ( )
-          ]
-        }
-      } ) )
+      this.eventForm.set ( events.events.map ( event => ( {
+        form: new FormGroup ( { } ),
+        model: {
+          ...event,
+          startDate: event.startDate ? new Date ( event.startDate ) : null,
+          endDate: event.endDate ? new Date ( event.endDate ) : null
+        },
+        fields: [ ...this.getEventFields ( ) ]
+      } ) ) )
     } catch ( error ) {
       console.error ( "Error loading event data:", error )
     }

@@ -16,6 +16,16 @@ export class DatePickerComponent extends FieldType implements OnInit {
   public readonly datesSvc: DatesService = inject ( DatesService )
   public nativeValue: WritableSignal<string> = signal ( "" )
 
+  public get minDateAttr ( ): string {
+    const d = this.field.props?.[ "minDate" ]
+    return d instanceof Date ? this.toInputValue ( d ) : ""
+  }
+
+  public get maxDateAttr ( ): string {
+    const d = this.field.props?.[ "maxDate" ]
+    return d instanceof Date ? this.toInputValue ( d ) : ""
+  }
+
   public ngOnInit ( ) {
     const val = this.formControl?.value
     if ( val instanceof Date && !isNaN ( val.getTime ( ) ) ) {
@@ -40,16 +50,6 @@ export class DatePickerComponent extends FieldType implements OnInit {
       this.formControl?.setValue ( date )
       this.formControl?.markAsDirty ( )
     }
-  }
-
-  public get minDateAttr ( ): string {
-    const d = this.field.props?.[ "minDate" ]
-    return d instanceof Date ? this.toInputValue ( d ) : ""
-  }
-
-  public get maxDateAttr ( ): string {
-    const d = this.field.props?.[ "maxDate" ]
-    return d instanceof Date ? this.toInputValue ( d ) : ""
   }
 
   private toInputValue ( date: Date ): string {

@@ -19,7 +19,7 @@
   <button type="button" class="btn-secondary" (click)="prevImage()">
     <app-icon icon="chevron-left" />
   </button>
-  <a [href]="'/api/img/' + imageURLs[this.index] + '?w=1024&f=webp'" class="btn-primary" download>
+  <a [href]="'/api/img/' + imageURLs[this.index]" class="btn-primary" download>
     <app-icon icon="download" /> Download
   </a>
   <button type="button" class="btn-secondary" (click)="nextImage()">

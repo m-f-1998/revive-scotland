@@ -1,0 +1,15 @@
+<div class="mb-4">
+  @if (props.label && props['hideLabel'] !== true) {
+    <label [attr.for]="id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      {{ props.label }}
+      @if (props.required) { <span class="text-red-500 ml-0.5">*</span> }
+    </label>
+  }
+  <ng-container #fieldComponent />
+  @if (props.description) {
+    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ props.description }}</p>
+  }
+  @if (showError) {
+    <formly-validation-message [field]="field" class="block mt-1 text-xs text-red-600 dark:text-red-400" />
+  }
+</div>
