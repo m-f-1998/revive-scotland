@@ -11,6 +11,21 @@ import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { AdminFooterComponent } from "../footer/footer.component"
 import { IconComponent } from "../../icon/icon.component"
 
+interface SlideFormEntry {
+  form: FormGroup
+  model: WritableSignal<Record<string, unknown>>
+  fields: FormlyFieldConfig [ ]
+}
+
+const DEFAULT_EVENTS_HEROES = [
+  {
+    id: "hero-1",
+    title: "Upcoming Events",
+    description: "Join us for our next Revive event — a time of faith, fellowship and renewal.",
+    url: "gallery/kinloss/kinloss-1.jpg"
+  }
+]
+
 @Component ( {
   selector: "app-admin-event-editor",
   imports: [
@@ -28,15 +43,23 @@ export class EventEditorComponent implements OnInit {
   public eventData: WritableSignal<{ events: Event[] }> = signal ( { events: [ ] } )
   public collapsedIndices: Set<number> = new Set ( )
 
+  // Slider section state
+  public sliderForms: WritableSignal<SlideFormEntry [ ]> = signal ( [ ] )
+  public sliderCollapsed: WritableSignal<boolean> = signal ( false )
+  public sliderDefault: WritableSignal<boolean> = signal ( false )
+  public sliderDirty: WritableSignal<boolean> = signal ( false )
+  public sliderSaving: WritableSignal<boolean> = signal ( false )
+
   private readonly apiSvc: ApiService = inject ( ApiService )
   private readonly formlySvc: FormlyService = inject ( FormlyService )
   private readonly authSvc: AuthService = inject ( AuthService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
 
   public ngOnInit ( ): void {
-    this.loadEventData ( ).finally ( ( ) => {
-      this.loading.set ( false )
-    } )
+    Promise.all ( [
+      this.loadEventData ( ),
+      this.loadSlider ( )
+    ] ).finally ( ( ) => this.loading.set ( false ) )
   }
 
   public toggleCollapsed ( index: number ): void {
@@ -48,26 +71,27 @@ export class EventEditorComponent implements OnInit {
   }
 
   public addNewEvent ( ): void {
+    const defaultModel = {
+      id: "",
+      title: "New Event Title",
+      description: "Enter a description for this event...",
+      location: "",
+      startDate: new Date ( ),
+      endDate: new Date ( ),
+      actionType: "webpage" as const
+    }
     this.eventForm.set ( [
       ...this.eventForm ( ),
       {
         form: new FormGroup ( { } ),
-        model: { },
+        model: { ...defaultModel },
         fields: this.getEventFields ( )
       }
     ] )
     this.eventData.set ( {
       events: [
         ...this.eventData ( ).events,
-        {
-          id: "",
-          title: "",
-          description: "",
-          location: "",
-          startDate: new Date ( ),
-          endDate: new Date ( ),
-          actionType: "webpage"
-        }
+        { ...defaultModel }
       ]
     } )
   }
@@ -139,6 +163,98 @@ export class EventEditorComponent implements OnInit {
     return this.eventForm ( ).some ( ef => ef.form.invalid )
   }
 
+  // Slider methods
+  public addSliderHero ( ): void {
+    if ( this.sliderForms ( ).length >= 3 ) {
+      this.toastrSvc.error ( "Maximum 3 slides allowed." )
+      return
+    }
+    this.sliderDirty.set ( true )
+    this.sliderForms.update ( forms => [ ...forms, {
+      form: new FormGroup ( { } ),
+      model: signal<Record<string, unknown>> ( {
+        id: `hero-${Date.now ( )}`,
+        title: "New Slide Title",
+        description: "Enter slide content here...",
+        url: ""
+      } ),
+      fields: this.getSliderFields ( )
+    } ] )
+  }
+
+  public removeSliderHero ( index: number ): void {
+    this.sliderDirty.set ( true )
+    this.sliderForms.update ( forms => forms.filter ( ( _, i ) => i !== index ) )
+  }
+
+  public onSliderHeroChange ( _index: number, entry: SlideFormEntry, value: Record<string, unknown> ): void {
+    entry.model.set ( value )
+    this.sliderDirty.set ( true )
+  }
+
+  public restoreSlider ( ): void {
+    this.sliderForms.set ( this.buildSliderForms ( DEFAULT_EVENTS_HEROES ) )
+    this.sliderDefault.set ( true )
+    this.sliderDirty.set ( false )
+  }
+
+  public isSliderSaveDisabled ( ): boolean {
+    if ( !this.sliderDefault ( ) ) return false
+    return !this.sliderDirty ( )
+  }
+
+  public async saveSlider ( ): Promise<void> {
+    if ( this.sliderForms ( ).some ( sf => !sf.model ( ) [ "url" ] ) ) {
+      this.toastrSvc.error ( "Please ensure all slides have an image." )
+      return
+    }
+    this.sliderSaving.set ( true )
+    try {
+      const heroes = this.sliderForms ( ).map ( sf => sf.model ( ) )
+      await this.apiSvc.post ( "/api/admin/hero-editor/events", { heroes }, new HttpHeaders ( {
+        "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || ""}`
+      } ) )
+      this.toastrSvc.success ( "Saved successfully!" )
+      this.sliderDefault.set ( false )
+      this.sliderDirty.set ( false )
+    } catch {
+      this.toastrSvc.error ( "Failed to save. Please try again." )
+    } finally {
+      this.sliderSaving.set ( false )
+    }
+  }
+
+  private async loadSlider ( ): Promise<void> {
+    try {
+      const res = await this.apiSvc.get ( "/api/admin/hero-editor/events" ) as { heroes?: typeof DEFAULT_EVENTS_HEROES }
+      if ( res?.heroes?.length ) {
+        this.sliderForms.set ( this.buildSliderForms ( res.heroes ) )
+      } else {
+        this.sliderForms.set ( this.buildSliderForms ( DEFAULT_EVENTS_HEROES ) )
+        this.sliderDefault.set ( true )
+      }
+    } catch {
+      this.sliderForms.set ( this.buildSliderForms ( DEFAULT_EVENTS_HEROES ) )
+      this.sliderDefault.set ( true )
+    }
+  }
+
+  private buildSliderForms ( slides: typeof DEFAULT_EVENTS_HEROES ): SlideFormEntry [ ] {
+    return slides.map ( slide => ( {
+      form: new FormGroup ( { } ),
+      model: signal<Record<string, unknown>> ( { ...slide } ),
+      fields: this.getSliderFields ( )
+    } ) )
+  }
+
+  private getSliderFields ( ): FormlyFieldConfig [ ] {
+    return [
+      this.formlySvc.TextInput ( "title", { label: "Title", required: true, maxLength: 100 } ),
+      this.formlySvc.TextAreaInput ( "description", { label: "Text", required: true, maxLength: 500, includeMaxDescription: true } ),
+      this.formlySvc.ImagePickerInput ( "url", { label: "Image", required: true } )
+    ]
+  }
+
   private async loadEventData ( ): Promise<void> {
     try {
       const events = ( await this.apiSvc.get ( "/api/admin/events" ) ) as { events: Event [ ] }
@@ -195,18 +311,18 @@ export class EventEditorComponent implements OnInit {
         required: true
       }, { } ),
       this.formlySvc.SelectInput ( "actionType", {
-        label: "Action Type",
+        label: "Registration Type",
         options: [
-          { label: "Webpage", value: "webpage" },
-          { label: "Contact Form", value: "contact" }
+          { label: "External Link", value: "webpage" },
+          { label: "Registration Form", value: "contact" }
         ],
         required: true
       }, {
         defaultValue: "webpage"
       } ),
       this.formlySvc.TextInput ( "webpageUrl", {
-        label: "Webpage URL",
-        placeholder: "Enter Webpage URL"
+        label: "External URL",
+        placeholder: "Enter the external registration URL"
       }, {
         validators: {
           validation: [ "ValidWebPageURL" ]

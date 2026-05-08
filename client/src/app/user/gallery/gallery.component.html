@@ -3,32 +3,21 @@
 
   <div class="flex-1 max-w-screen-xl mx-auto w-full px-4 py-10">
     <div class="flex items-center justify-end mb-6 gap-2">
-      <button
-        [class]="filter() === 'dunoon' ? 'btn-primary shadow-lg scale-105' : 'btn-outline-secondary'"
-        (click)="setFilter('dunoon')">
-        Dunoon
-        @if (filter() === 'dunoon') { <app-icon icon="check-circle" /> }
-      </button>
-      <button
-        [class]="filter() === 'kinloss' ? 'btn-primary shadow-lg scale-105' : 'btn-outline-secondary'"
-        (click)="setFilter('kinloss')">
-        Kinloss
-        @if (filter() === 'kinloss') { <app-icon icon="check-circle" /> }
-      </button>
-      <button
-        [class]="filter() === 'skye' ? 'btn-primary shadow-lg scale-105' : 'btn-outline-secondary'"
-        (click)="setFilter('skye')">
-        Skye
-        @if (filter() === 'skye') { <app-icon icon="check-circle" /> }
-      </button>
+      @for (name of galleryNames(); track name) {
+        <button
+          [class]="filter() === name ? 'btn-primary shadow-lg scale-105' : 'btn-outline-secondary'"
+          (click)="setFilter(name)">
+          {{ name | titlecase }}
+          @if (filter() === name) { <app-icon icon="check-circle" /> }
+        </button>
+      }
     </div>
 
     <div class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
-      @for (item of filtered; track $index) {
+      @for (item of filtered(); track item.url) {
         <div class="rounded-xl overflow-hidden cursor-pointer transition-transform duration-200 hover:-translate-y-1.5 hover:shadow-2xl border border-white/5"
              (click)="item.type === 'image' ? openImage($index) : openVideo(item.url)">
           <div class="relative h-40 flex items-center justify-center bg-gradient-to-b from-gray-800/80 to-gray-900/60">
-            <!-- Shimmer skeleton shown while image loads -->
             <div class="gallery-skeleton absolute inset-0"></div>
 
             @if (item.type === 'image') {

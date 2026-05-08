@@ -1,6 +1,10 @@
 .image-slider {
-  background-color: #333;
+  background-color: #f3f4f6;
   width: 100%;
+
+  @media (prefers-color-scheme: dark) {
+    background-color: #1e293b;
+  }
 }
 
 .scroll-container {
@@ -39,7 +43,11 @@
   left: 0;                /* Keeps it stuck to the left edge of the visible area */
   width: 100%;            /* Width of the visible container */
   padding: 10px 20px 20px;
-  background-color: #333; /* Matches background so images "slide behind" it if needed */
+  background-color: #f3f4f6; /* Matches background so images "slide behind" it if needed */
+
+  @media (prefers-color-scheme: dark) {
+    background-color: #1e293b;
+  }
   z-index: 10;
 
   /* Flex to make the button inside span the whole sticky row */
@@ -56,6 +64,10 @@
 }
 
 .scroll-container::-webkit-scrollbar-thumb {
-  background: #555;
+  background: #9ca3af;
   border-radius: 10px;
+
+  @media (prefers-color-scheme: dark) {
+    background: #475569;
+  }
 }

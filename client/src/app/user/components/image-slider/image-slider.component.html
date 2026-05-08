@@ -3,6 +3,7 @@
     <div class="image-track">
       @for (url of imageURLs(); track $index) {
         <img [attr.src]="'/api/img/' + url + '?w=640&f=webp'"
+          [attr.alt]="'Gallery image ' + ($index + 1)"
           class="img-expand"
           (click)="expandImage($index)"
         />

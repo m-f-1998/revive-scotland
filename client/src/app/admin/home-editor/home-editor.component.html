@@ -1,0 +1,194 @@
+<app-admin-navbar />
+<div class="max-w-screen-xl mx-auto p-4 md:p-8" style="min-height: 80vh;">
+  <h2 class="text-2xl font-bold mb-2 flex items-center gap-2">
+    <app-icon icon="home" />
+    Home Page
+  </h2>
+  <p class="text-gray-500 text-sm mb-6">Edit each section of the home page. Changes are applied immediately after saving.</p>
+  <hr class="border-gray-200 mb-6">
+
+  @if (loading()) {
+    <div class="flex flex-col items-center justify-center gap-2 p-10 text-gray-500">
+      <app-icon icon="spinner" iconAnimation="spin" iconSize="2x" />
+      <p class="mt-2">Loading...</p>
+    </div>
+  } @else {
+
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header flex items-center justify-between cursor-pointer" (click)="toggleSection('slider')">
+        <h5 class="mb-0 font-semibold flex items-center gap-2">
+          <app-icon icon="image" /> Home Slider
+        </h5>
+        <span class="inline-block transition-transform duration-200" [class.rotate-180]="!collapsed()['slider']"><app-icon icon="chevron-down" /></span>
+      </div>
+      <div [class.hidden]="collapsed()['slider']">
+        <div class="card-body space-y-4">
+          @if (isDefault('slider')) {
+            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
+              <app-icon icon="info-circle" />
+              Showing built-in default slides. Edit any slide or add new ones, then save your changes.
+            </div>
+          }
+          <p class="text-gray-500 text-sm mb-2">Each slide shows a full-width background image with a title and text overlay.</p>
+          @for (sf of slidesForms(); track $index) {
+            <div class="border border-gray-200 dark:border-slate-700 rounded p-4">
+              <div class="flex justify-between items-center mb-3">
+                <span class="text-sm font-semibold">Slide {{ $index + 1 }}</span>
+                <button class="btn-danger btn-sm" (click)="removeSlide($index)"><app-icon icon="trash" /></button>
+              </div>
+              <formly-form [form]="sf.form" [model]="sf.model()" [fields]="sf.fields" (modelChange)="onSlideChange($index, sf, $event)" />
+            </div>
+          }
+          <button class="btn-success btn-sm" (click)="addSlide()"><app-icon icon="plus-circle" /> Add Slide</button>
+        </div>
+        <div class="card-footer flex justify-between items-center">
+          <button class="btn-outline-secondary btn-sm" (click)="restoreSlides()" title="Reset slides to built-in defaults">
+            <app-icon icon="refresh" /> Restore Defaults
+          </button>
+          <button class="btn-primary" [disabled]="isSaving('slider') || isSaveDisabled('slider')" (click)="saveSlider()">
+            @if (isSaving('slider')) { <app-icon icon="spinner" iconAnimation="spin" /> } @else { <app-icon icon="save" /> }
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header flex items-center justify-between cursor-pointer" (click)="toggleSection('weekends')">
+        <h5 class="mb-0 font-semibold flex items-center gap-2">
+          <app-icon icon="calendar-days" /> Revive Weekends
+        </h5>
+        <span class="inline-block transition-transform duration-200" [class.rotate-180]="!collapsed()['weekends']"><app-icon icon="chevron-down" /></span>
+      </div>
+      <div [class.hidden]="collapsed()['weekends']">
+        <div class="card-body">
+          @if (isDefault('weekends')) {
+            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 mb-4 flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
+              <app-icon icon="info-circle" />
+              Showing built-in defaults. Edit the content below, then save your changes.
+            </div>
+          }
+          <formly-form [form]="weekendsForm" [model]="weekendsModel()" [fields]="weekendsFields" (modelChange)="onFormlyChange('weekends', weekendsModel, $event)" />
+        </div>
+        <div class="card-footer flex justify-between items-center">
+          <button class="btn-outline-secondary btn-sm" (click)="restoreWeekends()" title="Reset to built-in defaults">
+            <app-icon icon="refresh" /> Restore Defaults
+          </button>
+          <button class="btn-primary" [disabled]="isSaving('revive-weekends') || weekendsForm.invalid || isSaveDisabled('weekends', weekendsForm)" (click)="saveSection('revive-weekends', 'weekends', weekendsModel())">
+            @if (isSaving('revive-weekends')) { <app-icon icon="spinner" iconAnimation="spin" /> } @else { <app-icon icon="save" /> }
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header flex items-center justify-between cursor-pointer" (click)="toggleSection('pilgrimage')">
+        <h5 class="mb-0 font-semibold flex items-center gap-2">
+          <app-icon icon="map-marker" /> Pilgrimage
+        </h5>
+        <span class="inline-block transition-transform duration-200" [class.rotate-180]="!collapsed()['pilgrimage']"><app-icon icon="chevron-down" /></span>
+      </div>
+      <div [class.hidden]="collapsed()['pilgrimage']">
+        <div class="card-body">
+          @if (isDefault('pilgrimage')) {
+            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 mb-4 flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
+              <app-icon icon="info-circle" />
+              Showing built-in defaults. Edit the content below, then save your changes.
+            </div>
+          }
+          <formly-form [form]="pilgrimageForm" [model]="pilgrimageModel()" [fields]="pilgrimageFields" (modelChange)="onFormlyChange('pilgrimage', pilgrimageModel, $event)" />
+        </div>
+        <div class="card-footer flex justify-between items-center">
+          <button class="btn-outline-secondary btn-sm" (click)="restorePilgrimage()" title="Reset to built-in defaults">
+            <app-icon icon="refresh" /> Restore Defaults
+          </button>
+          <button class="btn-primary" [disabled]="isSaving('pilgrimage') || pilgrimageForm.invalid || isSaveDisabled('pilgrimage', pilgrimageForm)" (click)="saveSection('pilgrimage', 'pilgrimage', pilgrimageModel())">
+            @if (isSaving('pilgrimage')) { <app-icon icon="spinner" iconAnimation="spin" /> } @else { <app-icon icon="save" /> }
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header flex items-center justify-between cursor-pointer" (click)="toggleSection('adoration')">
+        <h5 class="mb-0 font-semibold flex items-center gap-2">
+          <app-icon icon="praying-hands" /> Adoration Missions
+        </h5>
+        <span class="inline-block transition-transform duration-200" [class.rotate-180]="!collapsed()['adoration']"><app-icon icon="chevron-down" /></span>
+      </div>
+      <div [class.hidden]="collapsed()['adoration']">
+        <div class="card-body">
+          @if (isDefault('adoration')) {
+            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 mb-4 flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
+              <app-icon icon="info-circle" />
+              Showing built-in defaults. Edit the content below, then save your changes.
+            </div>
+          }
+          <formly-form [form]="adorationForm" [model]="adorationModel()" [fields]="adorationFields" (modelChange)="onFormlyChange('adoration', adorationModel, $event)" />
+        </div>
+        <div class="card-footer flex justify-between items-center">
+          <button class="btn-outline-secondary btn-sm" (click)="restoreAdoration()" title="Reset to built-in defaults">
+            <app-icon icon="refresh" /> Restore Defaults
+          </button>
+          <button class="btn-primary" [disabled]="isSaving('adoration') || adorationForm.invalid || isSaveDisabled('adoration', adorationForm)" (click)="saveSection('adoration', 'adoration', adorationModel())">
+            @if (isSaving('adoration')) { <app-icon icon="spinner" iconAnimation="spin" /> } @else { <app-icon icon="save" /> }
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header flex items-center justify-between cursor-pointer" (click)="toggleSection('about')">
+        <h5 class="mb-0 font-semibold flex items-center gap-2">
+          <app-icon icon="info-circle" /> About Us
+        </h5>
+        <span class="inline-block transition-transform duration-200" [class.rotate-180]="!collapsed()['about']"><app-icon icon="chevron-down" /></span>
+      </div>
+      <div [class.hidden]="collapsed()['about']">
+        <div class="card-body space-y-4">
+          @if (isDefault('about')) {
+            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
+              <app-icon icon="info-circle" />
+              Showing built-in defaults. Edit the cards below, then save your changes.
+            </div>
+          }
+          <p class="text-gray-500 text-sm mb-2">Three cards displayed in the "Who Are We?" section. Use FontAwesome icon names (e.g. bible, church, praying-hands).</p>
+          @for (card of aboutCards(); track $index) {
+            <div class="border border-gray-200 dark:border-slate-700 rounded p-4 space-y-3">
+              <span class="text-sm font-semibold">Card {{ $index + 1 }}</span>
+              <div>
+                <label class="block text-sm font-medium mb-1">Icon name</label>
+                <input type="text" class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
+                  [value]="card.icon" (input)="updateCard($index, 'icon', $any($event.target).value)" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Title</label>
+                <input type="text" maxlength="100" class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
+                  [value]="card.title" (input)="updateCard($index, 'title', $any($event.target).value)" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Description</label>
+                <textarea rows="3" maxlength="500" class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary resize-y"
+                  [value]="card.description" (input)="updateCard($index, 'description', $any($event.target).value)"></textarea>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="card-footer flex justify-between items-center">
+          <button class="btn-outline-secondary btn-sm" (click)="restoreAboutCards()" title="Reset to built-in defaults">
+            <app-icon icon="refresh" /> Restore Defaults
+          </button>
+          <button class="btn-primary" [disabled]="isSaving('about-us') || isSaveDisabled('about')" (click)="saveSection('about-us', 'about', { cards: aboutCards() })">
+            @if (isSaving('about-us')) { <app-icon icon="spinner" iconAnimation="spin" /> } @else { <app-icon icon="save" /> }
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+
+  }
+</div>
+<app-admin-footer />

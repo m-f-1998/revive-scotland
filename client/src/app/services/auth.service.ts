@@ -25,6 +25,10 @@ export class AuthService {
     return this.currentUser$.asReadonly ( )
   }
 
+  public get profilePhoto ( ) {
+    return this.profilePhoto$.asReadonly ( )
+  }
+
   public get loading ( ) {
     return this.loading$.asReadonly ( )
   }

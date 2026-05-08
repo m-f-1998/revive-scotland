@@ -1,0 +1,76 @@
+<app-admin-navbar />
+<div class="max-w-screen-xl mx-auto p-4 md:p-8" style="min-height: 80vh;">
+  <h2 class="text-2xl font-bold mb-2 flex items-center gap-2">
+    <app-icon icon="share" />
+    Testimonials
+  </h2>
+  <p class="text-gray-500 text-sm mb-4">Add, edit or remove testimonials shown in the carousel on the home page. Four are chosen at random each page load.</p>
+  <hr class="border-gray-200 mb-6">
+
+  @if (loading()) {
+    <div class="flex flex-col items-center justify-center gap-2 p-10 text-gray-500">
+      <app-icon icon="spinner" iconAnimation="spin" iconSize="2x" />
+      <p class="mt-2">Loading...</p>
+    </div>
+  } @else {
+    <div>
+      @if (isUsingDefaults()) {
+        <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 mb-4 flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
+          <app-icon icon="info-circle" />
+          Showing built-in default testimonials. Edit any entry or add new ones, then save your changes.
+        </div>
+      }
+      @for (item of items(); track $index) {
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header flex items-center justify-between">
+            <span class="font-semibold text-sm">Testimonial {{ $index + 1 }}</span>
+            <div class="flex items-center gap-2">
+              <button class="btn-outline-secondary btn-sm" (click)="moveUp($index)" [disabled]="$index === 0" title="Move up">
+                <app-icon icon="chevron-up" />
+              </button>
+              <button class="btn-outline-secondary btn-sm" (click)="moveDown($index)" [disabled]="$index === items().length - 1" title="Move down">
+                <app-icon icon="chevron-down" />
+              </button>
+              <button class="btn-danger btn-sm" (click)="removeItem($index)" title="Remove">
+                <app-icon icon="trash" />
+              </button>
+            </div>
+          </div>
+          <div class="card-body space-y-3">
+            <div>
+              <label class="block text-sm font-medium mb-1">Name / Location <span class="text-gray-400 text-xs">(e.g. Dunoon - 2026)</span></label>
+              <input type="text" maxlength="100" class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Name - Year"
+                [value]="item.name" (input)="updateField($index, 'name', $any($event.target).value)" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Testimonial</label>
+              <textarea rows="3" maxlength="800" class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary resize-y"
+                placeholder="Enter the testimonial text..."
+                [value]="item.testimony" (input)="updateField($index, 'testimony', $any($event.target).value)"></textarea>
+              <p class="text-xs text-gray-400 mt-1 text-right">{{ item.testimony.length }}/800</p>
+            </div>
+          </div>
+        </div>
+      }
+
+      <div class="flex justify-between mt-6">
+        <div class="flex items-center gap-2">
+          <button class="btn-success" (click)="addItem()">
+            <app-icon icon="plus-circle" /> Add Testimonial
+          </button>
+          <button class="btn-outline-secondary" (click)="restoreDefaults()" title="Reset to the built-in default testimonials">
+            <app-icon icon="refresh" /> Restore Defaults
+          </button>
+        </div>
+        @if (items().length > 0) {
+          <button class="btn-primary" [disabled]="saving() || someEmpty() || isUsingDefaults()" (click)="save()" [title]="isUsingDefaults() ? 'Edit testimonials before saving' : 'Save changes'">
+            @if (saving()) { <app-icon icon="spinner" iconAnimation="spin" /> } @else { <app-icon icon="save" /> }
+            Save Changes
+          </button>
+        }
+      </div>
+    </div>
+  }
+</div>
+<app-admin-footer />

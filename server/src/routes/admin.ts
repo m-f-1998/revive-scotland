@@ -2,6 +2,9 @@ import { router as analyticsRouter } from "./admin/analytics.js"
 import { router as fileExplorerRouter } from "./admin/fileExplorer.js"
 import { router as heroEditorRouter } from "./admin/heroEditor.js"
 import { router as eventsRouter } from "./admin/events.js"
+import { router as contactDetailsRouter } from "./admin/contactDetails.js"
+import { router as ourStoryRouter } from "./admin/ourStory.js"
+import { router as siteContentRouter } from "./admin/siteContent.js"
 
 import admin, { ServiceAccount } from "firebase-admin"
 import serviceAccount from "../revive-scotland-firebase.json" with { type: "json" }
@@ -30,6 +33,9 @@ export const router: FastifyPluginAsync = async app => {
   app.register ( fileExplorerRouter, { prefix: "/file-explorer" } )
   app.register ( heroEditorRouter, { prefix: "/hero-editor" } )
   app.register ( eventsRouter, { prefix: "/events" } )
+  app.register ( contactDetailsRouter, { prefix: "/contact-details" } )
+  app.register ( ourStoryRouter, { prefix: "/our-story" } )
+  app.register ( siteContentRouter, { prefix: "/site-content" } )
 
   if ( !isDevMode ( ) ) {
     await app.register ( rateLimit, {

@@ -15,7 +15,6 @@
       />
     </a>
 
-    <!-- Desktop nav -->
     <ul class="hidden sm:flex gap-1">
       <li>
         <a class="nav-link" (click)="goTo('')" [class.active]="url() === ''">
@@ -37,13 +36,11 @@
       </li>
     </ul>
 
-    <!-- Mobile toggle -->
     <button class="sm:hidden p-2 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors" type="button" (click)="toggleMenu()" aria-label="Toggle navigation">
       <app-icon [icon]="isMenuCollapsed() ? 'bars' : 'xmark'" />
     </button>
   </div>
 
-  <!-- Mobile menu -->
   <div [class.hidden]="isMenuCollapsed()" class="sm:hidden border-t border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-900">
     <ul class="flex flex-col py-2">
       <li>

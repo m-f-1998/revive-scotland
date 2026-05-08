@@ -40,16 +40,40 @@ export const routes: Routes = [
             .then ( m => m.FileExplorerComponent )
       },
       {
-        path: "heroEditor",
+        path: "galleryEditor",
         loadComponent: ( ) =>
-          import ( "./admin/hero-editor/hero-editor.component" )
-            .then ( m => m.HeroEditorComponent )
+          import ( "./admin/gallery-editor/gallery-editor.component" )
+            .then ( m => m.GalleryEditorComponent )
       },
       {
         path: "eventEditor",
         loadComponent: ( ) =>
           import ( "./admin/event-editor/event-editor.component" )
             .then ( m => m.EventEditorComponent )
+      },
+      {
+        path: "contactEditor",
+        loadComponent: ( ) =>
+          import ( "./admin/contact-editor/contact-editor.component" )
+            .then ( m => m.ContactEditorComponent )
+      },
+      {
+        path: "storyEditor",
+        loadComponent: ( ) =>
+          import ( "./admin/story-editor/story-editor.component" )
+            .then ( m => m.StoryEditorComponent )
+      },
+      {
+        path: "homeEditor",
+        loadComponent: ( ) =>
+          import ( "./admin/home-editor/home-editor.component" )
+            .then ( m => m.HomeEditorComponent )
+      },
+      {
+        path: "testimonialsEditor",
+        loadComponent: ( ) =>
+          import ( "./admin/testimonials-editor/testimonials-editor.component" )
+            .then ( m => m.TestimonialsEditorComponent )
       }
     ]
   },

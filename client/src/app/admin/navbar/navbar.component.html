@@ -15,32 +15,81 @@
       />
     </a>
 
-    <!-- Desktop nav -->
-    <ul class="hidden sm:flex gap-1">
+    <ul class="hidden sm:flex items-center gap-1">
       <li>
         <a class="nav-link" (click)="goTo('/admin/dashboard')" [class.active]="url() === '/admin/dashboard'">
           <app-icon icon="gauge-high" />
-          Dashboard
+          Analytics
         </a>
       </li>
       <li>
         <a class="nav-link" (click)="goTo('/admin/fileExplorer')" [class.active]="url() === '/admin/fileExplorer'">
           <app-icon icon="folder-open" />
-          File Explorer
+          Media Library
         </a>
       </li>
-      <li>
-        <a class="nav-link" (click)="goTo('/admin/heroEditor')" [class.active]="url() === '/admin/heroEditor'">
-          <app-icon icon="image" />
-          Hero Editor
+
+      <li class="dropdown-container relative">
+        <a class="nav-link cursor-pointer select-none" [class.active]="isContentActive()"
+           (click)="toggleContentDropdown($event)">
+          <app-icon icon="pen-to-square" />
+          Edit Content
+          <app-icon [icon]="isContentDropdownOpen() ? 'chevron-up' : 'chevron-down'" />
         </a>
+        @if (isContentDropdownOpen()) {
+          <ul class="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg py-1 z-50">
+            <li>
+              <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                 [class.text-primary]="url() === '/admin/homeEditor'"
+                 (click)="goTo('/admin/homeEditor')">
+                <app-icon icon="home" />
+                Home Page
+              </a>
+            </li>
+            <li>
+              <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                 [class.text-primary]="url() === '/admin/eventEditor'"
+                 (click)="goTo('/admin/eventEditor')">
+                <app-icon icon="calendar-days" />
+                Events
+              </a>
+            </li>
+            <li>
+              <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                 [class.text-primary]="url() === '/admin/galleryEditor'"
+                 (click)="goTo('/admin/galleryEditor')">
+                <app-icon icon="images" />
+                Gallery
+              </a>
+            </li>
+            <li>
+              <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                 [class.text-primary]="url() === '/admin/testimonialsEditor'"
+                 (click)="goTo('/admin/testimonialsEditor')">
+                <app-icon icon="share" />
+                Testimonials
+              </a>
+            </li>
+            <li>
+              <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                 [class.text-primary]="url() === '/admin/contactEditor'"
+                 (click)="goTo('/admin/contactEditor')">
+                <app-icon icon="address-card" />
+                Contact Details
+              </a>
+            </li>
+            <li>
+              <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                 [class.text-primary]="url() === '/admin/storyEditor'"
+                 (click)="goTo('/admin/storyEditor')">
+                <app-icon icon="book-open" />
+                Our Story
+              </a>
+            </li>
+          </ul>
+        }
       </li>
-      <li>
-        <a class="nav-link" (click)="goTo('/admin/eventEditor')" [class.active]="url() === '/admin/eventEditor'">
-          <app-icon icon="calendar-days" />
-          Event Editor
-        </a>
-      </li>
+
       <li>
         <a class="btn-danger ml-2" (click)="logout()">
           <app-icon icon="right-from-bracket" />
@@ -49,37 +98,62 @@
       </li>
     </ul>
 
-    <!-- Mobile toggle -->
     <button class="sm:hidden p-2 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors" type="button" (click)="toggleMenu()" aria-label="Toggle navigation">
       <app-icon [icon]="isMenuCollapsed() ? 'bars' : 'xmark'" />
     </button>
   </div>
 
-  <!-- Mobile menu -->
   <div [class.hidden]="isMenuCollapsed()" class="sm:hidden border-t border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-900">
     <ul class="flex flex-col py-2">
       <li>
         <a class="nav-link mx-2" (click)="goTo('/admin/dashboard')" [class.active]="url() === '/admin/dashboard'">
           <app-icon icon="gauge-high" />
-          Dashboard
+          Analytics
         </a>
       </li>
       <li>
         <a class="nav-link mx-2" (click)="goTo('/admin/fileExplorer')" [class.active]="url() === '/admin/fileExplorer'">
           <app-icon icon="folder-open" />
-          File Explorer
+          Media Library
+        </a>
+      </li>
+      <li class="px-4 pt-3 pb-1">
+        <span class="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-slate-500">Edit Content</span>
+      </li>
+      <li>
+        <a class="nav-link mx-2 pl-6" (click)="goTo('/admin/homeEditor')" [class.active]="url() === '/admin/homeEditor'">
+          <app-icon icon="home" />
+          Home Page
         </a>
       </li>
       <li>
-        <a class="nav-link mx-2" (click)="goTo('/admin/heroEditor')" [class.active]="url() === '/admin/heroEditor'">
-          <app-icon icon="image" />
-          Hero Editor
-        </a>
-      </li>
-      <li>
-        <a class="nav-link mx-2" (click)="goTo('/admin/eventEditor')" [class.active]="url() === '/admin/eventEditor'">
+        <a class="nav-link mx-2 pl-6" (click)="goTo('/admin/eventEditor')" [class.active]="url() === '/admin/eventEditor'">
           <app-icon icon="calendar-days" />
-          Event Editor
+          Events
+        </a>
+      </li>
+      <li>
+        <a class="nav-link mx-2 pl-6" (click)="goTo('/admin/galleryEditor')" [class.active]="url() === '/admin/galleryEditor'">
+          <app-icon icon="images" />
+          Gallery
+        </a>
+      </li>
+      <li>
+        <a class="nav-link mx-2 pl-6" (click)="goTo('/admin/testimonialsEditor')" [class.active]="url() === '/admin/testimonialsEditor'">
+          <app-icon icon="share" />
+          Testimonials
+        </a>
+      </li>
+      <li>
+        <a class="nav-link mx-2 pl-6" (click)="goTo('/admin/contactEditor')" [class.active]="url() === '/admin/contactEditor'">
+          <app-icon icon="address-card" />
+          Contact Details
+        </a>
+      </li>
+      <li>
+        <a class="nav-link mx-2 pl-6" (click)="goTo('/admin/storyEditor')" [class.active]="url() === '/admin/storyEditor'">
+          <app-icon icon="book-open" />
+          Our Story
         </a>
       </li>
       <li>

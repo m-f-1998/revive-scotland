@@ -29,9 +29,9 @@
 
 <div class="hidden">
   @if (imageURLs[index + 1]) {
-    <img [src]="'/api/img/' + imageURLs[index + 1] + '?w=1024&f=webp'">
+    <img [src]="'/api/img/' + imageURLs[index + 1] + '?w=1024&f=webp'" alt="">
   }
   @if (imageURLs[index - 1]) {
-    <img [src]="'/api/img/' + imageURLs[index - 1] + '?w=1024&f=webp'">
+    <img [src]="'/api/img/' + imageURLs[index - 1] + '?w=1024&f=webp'" alt="">
   }
 </div>

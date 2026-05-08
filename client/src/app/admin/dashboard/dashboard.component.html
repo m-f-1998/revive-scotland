@@ -18,9 +18,9 @@
         <h1 class="text-2xl font-bold mb-1">
           Welcome{{ authSvc.currentUser()?.displayName ? ', ' + authSvc.currentUser()?.displayName : '' }}! 👋
         </h1>
-        <p class="text-gray-500 text-sm mb-0">Your analytics overview for the last 90 days is ready. Data is refreshed daily.</p>
+        <p class="text-gray-500 text-sm mb-0">Website analytics for the last 90 days. Data refreshes daily.</p>
         @if (authSvc.currentUser()?.email) {
-          <small class="text-gray-400 text-xs">Authenticated as: {{ authSvc.currentUser()?.email }}</small>
+          <small class="text-gray-400 text-xs">Signed in as: {{ authSvc.currentUser()?.email }}</small>
         }
       </div>
     </header>

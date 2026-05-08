@@ -4,32 +4,14 @@
     <h2 class="uppercase tracking-wider">Who Are We?</h2>
   </header>
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    <div>
-      <div class="text-primary mb-4">
-        <app-icon icon="bible" iconSize="3x" />
+    @for (card of cards(); track $index) {
+      <div>
+        <div class="text-primary mb-4">
+          <app-icon [icon]="card.icon" iconSize="3x" />
+        </div>
+        <h5 class="font-semibold text-base mb-2">{{ card.title }}</h5>
+        <p class="text-muted text-sm leading-relaxed">{{ card.description }}</p>
       </div>
-      <h5 class="font-semibold text-base mb-2">Scripture</h5>
-      <p class="text-muted text-sm leading-relaxed">
-        We promote the basic message of the Gospel and the transformative truth that the Holy Spirit is living and active within hearts that are in a state of grace.
-      </p>
-    </div>
-    <div>
-      <div class="text-primary mb-4">
-        <app-icon icon="church" iconSize="3x" />
-      </div>
-      <h5 class="font-semibold text-base mb-2">Transformed by the Spirit</h5>
-      <p class="text-muted text-sm leading-relaxed">
-        We aim to provide a space for people to encounter the love of God and to be transformed by the power of the Holy Spirit.
-      </p>
-    </div>
-    <div>
-      <div class="text-primary mb-4">
-        <app-icon icon="praying-hands" iconSize="3x" />
-      </div>
-      <h5 class="font-semibold text-base mb-2">Evangelisation</h5>
-      <p class="text-muted text-sm leading-relaxed">
-        We focus, but are not limited to the evangelisation of youth and young adults with the aim to lead them to live a grace filled lifestyle, actively giving back to their own parish community.
-      </p>
-    </div>
+    }
   </div>
 </div>

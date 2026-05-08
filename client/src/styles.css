@@ -106,28 +106,29 @@
     @apply border border-gray-400 text-gray-600 bg-transparent;
   }
   .btn-outline-secondary:hover:not(:disabled) {
-    @apply bg-gray-100;
+    background-color: #f3f4f6;
   }
 
   .btn-outline-danger {
     @apply border border-red-400 text-red-600 bg-transparent;
   }
   .btn-outline-danger:hover:not(:disabled) {
-    @apply bg-red-50;
+    background-color: #fff1f2;
   }
 
   .btn-outline-info {
     @apply border border-sky-400 text-sky-600 bg-transparent;
   }
   .btn-outline-info:hover:not(:disabled) {
-    @apply bg-sky-50;
+    background-color: #f0f9ff;
   }
 
   .btn-outline-light {
     @apply border border-white text-white bg-transparent;
   }
   .btn-outline-light:hover:not(:disabled) {
-    @apply bg-white text-primary;
+    background-color: #ffffff;
+    color: #3399ff;
   }
 
   .btn-sm {
@@ -160,10 +161,13 @@
     @apply flex items-center gap-2 px-3 py-2 rounded text-gray-700 transition-colors duration-150 cursor-pointer;
   }
   .nav-link:hover:not(:disabled) {
-    @apply text-primary bg-blue-50;
+    color: #374151;
+    background-color: #e5e7eb;
   }
   .nav-link.active {
-    @apply text-primary bg-blue-50 font-medium;
+    @apply font-medium;
+    color: #3399ff;
+    background-color: #eff6ff;
   }
   .nav-link:disabled {
     @apply text-gray-400 cursor-not-allowed;
@@ -432,7 +436,7 @@
 
     /* Nav links */
     .nav-link       { color: #cbd5e1; }
-    .nav-link:hover { color: #60a5fa; background-color: #1e3a5f; }
+    .nav-link:hover:not(:disabled) { color: #cbd5e1; background-color: #1e293b; }
     .nav-link.active{ color: #60a5fa; background-color: #1e3a5f; }
 
     /* Forms */
@@ -461,6 +465,10 @@
     /* Outline buttons */
     .btn-outline-secondary       { border-color: #475569; color: #cbd5e1; }
     .btn-outline-secondary:hover:not(:disabled) { background-color: #334155; }
+
+    .btn-outline-danger:hover:not(:disabled)  { background-color: #450a0a; }
+    .btn-outline-info:hover:not(:disabled)    { background-color: #082f49; }
+    .btn-outline-light:hover:not(:disabled)   { background-color: rgba(255,255,255,0.15); color: #fff; }
 
     /* Progress */
     .progress { background-color: #334155; }

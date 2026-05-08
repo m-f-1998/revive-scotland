@@ -1,10 +1,12 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, OnDestroy, QueryList, ViewChildren, inject, signal, Renderer2 } from "@angular/core"
+import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, QueryList, ViewChildren, computed, inject, signal, Renderer2 } from "@angular/core"
 import { ModalService } from "@revive/src/app/services/modal.service"
 import { IconComponent } from "@revive/src/app/icon/icon.component"
 import { ExpandedImageComponent } from "@components/expanded-image/expanded-image.component"
 import { NavbarComponent } from "../components/navbar/navbar.component"
 import { FooterComponent } from "../components/footer/footer.component"
 import { VideoModalComponent } from "../components/video-modal/video-modal.component"
+import { ApiService } from "@revive/src/app/services/api.service"
+import { TitleCasePipe } from "@angular/common"
 
 type MediaItem = {
   url: string
@@ -20,59 +22,53 @@ type MediaItem = {
   imports: [
     NavbarComponent,
     FooterComponent,
-    IconComponent
+    IconComponent,
+    TitleCasePipe
   ],
   templateUrl: "./gallery.component.html",
   styleUrl: "./gallery.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
-export class GalleryComponent implements AfterViewInit, OnDestroy {
+export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChildren ( "galleryImg", { read: ElementRef } ) public images!: QueryList<ElementRef<HTMLImageElement>>
 
-  // Simple in-component media list. Each item can be an image (jpg/png) or a video (mp4).
-  public galleries = signal ( [
-    { url: "dunoon/dunoon-", type: "jpg", gallery: "dunoon", number: 40, startingIndex: 1 },
-    { url: "dunoon/dunoon-", type: "mp4", gallery: "dunoon", number: 1, startingIndex: 41 },
-    { url: "kinloss/kinloss-", type: "jpg", gallery: "kinloss", number: 13, startingIndex: 1 },
-    { url: "kinloss/kinloss-", type: "mp4", gallery: "kinloss", number: 1, startingIndex: 14 },
-    { url: "skye/skye-", type: "jpg", gallery: "skye", number: 7, startingIndex: 1 },
-  ] )
+  public filter = computed ( ( ) => this.filterSignal ( ) )
 
-  public filter = signal<"dunoon" | "kinloss" | "skye"> ( "dunoon" )
+  public galleryNames = computed ( ( ) => Object.keys ( this.galleriesData ( ) ) )
+
+  public filtered = computed<MediaItem [ ]> ( ( ) => {
+    const urls = this.galleriesData ( ) [ this.filterSignal ( ) ] ?? [ ]
+    return urls.map ( url => {
+      const ext = url.split ( "." ).pop ( )?.toLowerCase ( )
+      if ( ext === "mp4" ) return { url, type: "video" as const }
+      const lqip = `/api/img/${url}?w=40&f=webp&q=20`
+      const src = `/api/img/${url}?w=800&f=webp`
+      const srcset = `/api/img/${url}?w=400&f=webp 400w, /api/img/${url}?w=800&f=webp 800w, /api/img/${url}?w=1200&f=webp 1200w`
+      const sizes = `(max-width:600px) 100vw, 33vw`
+      return { url, type: "image" as const, lqip, src, srcset, sizes }
+    } )
+  } )
 
   private readonly modalSvc: ModalService = inject ( ModalService )
+  private readonly apiSvc: ApiService = inject ( ApiService )
   private readonly renderer: Renderer2 = inject ( Renderer2 )
 
+  private galleriesData = signal<Record<string, string [ ]>> ( { } )
+  private filterSignal = signal<string> ( "" )
   private io: IntersectionObserver | null = null
 
-  public get filtered ( ): MediaItem [ ] {
-    const f = this.filter ( )
-    // Calculate all media urls based on the gallery definitions and types and starting index
-    const media: MediaItem [ ] = [ ]
-    for ( const gallery of this.galleries ( ) ) {
-      if ( gallery.gallery === f ) {
-        for ( let i = 0; i < gallery.number; i++ ) {
-          const url = gallery.url + ( gallery.startingIndex + i ) + "." + gallery.type
-          if ( gallery.type === "mp4" ) {
-            media.push ( { url, type: "video" } )
-          } else {
-            // Prepare LQIP and responsive srcset
-            const lqip = `/api/img/${url}?w=40&f=webp&q=20`
-            const src = `/api/img/${url}?w=800&f=webp`
-            const srcset = `/api/img/${url}?w=400&f=webp 400w, /api/img/${url}?w=800&f=webp 800w, /api/img/${url}?w=1200&f=webp 1200w`
-            const sizes = `(max-width:600px) 100vw, 33vw`
-            media.push ( { url, type: "image", lqip, src, srcset, sizes } )
-          }
-        }
-      }
-    }
-    return media
+  public ngOnInit ( ): void {
+    this.apiSvc.get ( "/api/gallery" ).then ( data => {
+      const galleries = data as Record<string, string [ ]>
+      this.galleriesData.set ( galleries )
+      const keys = Object.keys ( galleries )
+      if ( keys.length > 0 ) this.filterSignal.set ( keys [ 0 ] )
+    } )
   }
 
   public ngAfterViewInit ( ): void {
     this.initializeObserver ( )
     this.observeImages ( )
-    // re-observe when QueryList changes (e.g., filter changes)
     this.images.changes.subscribe ( ( ) => this.observeImages ( ) )
   }
 
@@ -84,7 +80,7 @@ export class GalleryComponent implements AfterViewInit, OnDestroy {
   }
 
   public openImage ( index: number ) {
-    const images = this.filtered.filter ( m => m.type === "image" ).map ( m => m.url )
+    const images = this.filtered ( ).filter ( m => m.type === "image" ).map ( m => m.url )
     const reference = this.modalSvc.open ( ExpandedImageComponent, { size: "lg", centered: true } )
     reference.componentInstance.imageURLs = images
     reference.componentInstance.index = index
@@ -95,11 +91,8 @@ export class GalleryComponent implements AfterViewInit, OnDestroy {
     ref.componentInstance.videoUrl = url
   }
 
-  public setFilter ( f: "dunoon" | "kinloss" | "skye" ) {
-    this.filter.set ( f )
-    // When filter changes, images QueryList will update; ensure observer re-attaches
-    // small timeout allows view to update before observing
-    setTimeout ( ( ) => this.observeImages ( ), 0 )
+  public setFilter ( f: string ) {
+    this.filterSignal.set ( f )
   }
 
   private initializeObserver ( ) {
@@ -112,7 +105,6 @@ export class GalleryComponent implements AfterViewInit, OnDestroy {
         const dataSrcset = img.getAttribute ( "data-srcset" )
         if ( dataSrc ) this.renderer.setAttribute ( img, "src", dataSrc )
         if ( dataSrcset ) this.renderer.setAttribute ( img, "srcset", dataSrcset )
-        // Only remove the blur once the full-res image has actually loaded
         const onLoad = ( ) => {
           this.renderer.removeClass ( img, "progressive" )
           img.removeEventListener ( "load", onLoad )
@@ -129,17 +121,13 @@ export class GalleryComponent implements AfterViewInit, OnDestroy {
 
   private observeImages ( ) {
     if ( !this.images ) return
-    // ensure observer exists
     this.initializeObserver ( )
-    // unobserve any previously observed nodes
     if ( this.io ) {
       try { this.io.disconnect ( ) } catch { /* ignore */ }
     }
     for ( const el of this.images.toArray ( ) ) {
       const img = el.nativeElement as HTMLImageElement
-      // If image already has been upgraded to real src, skip
       if ( img.getAttribute ( "data-loaded" ) === "1" ) continue
-      // set data attributes if not already set (handles SSR or re-render)
       const dataSrc = img.getAttribute ( "data-src" )
       if ( !dataSrc ) {
         const url = img.getAttribute ( "data-url" )

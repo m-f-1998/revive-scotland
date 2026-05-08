@@ -1,13 +1,13 @@
 <div class="carousel-container">
   @for (img of slides(); track img; let i = $index) {
     <div class="carousel-slide" [class.active]="i === activeSlide()">
-      <!-- Blurred backdrop fills letterbox bars -->
       <img
         aria-hidden="true"
+        alt=""
         [attr.src]="img.image.startsWith('http') ? img.image : '/api/img/' + img.image + '?w=640&f=webp&q=60'"
         class="carousel-bg"
       />
-      <!-- Main image at natural aspect ratio -->
+
       <img
         [attr.src]="img.image.startsWith('http') ? img.image : '/api/img/' + img.image + '?f=webp&q=92'"
         [attr.srcset]="img.image.startsWith('http') ? '' :

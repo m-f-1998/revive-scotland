@@ -1,10 +1,10 @@
 <section class="relative overflow-hidden" id="pilgrimage">
   <img
-    src="/api/img/pilgrimage.jpg?w=640&f=webp"
-    srcset="
-      /api/img/pilgrimage.jpg?w=320&f=webp 320w,
-      /api/img/pilgrimage.jpg?w=640&f=webp 640w,
-      /api/img/pilgrimage.jpg?w=1024&f=webp 1024w
+    [src]="'/api/img/' + content().image + '?w=640&f=webp'"
+    [srcset]="
+      '/api/img/' + content().image + '?w=320&f=webp 320w,' +
+      '/api/img/' + content().image + '?w=640&f=webp 640w,' +
+      '/api/img/' + content().image + '?w=1024&f=webp 1024w'
     "
     sizes="(max-width: 600px) 100vw, 600px"
     alt="Pilgrimage background"
@@ -14,10 +14,8 @@
   />
   <div class="relative z-10 py-24" style="background-color: rgba(88, 64, 57, 0.5);">
     <div class="max-w-screen-md mx-auto px-4 text-center text-white" style="backdrop-filter: blur(5px) saturate(70%);">
-      <h2 class="text-4xl sm:text-6xl font-bold mb-6">Pilgrimages</h2>
-      <p class="text-lg leading-relaxed">
-        All our pilgrimages are in a true spirit of simplicity where we forgo the luxuries and pleasures of the world in order to be able to appreciate the basic things in life. All pilgrimages include daily mass and prayer time and a series of formational talks. We are also able to design and lead pilgrimages suited for parish, youth and other groups. Please contact us directly if you wish to set up a custom pilgrimage.
-      </p>
+      <h2 class="text-4xl sm:text-6xl font-bold mb-6">{{ content().heading }}</h2>
+      <p class="text-lg leading-relaxed">{{ content().body }}</p>
     </div>
   </div>
 </section>

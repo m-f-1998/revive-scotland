@@ -1,5 +1,4 @@
 <div class="grid grid-cols-1 lg:grid-cols-2" id="contact">
-  <!-- Image -->
   <div class="half-page-banner min-h-[20rem] lg:min-h-0">
     <img src="/api/img/contact.jpg?w=640&f=webp"
       srcset="
@@ -14,8 +13,7 @@
       class="w-full h-full object-cover block object-top"
     />
   </div>
-  <!-- Content -->
-  <div class="p-10 flex flex-col justify-center">
+  <div class="p-10 flex flex-col justify-center lg:border-l border-gray-200">
     <header class="mb-6">
       <p class="text-serif mb-0 text-primary">Contact Us</p>
       <h2 class="uppercase tracking-wider mb-2">Reach Out</h2>
@@ -23,21 +21,21 @@
     </header>
     <ul class="list-none p-0 space-y-3 text-muted">
       <li>
-        <a class="flex items-center gap-2 text-primary hover:text-primary-hover transition-colors" href="tel:+447883824055">
+        <a class="flex items-center gap-2 text-primary hover:text-primary-hover transition-colors" [href]="'tel:' + details().phone">
           <app-icon icon="phone" />
-          +447883824055
+          {{ details().phone }}
         </a>
       </li>
       <li>
-        <a class="flex items-center gap-2 text-primary hover:text-primary-hover transition-colors" href="mailto:luca@revivescotland.co.uk">
+        <a class="flex items-center gap-2 text-primary hover:text-primary-hover transition-colors" [href]="'mailto:' + details().email">
           <app-icon icon="envelope" />
-          luca&#64;revivescotland.co.uk
+          {{ details().email }}
         </a>
       </li>
       <li>
-        <a class="flex items-center gap-2 text-primary hover:text-primary-hover transition-colors" href="https://www.instagram.com/revive.scotland">
+        <a class="flex items-center gap-2 text-primary hover:text-primary-hover transition-colors" [href]="'https://www.instagram.com/' + details().instagram">
           <app-icon icon="instagram" />
-          &#64;revivescotland
+          &#64;{{ details().instagram }}
         </a>
       </li>
     </ul>

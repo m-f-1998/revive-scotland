@@ -16,6 +16,7 @@ import { router as mailerRouter } from "./routes/mailer.js"
 import { router as imagesRouter } from "./routes/images.js"
 import { router as adminRouter } from "./routes/admin.js"
 import { router as publicRouter } from "./routes/admin/public.js"
+import { router as galleryRouter } from "./routes/gallery.js"
 
 import { randomBytes } from "crypto"
 
@@ -194,6 +195,7 @@ app.addHook ( "onRequest", async request => {
 
 app.register ( mailerRouter, { prefix: "/api/mailer" } )
 app.register ( imagesRouter, { prefix: "/api/img" } )
+app.register ( galleryRouter, { prefix: "/api/gallery" } )
 app.register ( adminRouter, { prefix: "/api/admin" } )
 app.register ( publicRouter, { prefix: "/api/public" } )
 app.register ( staticRouter, { prefix: "/" } )

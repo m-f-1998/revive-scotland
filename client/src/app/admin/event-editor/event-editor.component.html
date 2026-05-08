@@ -1,9 +1,10 @@
 <app-admin-navbar />
 <div class="max-w-screen-xl mx-auto p-4 md:p-8" style="min-height: 80vh;">
-  <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+  <h2 class="text-2xl font-bold mb-2 flex items-center gap-2">
     <app-icon icon="calendar-alt" />
-    Event Editor
+    Events
   </h2>
+  <p class="text-gray-500 text-sm mb-6">Manage the events page slider and event listings.</p>
   <hr class="border-gray-200 mb-6">
 
   @if (loading()) {
@@ -12,39 +13,89 @@
       <p class="mt-2">Loading data...</p>
     </div>
   } @else {
-    <div>
-      @for (event of eventData().events; track $index) {
-        <div class="card mb-4 shadow-sm">
-          <div class="card-header flex justify-between items-center cursor-pointer" (click)="toggleCollapsed($index)">
-            <div class="flex items-center gap-2">
-              <app-icon [icon]="collapsedIndices.has($index) ? 'chevron-circle-down' : 'chevron-circle-up'" />
-              <h5 class="mb-0 font-semibold">
-                {{ eventForm()[$index].model['title'] || 'Event #' + ($index + 1) }}
-              </h5>
-            </div>
-            <button class="btn-danger btn-sm" (click)="$event.stopPropagation(); removeEvent(event.id)">
-              <app-icon icon="trash" />
-            </button>
-          </div>
-          <div [class.hidden]="collapsedIndices.has($index)">
-            <div class="card-body">
-              <formly-form [form]="eventForm()[$index].form" [model]="eventForm()[$index].model" [fields]="eventForm()[$index].fields" />
-            </div>
-          </div>
-        </div>
-      }
 
-      <div class="flex justify-between mt-6">
-        <button class="btn-success" (click)="addNewEvent()">
-          <app-icon icon="plus-circle" /> Add New Event
-        </button>
-        @if (eventData().events.length > 0) {
-          <button class="btn-primary" (click)="saveEventData()" [disabled]="loading() || someFormInvalid()">
-            <app-icon icon="save" /> Save All Events
+    <!-- Events Page Slider -->
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header flex items-center justify-between cursor-pointer" (click)="sliderCollapsed.update(v => !v)">
+        <h5 class="mb-0 font-semibold flex items-center gap-2">
+          <app-icon icon="image" /> Page Slider
+        </h5>
+        <span class="inline-block transition-transform duration-200" [class.rotate-180]="!sliderCollapsed()"><app-icon icon="chevron-down" /></span>
+      </div>
+      <div [class.hidden]="sliderCollapsed()">
+        <div class="card-body space-y-4">
+          @if (sliderDefault()) {
+            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
+              <app-icon icon="info-circle" />
+              Showing built-in default slides. Edit any slide or add new ones, then save your changes.
+            </div>
+          }
+          <p class="text-gray-500 text-sm">Each slide shows a full-width background image with a title and text overlay at the top of the events page.</p>
+          @for (sf of sliderForms(); track $index) {
+            <div class="border border-gray-200 dark:border-slate-700 rounded p-4">
+              <div class="flex justify-between items-center mb-3">
+                <span class="text-sm font-semibold">Slide {{ $index + 1 }}</span>
+                <button class="btn-danger btn-sm" (click)="removeSliderHero($index)"><app-icon icon="trash" /></button>
+              </div>
+              <formly-form [form]="sf.form" [model]="sf.model()" [fields]="sf.fields" (modelChange)="onSliderHeroChange($index, sf, $event)" />
+            </div>
+          }
+          @if (sliderForms().length < 3) {
+            <button class="btn-success btn-sm" (click)="addSliderHero()"><app-icon icon="plus-circle" /> Add Slide</button>
+          }
+        </div>
+        <div class="card-footer flex justify-between items-center">
+          <button class="btn-outline-secondary btn-sm" (click)="restoreSlider()">
+            <app-icon icon="refresh" /> Restore Defaults
           </button>
-        }
+          <button class="btn-primary" [disabled]="sliderSaving() || isSliderSaveDisabled()" (click)="saveSlider()">
+            @if (sliderSaving()) { <app-icon icon="spinner" iconAnimation="spin" /> } @else { <app-icon icon="save" /> }
+            Save Changes
+          </button>
+        </div>
       </div>
     </div>
+
+    <!-- Event Listings -->
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header flex items-center gap-2">
+        <app-icon icon="calendar-days" />
+        <h5 class="mb-0 font-semibold">Event Listings</h5>
+      </div>
+      <div class="card-body">
+        @for (event of eventData().events; track $index) {
+          <div class="card mb-3 shadow-sm">
+            <div class="card-header flex justify-between items-center cursor-pointer" (click)="toggleCollapsed($index)">
+              <div class="flex items-center gap-2">
+                <span class="inline-block transition-transform duration-200" [class.rotate-180]="!collapsedIndices.has($index)"><app-icon icon="chevron-down" /></span>
+                <h5 class="mb-0 font-semibold">
+                  {{ eventForm()[$index].model['title'] || 'Event #' + ($index + 1) }}
+                </h5>
+              </div>
+              <button class="btn-danger btn-sm" (click)="$event.stopPropagation(); removeEvent(event.id)">
+                <app-icon icon="trash" />
+              </button>
+            </div>
+            <div [class.hidden]="collapsedIndices.has($index)">
+              <div class="card-body">
+                <formly-form [form]="eventForm()[$index].form" [model]="eventForm()[$index].model" [fields]="eventForm()[$index].fields" />
+              </div>
+            </div>
+          </div>
+        }
+        <div class="flex justify-between mt-4">
+          <button class="btn-success" (click)="addNewEvent()">
+            <app-icon icon="plus-circle" /> Add Event
+          </button>
+          @if (eventData().events.length > 0) {
+            <button class="btn-primary" (click)="saveEventData()" [disabled]="loading() || someFormInvalid()">
+              <app-icon icon="save" /> Save Changes
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
   }
 </div>
 <app-admin-footer />

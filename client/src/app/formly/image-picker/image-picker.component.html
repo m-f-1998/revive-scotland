@@ -7,7 +7,13 @@
 
   @if (this.formControl.value) {
     <div class="flex justify-center">
-      <img [src]="this.formControl.value" alt="Hero Image Preview" class="max-h-48 object-contain border border-gray-300 rounded">
+      @if (isVideo) {
+        <video [src]="previewUrl" controls class="max-h-48 object-contain border border-gray-300 rounded">
+          Your browser does not support the video tag.
+        </video>
+      } @else {
+        <img [src]="previewUrl" alt="Preview" class="max-h-48 object-contain border border-gray-300 rounded">
+      }
     </div>
   }
 </div>

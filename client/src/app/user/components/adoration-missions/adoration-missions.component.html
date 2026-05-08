@@ -1,5 +1,4 @@
 <div class="grid grid-cols-1 lg:grid-cols-2" id="adoration">
-  <!-- Image -->
   <div class="half-page-banner min-h-[20rem] lg:min-h-0">
     <img src="/api/img/adoration.jpg?w=640&f=webp"
       srcset="
@@ -14,13 +13,12 @@
       class="w-full h-full object-cover block"
     />
   </div>
-  <!-- Content -->
   <div class="border-t border-gray-200 lg:border-t-0 lg:border-l lg:bg-gray-50 dark:lg:bg-slate-800 flex flex-col p-10 justify-center lg:text-right">
     <p class="text-serif text-primary mb-0">Sharing our Faith</p>
-    <h2 class="uppercase tracking-wider mb-0">{{title}}</h2>
+    <h2 class="uppercase tracking-wider mb-0">{{ content().title }}</h2>
     <div class="lg:ml-auto lg:max-w-[80%]">
       <p class="text-muted text-sm mt-4 mb-0 leading-relaxed">
-        We offer to run a parish adoration mission in which we work together with the parish priest to prepare and run continuous adoration for set periods of time either with the goal of increasing already existing adoration in the parish or to help begin this devotional practice. For more information on what a mission can look like, please
+        {{ content().body }}
         <a class="text-primary hover:text-primary-hover cursor-pointer" (click)="goToContact()">Contact Us</a>.
       </p>
     </div>
