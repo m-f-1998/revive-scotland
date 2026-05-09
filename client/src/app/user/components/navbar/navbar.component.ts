@@ -9,7 +9,10 @@ import { IconComponent } from "@revive/src/app/icon/icon.component"
     IconComponent
   ],
   templateUrl: "./navbar.component.html",
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    "(document:click)": "onDocumentClick($event)"
+  }
 } )
 export class NavbarComponent implements OnInit {
   public url: WritableSignal<string> = signal ( "" )
@@ -31,6 +34,13 @@ export class NavbarComponent implements OnInit {
   public goTo ( routerLink: string = "", id?: string ) {
     this.isMenuCollapsed.set ( true )
     this.router.navigate ( [ routerLink ], id ? { fragment: id } : undefined )
+  }
+
+  public onDocumentClick ( event: MouseEvent ) {
+    const target = event.target as HTMLElement
+    if ( !target.closest ( ".mobile-menu-container" ) ) {
+      this.isMenuCollapsed.set ( true )
+    }
   }
 
   public toggleMenu ( ) {

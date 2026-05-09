@@ -98,70 +98,88 @@
       </li>
     </ul>
 
-    <button class="sm:hidden p-2 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors" type="button" (click)="toggleMenu()" aria-label="Toggle navigation">
-      <app-icon [icon]="isMenuCollapsed() ? 'bars' : 'xmark'" />
-    </button>
-  </div>
-
-  <div [class.hidden]="isMenuCollapsed()" class="sm:hidden border-t border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-900">
-    <ul class="flex flex-col py-2">
-      <li>
-        <a class="nav-link mx-2" (click)="goTo('/admin/dashboard')" [class.active]="url() === '/admin/dashboard'">
-          <app-icon icon="gauge-high" />
-          Analytics
-        </a>
-      </li>
-      <li>
-        <a class="nav-link mx-2" (click)="goTo('/admin/fileExplorer')" [class.active]="url() === '/admin/fileExplorer'">
-          <app-icon icon="folder-open" />
-          Media Library
-        </a>
-      </li>
-      <li class="px-4 pt-3 pb-1">
-        <span class="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-slate-500">Edit Content</span>
-      </li>
-      <li>
-        <a class="nav-link mx-2 pl-6" (click)="goTo('/admin/homeEditor')" [class.active]="url() === '/admin/homeEditor'">
-          <app-icon icon="home" />
-          Home Page
-        </a>
-      </li>
-      <li>
-        <a class="nav-link mx-2 pl-6" (click)="goTo('/admin/eventEditor')" [class.active]="url() === '/admin/eventEditor'">
-          <app-icon icon="calendar-days" />
-          Events
-        </a>
-      </li>
-      <li>
-        <a class="nav-link mx-2 pl-6" (click)="goTo('/admin/galleryEditor')" [class.active]="url() === '/admin/galleryEditor'">
-          <app-icon icon="images" />
-          Gallery
-        </a>
-      </li>
-      <li>
-        <a class="nav-link mx-2 pl-6" (click)="goTo('/admin/testimonialsEditor')" [class.active]="url() === '/admin/testimonialsEditor'">
-          <app-icon icon="share" />
-          Testimonials
-        </a>
-      </li>
-      <li>
-        <a class="nav-link mx-2 pl-6" (click)="goTo('/admin/contactEditor')" [class.active]="url() === '/admin/contactEditor'">
-          <app-icon icon="address-card" />
-          Contact Details
-        </a>
-      </li>
-      <li>
-        <a class="nav-link mx-2 pl-6" (click)="goTo('/admin/storyEditor')" [class.active]="url() === '/admin/storyEditor'">
-          <app-icon icon="book-open" />
-          Our Story
-        </a>
-      </li>
-      <li>
-        <a class="btn-danger mx-2 my-1" (click)="logout()">
-          <app-icon icon="right-from-bracket" />
-          Logout
-        </a>
-      </li>
-    </ul>
+    <div class="relative sm:hidden mobile-menu-container">
+      <button class="p-2 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors" type="button" (click)="toggleMenu()" aria-label="Toggle navigation">
+        <app-icon [icon]="isMenuCollapsed() ? 'bars' : 'xmark'" />
+      </button>
+      @if (!isMenuCollapsed()) {
+        <ul class="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg py-1 z-50">
+          <li>
+            <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+               [class.text-primary]="url() === '/admin/dashboard'"
+               (click)="goTo('/admin/dashboard')">
+              <app-icon icon="gauge-high" />
+              Analytics
+            </a>
+          </li>
+          <li>
+            <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+               [class.text-primary]="url() === '/admin/fileExplorer'"
+               (click)="goTo('/admin/fileExplorer')">
+              <app-icon icon="folder-open" />
+              Media Library
+            </a>
+          </li>
+          <li class="px-4 pt-3 pb-1">
+            <span class="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-slate-500">Edit Content</span>
+          </li>
+          <li>
+            <a class="flex items-center gap-2 px-4 py-2 pl-6 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+               [class.text-primary]="url() === '/admin/homeEditor'"
+               (click)="goTo('/admin/homeEditor')">
+              <app-icon icon="home" />
+              Home Page
+            </a>
+          </li>
+          <li>
+            <a class="flex items-center gap-2 px-4 py-2 pl-6 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+               [class.text-primary]="url() === '/admin/eventEditor'"
+               (click)="goTo('/admin/eventEditor')">
+              <app-icon icon="calendar-days" />
+              Events
+            </a>
+          </li>
+          <li>
+            <a class="flex items-center gap-2 px-4 py-2 pl-6 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+               [class.text-primary]="url() === '/admin/galleryEditor'"
+               (click)="goTo('/admin/galleryEditor')">
+              <app-icon icon="images" />
+              Gallery
+            </a>
+          </li>
+          <li>
+            <a class="flex items-center gap-2 px-4 py-2 pl-6 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+               [class.text-primary]="url() === '/admin/testimonialsEditor'"
+               (click)="goTo('/admin/testimonialsEditor')">
+              <app-icon icon="share" />
+              Testimonials
+            </a>
+          </li>
+          <li>
+            <a class="flex items-center gap-2 px-4 py-2 pl-6 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+               [class.text-primary]="url() === '/admin/contactEditor'"
+               (click)="goTo('/admin/contactEditor')">
+              <app-icon icon="address-card" />
+              Contact Details
+            </a>
+          </li>
+          <li>
+            <a class="flex items-center gap-2 px-4 py-2 pl-6 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+               [class.text-primary]="url() === '/admin/storyEditor'"
+               (click)="goTo('/admin/storyEditor')">
+              <app-icon icon="book-open" />
+              Our Story
+            </a>
+          </li>
+          <li class="border-t border-gray-200 dark:border-slate-700 mt-1 pt-1">
+            <a class="flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer transition-colors"
+               (click)="logout()">
+              <app-icon icon="right-from-bracket" />
+              Logout
+            </a>
+          </li>
+        </ul>
+      }
+    </div>
   </div>
 </nav>

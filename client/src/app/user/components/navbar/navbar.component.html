@@ -36,31 +36,38 @@
       </li>
     </ul>
 
-    <button class="sm:hidden p-2 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors" type="button" (click)="toggleMenu()" aria-label="Toggle navigation">
-      <app-icon [icon]="isMenuCollapsed() ? 'bars' : 'xmark'" />
-    </button>
-  </div>
-
-  <div [class.hidden]="isMenuCollapsed()" class="sm:hidden border-t border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-900">
-    <ul class="flex flex-col py-2">
-      <li>
-        <a class="nav-link mx-2" (click)="goTo('')" [class.active]="url() === ''">
-          <app-icon icon="home" />
-          Home
-        </a>
-      </li>
-      <li>
-        <a class="nav-link mx-2" (click)="goTo('events')" [class.active]="url() === '/events'">
-          <app-icon icon="calendar" />
-          Events
-        </a>
-      </li>
-      <li>
-        <a class="nav-link mx-2" (click)="goTo('gallery')" [class.active]="url() === '/gallery'">
-          <app-icon icon="image" />
-          Gallery
-        </a>
-      </li>
-    </ul>
+    <div class="relative sm:hidden mobile-menu-container">
+      <button class="p-2 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors" type="button" (click)="toggleMenu()" aria-label="Toggle navigation">
+        <app-icon [icon]="isMenuCollapsed() ? 'bars' : 'xmark'" />
+      </button>
+      @if (!isMenuCollapsed()) {
+        <ul class="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg py-1 z-50">
+          <li>
+            <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+               [class.text-primary]="url() === ''"
+               (click)="goTo('')">
+              <app-icon icon="home" />
+              Home
+            </a>
+          </li>
+          <li>
+            <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+               [class.text-primary]="url() === '/events'"
+               (click)="goTo('events')">
+              <app-icon icon="calendar" />
+              Events
+            </a>
+          </li>
+          <li>
+            <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+               [class.text-primary]="url() === '/gallery'"
+               (click)="goTo('gallery')">
+              <app-icon icon="image" />
+              Gallery
+            </a>
+          </li>
+        </ul>
+      }
+    </div>
   </div>
 </nav>

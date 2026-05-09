@@ -40,6 +40,9 @@ export class AdminNavbarComponent implements OnInit {
     if ( !target.closest ( ".dropdown-container" ) ) {
       this.isContentDropdownOpen.set ( false )
     }
+    if ( !target.closest ( ".mobile-menu-container" ) ) {
+      this.isMenuCollapsed.set ( true )
+    }
   }
 
   public toggleContentDropdown ( event: MouseEvent ) {
