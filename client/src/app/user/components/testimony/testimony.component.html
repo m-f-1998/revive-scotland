@@ -1,5 +1,5 @@
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" id="testimony">
-  @for (testimony of randomTestimonies; track $index) {
+  @for (testimony of displayedTestimonies(); track $index) {
     <div class="p-10 text-white bg-primary hover:bg-primary-hover transition-colors duration-300">
       <h3 class="text-lg font-bold mb-3">{{testimony.name}}</h3>
       <blockquote class="text-sm italic leading-relaxed">"{{testimony.testimony}}"</blockquote>

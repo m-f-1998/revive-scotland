@@ -95,23 +95,11 @@ await app.register ( helmet, {
       ],
       styleSrc: [
         "'self'",
-        // ( req: IncomingMessage ) => {
-        //   if ( req.cspNonce ) {
-        //     return `'nonce-${req.cspNonce}'`
-        //   }
-        //   return ""
-        // },
         "'unsafe-inline'"
       ],
       scriptSrcElem: [
         "'self'",
-        "'unsafe-inline'",
-        // ( req: IncomingMessage ) => {
-        //   if ( req.cspNonce ) {
-        //     return `'nonce-${req.cspNonce}'`
-        //   }
-        //   return ""
-        // },
+        ( req: IncomingMessage ) => req.cspNonce ? `'nonce-${req.cspNonce}'` : "",
         "https://www.youtube.com",
         "https://www.googletagmanager.com",
         "https://static.cloudflareinsights.com",
@@ -120,7 +108,7 @@ await app.register ( helmet, {
         "https://apis.google.com"
       ],
       scriptSrcAttr: [
-        "'unsafe-inline'"
+        "'none'"
       ],
       imgSrc: [
         "'self'",

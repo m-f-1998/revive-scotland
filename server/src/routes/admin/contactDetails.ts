@@ -1,6 +1,10 @@
 import { FastifyPluginAsync } from "fastify"
 import { getFirestore } from "../admin.js"
 import { checkFirebaseAuth } from "./middleware/fileExplorer.js"
+import { config } from "dotenv"
+import { resolve } from "path"
+
+config ( { path: resolve ( process.cwd ( ), ".env" ), quiet: true } )
 
 export interface ContactDetails {
   phone: string
@@ -9,8 +13,8 @@ export interface ContactDetails {
 }
 
 const DEFAULT: ContactDetails = {
-  phone: "+447883824055",
-  email: "luca@revivescotland.co.uk",
+  phone: process.env [ "DEFAULT_PHONE" ] ?? "+447883824055",
+  email: process.env [ "DEFAULT_EMAIL" ] ?? "luca@revivescotland.co.uk",
   instagram: "revive.scotland"
 }
 

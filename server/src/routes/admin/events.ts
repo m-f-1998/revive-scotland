@@ -136,32 +136,31 @@ export const router: FastifyPluginAsync = async app => {
       const eventsCollection = getFirestore ( ).collection ( "events" )
       const docRef = eventsCollection.doc ( "default" ) // Could be used to categorize by page in future
 
-      // Save the entire object, overwriting previous data
       await docRef.set ( { events: sanitizedEvents } )
-      eventsCache = { events: sanitizedEvents }
+
+      const currentTime = new Date ( )
+      eventsCache = { events: sanitizedEvents.filter ( event => {
+        const eventEndDate = new Date ( event.endDate )
+        return isNaN ( eventEndDate.getTime ( ) ) || eventEndDate >= currentTime
+      } ) }
+      cacheTime = Date.now ( )
 
       const shared_links = getFirestore ( ).collection ( "shared_links" )
       const snapshot = await shared_links.where ( "type", "==", "hero_editor" ).get ( )
 
-      snapshot.forEach ( async doc => {
+      await Promise.all ( snapshot.docs.map ( async doc => {
         const id = doc.id
         const expectedUrlEnding = `/api/public/s/${id}`
-        const isInHeroes = sanitizedEvents.some ( hero => {
-          return hero.imageUrl?.endsWith ( expectedUrlEnding )
-        } )
+        const isInHeroes = sanitizedEvents.some ( hero => hero.imageUrl?.endsWith ( expectedUrlEnding ) )
 
-        const events = getFirestore ( ).collection ( "heroes" )
-        const eventsSnapshot = ( ( await events.doc ( "home" ).get ( ) ).data ( )?. [ "heroes" ] || [ ] ) as {
-          url?: string
-        } [ ]
-        const isInEvents = eventsSnapshot.some ( hero => {
-          return hero.url && hero.url.endsWith ( expectedUrlEnding )
-        } )
+        const eventsCol = getFirestore ( ).collection ( "heroes" )
+        const eventsSnapshot = ( ( await eventsCol.doc ( "home" ).get ( ) ).data ( )?. [ "heroes" ] || [ ] ) as { url?: string } [ ]
+        const isInEvents = eventsSnapshot.some ( hero => hero.url?.endsWith ( expectedUrlEnding ) )
 
         if ( !isInHeroes && !isInEvents ) {
           await shared_links.doc ( id ).delete ( )
         }
-      } )
+      } ) )
 
       return rep.status ( 200 ).send ( { message: `Events data saved successfully.` } )
     } catch ( error ) {

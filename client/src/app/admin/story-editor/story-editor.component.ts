@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
+import { SlicePipe } from "@angular/common"
 import { AdminNavbarComponent } from "../navbar/navbar.component"
 import { AdminFooterComponent } from "../footer/footer.component"
 import { IconComponent } from "../../icon/icon.component"
@@ -38,13 +39,14 @@ const DEFAULT_STORY: StoryItem [ ] = [
 
 @Component ( {
   selector: "app-admin-story-editor",
-  imports: [ AdminNavbarComponent, AdminFooterComponent, IconComponent, FormsModule ],
+  imports: [ AdminNavbarComponent, AdminFooterComponent, IconComponent, FormsModule, SlicePipe ],
   templateUrl: "./story-editor.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class StoryEditorComponent implements OnInit {
   public loading: WritableSignal<boolean> = signal ( true )
   public items: WritableSignal<StoryItem [ ]> = signal ( [ ] )
+  public expandedIndex: WritableSignal<number | null> = signal ( null )
 
   private readonly apiSvc: ApiService = inject ( ApiService )
   private readonly authSvc: AuthService = inject ( AuthService )
@@ -62,11 +64,13 @@ export class StoryEditorComponent implements OnInit {
   }
 
   public addItem ( ): void {
-    this.items.update ( items => [ ...items, { description: "Enter paragraph text here...", bullet: true } ] )
+    this.items.update ( items => [ ...items, { description: "", bullet: true } ] )
+    this.expandedIndex.set ( this.items ( ).length - 1 )
   }
 
   public removeItem ( index: number ): void {
     this.items.update ( items => items.filter ( ( _, i ) => i !== index ) )
+    if ( this.expandedIndex ( ) === index ) this.expandedIndex.set ( null )
   }
 
   public moveUp ( index: number ): void {
@@ -86,6 +90,10 @@ export class StoryEditorComponent implements OnInit {
       ;[ copy [ index ], copy [ index + 1 ] ] = [ copy [ index + 1 ], copy [ index ] ]
       return copy
     } )
+  }
+
+  public toggleExpand ( index: number ): void {
+    this.expandedIndex.set ( this.expandedIndex ( ) === index ? null : index )
   }
 
   public updateDescription ( index: number, value: string ): void {

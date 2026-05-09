@@ -127,10 +127,10 @@ export class GalleryEditorComponent implements OnInit {
       this.albumNames.set ( Object.keys ( response.albums ) )
       this.hiddenImages.set ( new Set ( response.hiddenImages ) )
       this.additionalImages.set ( response.additionalImages )
-      // First 3 albums start expanded, the rest start collapsed
+      // All albums start collapsed
       const collapsed: Record<string, boolean> = { }
-      Object.keys ( response.albums ).forEach ( ( name, i ) => {
-        collapsed [ name ] = i >= 3
+      Object.keys ( response.albums ).forEach ( name => {
+        collapsed [ name ] = true
       } )
       this.collapsedAlbums.set ( collapsed )
     } ).catch ( ( ) => {

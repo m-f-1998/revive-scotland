@@ -7,15 +7,29 @@ import { FastifyPluginAsync } from "fastify"
 const envPath = resolve ( process.cwd ( ), ".env" )
 config ( { path: envPath, quiet: true } )
 
+const smtpTransporter = process.env [ "SMTP_HOST" ] && process.env [ "SMTP_PORT" ] &&
+  process.env [ "SMTP_USER" ] && process.env [ "SMTP_PASS" ]
+  ? createTransport ( {
+      host: process.env [ "SMTP_HOST" ],
+      port: Number ( process.env [ "SMTP_PORT" ] ),
+      secure: true,
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      dnsTimeout: 5000,
+      socketTimeout: 5000,
+      auth: {
+        user: process.env [ "SMTP_USER" ],
+        pass: process.env [ "SMTP_PASS" ],
+      },
+    } )
+  : null
+
 export const router: FastifyPluginAsync = async app => {
   app.post ( "/", async ( req, rep ) => {
-    const { subject, message, recaptchaToken } = req.body as { subject?: string; message?: string; recaptchaToken?: string }
+    const { subject: rawSubject, message, recaptchaToken } = req.body as { subject?: string; message?: string; recaptchaToken?: string }
+    const subject = String ( rawSubject || "" ).trim ( ).replace ( /[\x00-\x1F\x7F]/g, "" ).substring ( 0, 200 )
 
     if ( !subject || !message || !recaptchaToken ) {
-      return rep.status ( 400 ).send ( { message: "Invalid input." } )
-    }
-
-    if ( !subject || !recaptchaToken || !message ) {
       return rep.status ( 400 ).send ( { message: "Invalid input." } )
     }
 
@@ -59,33 +73,17 @@ export const router: FastifyPluginAsync = async app => {
       return rep.status ( 500 ).send ( { message: "reCAPTCHA verification error." } )
     }
 
-    if ( !process.env [ "SMTP_HOST" ] || !process.env [ "SMTP_PORT" ] ||
-        !process.env [ "SMTP_USER" ] || !process.env [ "SMTP_PASS" ] ||
-        !process.env [ "SMTP_DESTINATION" ] ) {
+    if ( !smtpTransporter || !process.env [ "SMTP_DESTINATION" ] ) {
       return rep.status ( 500 ).send ( { message: "SMTP configuration is missing." } )
     }
 
-    const transporter = createTransport ( {
-      host: process.env [ "SMTP_HOST" ],
-      port: Number ( process.env [ "SMTP_PORT" ] ),
-      secure: true,
-      connectionTimeout: 5000,
-      greetingTimeout: 5000,
-      dnsTimeout: 5000,
-      socketTimeout: 5000,
-      auth: {
-        user: process.env [ "SMTP_USER" ],
-        pass: process.env [ "SMTP_PASS" ],
-      },
-    } )
-
     try {
-      await transporter.sendMail ( {
+      await smtpTransporter.sendMail ( {
         from: process.env [ "SMTP_USER" ],
         to: process.env [ "SMTP_DESTINATION" ],
         subject,
         html: sanitizeHtml ( message, {
-          allowedTags: sanitizeHtml.defaults.allowedTags, // customize as needed
+          allowedTags: sanitizeHtml.defaults.allowedTags,
           allowedAttributes: sanitizeHtml.defaults.allowedAttributes
         } ),
         encoding: "utf8"

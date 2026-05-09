@@ -13,14 +13,21 @@ const sortFolders = ( names: string [ ] ): string [ ] => {
   return [ ...known, ...unknown ]
 }
 
+const ALBUM_CACHE_TTL_MS = 60 * 1000 // 60 seconds
+
+let albumCache: Record<string, string [ ]> | null = null
+let albumCacheTime = 0
+
 export const readAllAlbums = async ( ): Promise<Record<string, string [ ]>> => {
+  if ( albumCache && Date.now ( ) - albumCacheTime < ALBUM_CACHE_TTL_MS ) {
+    return albumCache
+  }
+
   const entries = await readdir ( IMAGE_DIR, { withFileTypes: true } )
   const dirs = entries.filter ( e => e.isDirectory ( ) ).map ( e => e.name )
   const ordered = sortFolders ( dirs )
 
-  const result: Record<string, string [ ]> = { }
-
-  for ( const name of ordered ) {
+  const albums = await Promise.all ( ordered.map ( async name => {
     const files = await readdir ( join ( IMAGE_DIR, name ) )
     const media = files
       .filter ( f => /\.(jpg|jpeg|png|mp4)$/i.test ( f ) )
@@ -30,8 +37,13 @@ export const readAllAlbums = async ( ): Promise<Record<string, string [ ]>> => {
         return na - nb
       } )
       .map ( f => `gallery/${name}/${f}` )
-    result [ name ] = media
-  }
+    return [ name, media ] as const
+  } ) )
+
+  const result = Object.fromEntries ( albums )
+
+  albumCache = result
+  albumCacheTime = Date.now ( )
 
   return result
 }

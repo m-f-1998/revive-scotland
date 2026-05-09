@@ -224,7 +224,9 @@ export class FileExplorerComponent {
 
         await navigator.clipboard.writeText ( data.shareUrl )
 
-        this.toastrSvc.success ( "Share URL copied to clipboard! (Link expires in 24 hours)" )
+        const expiryLabels: Record<number, string> = { 3600: "1 hour", 21600: "6 hours", 43200: "12 hours", 86400: "24 hours" }
+        const expiryLabel = expiryLabels [ expiry ] ?? `${expiry / 3600} hours`
+        this.toastrSvc.success ( `Share URL copied to clipboard! (Link expires in ${expiryLabel})` )
       } catch ( err ) {
         if ( isDevMode ( ) ) {
           console.error ( "Share file error:", err )
@@ -314,10 +316,16 @@ export class FileExplorerComponent {
         tasks.push ( this.uploadFile ( f ) )
       }
     }
-    Promise.all ( tasks )
-    const fileInputRef = this.fileInput ( )
-    if ( fileInputRef ) {
-      fileInputRef.nativeElement.value = ""
+
+    try {
+      await Promise.all ( tasks )
+    } catch {
+      // Individual upload errors are handled inside uploadFile
+    } finally {
+      const fileInputRef = this.fileInput ( )
+      if ( fileInputRef ) {
+        fileInputRef.nativeElement.value = ""
+      }
     }
   }
 
@@ -585,7 +593,7 @@ export class FileExplorerComponent {
         body: file
       } )
       if ( response.ok ) {
-        await this.completeUpload ( key )
+        await this.completeUpload ( key, file.size )
       } else {
         throw new Error ( "R2 upload failed: " + response.statusText )
       }
@@ -598,9 +606,9 @@ export class FileExplorerComponent {
     }
   }
 
-  private async completeUpload ( key: string ) {
+  private async completeUpload ( key: string, fileSize: number ) {
     try {
-      await this.apiSvc.post ( `${this.baseRoute}/upload-complete`, { key }, new HttpHeaders ( {
+      await this.apiSvc.post ( `${this.baseRoute}/upload-complete`, { key, fileSize }, new HttpHeaders ( {
         "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || "" }`
       } ) )
       this.listPath ( this.currentPath ( ) )

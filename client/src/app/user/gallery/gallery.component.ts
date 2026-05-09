@@ -81,8 +81,9 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  public openImage ( index: number ) {
+  public openImage ( url: string ) {
     const images = this.filtered ( ).filter ( m => m.type === "image" ).map ( m => m.url )
+    const index = images.indexOf ( url )
     const reference = this.modalSvc.open ( ExpandedImageComponent, { size: "lg", centered: true } )
     reference.setInput ( "imageURLs", images )
     reference.setInput ( "index", index )

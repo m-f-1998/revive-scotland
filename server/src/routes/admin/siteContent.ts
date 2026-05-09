@@ -5,9 +5,15 @@ import { checkFirebaseAuth } from "./middleware/fileExplorer.js"
 const cache: Record<string, { data: unknown; time: number }> = { }
 const TTL = 60_000
 
+const ALLOWED_SECTIONS = new Set ( [ "testimonials", "about-us", "adoration", "pilgrimage", "revive-weekends" ] )
+
 export const router: FastifyPluginAsync = async app => {
   app.get ( "/:section", async ( req, rep ) => {
     const { section } = req.params as { section: string }
+
+    if ( !ALLOWED_SECTIONS.has ( section ) ) {
+      return rep.status ( 404 ).send ( "Not found." )
+    }
 
     const cached = cache [ section ]
     if ( cached && Date.now ( ) - cached.time < TTL ) {

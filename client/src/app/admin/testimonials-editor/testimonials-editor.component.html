@@ -23,35 +23,38 @@
       }
       @for (item of items(); track $index) {
         <div class="card mb-4 shadow-sm">
-          <div class="card-header flex items-center justify-between">
-            <span class="font-semibold text-sm">Testimonial {{ $index + 1 }}</span>
+          <div class="card-header flex items-center justify-between cursor-pointer select-none" (click)="toggleExpand($index)">
+            <span class="font-semibold text-sm">{{ item.name || 'Testimonial ' + ($index + 1) }}</span>
             <div class="flex items-center gap-2">
-              <button class="btn-outline-secondary btn-sm" (click)="moveUp($index)" [disabled]="$index === 0" title="Move up">
+              <button class="btn-outline-secondary btn-sm" (click)="moveUp($index); $event.stopPropagation()" [disabled]="$index === 0" title="Move up">
                 <app-icon icon="chevron-up" />
               </button>
-              <button class="btn-outline-secondary btn-sm" (click)="moveDown($index)" [disabled]="$index === items().length - 1" title="Move down">
+              <button class="btn-outline-secondary btn-sm" (click)="moveDown($index); $event.stopPropagation()" [disabled]="$index === items().length - 1" title="Move down">
                 <app-icon icon="chevron-down" />
               </button>
-              <button class="btn-danger btn-sm" (click)="removeItem($index)" title="Remove">
+              <button class="btn-danger btn-sm" (click)="removeItem($index); $event.stopPropagation()" title="Remove">
                 <app-icon icon="trash" />
               </button>
+              <span class="inline-block transition-transform duration-200" [class.rotate-180]="expandedIndex() === $index"><app-icon icon="chevron-down" /></span>
             </div>
           </div>
-          <div class="card-body space-y-3">
-            <div>
-              <label class="block text-sm font-medium mb-1">Name / Location <span class="text-gray-400 text-xs">(e.g. Dunoon - 2026)</span></label>
-              <input type="text" maxlength="100" class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="Name - Year"
-                [value]="item.name" (input)="updateField($index, 'name', $any($event.target).value)" />
+          @if (expandedIndex() === $index) {
+            <div class="card-body space-y-3">
+              <div>
+                <label class="block text-sm font-medium mb-1">Name / Location <span class="text-gray-400 text-xs">(e.g. Dunoon - 2026)</span></label>
+                <input type="text" maxlength="100" class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Name - Year"
+                  [value]="item.name" (input)="updateField($index, 'name', $any($event.target).value)" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Testimonial</label>
+                <textarea rows="3" maxlength="800" class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary resize-y"
+                  placeholder="Enter the testimonial text..."
+                  [value]="item.testimony" (input)="updateField($index, 'testimony', $any($event.target).value)"></textarea>
+                <p class="text-xs text-gray-400 mt-1 text-right">{{ item.testimony.length }}/800</p>
+              </div>
             </div>
-            <div>
-              <label class="block text-sm font-medium mb-1">Testimonial</label>
-              <textarea rows="3" maxlength="800" class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary resize-y"
-                placeholder="Enter the testimonial text..."
-                [value]="item.testimony" (input)="updateField($index, 'testimony', $any($event.target).value)"></textarea>
-              <p class="text-xs text-gray-400 mt-1 text-right">{{ item.testimony.length }}/800</p>
-            </div>
-          </div>
+          }
         </div>
       }
 

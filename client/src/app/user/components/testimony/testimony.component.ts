@@ -7,10 +7,10 @@ interface Testimony {
 }
 
 const FALLBACK: Testimony [ ] = [
-  { name: "Largs - 2023", testimony: "'I loved the talks and company and the overall structure of the retreat. Incredible experience.'" },
-  { name: "Hawick - 2023", testimony: "'This has made me want to create better friendships and discipleship in our parishes and to become a light for our communities'" },
-  { name: "Largs - 2023", testimony: "'There was a lot of time for adoration and the games were great fun, the talks were amazing and it was a great choice of topics and speakers'" },
-  { name: "Largs - 2023", testimony: "'The schedule was well organised, the food was well-organised and the talks were very interesting – I loved the testimonies from the priests'" },
+  { name: "Largs - 2023", testimony: "I loved the talks and company and the overall structure of the retreat. Incredible experience." },
+  { name: "Hawick - 2023", testimony: "This has made me want to create better friendships and discipleship in our parishes and to become a light for our communities" },
+  { name: "Largs - 2023", testimony: "There was a lot of time for adoration and the games were great fun, the talks were amazing and it was a great choice of topics and speakers" },
+  { name: "Largs - 2023", testimony: "The schedule was well organised, the food was well-organised and the talks were very interesting – I loved the testimonies from the priests" },
   { name: "Dunoon - 2026", testimony: "The content has given me a new perspective on scripture, the mass and liturgy which helps me to appreciate more fully its inherent beauty" },
   { name: "Dunoon - 2026", testimony: "I have grown in a deeper understanding of a relationship with God and others" },
   { name: "Dunoon - 2026", testimony: "I had new revelations about my faith and how I can grow and improve my relationship with God and others" },
@@ -28,17 +28,24 @@ const FALLBACK: Testimony [ ] = [
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class TestimonyComponent implements OnInit {
-  public allTestimonies: WritableSignal<Testimony [ ]> = signal ( FALLBACK )
+  public displayedTestimonies: WritableSignal<Testimony [ ]> = signal ( [ ] )
+  private readonly allTestimonies: WritableSignal<Testimony [ ]> = signal ( FALLBACK )
   private readonly apiSvc: ApiService = inject ( ApiService )
 
-  public get randomTestimonies ( ): Testimony [ ] {
-    return [ ...this.allTestimonies ( ) ].sort ( ( ) => 0.5 - Math.random ( ) ).slice ( 0, 4 )
+  private pickRandom ( ): void {
+    this.displayedTestimonies.set (
+      [ ...this.allTestimonies ( ) ].sort ( ( ) => 0.5 - Math.random ( ) ).slice ( 0, 4 )
+    )
   }
 
   public ngOnInit ( ): void {
+    this.pickRandom ( )
     this.apiSvc.get ( "/api/admin/site-content/testimonials" ).then ( data => {
       const res = data as { items?: Testimony [ ] }
-      if ( res.items?.length ) this.allTestimonies.set ( res.items )
+      if ( res.items?.length ) {
+        this.allTestimonies.set ( res.items )
+        this.pickRandom ( )
+      }
     } ).catch ( ( ) => { /* keep fallback */ } )
   }
 }

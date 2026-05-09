@@ -3,6 +3,9 @@ import { createReadStream, existsSync } from "fs"
 import { access, constants, readFile, stat } from "fs/promises"
 import { FastifyPluginAsync } from "fastify"
 import mime from "mime"
+import { config } from "dotenv"
+
+config ( { path: resolve ( process.cwd ( ), ".env" ), quiet: true } )
 
 export const isDevMode = ( ): boolean => {
   return process.env [ "DEV_MODE" ] === "true" || process.env [ "DEV_MODE" ] === "1"
@@ -60,14 +63,16 @@ export const router: FastifyPluginAsync = async app => {
   }
 
   const injectGoogleTagManager = ( html: string, nonce: string ): string => {
-    // Add the above between the </head> and <body> tags
-    const gtmScript = `<script nonce="${nonce}" async src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "967e771000ab4f7fac5a2761d3ccc9aa"}'></script>
-      <script nonce="${nonce}" async src="https://www.googletagmanager.com/gtag/js?id=G-4HW72T7XW7"></script>
+    const cfToken = process.env [ "CF_BEACON_TOKEN" ] ?? ""
+    const gaId = process.env [ "GA_TRACKING_ID" ] ?? ""
+
+    const gtmScript = `<script nonce="${nonce}" async src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "${cfToken}"}'></script>
+      <script nonce="${nonce}" async src="https://www.googletagmanager.com/gtag/js?id=${gaId}"></script>
       <script nonce="${nonce}">
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-        gtag('config', 'G-4HW72T7XW7');
+        gtag('config', '${gaId}');
       </script>`
 
     const bodyIndex = html.indexOf ( "<body>" )

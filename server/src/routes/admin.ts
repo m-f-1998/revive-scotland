@@ -12,6 +12,13 @@ import serviceAccount from "../revive-scotland-firebase.json" with { type: "json
 import { isDevMode } from "./static.js"
 import rateLimit from "@fastify/rate-limit"
 import { FastifyPluginAsync } from "fastify"
+import { config } from "dotenv"
+import { resolve } from "path"
+
+config ( { path: resolve ( process.cwd ( ), ".env" ), quiet: true } )
+
+const SUPERADMIN_EMAIL = process.env [ "SUPERADMIN_EMAIL" ]
+const ADMIN_EMAIL = process.env [ "ADMIN_EMAIL" ]
 
 admin.initializeApp ( {
   credential: admin.credential.cert ( serviceAccount as ServiceAccount )
@@ -47,13 +54,15 @@ export const router: FastifyPluginAsync = async app => {
   }
 
   app.get ( "/logout", async ( req, res ) => {
-    const { uid } = req.query as { uid?: string }
-
-    if ( !uid ) {
-      return res.status ( 400 ).send ( { error: "Missing uid parameter" } )
+    const authHeader = req.headers.authorization
+    if ( !authHeader?.startsWith ( "Bearer " ) ) {
+      return res.status ( 401 ).send ( { error: "Unauthorized" } )
     }
 
     try {
+      const decodedToken = await admin.auth ( ).verifyIdToken ( authHeader.split ( "Bearer " ) [ 1 ] )
+      const uid = decodedToken.uid
+
       await admin.auth ( ).revokeRefreshTokens ( uid )
 
       const firestore = getFirestore ( ).collection ( "users" ).doc ( uid )
@@ -69,13 +78,15 @@ export const router: FastifyPluginAsync = async app => {
   } )
 
   app.get ( "/verify", async ( req, res ) => {
-    const { uid } = req.query as { uid?: string }
-
-    if ( !uid ) {
-      return res.status ( 400 ).send ( { error: "Missing uid parameter" } )
+    const authHeader = req.headers.authorization
+    if ( !authHeader?.startsWith ( "Bearer " ) ) {
+      return res.status ( 401 ).send ( { error: "Unauthorized" } )
     }
 
     try {
+      const decodedToken = await admin.auth ( ).verifyIdToken ( authHeader.split ( "Bearer " ) [ 1 ] )
+      const uid = decodedToken.uid
+
       const firestore = getFirestore ( ).collection ( "users" ).doc ( uid )
       const doc = await firestore.get ( )
 
@@ -93,8 +104,6 @@ export const router: FastifyPluginAsync = async app => {
       }
 
       if ( !sessionExpiry ) {
-        // If doc found but no sessionExpiry, the session was revoked with Google
-        // Can assume a new session is being created
         return res.status ( 200 ).send ( user )
       }
 
@@ -110,44 +119,40 @@ export const router: FastifyPluginAsync = async app => {
   } )
 
   app.get ( "/newSession", async ( req, res ) => {
-    const { uid } = req.query as { uid?: string }
-
-    if ( !uid ) {
-      return res.status ( 400 ).send ( { error: "Missing uid parameter" } )
+    const authHeader = req.headers.authorization
+    if ( !authHeader?.startsWith ( "Bearer " ) ) {
+      return res.status ( 401 ).send ( { error: "Unauthorized" } )
     }
 
     try {
+      const decodedToken = await admin.auth ( ).verifyIdToken ( authHeader.split ( "Bearer " ) [ 1 ] )
+      const uid = decodedToken.uid
       const user = await admin.auth ( ).getUser ( uid )
-      if ( !user ) {
-        return res.status ( 404 ).send ( { error: "User not found" } )
-      }
 
       let role = user.customClaims?. [ "role" ] || "viewer"
 
-      if ( user.email === "admin@matthewfrankland.co.uk" ) role = "superadmin"
-      else if ( user.email === "revivescotlandx@gmail.com" ) role = "admin"
+      if ( SUPERADMIN_EMAIL && user.email === SUPERADMIN_EMAIL ) role = "superadmin"
+      else if ( ADMIN_EMAIL && user.email === ADMIN_EMAIL ) role = "admin"
 
       if ( !user.customClaims?. [ "role" ] || user.customClaims [ "role" ] !== role ) {
         await admin.auth ( ).setCustomUserClaims ( uid, { role } )
       }
 
-      // Store the Session Expiry time here in Firestore
       const firestore = getFirestore ( ).collection ( "users" ).doc ( uid )
 
-      // Get photoURL
       const doc = await firestore.get ( )
 
-      if ( doc.exists ) {
-        if ( !( doc.data ( )?. [ "profilePhoto" ] || null ) ) {
-          await cacheProfileImage ( user.photoURL || "" )
+      const needsCaching = !doc.exists || !( doc.data ( )?. [ "profilePhoto" ] || null )
+      if ( needsCaching && user.photoURL ) {
+        const base64Photo = await cacheProfileImage ( user.photoURL )
+        if ( base64Photo ) {
+          await firestore.set ( { profilePhoto: base64Photo }, { merge: true } )
         }
-      } else {
-        await cacheProfileImage ( user.photoURL || "" )
       }
 
       await firestore.set ( {
         lastLogin: admin.firestore.FieldValue.serverTimestamp ( ),
-        sessionExpiry: admin.firestore.Timestamp.fromDate ( new Date ( Date.now ( ) + 7 * 24 * 60 * 60 * 1000 ) ) // 7 days
+        sessionExpiry: admin.firestore.Timestamp.fromDate ( new Date ( Date.now ( ) + 7 * 24 * 60 * 60 * 1000 ) )
       }, { merge: true } )
 
       return res.status ( 200 ).send ( { uid: user.uid, role } )
@@ -158,22 +163,20 @@ export const router: FastifyPluginAsync = async app => {
   } )
 
   app.get ( "/isAdmin", async ( req, res ) => {
-    const { uid } = req.query as { uid?: string }
-
-    if ( !uid ) {
-      return res.status ( 400 ).send ( { error: "Missing uid parameter" } )
+    const authHeader = req.headers.authorization
+    if ( !authHeader?.startsWith ( "Bearer " ) ) {
+      return res.status ( 401 ).send ( { error: "Unauthorized" } )
     }
 
     try {
+      const decodedToken = await admin.auth ( ).verifyIdToken ( authHeader.split ( "Bearer " ) [ 1 ] )
+      const uid = decodedToken.uid
       const user = await admin.auth ( ).getUser ( uid )
-      if ( !user ) {
-        return res.status ( 404 ).send ( { error: "User not found" } )
-      }
 
       const role = user.customClaims?. [ "role" ] || "viewer"
       const isAdmin = role === "admin" || role === "superadmin"
 
-      return res.status ( 200 ).send ( { uid: user.uid, isAdmin } )
+      return res.status ( 200 ).send ( { uid, isAdmin } )
     } catch ( error ) {
       console.error ( "Error fetching user data:", error )
       return res.status ( 500 ).send ( { error: "Internal server error" } )
@@ -181,8 +184,13 @@ export const router: FastifyPluginAsync = async app => {
   } )
 }
 
-const cacheProfileImage = async ( url: string ) => {
-  const res = await fetch ( url )
-  const buffer = await res.arrayBuffer ( )
-  return Buffer.from ( buffer ).toString ( "base64" )
+const cacheProfileImage = async ( url: string ): Promise<string | null> => {
+  try {
+    const res = await fetch ( url )
+    if ( !res.ok ) return null
+    const buffer = await res.arrayBuffer ( )
+    return Buffer.from ( buffer ).toString ( "base64" )
+  } catch {
+    return null
+  }
 }
