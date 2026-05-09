@@ -192,7 +192,7 @@ export class FileExplorerComponent {
       backdrop: "static",
       size: "md"
     } )
-    modalRef.componentInstance.fields = [
+    modalRef.setInput ( "fields", [
       this.formlySvc.SelectInput ( "expiry", {
         label: "Link Expiry",
         required: true,
@@ -205,11 +205,11 @@ export class FileExplorerComponent {
       }, {
         defaultValue: 86400
       } )
-    ]
-    modalRef.componentInstance.title = "Generate Shareable Link"
-    modalRef.componentInstance.body =`Select options for the shareable link to: <strong>${fileName}</strong>`
-    modalRef.componentInstance.confirmText = "Generate Link"
-    modalRef.componentInstance.cancelText = "Cancel"
+    ] )
+    modalRef.setInput ( "title", "Generate Shareable Link" )
+    modalRef.setInput ( "body", `Select options for the shareable link to: <strong>${fileName}</strong>` )
+    modalRef.setInput ( "confirmText", "Generate Link" )
+    modalRef.setInput ( "cancelText", "Cancel" )
     await modalRef.result.then ( async ( model: { expiry: number } ) => {
       this.loading.set ( true )
       try {
@@ -291,13 +291,13 @@ export class FileExplorerComponent {
             backdrop: "static",
             size: "md"
           } )
-          modalRef.componentInstance.title = "Overwrite Confirmation"
-          modalRef.componentInstance.body = `File "<strong>${f.name}</strong>" already exists. Do you want to overwrite it?`
-          modalRef.componentInstance.fields = [
+          modalRef.setInput ( "title", "Overwrite Confirmation" )
+          modalRef.setInput ( "body", `File "<strong>${f.name}</strong>" already exists. Do you want to overwrite it?` )
+          modalRef.setInput ( "fields", [
             this.formlySvc.CheckboxInput ( "overwriteAll", { label: "Apply to all files", required: false } )
-          ]
-          modalRef.componentInstance.confirmText = "Overwrite"
-          modalRef.componentInstance.cancelText = "Skip"
+          ] )
+          modalRef.setInput ( "confirmText", "Overwrite" )
+          modalRef.setInput ( "cancelText", "Skip" )
           let skipFile = false
           await modalRef.result.then ( ( model: { overwriteAll: boolean } ) => {
             if ( model.overwriteAll ) {
@@ -327,10 +327,10 @@ export class FileExplorerComponent {
       backdrop: "static",
       size: "md"
     } )
-    modalRef.componentInstance.type = type
-    modalRef.componentInstance.file = data
-    modalRef.componentInstance.userS3Path = this.userS3Path
-    modalRef.componentInstance.currentPath = this.currentPath ( )
+    modalRef.setInput ( "type", type )
+    modalRef.setInput ( "file", data )
+    modalRef.setInput ( "userS3Path", this.userS3Path )
+    modalRef.setInput ( "currentPath", this.currentPath ( ) )
 
     modalRef.result.then ( async result => {
       // Result is the model
@@ -455,10 +455,10 @@ export class FileExplorerComponent {
         backdrop: "static",
         size: "md"
       } )
-      modalRef.componentInstance.title = "Overwrite Confirmation"
-      modalRef.componentInstance.body = `File "<strong>${this.draggedFile.name}</strong>" already exists in the target folder. Do you want to overwrite it?`
-      modalRef.componentInstance.confirmText = "Overwrite"
-      modalRef.componentInstance.cancelText = "Cancel"
+      modalRef.setInput ( "title", "Overwrite Confirmation" )
+      modalRef.setInput ( "body", `File "<strong>${this.draggedFile.name}</strong>" already exists in the target folder. Do you want to overwrite it?` )
+      modalRef.setInput ( "confirmText", "Overwrite" )
+      modalRef.setInput ( "cancelText", "Cancel" )
       let skipMove = false
       await modalRef.result.then ( async ( ) => {
         // Confirmed
@@ -509,10 +509,10 @@ export class FileExplorerComponent {
         backdrop: "static",
         size: "md"
       } )
-      modalRef.componentInstance.title = "Overwrite Confirmation"
-      modalRef.componentInstance.body = `File "<strong>${this.draggedFile.name}</strong>" already exists in the target folder. Do you want to overwrite it?`
-      modalRef.componentInstance.confirmText = "Overwrite"
-      modalRef.componentInstance.cancelText = "Cancel"
+      modalRef.setInput ( "title", "Overwrite Confirmation" )
+      modalRef.setInput ( "body", `File "<strong>${this.draggedFile.name}</strong>" already exists in the target folder. Do you want to overwrite it?` )
+      modalRef.setInput ( "confirmText", "Overwrite" )
+      modalRef.setInput ( "cancelText", "Cancel" )
       let skipMove = false
       await modalRef.result.then ( async ( ) => {
         // Confirmed

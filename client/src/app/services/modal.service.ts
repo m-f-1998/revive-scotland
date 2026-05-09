@@ -30,6 +30,10 @@ export class ModalRef<T = unknown, R = unknown> {
     } )
   }
 
+  public setInput ( name: string, value: unknown ): void {
+    this.cdkRef.componentRef?.setInput ( name, value )
+  }
+
   public close ( result?: R ): void {
     this.cdkRef.close ( result )
   }

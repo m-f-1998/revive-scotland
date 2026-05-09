@@ -59,15 +59,14 @@ export class RepeatFieldComponent extends FieldType {
     const modalRef = this.modalSvc.open ( InputDialogComponent, {
       centered: true
     } )
-    modalRef.componentInstance.title = "Add New Item"
-    modalRef.componentInstance.fields = this.fieldsCanAdd || [ ]
+    modalRef.setInput ( "title", "Add New Item" )
+    modalRef.setInput ( "fields", this.fieldsCanAdd || [ ] )
     modalRef.result.then ( ( result: { label: string; type: string; placeholder?: string; required?: boolean } ) => {
       if ( result ) {
         this.addNewFieldToModel ( this.formControl?.value?.length || 0, result )
       }
     } ).catch ( ( ) => { } ).finally ( ( ) => {
       modalRef.componentInstance.form.reset ( )
-      modalRef.componentInstance.model = { }
     } )
   }
 
@@ -80,14 +79,14 @@ export class RepeatFieldComponent extends FieldType {
     const modalRef = this.modalSvc.open ( InputDialogComponent, {
       centered: true
     } )
-    modalRef.componentInstance.title = "Edit Item"
-    modalRef.componentInstance.fields = this.fieldsCanAdd || [ ]
-    modalRef.componentInstance.model = {
+    modalRef.setInput ( "title", "Edit Item" )
+    modalRef.setInput ( "fields", this.fieldsCanAdd || [ ] )
+    modalRef.setInput ( "model", {
       required: fieldToEdit?.props?.required || false,
       label: fieldToEdit?.props?.label || "",
       placeholder: fieldToEdit?.props?.placeholder || "",
       type: fieldToEdit?.props?.type || fieldToEdit?.type || ""
-    }
+    } )
     modalRef.result.then ( ( result: { label: string; type: string; placeholder?: string; required?: boolean } ) => {
       if ( result ) {
         this.addNewFieldToModel ( index, result )

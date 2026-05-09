@@ -45,7 +45,7 @@ export class EventEditorComponent implements OnInit {
 
   // Slider section state
   public sliderForms: WritableSignal<SlideFormEntry [ ]> = signal ( [ ] )
-  public sliderCollapsed: WritableSignal<boolean> = signal ( false )
+  public sliderCollapsed: WritableSignal<boolean> = signal ( true )
   public sliderDefault: WritableSignal<boolean> = signal ( false )
   public sliderDirty: WritableSignal<boolean> = signal ( false )
   public sliderSaving: WritableSignal<boolean> = signal ( false )
@@ -268,6 +268,7 @@ export class EventEditorComponent implements OnInit {
         },
         fields: [ ...this.getEventFields ( ) ]
       } ) ) )
+      events.events.forEach ( ( _, i ) => this.collapsedIndices.add ( i ) )
     } catch ( error ) {
       console.error ( "Error loading event data:", error )
     }

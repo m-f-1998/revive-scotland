@@ -61,11 +61,11 @@ export class EventsComponent implements OnInit {
     const modalRef = this.modalSvc.open ( InputDialogComponent, {
       centered: true
     } )
-    modalRef.componentInstance.title = `Contact Organiser for ${event.title}`
-    modalRef.componentInstance.body = `Please fill out the form below to get in touch with the organiser of "${event.title}".`
-    modalRef.componentInstance.confirmText = "Submit"
-    modalRef.componentInstance.recaptchaActive = true
-    modalRef.componentInstance.fields = event.contactFormFields || [ ]
+    modalRef.setInput ( "title", `Contact Organiser for ${event.title}` )
+    modalRef.setInput ( "body", `Please fill out the form below to get in touch with the organiser of "${event.title}".` )
+    modalRef.setInput ( "confirmText", "Submit" )
+    modalRef.setInput ( "recaptchaActive", true )
+    modalRef.setInput ( "fields", event.contactFormFields || [ ] )
     await modalRef.result.then ( async ( result: Record<string, unknown> ) => {
       if ( result ) {
         if ( !modalRef.componentInstance.captchaToken ) {

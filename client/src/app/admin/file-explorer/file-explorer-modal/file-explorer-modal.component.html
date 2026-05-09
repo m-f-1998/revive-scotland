@@ -1,39 +1,39 @@
 <div class="modal-header">
   <h5 class="modal-title">
-    @if (type === "delete") {
+    @if (type() === "delete") {
       Delete Confirmation
-    } @else if (type === "rename") {
+    } @else if (type() === "rename") {
       Rename
-    } @else if (type === "createFolder") {
+    } @else if (type() === "createFolder") {
       Create New Folder
     }
   </h5>
   <button type="button" class="btn-close" (click)="dismiss()"></button>
 </div>
 <div class="modal-body">
-  @if (type === "delete") {
+  @if (type() === "delete") {
     <p class="text-sm text-gray-700 dark:text-gray-200">
-      Are you sure you want to delete <span class="font-bold text-red-600 dark:text-red-400">{{ name }}</span>?
+      Are you sure you want to delete <span class="font-bold text-red-600 dark:text-red-400">{{ name() }}</span>?
       This action is permanent and cannot be undone.
-      @if (isFolder) {
+      @if (isFolder()) {
         <span class="block mt-1 text-gray-500 dark:text-gray-400">Note: This will recursively delete all contents of this folder.</span>
       }
     </p>
-  } @else if (type === "rename") {
+  } @else if (type() === "rename") {
     <formly-form [form]="form" [fields]="fields" [model]="model" />
-  } @else if (type === "createFolder") {
+  } @else if (type() === "createFolder") {
     <formly-form [form]="form" [fields]="fields" [model]="model" />
   }
 </div>
 <div class="modal-footer">
-  <button [class]="completeClass" (click)="completeAction()" [disabled]="type !== 'delete' && form.invalid">
-    @if (type === "delete") {
+  <button [class]="completeClass" (click)="completeAction()" [disabled]="type() !== 'delete' && form.invalid">
+    @if (type() === "delete") {
       <app-icon icon="trash" />
       Delete Permanently
-    } @else if (type === "rename") {
+    } @else if (type() === "rename") {
       <app-icon icon="edit" />
       Confirm
-    } @else if (type === "createFolder") {
+    } @else if (type() === "createFolder") {
       <app-icon icon="folder-plus" />
       Create
     }

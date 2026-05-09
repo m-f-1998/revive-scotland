@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, Input } from "@angular/core"
+import { ChangeDetectionStrategy, Component, inject, input } from "@angular/core"
 import { DialogRef } from "@angular/cdk/dialog"
 
 @Component ( {
@@ -7,7 +7,7 @@ import { DialogRef } from "@angular/cdk/dialog"
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class VideoModalComponent {
-  @Input ( ) public videoUrl: string = ""
+  public videoUrl = input<string> ( "" )
 
   private readonly dialogRef: DialogRef = inject ( DialogRef )
 

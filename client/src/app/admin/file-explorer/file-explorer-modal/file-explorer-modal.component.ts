@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, Input, OnInit } from "@angular/core"
+import { ChangeDetectionStrategy, Component, inject, input, OnInit } from "@angular/core"
 import { AbstractControl, FormGroup } from "@angular/forms"
 import { DialogRef } from "@angular/cdk/dialog"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
@@ -16,12 +16,12 @@ import { FormlyService } from "@revive/src/app/services/formly.service"
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class FileExplorerModalComponent implements OnInit {
-  @Input ( ) public type: "delete" | "rename" | "createFolder" = "createFolder"
-  @Input ( ) public name: string = ""
-  @Input ( ) public isFolder: boolean = false
-  @Input ( { required: true } ) public file: FileEntry
-  @Input ( { required: true } ) public userS3Path: string
-  @Input ( { required: true } ) public currentPath: string
+  public type = input<"delete" | "rename" | "createFolder"> ( "createFolder" )
+  public name = input<string> ( "" )
+  public isFolder = input<boolean> ( false )
+  public file = input.required<FileEntry> ( )
+  public userS3Path = input.required<string> ( )
+  public currentPath = input.required<string> ( )
 
   public form: FormGroup = new FormGroup ( { } )
   public fields: FormlyFieldConfig [ ] = [ ]
@@ -31,7 +31,7 @@ export class FileExplorerModalComponent implements OnInit {
   private readonly formlySvc: FormlyService = inject ( FormlyService )
 
   public get completeClass ( ): string {
-    switch ( this.type ) {
+    switch ( this.type ( ) ) {
       case "delete":
         return "btn btn-danger"
       case "rename":
@@ -42,17 +42,17 @@ export class FileExplorerModalComponent implements OnInit {
   }
 
   public ngOnInit ( ): void {
-    if ( this.type === "rename" ) {
-      let defaultValue = this.file.name
-      if ( !this.isFolder ) {
-        const lastDotIndex = this.file.name.lastIndexOf ( "." )
+    if ( this.type ( ) === "rename" ) {
+      let defaultValue = this.file ( ).name
+      if ( !this.isFolder ( ) ) {
+        const lastDotIndex = this.file ( ).name.lastIndexOf ( "." )
         if ( lastDotIndex > 0 ) {
-          defaultValue = this.file.name.slice ( 0, lastDotIndex )
+          defaultValue = this.file ( ).name.slice ( 0, lastDotIndex )
         }
       }
       this.fields = [
         this.formlySvc.TextInput ( "rename", {
-          label: "New Name for " + ( this.isFolder ? "Folder" : "File" ),
+          label: "New Name for " + ( this.isFolder ( ) ? "Folder" : "File" ),
           placeholder: "e.g., new-name.txt"
         }, {
           defaultValue,
@@ -68,11 +68,11 @@ export class FileExplorerModalComponent implements OnInit {
           }
         } )
       ]
-    } else if ( this.type === "createFolder" ) {
+    } else if ( this.type ( ) === "createFolder" ) {
       this.fields = [
         this.formlySvc.TextInput ( "folderName", {
           label: "Folder Name",
-          description: this.currentPath,
+          description: this.currentPath ( ),
           placeholder: "e.g., new-project/",
         }, {
           validators: {
@@ -91,12 +91,12 @@ export class FileExplorerModalComponent implements OnInit {
   }
 
   public completeAction ( ): void {
-    if ( this.type === "delete" ) {
+    if ( this.type ( ) === "delete" ) {
       this.deleteFileOrFolder ( )
-    } else if ( this.type === "rename" ) {
-      this.renameFileOrFolder ( ) // Replace "" with actual new name input
-    } else if ( this.type === "createFolder" ) {
-      this.createFolder ( ) // Replace "" with actual folder name input
+    } else if ( this.type ( ) === "rename" ) {
+      this.renameFileOrFolder ( )
+    } else if ( this.type ( ) === "createFolder" ) {
+      this.createFolder ( )
     }
   }
 

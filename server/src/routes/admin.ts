@@ -1,5 +1,6 @@
 import { router as analyticsRouter } from "./admin/analytics.js"
 import { router as fileExplorerRouter } from "./admin/fileExplorer.js"
+import { router as galleryAdminRouter } from "./admin/gallery.js"
 import { router as heroEditorRouter } from "./admin/heroEditor.js"
 import { router as eventsRouter } from "./admin/events.js"
 import { router as contactDetailsRouter } from "./admin/contactDetails.js"
@@ -31,6 +32,7 @@ export const incrementValue = ( value: number ): admin.firestore.FieldValue => {
 export const router: FastifyPluginAsync = async app => {
   app.register ( analyticsRouter, { prefix: "/analytics" } )
   app.register ( fileExplorerRouter, { prefix: "/file-explorer" } )
+  app.register ( galleryAdminRouter, { prefix: "/gallery" } )
   app.register ( heroEditorRouter, { prefix: "/hero-editor" } )
   app.register ( eventsRouter, { prefix: "/events" } )
   app.register ( contactDetailsRouter, { prefix: "/contact-details" } )

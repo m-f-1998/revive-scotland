@@ -10,6 +10,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import { randomUUID } from "crypto"
 
 import { addUserPath, checkFirebaseAuth, validateS3Key } from "./middleware/fileExplorer.js"
+import { onFilesDeleted, onFileRenamed, onFolderRenamed } from "./mediaReferences.js"
 import { getFirestore, incrementValue } from "../admin.js"
 import { FastifyPluginAsync } from "fastify"
 
@@ -247,6 +248,10 @@ export const router: FastifyPluginAsync = async app => {
         const deletePromises = files.map ( file =>
           s3Client.send ( new DeleteObjectCommand ( { Bucket: R2_BUCKET_NAME, Key: file.key } ) )
         )
+
+        // Cascade: remove media references BEFORE deleting share links
+        await onFilesDeleted ( files.map ( f => f.key ) )
+
         await Promise.all ( deletePromises )
       } else {
         try {
@@ -274,6 +279,10 @@ export const router: FastifyPluginAsync = async app => {
 
         const db = getFirestore ( )
         const querySnapshot = await db.collection ( "shared_links" ).where ( "key", "==", key ).get ( )
+
+        // Cascade: remove media references BEFORE deleting share links
+        await onFilesDeleted ( [ key ] )
+
         const batch = db.batch ( )
         querySnapshot.forEach ( doc => {
           batch.delete ( doc.ref )
@@ -349,6 +358,8 @@ export const router: FastifyPluginAsync = async app => {
         } )
         // Execute ALL Copy and Delete operations concurrently
         await Promise.all ( operationPromises )
+        // Cascade: update share link keys for all renamed files
+        await onFolderRenamed ( oldKey, newKey )
       } else {
         // 1. Copy the object
         const copyCommand = new CopyObjectCommand ( {
@@ -364,6 +375,8 @@ export const router: FastifyPluginAsync = async app => {
           Key: oldKey,
         } )
         await s3Client.send ( deleteCommand )
+        // Cascade: update share link key so existing URLs remain valid
+        await onFileRenamed ( oldKey, newKey )
       }
 
       return rep.status ( 200 ).send ( { message: "Rename/Move successful." } )

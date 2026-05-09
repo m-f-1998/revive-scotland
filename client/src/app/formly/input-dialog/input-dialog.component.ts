@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input, OnDestroy, OnInit, inject } from "@angular/core"
+import { ChangeDetectionStrategy, Component, inject, input, OnDestroy, OnInit } from "@angular/core"
 import { FormGroup } from "@angular/forms"
 import { DialogRef } from "@angular/cdk/dialog"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
@@ -18,13 +18,13 @@ import { IconComponent } from "../../icon/icon.component"
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class InputDialogComponent<T extends Record<string, unknown> = Record<string, unknown>> implements OnInit, OnDestroy {
-  @Input ( ) public body = ""
-  @Input ( ) public title = ""
-  @Input ( ) public confirmText = "Confirm"
-  @Input ( ) public cancelText = "Cancel"
-  @Input ( ) public fields: FormlyFieldConfig [ ] = [ ]
-  @Input ( ) public model: T = { } as T
-  @Input ( ) public recaptchaActive = false
+  public body = input ( "" )
+  public title = input ( "" )
+  public confirmText = input ( "Confirm" )
+  public cancelText = input ( "Cancel" )
+  public fields = input<FormlyFieldConfig [ ]> ( [ ] )
+  public model = input<T> ( { } as T )
+  public recaptchaActive = input ( false )
 
   public captchaToken: string | null = null
 
@@ -38,7 +38,7 @@ export class InputDialogComponent<T extends Record<string, unknown> = Record<str
   private subscription: Subscription | null = null
 
   public ngOnInit ( ) {
-    if ( this.recaptchaActive ) {
+    if ( this.recaptchaActive ( ) ) {
       this.subscription = this.recaptchaSvc.execute ( "contactForm" ).subscribe ( {
         next: ( token: string ) => {
           this.captchaToken = token
@@ -65,6 +65,6 @@ export class InputDialogComponent<T extends Record<string, unknown> = Record<str
     if ( this.form.invalid ) {
       return
     }
-    this.dialogRef.close ( this.model )
+    this.dialogRef.close ( this.model ( ) )
   }
 }

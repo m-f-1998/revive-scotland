@@ -24,8 +24,8 @@ export class ImageSliderComponent {
 
   public expandImage ( index: number ) {
     const reference = this.modalSvc.open ( ExpandedImageComponent, { size: "lg", centered: true } )
-    reference.componentInstance.imageURLs = this.imageURLs ( )
-    reference.componentInstance.index = index
+    reference.setInput ( "imageURLs", this.imageURLs ( ) )
+    reference.setInput ( "index", index )
   }
 
   public goToGallery ( ) {

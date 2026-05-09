@@ -1,5 +1,5 @@
 
-import { ChangeDetectionStrategy, Component, inject, Input } from "@angular/core"
+import { ChangeDetectionStrategy, Component, effect, inject, input, signal, WritableSignal } from "@angular/core"
 import { DialogRef } from "@angular/cdk/dialog"
 import { IconComponent } from "@revive/src/app/icon/icon.component"
 
@@ -16,24 +16,36 @@ import { IconComponent } from "@revive/src/app/icon/icon.component"
   }
 } )
 export class ExpandedImageComponent {
-  @Input ( ) public imageURLs: string [ ] = [ ]
-  @Input ( ) public index: number = 0
+  public imageURLs = input<string [ ]> ( [ ] )
+  public index = input<number> ( 0 )
+
+  public currentIndex: WritableSignal<number> = signal ( 0 )
 
   private readonly dialogRef: DialogRef = inject ( DialogRef )
+
+  public constructor ( ) {
+    effect ( ( ) => { this.currentIndex.set ( this.index ( ) ) } )
+  }
+
+  public imgSrc ( url: string, w: number ): string {
+    if ( url.startsWith ( "/" ) || url.startsWith ( "http" ) ) return url
+    return `/api/img/${url}?w=${w}&f=webp`
+  }
+
+  public imgSrcset ( url: string ): string | null {
+    if ( url.startsWith ( "/" ) || url.startsWith ( "http" ) ) return null
+    return `/api/img/${url}?w=320&f=webp 320w, /api/img/${url}?w=640&f=webp 640w, /api/img/${url}?w=1024&f=webp 1024w`
+  }
 
   public close ( ) {
     this.dialogRef.close ( )
   }
 
   public nextImage ( ) {
-    if ( this.index === this.imageURLs.length - 1 ) {
-      this.index = 0
-    } else this.index++
+    this.currentIndex.update ( i => i === this.imageURLs ( ).length - 1 ? 0 : i + 1 )
   }
 
   public prevImage ( ) {
-    if ( this.index === 0 ) {
-      this.index = this.imageURLs.length - 1
-    } else this.index--
+    this.currentIndex.update ( i => i === 0 ? this.imageURLs ( ).length - 1 : i - 1 )
   }
 }

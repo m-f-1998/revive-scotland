@@ -41,9 +41,11 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
     return urls.map ( url => {
       const ext = url.split ( "." ).pop ( )?.toLowerCase ( )
       if ( ext === "mp4" ) return { url, type: "video" as const }
-      const lqip = `/api/img/${url}?w=40&f=webp&q=20`
-      const src = `/api/img/${url}?w=800&f=webp`
-      const srcset = `/api/img/${url}?w=400&f=webp 400w, /api/img/${url}?w=800&f=webp 800w, /api/img/${url}?w=1200&f=webp 1200w`
+      // R2 share URLs (/api/public/s/...) are served directly — skip the image proxy
+      const isShareUrl = url.startsWith ( "/" ) || url.startsWith ( "http" )
+      const lqip = isShareUrl ? url : `/api/img/${url}?w=40&f=webp&q=20`
+      const src = isShareUrl ? url : `/api/img/${url}?w=800&f=webp`
+      const srcset = isShareUrl ? undefined : `/api/img/${url}?w=400&f=webp 400w, /api/img/${url}?w=800&f=webp 800w, /api/img/${url}?w=1200&f=webp 1200w`
       const sizes = `(max-width:600px) 100vw, 33vw`
       return { url, type: "image" as const, lqip, src, srcset, sizes }
     } )
@@ -82,13 +84,13 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
   public openImage ( index: number ) {
     const images = this.filtered ( ).filter ( m => m.type === "image" ).map ( m => m.url )
     const reference = this.modalSvc.open ( ExpandedImageComponent, { size: "lg", centered: true } )
-    reference.componentInstance.imageURLs = images
-    reference.componentInstance.index = index
+    reference.setInput ( "imageURLs", images )
+    reference.setInput ( "index", index )
   }
 
   public openVideo ( url: string ) {
     const ref = this.modalSvc.open ( VideoModalComponent, { size: "lg", centered: true } )
-    ref.componentInstance.videoUrl = url
+    ref.setInput ( "videoUrl", url )
   }
 
   public setFilter ( f: string ) {
@@ -132,8 +134,11 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
       if ( !dataSrc ) {
         const url = img.getAttribute ( "data-url" )
         if ( url ) {
-          this.renderer.setAttribute ( img, "data-src", `/api/img/${url}?w=800&f=webp` )
-          this.renderer.setAttribute ( img, "data-srcset", `/api/img/${url}?w=400&f=webp 400w, /api/img/${url}?w=800&f=webp 800w, /api/img/${url}?w=1200&f=webp 1200w` )
+          const isShareUrl = url.startsWith ( "/" ) || url.startsWith ( "http" )
+          this.renderer.setAttribute ( img, "data-src", isShareUrl ? url : `/api/img/${url}?w=800&f=webp` )
+          if ( !isShareUrl ) {
+            this.renderer.setAttribute ( img, "data-srcset", `/api/img/${url}?w=400&f=webp 400w, /api/img/${url}?w=800&f=webp 800w, /api/img/${url}?w=1200&f=webp 1200w` )
+          }
         }
       }
       this.io!.observe ( img )

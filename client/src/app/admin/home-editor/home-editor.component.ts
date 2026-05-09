@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSig
 import { AdminNavbarComponent } from "../navbar/navbar.component"
 import { AdminFooterComponent } from "../footer/footer.component"
 import { IconComponent } from "../../icon/icon.component"
+import { IconPickerComponent } from "../icon-picker/icon-picker.component"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
 import { FormGroup } from "@angular/forms"
 import { FormsModule } from "@angular/forms"
@@ -88,13 +89,19 @@ const DEFAULT_SLIDES: SlideModel [ ] = [
 
 @Component ( {
   selector: "app-admin-home-editor",
-  imports: [ AdminNavbarComponent, AdminFooterComponent, IconComponent, FormlyForm, FormsModule ],
+  imports: [ AdminNavbarComponent, AdminFooterComponent, IconComponent, IconPickerComponent, FormlyForm, FormsModule ],
   templateUrl: "./home-editor.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class HomeEditorComponent implements OnInit {
-  // Section collapse state
-  public collapsed: WritableSignal<Record<string, boolean>> = signal ( { } )
+  // Section collapse state — all start closed
+  public collapsed: WritableSignal<Record<string, boolean>> = signal ( {
+    slider: true,
+    weekends: true,
+    pilgrimage: true,
+    adoration: true,
+    about: true
+  } )
 
   // Loading per section
   public saving: WritableSignal<Record<string, boolean>> = signal ( { } )

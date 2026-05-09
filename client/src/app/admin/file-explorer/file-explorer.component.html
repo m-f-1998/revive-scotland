@@ -58,7 +58,6 @@
       <div class="flex flex-wrap gap-2 justify-end">
         <input type="file" #fileInput (change)="onFileSelected($event);" multiple class="hidden">
 
-        <!-- Upload dropdown -->
         <div class="relative">
           <button type="button" class="btn-primary btn-sm" (click)="uploadDropdownOpen.set(!uploadDropdownOpen())" [disabled]="loading()">
             <app-icon icon="cloud-upload-alt" />
