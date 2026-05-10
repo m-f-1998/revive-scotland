@@ -20,6 +20,19 @@ import { router as galleryRouter } from "./routes/gallery.js"
 
 import { randomBytes } from "crypto"
 
+const REQUIRED_ENV_VARS = [
+  "SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "SMTP_DESTINATION",
+  "RECAPTCHA_API_KEY", "RECAPTCHA_SITE",
+  "R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME",
+  "SUPERADMIN_EMAIL"
+]
+
+const missingVars = REQUIRED_ENV_VARS.filter ( v => !process.env [ v ] )
+if ( missingVars.length > 0 ) {
+  console.error ( `Missing required environment variables: ${missingVars.join ( ", " )}` )
+  if ( !isDevMode ( ) ) process.exit ( 1 )
+}
+
 const app = Fastify ( {
   logger: false,
   // logger: {

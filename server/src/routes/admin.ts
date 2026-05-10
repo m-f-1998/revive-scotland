@@ -36,6 +36,14 @@ export const incrementValue = ( value: number ): admin.firestore.FieldValue => {
   return admin.firestore.FieldValue.increment ( value )
 }
 
+const isFirebaseAuthError = ( error: unknown ): boolean => {
+  if ( error instanceof Error ) {
+    const code = ( error as { errorInfo?: { code?: string } } ).errorInfo?.code ?? ""
+    return code.startsWith ( "auth/" )
+  }
+  return false
+}
+
 export const router: FastifyPluginAsync = async app => {
   app.register ( analyticsRouter, { prefix: "/analytics" } )
   app.register ( fileExplorerRouter, { prefix: "/file-explorer" } )
@@ -72,6 +80,9 @@ export const router: FastifyPluginAsync = async app => {
 
       return res.status ( 200 ).send ( { message: "User logged out successfully" } )
     } catch ( error ) {
+      if ( isFirebaseAuthError ( error ) ) {
+        return res.status ( 401 ).send ( { error: "Unauthorized" } )
+      }
       console.error ( "Error logging out user:", error )
       return res.status ( 500 ).send ( { error: "Internal server error" } )
     }
@@ -113,6 +124,9 @@ export const router: FastifyPluginAsync = async app => {
 
       return res.status ( 200 ).send ( user )
     } catch ( error ) {
+      if ( isFirebaseAuthError ( error ) ) {
+        return res.status ( 401 ).send ( { error: "Unauthorized" } )
+      }
       console.error ( "Error verifying user session:", error )
       return res.status ( 500 ).send ( { error: "Internal server error" } )
     }
@@ -157,6 +171,9 @@ export const router: FastifyPluginAsync = async app => {
 
       return res.status ( 200 ).send ( { uid: user.uid, role } )
     } catch ( error ) {
+      if ( isFirebaseAuthError ( error ) ) {
+        return res.status ( 401 ).send ( { error: "Unauthorized" } )
+      }
       console.error ( "Error fetching user data:", error )
       return res.status ( 500 ).send ( { error: "Internal server error" } )
     }
@@ -178,6 +195,9 @@ export const router: FastifyPluginAsync = async app => {
 
       return res.status ( 200 ).send ( { uid, isAdmin } )
     } catch ( error ) {
+      if ( isFirebaseAuthError ( error ) ) {
+        return res.status ( 401 ).send ( { error: "Unauthorized" } )
+      }
       console.error ( "Error fetching user data:", error )
       return res.status ( 500 ).send ( { error: "Internal server error" } )
     }

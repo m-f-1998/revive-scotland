@@ -335,14 +335,14 @@ export const router: FastifyPluginAsync = async app => {
           Key: file.key.replace ( oldKey, newKey ),
         } ) ) ) )
 
-        // 3. Only delete originals after all copies have succeeded
+        // 3. Update share links before deleting originals so active URLs remain valid
+        await onFolderRenamed ( oldKey, newKey )
+
+        // 4. Only delete originals after share links are updated
         await Promise.all ( files.map ( file => s3Client.send ( new DeleteObjectCommand ( {
           Bucket: R2_BUCKET_NAME,
           Key: file.key,
         } ) ) ) )
-
-        // Cascade: update share link keys for all renamed files
-        await onFolderRenamed ( oldKey, newKey )
       } else {
         // 1. Copy the object
         const copyCommand = new CopyObjectCommand ( {
@@ -352,14 +352,15 @@ export const router: FastifyPluginAsync = async app => {
         } )
         await s3Client.send ( copyCommand )
 
-        // 2. Delete the old object
+        // 2. Update share link key before deleting so existing URLs remain valid
+        await onFileRenamed ( oldKey, newKey )
+
+        // 3. Delete the old object
         const deleteCommand = new DeleteObjectCommand ( {
           Bucket: R2_BUCKET_NAME,
           Key: oldKey,
         } )
         await s3Client.send ( deleteCommand )
-        // Cascade: update share link key so existing URLs remain valid
-        await onFileRenamed ( oldKey, newKey )
       }
 
       return rep.status ( 200 ).send ( { message: "Rename/Move successful." } )
@@ -467,8 +468,14 @@ export const router: FastifyPluginAsync = async app => {
     const userRef = getFirestore ( ).collection ( "users" ).doc ( req.user!.uid )
 
     try {
-      const sizeToAdd = typeof fileSize === "number" && fileSize > 0 ? fileSize : 0
-      await userRef.set ( { storageUsed: incrementValue ( sizeToAdd ) }, { merge: true } )
+      const headResult = await s3Client.send ( new HeadObjectCommand ( { Bucket: R2_BUCKET_NAME, Key: key } ) )
+      const actualSize = headResult.ContentLength ?? 0
+
+      if ( typeof fileSize === "number" && fileSize > 0 && Math.abs ( actualSize - fileSize ) > 1024 ) {
+        return rep.status ( 400 ).send ( "File size mismatch." )
+      }
+
+      await userRef.set ( { storageUsed: incrementValue ( actualSize ) }, { merge: true } )
 
       return rep.status ( 200 ).send ( { message: "Quota updated." } )
     } catch ( error ) {

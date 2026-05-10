@@ -5,11 +5,11 @@
 
 <div class="modal-body">
   @if (body()) {
-    <p class="text-sm text-gray-600 mb-4" [innerHTML]="body()"></p>
+    <p class="text-sm text-gray-600 mb-4">{{body()}}</p>
   }
   <formly-form [form]="this.form" [model]="this.model()" [fields]="this.fields()" />
   @if (description) {
-    <p class="text-sm text-gray-500 mt-2" [innerHTML]="description"></p>
+    <p class="text-sm text-gray-500 mt-2">{{description}}</p>
   }
 </div>
 

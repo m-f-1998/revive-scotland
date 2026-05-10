@@ -17,7 +17,13 @@ export const router: FastifyPluginAsync = async app => {
   app.get ( "*", async ( req, rep ) => {
     // eslint-disable-next-line @typescript-eslint/naming-convention
     const asset = req.params as { "*": string }
-    const address = resolve ( clientFolder, asset [ "*" ] )
+    const rawPath = asset [ "*" ]
+
+    if ( rawPath.includes ( ".." ) ) {
+      return rep.status ( 400 ).send ( "Bad Request" )
+    }
+
+    const address = resolve ( clientFolder, rawPath )
 
     if ( !address.startsWith ( clientFolder ) ) {
       return rep.status ( 400 ).send ( "Bad Request" )
