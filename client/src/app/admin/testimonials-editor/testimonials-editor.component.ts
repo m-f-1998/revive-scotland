@@ -61,13 +61,13 @@ export class TestimonialsEditorComponent implements OnInit {
 
   public addItem ( ): void {
     this.isUsingDefaults.set ( false )
-    this.items.update ( items => [ ...items, { name: "Event Name - Year", testimony: "Enter testimony here..." } ] )
+    this.items.update ( items => [ ...items, { name: "", testimony: "" } ] )
     this.expandedIndex.set ( this.items ( ).length - 1 )
   }
 
   public restoreDefaults ( ): void {
     this.items.set ( [ ...DEFAULT_TESTIMONIALS ] )
-    this.isUsingDefaults.set ( true )
+    this.isUsingDefaults.set ( false )
     this.expandedIndex.set ( null )
   }
 
