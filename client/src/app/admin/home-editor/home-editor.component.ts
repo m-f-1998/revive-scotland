@@ -269,32 +269,32 @@ export class HomeEditorComponent implements OnInit {
   // Restore defaults
   public restoreWeekends ( ): void {
     this.weekendsModel.set ( { ...DEFAULT_WEEKENDS } )
-    this.weekendsForm.markAsPristine ( )
+    this.weekendsForm.markAsDirty ( )
     this.defaultSections.update ( s => ( { ...s, weekends: true } ) )
   }
 
   public restorePilgrimage ( ): void {
     this.pilgrimageModel.set ( { ...DEFAULT_PILGRIMAGE } )
-    this.pilgrimageForm.markAsPristine ( )
+    this.pilgrimageForm.markAsDirty ( )
     this.defaultSections.update ( s => ( { ...s, pilgrimage: true } ) )
   }
 
   public restoreAdoration ( ): void {
     this.adorationModel.set ( { ...DEFAULT_ADORATION } )
-    this.adorationForm.markAsPristine ( )
+    this.adorationForm.markAsDirty ( )
     this.defaultSections.update ( s => ( { ...s, adoration: true } ) )
   }
 
   public restoreAboutCards ( ): void {
     this.aboutCards.set ( DEFAULT_ABOUT_CARDS.map ( c => ( { ...c } ) ) )
     this.defaultSections.update ( s => ( { ...s, about: true } ) )
-    this.dirtyManual.update ( s => ( { ...s, about: false } ) )
+    this.dirtyManual.update ( s => ( { ...s, about: true } ) )
   }
 
   public restoreSlides ( ): void {
     this.slidesForms.set ( this.buildSlideForms ( DEFAULT_SLIDES ) )
     this.defaultSections.update ( s => ( { ...s, slider: true } ) )
-    this.dirtyManual.update ( s => ( { ...s, slider: false } ) )
+    this.dirtyManual.update ( s => ( { ...s, slider: true } ) )
   }
 
   // About Us helpers

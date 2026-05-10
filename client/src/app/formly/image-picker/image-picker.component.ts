@@ -42,7 +42,7 @@ export class ImagePickerComponent extends FieldType implements OnInit {
   }
 
   public openFileSelector ( ): void {
-    const modalRef = this.modalSvc.open ( FileExplorerComponent, { size: "xl", centered: true } )
+    const modalRef = this.modalSvc.open ( FileExplorerComponent, { size: "lg", centered: true } )
 
     modalRef.componentInstance.isSelectionMode = true
 

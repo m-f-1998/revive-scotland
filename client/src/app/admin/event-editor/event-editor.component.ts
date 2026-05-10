@@ -21,8 +21,14 @@ const DEFAULT_EVENTS_HEROES = [
   {
     id: "hero-1",
     title: "Upcoming Events",
-    description: "Join us for our next Revive event — a time of faith, fellowship and renewal.",
-    url: "gallery/kinloss/kinloss-1.jpg"
+    description: "Revive Scotland",
+    url: "gallery/skye/skye-1.jpg"
+  },
+  {
+    id: "hero-2",
+    title: "Upcoming Events",
+    description: "Revive Scotland",
+    url: "gallery/skye/skye-3.jpg"
   }
 ]
 
@@ -43,12 +49,14 @@ export class EventEditorComponent implements OnInit {
   public eventData: WritableSignal<{ events: Event[] }> = signal ( { events: [ ] } )
   public collapsedIndices: Set<number> = new Set ( )
 
+  // Section collapse state — all start closed
+  public collapsed: WritableSignal<Record<string, boolean>> = signal ( { slider: true } )
+  public saving: WritableSignal<Record<string, boolean>> = signal ( { } )
+  public defaultSections: WritableSignal<Record<string, boolean>> = signal ( { } )
+  public dirtyManual: WritableSignal<Record<string, boolean>> = signal ( { } )
+
   // Slider section state
   public sliderForms: WritableSignal<SlideFormEntry [ ]> = signal ( [ ] )
-  public sliderCollapsed: WritableSignal<boolean> = signal ( true )
-  public sliderDefault: WritableSignal<boolean> = signal ( false )
-  public sliderDirty: WritableSignal<boolean> = signal ( false )
-  public sliderSaving: WritableSignal<boolean> = signal ( false )
 
   private readonly apiSvc: ApiService = inject ( ApiService )
   private readonly formlySvc: FormlyService = inject ( FormlyService )
@@ -60,6 +68,23 @@ export class EventEditorComponent implements OnInit {
       this.loadEventData ( ),
       this.loadSlider ( )
     ] ).finally ( ( ) => this.loading.set ( false ) )
+  }
+
+  public isDefault ( key: string ): boolean {
+    return this.defaultSections ( ) [ key ] === true
+  }
+
+  public isSaveDisabled ( key: string ): boolean {
+    if ( !this.isDefault ( key ) ) return false
+    return !this.dirtyManual ( ) [ key ]
+  }
+
+  public isSaving ( key: string ): boolean {
+    return !!this.saving ( ) [ key ]
+  }
+
+  public toggleSection ( key: string ): void {
+    this.collapsed.update ( c => ( { ...c, [ key ]: !c [ key ] } ) )
   }
 
   public toggleCollapsed ( index: number ): void {
@@ -169,7 +194,7 @@ export class EventEditorComponent implements OnInit {
       this.toastrSvc.error ( "Maximum 3 slides allowed." )
       return
     }
-    this.sliderDirty.set ( true )
+    this.dirtyManual.update ( s => ( { ...s, slider: true } ) )
     this.sliderForms.update ( forms => [ ...forms, {
       form: new FormGroup ( { } ),
       model: signal<Record<string, unknown>> ( {
@@ -183,24 +208,22 @@ export class EventEditorComponent implements OnInit {
   }
 
   public removeSliderHero ( index: number ): void {
-    this.sliderDirty.set ( true )
+    this.dirtyManual.update ( s => ( { ...s, slider: true } ) )
     this.sliderForms.update ( forms => forms.filter ( ( _, i ) => i !== index ) )
   }
 
   public onSliderHeroChange ( _index: number, entry: SlideFormEntry, value: Record<string, unknown> ): void {
     entry.model.set ( value )
-    this.sliderDirty.set ( true )
+    this.dirtyManual.update ( s => ( { ...s, slider: true } ) )
+    if ( this.isDefault ( "slider" ) ) {
+      this.defaultSections.update ( s => ( { ...s, slider: false } ) )
+    }
   }
 
   public restoreSlider ( ): void {
     this.sliderForms.set ( this.buildSliderForms ( DEFAULT_EVENTS_HEROES ) )
-    this.sliderDefault.set ( true )
-    this.sliderDirty.set ( false )
-  }
-
-  public isSliderSaveDisabled ( ): boolean {
-    if ( !this.sliderDefault ( ) ) return false
-    return !this.sliderDirty ( )
+    this.defaultSections.update ( s => ( { ...s, slider: true } ) )
+    this.dirtyManual.update ( s => ( { ...s, slider: true } ) )
   }
 
   public async saveSlider ( ): Promise<void> {
@@ -208,19 +231,19 @@ export class EventEditorComponent implements OnInit {
       this.toastrSvc.error ( "Please ensure all slides have an image." )
       return
     }
-    this.sliderSaving.set ( true )
+    this.saving.update ( s => ( { ...s, slider: true } ) )
     try {
       const heroes = this.sliderForms ( ).map ( sf => sf.model ( ) )
       await this.apiSvc.post ( "/api/admin/hero-editor/events", { heroes }, new HttpHeaders ( {
         "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || ""}`
       } ) )
       this.toastrSvc.success ( "Saved successfully!" )
-      this.sliderDefault.set ( false )
-      this.sliderDirty.set ( false )
+      this.defaultSections.update ( s => ( { ...s, slider: false } ) )
+      this.dirtyManual.update ( s => ( { ...s, slider: false } ) )
     } catch {
       this.toastrSvc.error ( "Failed to save. Please try again." )
     } finally {
-      this.sliderSaving.set ( false )
+      this.saving.update ( s => ( { ...s, slider: false } ) )
     }
   }
 
@@ -231,11 +254,11 @@ export class EventEditorComponent implements OnInit {
         this.sliderForms.set ( this.buildSliderForms ( res.heroes ) )
       } else {
         this.sliderForms.set ( this.buildSliderForms ( DEFAULT_EVENTS_HEROES ) )
-        this.sliderDefault.set ( true )
+        this.defaultSections.update ( s => ( { ...s, slider: true } ) )
       }
     } catch {
       this.sliderForms.set ( this.buildSliderForms ( DEFAULT_EVENTS_HEROES ) )
-      this.sliderDefault.set ( true )
+      this.defaultSections.update ( s => ( { ...s, slider: true } ) )
     }
   }
 

@@ -16,15 +16,15 @@
   } @else {
 
     <div class="card mb-4 shadow-sm">
-      <div class="card-header flex items-center justify-between cursor-pointer" (click)="sliderCollapsed.update(v => !v)">
+      <div class="card-header flex items-center justify-between cursor-pointer" (click)="toggleSection('slider')">
         <h5 class="mb-0 font-semibold flex items-center gap-2">
           <app-icon icon="image" /> Page Slider
         </h5>
-        <span class="inline-block transition-transform duration-200" [class.rotate-180]="!sliderCollapsed()"><app-icon icon="chevron-down" /></span>
+        <span class="inline-block transition-transform duration-200" [class.rotate-180]="!collapsed()['slider']"><app-icon icon="chevron-down" /></span>
       </div>
-      <div [class.hidden]="sliderCollapsed()">
+      <div [class.hidden]="collapsed()['slider']">
         <div class="card-body space-y-4">
-          @if (sliderDefault()) {
+          @if (isDefault('slider')) {
             <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
               <app-icon icon="info-circle" />
               Showing built-in default slides. Edit any slide or add new ones, then save your changes.
@@ -40,16 +40,14 @@
               <formly-form [form]="sf.form" [model]="sf.model()" [fields]="sf.fields" (modelChange)="onSliderHeroChange($index, sf, $event)" />
             </div>
           }
-          @if (sliderForms().length < 3) {
-            <button class="btn-success btn-sm" (click)="addSliderHero()"><app-icon icon="plus-circle" /> Add Slide</button>
-          }
+          <button class="btn-success btn-sm" (click)="addSliderHero()"><app-icon icon="plus-circle" /> Add Slide</button>
         </div>
         <div class="card-footer flex justify-between items-center">
-          <button class="btn-outline-secondary btn-sm" (click)="restoreSlider()">
+          <button class="btn-outline-secondary btn-sm" (click)="restoreSlider()" title="Reset slides to built-in defaults">
             <app-icon icon="refresh" /> Restore Defaults
           </button>
-          <button class="btn-primary" [disabled]="sliderSaving() || isSliderSaveDisabled()" (click)="saveSlider()">
-            @if (sliderSaving()) { <app-icon icon="spinner" iconAnimation="spin" /> } @else { <app-icon icon="save" /> }
+          <button class="btn-primary" [disabled]="isSaving('slider') || isSaveDisabled('slider')" (click)="saveSlider()">
+            @if (isSaving('slider')) { <app-icon icon="spinner" iconAnimation="spin" /> } @else { <app-icon icon="save" /> }
             Save Changes
           </button>
         </div>
