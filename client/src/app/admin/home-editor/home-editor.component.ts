@@ -310,17 +310,14 @@ export class HomeEditorComponent implements OnInit {
   }
 
   public addSlide ( ): void {
-    if ( this.slidesForms ( ).length >= 3 ) {
-      this.toastrSvc.error ( "Maximum 3 slides allowed." )
-      return
-    }
+    if ( this.slidesForms ( ).length >= 3 ) return
     this.dirtyManual.update ( s => ( { ...s, slider: true } ) )
     this.slidesForms.update ( forms => [ ...forms, {
       form: new FormGroup ( { } ),
       model: signal<Record<string, unknown>> ( {
         id: `hero-${Date.now ( )}`,
-        title: "New Slide Title",
-        description: "Enter slide content here...",
+        title: "",
+        description: "",
         url: ""
       } ),
       fields: this.getSlideFields ( )
@@ -342,8 +339,8 @@ export class HomeEditorComponent implements OnInit {
 
   private getSlideFields ( ): FormlyFieldConfig [ ] {
     return [
-      this.formlySvc.TextInput ( "title", { label: "Title", required: true, maxLength: 100 } ),
-      this.formlySvc.TextAreaInput ( "description", { label: "Text", required: true, maxLength: 500, includeMaxDescription: true } ),
+      this.formlySvc.TextInput ( "title", { label: "Title", placeholder: "Enter slide title", required: true, maxLength: 100 } ),
+      this.formlySvc.TextAreaInput ( "description", { label: "Text", placeholder: "Enter slide description", required: true, maxLength: 500, includeMaxDescription: true } ),
       this.formlySvc.ImagePickerInput ( "url", { label: "Image", required: true } )
     ]
   }

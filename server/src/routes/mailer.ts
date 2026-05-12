@@ -10,18 +10,18 @@ config ( { path: envPath, quiet: true } )
 const smtpTransporter = process.env [ "SMTP_HOST" ] && process.env [ "SMTP_PORT" ] &&
   process.env [ "SMTP_USER" ] && process.env [ "SMTP_PASS" ]
   ? createTransport ( {
-      host: process.env [ "SMTP_HOST" ],
-      port: Number ( process.env [ "SMTP_PORT" ] ),
-      secure: true,
-      connectionTimeout: 5000,
-      greetingTimeout: 5000,
-      dnsTimeout: 5000,
-      socketTimeout: 5000,
-      auth: {
-        user: process.env [ "SMTP_USER" ],
-        pass: process.env [ "SMTP_PASS" ],
-      },
-    } )
+    host: process.env [ "SMTP_HOST" ],
+    port: Number ( process.env [ "SMTP_PORT" ] ),
+    secure: true,
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    dnsTimeout: 5000,
+    socketTimeout: 5000,
+    auth: {
+      user: process.env [ "SMTP_USER" ],
+      pass: process.env [ "SMTP_PASS" ],
+    },
+  } )
   : null
 
 export const router: FastifyPluginAsync = async app => {

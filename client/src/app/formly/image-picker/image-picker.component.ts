@@ -15,20 +15,10 @@ import { DestroyRef } from "@angular/core"
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class ImagePickerComponent extends FieldType implements OnInit {
-  private readonly modalSvc: ModalService = inject ( ModalService )
-  private readonly destroyRef: DestroyRef = inject ( DestroyRef )
-
   public readonly value: WritableSignal<string> = signal ( "" )
 
-  public ngOnInit ( ): void {
-    const initial = this.formControl?.value ?? ""
-    this.formControl?.setValue ( initial )
-    this.value.set ( initial )
-
-    this.formControl.valueChanges
-      .pipe ( takeUntilDestroyed ( this.destroyRef ) )
-      .subscribe ( v => this.value.set ( v ?? "" ) )
-  }
+  private readonly modalSvc: ModalService = inject ( ModalService )
+  private readonly destroyRef: DestroyRef = inject ( DestroyRef )
 
   public get previewUrl ( ): string {
     const val = this.value ( )
@@ -39,6 +29,16 @@ export class ImagePickerComponent extends FieldType implements OnInit {
 
   public get isVideo ( ): boolean {
     return this.previewUrl.toLowerCase ( ).endsWith ( ".mp4" )
+  }
+
+  public ngOnInit ( ): void {
+    const initial = this.formControl?.value ?? ""
+    this.formControl?.setValue ( initial )
+    this.value.set ( initial )
+
+    this.formControl.valueChanges
+      .pipe ( takeUntilDestroyed ( this.destroyRef ) )
+      .subscribe ( v => this.value.set ( v ?? "" ) )
   }
 
   public openFileSelector ( ): void {

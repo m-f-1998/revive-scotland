@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, HostListener, input, output, signal } from "@angular/core"
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from "@angular/core"
 import { brandIconNames, solidIconNames } from "../../icon/icon.registry"
 import { IconComponent } from "../../icon/icon.component"
 
@@ -6,11 +6,12 @@ import { IconComponent } from "../../icon/icon.component"
   selector: "app-icon-picker",
   imports: [ IconComponent ],
   templateUrl: "./icon-picker.component.html",
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { "(document:click)": "close()" }
 } )
 export class IconPickerComponent {
   public value = input.required<string> ( )
-  public valueChange = output<string> ( )
+  public readonly valueChange = output<string> ( )
 
   public isOpen = signal ( false )
   public searchQuery = signal ( "" )
@@ -23,7 +24,6 @@ export class IconPickerComponent {
     return this.allIcons.filter ( icon => icon.includes ( q ) )
   } )
 
-  @HostListener ( "document:click" )
   public close ( ): void {
     this.isOpen.set ( false )
   }

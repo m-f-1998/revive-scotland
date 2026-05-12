@@ -55,7 +55,7 @@ export class GalleryEditorComponent implements OnInit {
 
   public async toggleHidden ( img: string ): Promise<void> {
     const next = new Set ( this.hiddenImages ( ) )
-    next.has ( img ) ? next.delete ( img ) : next.add ( img )
+    if ( next.has ( img ) ) { next.delete ( img ) } else { next.add ( img ) }
     this.hiddenImages.set ( next )
     await this.saveSettings ( )
   }

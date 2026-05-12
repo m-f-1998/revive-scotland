@@ -1,22 +1,22 @@
 import { Routes } from "@angular/router"
-import { HomeComponent } from "./user/home/home.component"
-import { EventsComponent } from "./user/events/events.component"
-import { ErrorComponent } from "./user/error/error.component"
-import { GalleryComponent } from "./user/gallery/gallery.component"
 import { authGuard } from "../guards/auth.guard"
+import { provideCharts, withDefaultRegisterables } from "ng2-charts"
 
 export const routes: Routes = [
   {
     path: "",
-    component: HomeComponent
+    loadComponent: ( ) =>
+      import ( "./user/home/home.component" ).then ( m => m.HomeComponent )
   },
   {
     path: "events",
-    component: EventsComponent
+    loadComponent: ( ) =>
+      import ( "./user/events/events.component" ).then ( m => m.EventsComponent )
   },
   {
     path: "gallery",
-    component: GalleryComponent
+    loadComponent: ( ) =>
+      import ( "./user/gallery/gallery.component" ).then ( m => m.GalleryComponent )
   },
   {
     path: "admin",
@@ -29,6 +29,7 @@ export const routes: Routes = [
     children: [
       {
         path: "dashboard",
+        providers: [ provideCharts ( withDefaultRegisterables ( ) ) ],
         loadComponent: ( ) =>
           import ( "./admin/dashboard/dashboard.component" )
             .then ( m => m.DashboardComponent )
@@ -79,14 +80,17 @@ export const routes: Routes = [
   },
   {
     path: "error",
-    component: ErrorComponent
+    loadComponent: ( ) =>
+      import ( "./user/error/error.component" ).then ( m => m.ErrorComponent )
   },
   {
     path: "error/:code",
-    component: ErrorComponent
+    loadComponent: ( ) =>
+      import ( "./user/error/error.component" ).then ( m => m.ErrorComponent )
   },
   {
     path: "**",
     redirectTo: "/error/404"
   }
 ]
+

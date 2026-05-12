@@ -40,9 +40,14 @@
               <formly-form [form]="sf.form" [model]="sf.model()" [fields]="sf.fields" (modelChange)="onSlideChange($index, sf, $event)" />
             </div>
           }
-          <button class="btn-success btn-sm" (click)="addSlide()"><app-icon icon="plus-circle" /> Add Slide</button>
+          <button class="btn-success btn-sm" [disabled]="slidesForms().length >= 3" (click)="addSlide()">
+            <app-icon icon="plus-circle" /> Add Slide
+          </button>
+          @if (slidesForms().length >= 3) {
+            <p class="text-xs text-amber-600 dark:text-amber-400">Maximum of 3 slides reached.</p>
+          }
         </div>
-        <div class="card-footer flex justify-between items-center">
+        <div class="card-footer flex flex-col items-center sm:flex-row sm:justify-between sm:items-center gap-2">
           <button class="btn-outline-secondary btn-sm" (click)="restoreSlides()" title="Reset slides to built-in defaults">
             <app-icon icon="refresh" /> Restore Defaults
           </button>
@@ -71,7 +76,7 @@
           }
           <formly-form [form]="weekendsForm" [model]="weekendsModel()" [fields]="weekendsFields" (modelChange)="onFormlyChange('weekends', weekendsModel, $event)" />
         </div>
-        <div class="card-footer flex justify-between items-center">
+        <div class="card-footer flex flex-col items-center sm:flex-row sm:justify-between sm:items-center gap-2">
           <button class="btn-outline-secondary btn-sm" (click)="restoreWeekends()" title="Reset to built-in defaults">
             <app-icon icon="refresh" /> Restore Defaults
           </button>
@@ -100,7 +105,7 @@
           }
           <formly-form [form]="pilgrimageForm" [model]="pilgrimageModel()" [fields]="pilgrimageFields" (modelChange)="onFormlyChange('pilgrimage', pilgrimageModel, $event)" />
         </div>
-        <div class="card-footer flex justify-between items-center">
+        <div class="card-footer flex flex-col items-center sm:flex-row sm:justify-between sm:items-center gap-2">
           <button class="btn-outline-secondary btn-sm" (click)="restorePilgrimage()" title="Reset to built-in defaults">
             <app-icon icon="refresh" /> Restore Defaults
           </button>
@@ -129,7 +134,7 @@
           }
           <formly-form [form]="adorationForm" [model]="adorationModel()" [fields]="adorationFields" (modelChange)="onFormlyChange('adoration', adorationModel, $event)" />
         </div>
-        <div class="card-footer flex justify-between items-center">
+        <div class="card-footer flex flex-col items-center sm:flex-row sm:justify-between sm:items-center gap-2">
           <button class="btn-outline-secondary btn-sm" (click)="restoreAdoration()" title="Reset to built-in defaults">
             <app-icon icon="refresh" /> Restore Defaults
           </button>
@@ -177,7 +182,7 @@
             </div>
           }
         </div>
-        <div class="card-footer flex justify-between items-center">
+        <div class="card-footer flex flex-col items-center sm:flex-row sm:justify-between sm:items-center gap-2">
           <button class="btn-outline-secondary btn-sm" (click)="restoreAboutCards()" title="Reset to built-in defaults">
             <app-icon icon="refresh" /> Restore Defaults
           </button>

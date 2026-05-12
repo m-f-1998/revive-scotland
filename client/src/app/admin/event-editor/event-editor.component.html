@@ -40,9 +40,14 @@
               <formly-form [form]="sf.form" [model]="sf.model()" [fields]="sf.fields" (modelChange)="onSliderHeroChange($index, sf, $event)" />
             </div>
           }
-          <button class="btn-success btn-sm" (click)="addSliderHero()"><app-icon icon="plus-circle" /> Add Slide</button>
+          <button class="btn-success btn-sm" [disabled]="sliderForms().length >= 3" (click)="addSliderHero()">
+            <app-icon icon="plus-circle" /> Add Slide
+          </button>
+          @if (sliderForms().length >= 3) {
+            <p class="text-xs text-amber-600 dark:text-amber-400">Maximum of 3 slides reached.</p>
+          }
         </div>
-        <div class="card-footer flex justify-between items-center">
+        <div class="card-footer flex flex-col items-center sm:flex-row sm:justify-between sm:items-center gap-2">
           <button class="btn-outline-secondary btn-sm" (click)="restoreSlider()" title="Reset slides to built-in defaults">
             <app-icon icon="refresh" /> Restore Defaults
           </button>
@@ -80,12 +85,12 @@
             </div>
           </div>
         }
-        <div class="flex justify-between mt-4">
+        <div class="flex flex-col items-center sm:flex-row sm:justify-between gap-2 mt-4">
           <button class="btn-success" (click)="addNewEvent()">
             <app-icon icon="plus-circle" /> Add Event
           </button>
           @if (eventData().events.length > 0) {
-            <button class="btn-primary" (click)="saveEventData()" [disabled]="loading() || someFormInvalid()">
+            <button class="btn-primary" (click)="saveEventData()" [disabled]="loading() || someFormInvalid() || !someFormDirty()">
               <app-icon icon="save" /> Save Changes
             </button>
           }

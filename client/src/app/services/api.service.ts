@@ -6,6 +6,8 @@ import { parse } from "date-fns"
   providedIn: "root"
 } )
 export class ApiService {
+  private static readonly datePattern = /^\d{4}-\d{2}-\d{2}|^\d{2}\/\d{2}\/\d{4}/
+
   private readonly httpClient: HttpClient = inject ( HttpClient )
 
   public get (
@@ -130,6 +132,11 @@ export class ApiService {
   }
 
   private checkDate = ( value: string ): Date | string  => {
+    // Quick pre-filter: skip strings that can't possibly be dates
+    if ( value.length < 8 || value.length > 35 || !ApiService.datePattern.test ( value ) ) {
+      return value
+    }
+
     const dangerous_format = [
       "yyyy-MM-dd",
       "dd/MM/yyyy"

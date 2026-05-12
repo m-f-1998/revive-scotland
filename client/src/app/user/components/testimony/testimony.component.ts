@@ -32,12 +32,6 @@ export class TestimonyComponent implements OnInit {
   private readonly allTestimonies: WritableSignal<Testimony [ ]> = signal ( FALLBACK )
   private readonly apiSvc: ApiService = inject ( ApiService )
 
-  private pickRandom ( ): void {
-    this.displayedTestimonies.set (
-      [ ...this.allTestimonies ( ) ].sort ( ( ) => 0.5 - Math.random ( ) ).slice ( 0, 4 )
-    )
-  }
-
   public ngOnInit ( ): void {
     this.pickRandom ( )
     this.apiSvc.get ( "/api/admin/site-content/testimonials" ).then ( data => {
@@ -47,5 +41,11 @@ export class TestimonyComponent implements OnInit {
         this.pickRandom ( )
       }
     } ).catch ( ( ) => { /* keep fallback */ } )
+  }
+
+  private pickRandom ( ): void {
+    this.displayedTestimonies.set (
+      [ ...this.allTestimonies ( ) ].sort ( ( ) => 0.5 - Math.random ( ) ).slice ( 0, 4 )
+    )
   }
 }

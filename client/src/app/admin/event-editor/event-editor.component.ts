@@ -48,6 +48,7 @@ export class EventEditorComponent implements OnInit {
   public eventForm: WritableSignal<Array<{ form: FormGroup; model: Record<string, unknown>; fields: FormlyFieldConfig [ ] }>> = signal ( [ ] )
   public eventData: WritableSignal<{ events: Event[] }> = signal ( { events: [ ] } )
   public collapsedIndices: Set<number> = new Set ( )
+  public eventsModified: WritableSignal<boolean> = signal ( false )
 
   // Section collapse state — all start closed
   public collapsed: WritableSignal<Record<string, boolean>> = signal ( { slider: true } )
@@ -98,13 +99,14 @@ export class EventEditorComponent implements OnInit {
   public addNewEvent ( ): void {
     const defaultModel = {
       id: "",
-      title: "New Event Title",
-      description: "Enter a description for this event...",
+      title: "",
+      description: "",
       location: "",
       startDate: new Date ( ),
       endDate: new Date ( ),
       actionType: "webpage" as const
     }
+    this.eventsModified.set ( true )
     this.eventForm.set ( [
       ...this.eventForm ( ),
       {
@@ -152,6 +154,8 @@ export class EventEditorComponent implements OnInit {
         "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || "" }`
       } ) )
       this.eventData.set ( updatedEventData )
+      this.eventsModified.set ( false )
+      this.eventForm ( ).forEach ( ef => ef.form.markAsPristine ( ) )
       this.toastrSvc.success ( "Event data saved successfully!" )
     } catch ( e ) {
       if ( e instanceof HttpErrorResponse && e.error ) {
@@ -188,19 +192,20 @@ export class EventEditorComponent implements OnInit {
     return this.eventForm ( ).some ( ef => ef.form.invalid )
   }
 
+  public someFormDirty ( ): boolean {
+    return this.eventsModified ( ) || this.eventForm ( ).some ( ef => ef.form.dirty )
+  }
+
   // Slider methods
   public addSliderHero ( ): void {
-    if ( this.sliderForms ( ).length >= 3 ) {
-      this.toastrSvc.error ( "Maximum 3 slides allowed." )
-      return
-    }
+    if ( this.sliderForms ( ).length >= 3 ) return
     this.dirtyManual.update ( s => ( { ...s, slider: true } ) )
     this.sliderForms.update ( forms => [ ...forms, {
       form: new FormGroup ( { } ),
       model: signal<Record<string, unknown>> ( {
         id: `hero-${Date.now ( )}`,
-        title: "New Slide Title",
-        description: "Enter slide content here...",
+        title: "",
+        description: "",
         url: ""
       } ),
       fields: this.getSliderFields ( )
@@ -272,8 +277,8 @@ export class EventEditorComponent implements OnInit {
 
   private getSliderFields ( ): FormlyFieldConfig [ ] {
     return [
-      this.formlySvc.TextInput ( "title", { label: "Title", required: true, maxLength: 100 } ),
-      this.formlySvc.TextAreaInput ( "description", { label: "Text", required: true, maxLength: 500, includeMaxDescription: true } ),
+      this.formlySvc.TextInput ( "title", { label: "Title", placeholder: "Enter slide title", required: true, maxLength: 100 } ),
+      this.formlySvc.TextAreaInput ( "description", { label: "Text", placeholder: "Enter slide description", required: true, maxLength: 500, includeMaxDescription: true } ),
       this.formlySvc.ImagePickerInput ( "url", { label: "Image", required: true } )
     ]
   }

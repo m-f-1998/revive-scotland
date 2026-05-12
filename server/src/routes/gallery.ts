@@ -13,7 +13,7 @@ const sortFolders = ( names: string [ ] ): string [ ] => {
   return [ ...known, ...unknown ]
 }
 
-const ALBUM_CACHE_TTL_MS = 60 * 1000 // 60 seconds
+const ALBUM_CACHE_TTL_MS = 10 * 60 * 1000 // 10 minutes
 
 let albumCache: Record<string, string [ ]> | null = null
 let albumCacheTime = 0

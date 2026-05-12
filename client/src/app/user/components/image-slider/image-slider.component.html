@@ -5,6 +5,7 @@
         <img [attr.src]="url.startsWith('/') || url.startsWith('http') ? url : '/api/img/' + url + '?w=640&f=webp'"
           [attr.alt]="'Gallery image ' + ($index + 1)"
           class="img-expand"
+          loading="lazy"
           (click)="expandImage($index)"
         />
       }

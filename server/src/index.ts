@@ -48,7 +48,7 @@ await app.register ( cookie )
 await app.register ( formbody )
 
 await app.register ( compress, {
-  threshold: 1024 * 20,
+  threshold: 1024,
   zlibOptions: {
     flush: zlib.constants.Z_SYNC_FLUSH // Forces chunks to be sent immediately
   }
@@ -77,14 +77,16 @@ if ( !isDevMode ( ) ) {
 
 const logger: pino.Logger = pino ( {
   level: "info",
-  transport: {
-    target: "pino-pretty",
-    options: {
-      colorize: true,
-      translateTime: "HH:MM:ss",
-      ignore: "pid,hostname",
+  ...( isDevMode ( ) ? {
+    transport: {
+      target: "pino-pretty",
+      options: {
+        colorize: true,
+        translateTime: "HH:MM:ss",
+        ignore: "pid,hostname",
+      },
     },
-  },
+  } : { } )
 } )
 
 app.addHook ( "onRequest", async ( req, _reply ) => {
