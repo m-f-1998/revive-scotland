@@ -146,7 +146,8 @@ await app.register ( helmet, {
       frameSrc: [
         "'self'",
         "https://www.google.com",
-        "https://revive-scotland-admin.firebaseapp.com"
+        "https://revive-scotland-admin.firebaseapp.com",
+        "https://revive-scotland-dev.firebaseapp.com"
       ],
       mediaSrc: [
         "'self'"

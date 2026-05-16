@@ -16,9 +16,9 @@ import { resolve } from "path"
 
 let serviceAccount: ServiceAccount
 if ( isPreProd ( ) || isDevMode ( ) ) {
-  serviceAccount = await import ( "../revive-scotland-firebase-dev.json" ) as ServiceAccount
+  serviceAccount = ( await import ( "../revive-scotland-firebase-dev.json", { with: { type: "json" } } ) ).default as ServiceAccount
 } else {
-  serviceAccount = await import ( "../revive-scotland-firebase.json" ) as ServiceAccount
+  serviceAccount = ( await import ( "../revive-scotland-firebase.json", { with: { type: "json" } } ) ).default as ServiceAccount
 }
 
 config ( { path: resolve ( process.cwd ( ), ".env" ), quiet: true } )
