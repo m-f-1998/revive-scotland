@@ -11,6 +11,10 @@ export const isDevMode = ( ): boolean => {
   return process.env [ "DEV_MODE" ] === "true" || process.env [ "DEV_MODE" ] === "1"
 }
 
+export const isPreProd = ( ): boolean => {
+  return process.env [ "PRE_PROD" ] === "true" || process.env [ "PRE_PROD" ] === "1"
+}
+
 const clientFolder = join ( process.cwd ( ), "../client" )
 
 // Matches Angular content-hashed filenames, e.g. main-3JHMYRRZ.js, chunk-ABC123DE.css

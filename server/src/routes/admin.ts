@@ -8,12 +8,18 @@ import { router as ourStoryRouter } from "./admin/ourStory.js"
 import { router as siteContentRouter } from "./admin/siteContent.js"
 
 import admin, { ServiceAccount } from "firebase-admin"
-import serviceAccount from "../revive-scotland-firebase.json" with { type: "json" }
-import { isDevMode } from "./static.js"
+import { isDevMode, isPreProd } from "./static.js"
 import rateLimit from "@fastify/rate-limit"
 import { FastifyPluginAsync } from "fastify"
 import { config } from "dotenv"
 import { resolve } from "path"
+
+let serviceAccount: ServiceAccount
+if ( isPreProd ( ) || isDevMode ( ) ) {
+  serviceAccount = await import ( "../revive-scotland-firebase-dev.json" ) as ServiceAccount
+} else {
+  serviceAccount = await import ( "../revive-scotland-firebase.json" ) as ServiceAccount
+}
 
 config ( { path: resolve ( process.cwd ( ), ".env" ), quiet: true } )
 
