@@ -1,7 +1,6 @@
 <div class="grid grid-cols-1 md:grid-cols-2 border-b border-gray-200" id="weekends">
   <div class="flex items-center justify-center p-4 min-h-[20rem]">
-    <video width="640" height="360" controls playsinline class="max-w-full rounded" style="max-height: 600px;">
-      <source [src]="content().videoUrl" type="video/mp4" />
+    <video [src]="content().videoUrl" width="640" height="360" controls playsinline class="max-w-full rounded" style="max-height: 600px;" preload="metadata">
     </video>
   </div>
 
