@@ -231,6 +231,23 @@
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold;
   }
 
+  /* Lightbox */
+  .lightbox-backdrop {
+    @apply fixed inset-0 z-50;
+    background: rgba(0, 0, 0, 0.92);
+  }
+
+  .lightbox-panel {
+    display: flex;
+    flex-direction: column;
+    width: min(92vw, 1100px);
+    max-height: 95vh;
+    background: #111;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7);
+  }
+
   /* Modal */
   .modal-panel {
     @apply bg-white rounded-xl shadow-2xl w-full mx-4 my-8 max-h-[90vh] overflow-auto;

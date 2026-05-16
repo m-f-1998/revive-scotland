@@ -50,6 +50,7 @@ export interface ModalOptions {
   size?: "sm" | "md" | "lg" | "xl"
   centered?: boolean
   backdrop?: "static" | boolean
+  lightbox?: boolean
 }
 
 @Injectable ( { providedIn: "root" } )
@@ -57,12 +58,14 @@ export class ModalService {
   private readonly dialog = inject ( Dialog )
 
   public open<T, R = unknown> ( component: ComponentType<T>, options: ModalOptions = { } ): ModalRef<T, R> {
-    const panelClasses = [ "modal-panel" ]
-    if ( options.size && options.size !== "md" ) panelClasses.push ( `modal-${options.size}` )
+    const panelClasses = options.lightbox
+      ? [ "lightbox-panel" ]
+      : [ "modal-panel", ...( options.size && options.size !== "md" ? [ `modal-${options.size}` ] : [] ) ]
+    const backdropClass = options.lightbox ? "lightbox-backdrop" : "modal-backdrop"
 
     const config: DialogConfig<unknown, import ( "@angular/cdk/dialog" ).DialogRef<R, T>> = {
       panelClass: panelClasses,
-      backdropClass: "modal-backdrop",
+      backdropClass,
       hasBackdrop: true,
       disableClose: options.backdrop === "static",
       autoFocus: true,

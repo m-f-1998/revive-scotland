@@ -16,7 +16,7 @@
     <div class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
       @for (item of filtered(); track item.url) {
         <div class="rounded-xl overflow-hidden cursor-pointer transition-transform duration-200 hover:-translate-y-1.5 hover:shadow-2xl border border-white/5"
-             (click)="item.type === 'image' ? openImage(item.url) : openVideo(item.url)">
+             (click)="openItem($index)">
           <div class="relative h-40 flex items-center justify-center bg-gradient-to-b from-gray-800/80 to-gray-900/60">
             <div class="gallery-skeleton absolute inset-0"></div>
 

@@ -4,7 +4,6 @@ import { IconComponent } from "@revive/src/app/icon/icon.component"
 import { ExpandedImageComponent } from "@components/expanded-image/expanded-image.component"
 import { NavbarComponent } from "../components/navbar/navbar.component"
 import { FooterComponent } from "../components/footer/footer.component"
-import { VideoModalComponent } from "../components/video-modal/video-modal.component"
 import { ApiService } from "@revive/src/app/services/api.service"
 import { TitleCasePipe } from "@angular/common"
 
@@ -81,17 +80,12 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  public openImage ( url: string ) {
-    const images = this.filtered ( ).filter ( m => m.type === "image" ).map ( m => m.url )
-    const index = images.indexOf ( url )
-    const reference = this.modalSvc.open ( ExpandedImageComponent, { size: "lg", centered: true } )
-    reference.setInput ( "imageURLs", images )
+  public openItem ( index: number ) {
+    const items = this.filtered ( ).map ( m => ( { url: m.url, type: m.type } ) )
+    const reference = this.modalSvc.open ( ExpandedImageComponent, { lightbox: true } )
+    reference.setInput ( "items", items )
     reference.setInput ( "index", index )
-  }
-
-  public openVideo ( url: string ) {
-    const ref = this.modalSvc.open ( VideoModalComponent, { size: "lg", centered: true } )
-    ref.setInput ( "videoUrl", url )
+    reference.result.catch ( ( ) => { /* ignore */ } )
   }
 
   public setFilter ( f: string ) {

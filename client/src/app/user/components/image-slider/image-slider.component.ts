@@ -23,9 +23,11 @@ export class ImageSliderComponent {
   private readonly router: Router = inject ( Router )
 
   public expandImage ( index: number ) {
-    const reference = this.modalSvc.open ( ExpandedImageComponent, { size: "lg", centered: true } )
-    reference.setInput ( "imageURLs", this.imageURLs ( ) )
+    const items = this.imageURLs ( ).map ( url => ( { url, type: "image" as const } ) )
+    const reference = this.modalSvc.open ( ExpandedImageComponent, { lightbox: true } )
+    reference.setInput ( "items", items )
     reference.setInput ( "index", index )
+    reference.result.catch ( ( ) => { /* ignore */ } )
   }
 
   public goToGallery ( ) {

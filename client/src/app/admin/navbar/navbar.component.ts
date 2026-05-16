@@ -12,6 +12,7 @@ const CONTENT_ROUTES = [ "/admin/homeEditor", "/admin/eventEditor", "/admin/test
   templateUrl: "./navbar.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
+    "class": "sticky top-0 z-50 block",
     "(document:click)": "onDocumentClick($event)"
   }
 } )

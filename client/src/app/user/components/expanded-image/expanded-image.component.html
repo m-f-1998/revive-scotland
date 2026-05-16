@@ -1,33 +1,55 @@
-<div class="modal-header">
-  <button type="button" class="btn-close" aria-label="Close" (click)="this.close()"></button>
+<!-- Header -->
+<div class="lightbox-header">
+  <span class="lightbox-counter">{{ currentIndex() + 1 }} / {{ items().length }}</span>
+  <button type="button" class="lightbox-close" aria-label="Close" (click)="close()">
+    <app-icon icon="xmark" />
+  </button>
 </div>
-<div class="p-0">
-  <img [attr.src]="imgSrc(imageURLs()[currentIndex()], 640)"
-    [attr.srcset]="imgSrcset(imageURLs()[currentIndex()])"
-    sizes="(max-width: 600px) 100vw, 600px"
-    alt="Image {{ currentIndex() + 1 }} - Expanded"
-    decoding="async"
-    class="block w-full object-contain"
-    style="max-height: 80vh;"
-  />
-</div>
-<div class="modal-footer">
-  <button type="button" class="btn-secondary" (click)="prevImage()">
+
+<!-- Media -->
+<div class="lightbox-body">
+  <button class="lightbox-arrow lightbox-arrow--left" type="button" aria-label="Previous" (click)="prevItem()">
     <app-icon icon="chevron-left" />
   </button>
-  <a [href]="imgSrc(imageURLs()[currentIndex()], 1024)" class="btn-primary" download>
-    <app-icon icon="download" /> Download
-  </a>
-  <button type="button" class="btn-secondary" (click)="nextImage()">
+
+  @if (items()[currentIndex()].type === 'video') {
+    <video controls autoplay class="lightbox-video"
+      [src]="videoSrc(items()[currentIndex()].url)">
+      Your browser does not support HTML video.
+    </video>
+  } @else {
+    <img
+      [src]="imgSrc(items()[currentIndex()].url, 1024)"
+      [srcset]="imgSrcset(items()[currentIndex()].url)"
+      sizes="(max-width: 600px) 100vw, 90vw"
+      decoding="async"
+      [alt]="'Gallery image ' + (currentIndex() + 1)"
+      class="lightbox-img"
+    />
+  }
+
+  <button class="lightbox-arrow lightbox-arrow--right" type="button" aria-label="Next" (click)="nextItem()">
     <app-icon icon="chevron-right" />
   </button>
 </div>
 
-<div class="hidden">
-  @if (imageURLs()[currentIndex() + 1]) {
-    <img [src]="imgSrc(imageURLs()[currentIndex() + 1], 1024)" alt="">
+<!-- Footer -->
+<div class="lightbox-footer">
+  @if (items()[currentIndex()].type === 'image') {
+    <a [href]="imgSrc(items()[currentIndex()].url, 1024)"
+       [download]="items()[currentIndex()].url.split('/').pop()"
+       class="lightbox-download">
+      <app-icon icon="download" /> Download
+    </a>
   }
-  @if (imageURLs()[currentIndex() - 1]) {
-    <img [src]="imgSrc(imageURLs()[currentIndex() - 1], 1024)" alt="">
+</div>
+
+<!-- Preload adjacent images -->
+<div class="hidden">
+  @if (items()[currentIndex() + 1]?.type === 'image') {
+    <img [src]="imgSrc(items()[currentIndex() + 1].url, 1024)" alt="" />
+  }
+  @if (items()[currentIndex() - 1]?.type === 'image') {
+    <img [src]="imgSrc(items()[currentIndex() - 1].url, 1024)" alt="" />
   }
 </div>

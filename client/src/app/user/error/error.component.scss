@@ -1,0 +1,23 @@
+.error-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1rem;
+  position: relative;
+  background-image: url("/api/img/pilgrimage.jpg");
+  background-size: cover;
+  background-position: center;
+}
+
+.error-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.70) 0%,
+    rgba(0, 0, 0, 0.60) 50%,
+    rgba(0, 0, 0, 0.75) 100%
+  );
+  pointer-events: none;
+}
