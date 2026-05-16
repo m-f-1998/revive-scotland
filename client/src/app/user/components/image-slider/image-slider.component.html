@@ -1,21 +1,28 @@
-<div class="image-slider">
-  <div class="scroll-container">
-    <div class="image-track">
-      @for (url of imageURLs(); track $index) {
-        <img [attr.src]="url.startsWith('/') || url.startsWith('http') ? url : '/api/img/' + url + '?w=640&f=webp'"
-          [attr.alt]="'Gallery image ' + ($index + 1)"
-          class="img-expand"
-          loading="lazy"
+<section class="image-slider-section">
+  <div class="image-slider-grid">
+    @for (url of visibleURLs(); track $index) {
+      <div class="image-slider-card">
+        <button class="image-slider-card-btn"
           (click)="expandImage($index)"
-        />
-      }
-    </div>
-
-    <div class="sticky-button-row">
-      <button class="btn-primary w-full" (click)="goToGallery()">
-        <app-icon icon="image" />
-        View Gallery
-      </button>
-    </div>
+          [attr.aria-label]="'View gallery image ' + ($index + 1)">
+          <img
+            [src]="imgSrc(url, 640)"
+            [srcset]="imgSrcset(url)"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            loading="lazy"
+            decoding="async"
+            [alt]="'Gallery image ' + ($index + 1)"
+            class="image-slider-img"
+          />
+        </button>
+      </div>
+    }
   </div>
-</div>
+
+  <div class="image-slider-footer">
+    <button class="btn-primary rounded-full px-8 py-3" (click)="goToGallery()">
+      <app-icon icon="images" />
+      View Full Gallery
+    </button>
+  </div>
+</section>

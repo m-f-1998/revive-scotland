@@ -1,73 +1,69 @@
-.image-slider {
+.image-slider-section {
+  padding: 3rem 1rem;
   background-color: #f3f4f6;
-  width: 100%;
+  border-top: 1px solid #e5e7eb;
 
   @media (prefers-color-scheme: dark) {
     background-color: #1e293b;
+    border-top-color: #334155;
   }
 }
 
-.scroll-container {
-  display: flex;
-  flex-direction: column; /* Stack images on top, button on bottom */
-  overflow-x: auto;       /* The scrollbar will be at the very bottom of this div */
-  overflow-y: hidden;
-  width: 100%;
+.image-slider-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  max-width: 1280px;
+  margin: 0 auto;
+
+  @media (max-width: 1024px) { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 640px)  { grid-template-columns: repeat(2, 1fr); }
 }
 
-.image-track {
-  display: flex;
-  flex-direction: row;
-  padding: 20px;
-  gap: 15px;
-  /* This ensures the track is as wide as all images combined */
-  width: max-content;
-}
-
-.img-expand {
-  flex: 0 0 auto;
-  max-width: 600px;
-  max-height: 400px;
-  object-fit: contain;
-  cursor: pointer;
-  border-radius: 20px;
-  transition: transform 0.3s;
+.image-slider-card {
+  aspect-ratio: 4 / 3;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background-color: #e5e7eb;
+  transition: transform 0.25s, box-shadow 0.25s;
+  position: relative;
 
   &:hover {
-    transform: scale(1.05);
+    transform: scale(1.02);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    z-index: 1;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    background-color: #334155;
   }
 }
 
-.sticky-button-row {
-  position: sticky;
-  left: 0;                /* Keeps it stuck to the left edge of the visible area */
-  width: 100%;            /* Width of the visible container */
-  padding: 10px 20px 20px;
-  background-color: #f3f4f6; /* Matches background so images "slide behind" it if needed */
+.image-slider-card-btn {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
 
-  @media (prefers-color-scheme: dark) {
-    background-color: #1e293b;
+  &:focus-visible {
+    outline: 2px solid #3399ff;
+    outline-offset: 2px;
+    border-radius: 0.5rem;
   }
-  z-index: 10;
+}
 
-  /* Flex to make the button inside span the whole sticky row */
+.image-slider-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.image-slider-footer {
   display: flex;
-
-  .btn {
-    width: 100%;          /* Button spans the visible width */
-  }
-}
-
-/* Optional: Custom scrollbar styling to make it look cleaner */
-.scroll-container::-webkit-scrollbar {
-  height: 8px;
-}
-
-.scroll-container::-webkit-scrollbar-thumb {
-  background: #9ca3af;
-  border-radius: 10px;
-
-  @media (prefers-color-scheme: dark) {
-    background: #475569;
-  }
+  justify-content: center;
+  margin-top: 1.75rem;
 }
