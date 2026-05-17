@@ -73,8 +73,13 @@ export const router: FastifyPluginAsync = async app => {
       return res.status ( 401 ).send ( { error: "Unauthorized" } )
     }
 
+    const logoutToken = authHeader.split ( "Bearer " ) [ 1 ]?.trim ( )
+    if ( !logoutToken ) {
+      return res.status ( 401 ).send ( { error: "Unauthorized" } )
+    }
+
     try {
-      const decodedToken = await admin.auth ( ).verifyIdToken ( authHeader.split ( "Bearer " ) [ 1 ] )
+      const decodedToken = await admin.auth ( ).verifyIdToken ( logoutToken )
       const uid = decodedToken.uid
 
       await admin.auth ( ).revokeRefreshTokens ( uid )
@@ -100,8 +105,13 @@ export const router: FastifyPluginAsync = async app => {
       return res.status ( 401 ).send ( { error: "Unauthorized" } )
     }
 
+    const verifyToken = authHeader.split ( "Bearer " ) [ 1 ]?.trim ( )
+    if ( !verifyToken ) {
+      return res.status ( 401 ).send ( { error: "Unauthorized" } )
+    }
+
     try {
-      const decodedToken = await admin.auth ( ).verifyIdToken ( authHeader.split ( "Bearer " ) [ 1 ] )
+      const decodedToken = await admin.auth ( ).verifyIdToken ( verifyToken )
       const uid = decodedToken.uid
 
       const firestore = getFirestore ( ).collection ( "users" ).doc ( uid )
@@ -144,8 +154,13 @@ export const router: FastifyPluginAsync = async app => {
       return res.status ( 401 ).send ( { error: "Unauthorized" } )
     }
 
+    const newSessionToken = authHeader.split ( "Bearer " ) [ 1 ]?.trim ( )
+    if ( !newSessionToken ) {
+      return res.status ( 401 ).send ( { error: "Unauthorized" } )
+    }
+
     try {
-      const decodedToken = await admin.auth ( ).verifyIdToken ( authHeader.split ( "Bearer " ) [ 1 ] )
+      const decodedToken = await admin.auth ( ).verifyIdToken ( newSessionToken )
       const uid = decodedToken.uid
       const user = await admin.auth ( ).getUser ( uid )
 
@@ -191,8 +206,13 @@ export const router: FastifyPluginAsync = async app => {
       return res.status ( 401 ).send ( { error: "Unauthorized" } )
     }
 
+    const isAdminToken = authHeader.split ( "Bearer " ) [ 1 ]?.trim ( )
+    if ( !isAdminToken ) {
+      return res.status ( 401 ).send ( { error: "Unauthorized" } )
+    }
+
     try {
-      const decodedToken = await admin.auth ( ).verifyIdToken ( authHeader.split ( "Bearer " ) [ 1 ] )
+      const decodedToken = await admin.auth ( ).verifyIdToken ( isAdminToken )
       const uid = decodedToken.uid
       const user = await admin.auth ( ).getUser ( uid )
 
