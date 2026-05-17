@@ -28,6 +28,12 @@ export const routes: Routes = [
     canActivate: [ authGuard ],
     children: [
       {
+        path: "resourcesEditor",
+        loadComponent: ( ) =>
+          import ( "./admin/resources-editor/resources-editor.component" )
+            .then ( m => m.ResourcesEditorComponent )
+      },
+      {
         path: "dashboard",
         providers: [ provideCharts ( withDefaultRegisterables ( ) ) ],
         loadComponent: ( ) =>
@@ -77,6 +83,16 @@ export const routes: Routes = [
             .then ( m => m.TestimonialsEditorComponent )
       }
     ]
+  },
+  {
+    path: "resources",
+    loadComponent: ( ) =>
+      import ( "./user/resources/resources.component" ).then ( m => m.ResourcesComponent )
+  },
+  {
+    path: "donate/thank-you",
+    loadComponent: ( ) =>
+      import ( "./user/donate-thankyou/donate-thankyou.component" ).then ( m => m.DonateThankyouComponent )
   },
   {
     path: "error",

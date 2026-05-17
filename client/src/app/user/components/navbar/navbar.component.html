@@ -34,6 +34,12 @@
           Gallery
         </a>
       </li>
+      <li>
+        <a class="nav-link" (click)="goTo('resources')" [class.active]="url() === '/resources'">
+          <app-icon icon="book-open" />
+          Resources
+        </a>
+      </li>
     </ul>
 
     <div class="relative sm:hidden mobile-menu-container">
@@ -64,6 +70,14 @@
                (click)="goTo('gallery')">
               <app-icon icon="image" />
               Gallery
+            </a>
+          </li>
+          <li>
+            <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+               [class.text-primary]="url() === '/resources'"
+               (click)="goTo('resources')">
+              <app-icon icon="book-open" />
+              Resources
             </a>
           </li>
         </ul>

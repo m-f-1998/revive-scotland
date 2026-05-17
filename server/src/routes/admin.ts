@@ -6,6 +6,8 @@ import { router as eventsRouter } from "./admin/events.js"
 import { router as contactDetailsRouter } from "./admin/contactDetails.js"
 import { router as ourStoryRouter } from "./admin/ourStory.js"
 import { router as siteContentRouter } from "./admin/siteContent.js"
+import { router as prayersRouter } from "./admin/prayers.js"
+import { router as reflectionsRouter } from "./admin/reflections.js"
 
 import admin, { ServiceAccount } from "firebase-admin"
 import { isDevMode, isPreProd } from "./static.js"
@@ -59,6 +61,8 @@ export const router: FastifyPluginAsync = async app => {
   app.register ( contactDetailsRouter, { prefix: "/contact-details" } )
   app.register ( ourStoryRouter, { prefix: "/our-story" } )
   app.register ( siteContentRouter, { prefix: "/site-content" } )
+  app.register ( prayersRouter, { prefix: "/prayers" } )
+  app.register ( reflectionsRouter, { prefix: "/reflections" } )
 
   if ( !isDevMode ( ) ) {
     await app.register ( rateLimit, {

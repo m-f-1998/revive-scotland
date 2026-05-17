@@ -5,7 +5,7 @@ import { AboutUsComponent } from "@components/about-us/about-us.component"
 import { OurStoryComponent } from "@components/our-story/our-story.component"
 import { PilgrimageComponent } from "@components/pilgrimage/pilgrimage.component"
 import { AdorationMissionsComponent } from "@components/adoration-missions/adoration-missions.component"
-// import { DonateComponent } from "@components/donate/donate.component"
+import { DonateComponent } from "@components/donate/donate.component"
 import { ContactComponent } from "@components/contact/contact.component"
 import { FooterComponent } from "@components/footer/footer.component"
 import { ReviveWeekendsComponent } from "@components/revive-weekends/revive-weekends.component"
@@ -23,7 +23,7 @@ import { NavbarComponent } from "../components/navbar/navbar.component"
     OurStoryComponent,
     PilgrimageComponent,
     AdorationMissionsComponent,
-    // DonateComponent,
+    DonateComponent,
     ContactComponent,
     FooterComponent,
     ReviveWeekendsComponent,

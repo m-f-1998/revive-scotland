@@ -17,6 +17,7 @@ import { router as imagesRouter } from "./routes/images.js"
 import { router as adminRouter } from "./routes/admin.js"
 import { router as publicRouter } from "./routes/admin/public.js"
 import { router as galleryRouter } from "./routes/gallery.js"
+import { router as feastRouter } from "./routes/feast.js"
 
 import { randomBytes } from "crypto"
 
@@ -131,7 +132,8 @@ await app.register ( helmet, {
         "https://\*.jsdelivr.net",
         "https://lh3.googleusercontent.com",
         "https://googletagmanager.com",
-        "https://\*.r2.cloudflarestorage.com"
+        "https://\*.r2.cloudflarestorage.com",
+        "https://img.youtube.com"
       ],
       connectSrc: [
         "'self'",
@@ -202,6 +204,7 @@ app.register ( imagesRouter, { prefix: "/api/img" } )
 app.register ( galleryRouter, { prefix: "/api/gallery" } )
 app.register ( adminRouter, { prefix: "/api/admin" } )
 app.register ( publicRouter, { prefix: "/api/public" } )
+app.register ( feastRouter, { prefix: "/api/feast" } )
 app.register ( staticRouter, { prefix: "/" } )
 
 console.log ( "Server is starting..." )

@@ -1,28 +1,54 @@
 <section class="relative overflow-hidden" id="donate">
-  <img src="/api/img/donation.jpg?w=640&f=webp"
+  <img src="/api/img/gallery/kinloss/kinloss-9.jpg?w=1024&f=webp"
     srcset="
-      /api/img/donation.jpg?w=320&f=webp 320w,
-      /api/img/donation.jpg?w=640&f=webp 640w,
-      /api/img/donation.jpg?w=1024&f=webp 1024w
+      /api/img/gallery/kinloss/kinloss-9.jpg?w=640&f=webp 640w,
+      /api/img/gallery/kinloss/kinloss-9.jpg?w=1024&f=webp 1024w,
+      /api/img/gallery/kinloss/kinloss-9.jpg?w=1920&f=webp 1920w
     "
-    sizes="(max-width: 600px) 100vw, 600px"
+    sizes="100vw"
     alt="Donate Background"
     loading="lazy"
     decoding="async"
     class="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none"
   />
-  <div class="relative z-10 py-20" style="background-color: rgba(0,0,0,0.5);">
-    <div class="max-w-screen-xl mx-auto px-4">
-      <div class="grid grid-cols-1 lg:grid-cols-[7fr_5fr] gap-8 items-center">
-        <div class="text-white">
-          <p class="text-serif mb-1 opacity-90">Support our Cause</p>
-          <h2 class="font-bold mb-4 text-shadow">Help the Mission!</h2>
-          <p class="text-sm leading-relaxed opacity-90">Unless specified, donations received will go towards the costs of the project, as well as helping people who would otherwise be unable to attend the events that we run.</p>
+  <div class="relative z-10 py-24" style="background: linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.75) 100%); backdrop-filter: blur(2px);">
+    <div class="max-w-screen-xl mx-auto px-6 text-center text-white">
+
+      <p class="text-serif text-primary-light mb-2 text-lg">Support our Cause</p>
+      <h2 class="font-bold text-shadow mb-4">Help the Mission</h2>
+      <p class="text-base leading-relaxed opacity-85 max-w-2xl mx-auto mb-12">
+        Your generosity keeps Revive Scotland's mission alive — funding events, pilgrimages, and ensuring no young person misses out due to cost.
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
+        <div class="rounded-xl p-6 text-left" style="background-color: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);">
+          <div class="text-3xl mb-3">✝️</div>
+          <h3 class="text-base font-semibold mb-2">Fund an Event</h3>
+          <p class="text-sm opacity-75 leading-relaxed">Help cover the costs of running Revive Weekends, Masses, and community gatherings for young Catholics across Scotland.</p>
         </div>
-        <div>
-          <a id="donate-button" class="btn-primary w-full block text-center py-3 text-base font-semibold rounded" href="https://buy.stripe.com/test_8wM3etg7vgrP4nK144">Donate now</a>
+        <div class="rounded-xl p-6 text-left" style="background-color: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);">
+          <div class="text-3xl mb-3">🎒</div>
+          <h3 class="text-base font-semibold mb-2">Support a Pilgrimage</h3>
+          <p class="text-sm opacity-75 leading-relaxed">Make it possible for young people who can't afford it to join our pilgrimages and encounter God in a powerful way.</p>
+        </div>
+        <div class="rounded-xl p-6 text-left" style="background-color: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);">
+          <div class="text-3xl mb-3">🙏</div>
+          <h3 class="text-base font-semibold mb-2">Grow the Mission</h3>
+          <p class="text-sm opacity-75 leading-relaxed">Invest in the long-term growth of Revive Scotland — bringing more young people into a living, transformational faith.</p>
         </div>
       </div>
+
+      <a
+        id="donate-button"
+        class="btn-primary inline-block px-10 py-4 text-base font-semibold rounded-full shadow-lg"
+        href="https://buy.stripe.com/test_aFa8wPdN4bRw3Wz02m7ss00"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Donate Now
+      </a>
+      <p class="text-xs opacity-50 mt-4">Payments are processed securely via Stripe.</p>
+
     </div>
   </div>
 </section>
