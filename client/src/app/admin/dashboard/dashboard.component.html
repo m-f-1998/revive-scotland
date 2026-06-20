@@ -9,7 +9,7 @@
   <div class="flex-1 w-full max-w-screen-xl mx-auto p-4 md:p-8">
     <header class="flex items-center gap-4 p-4 mb-6 border-b border-gray-200 rounded-lg shadow-sm">
       <img
-        [src]="authSvc.currentUser()?.photoURL"
+        [src]="$safeNavigationMigration(authSvc.currentUser()?.photoURL)"
         class="w-16 h-16 rounded-full border-2 border-primary object-cover flex-shrink-0"
         alt="User Avatar"
         onerror="this.onerror=null; this.src='default-avatar.png';"

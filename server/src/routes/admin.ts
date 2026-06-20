@@ -9,7 +9,10 @@ import { router as siteContentRouter } from "./admin/siteContent.js"
 import { router as prayersRouter } from "./admin/prayers.js"
 import { router as reflectionsRouter } from "./admin/reflections.js"
 
-import admin, { ServiceAccount } from "firebase-admin"
+import { initializeApp, cert, ServiceAccount } from "firebase-admin/app"
+import { getAuth as getFirebaseAuth, Auth } from "firebase-admin/auth"
+import { getFirestore as getFirebaseFirestore, Firestore, FieldValue, Timestamp } from "firebase-admin/firestore"
+// import admin, { ServiceAccount } from "firebase-admin"
 import { isDevMode, isPreProd } from "./static.js"
 import rateLimit from "@fastify/rate-limit"
 import { FastifyPluginAsync } from "fastify"
@@ -28,20 +31,20 @@ config ( { path: resolve ( process.cwd ( ), ".env" ), quiet: true } )
 const SUPERADMIN_EMAIL = process.env [ "SUPERADMIN_EMAIL" ]
 const ADMIN_EMAIL = process.env [ "ADMIN_EMAIL" ]
 
-admin.initializeApp ( {
-  credential: admin.credential.cert ( serviceAccount as ServiceAccount )
+initializeApp ( {
+  credential: cert ( serviceAccount )
 } )
 
-export const getAuth = ( ): admin.auth.Auth => {
-  return admin.auth ( )
+export const getAuth = ( ): Auth => {
+  return getFirebaseAuth ( )
 }
 
-export const getFirestore = ( ): admin.firestore.Firestore => {
-  return admin.firestore ( )
+export const getFirestore = ( ): Firestore => {
+  return getFirebaseFirestore ( )
 }
 
-export const incrementValue = ( value: number ): admin.firestore.FieldValue => {
-  return admin.firestore.FieldValue.increment ( value )
+export const incrementValue = ( value: number ): FieldValue => {
+  return FieldValue.increment ( value )
 }
 
 const isFirebaseAuthError = ( error: unknown ): boolean => {
@@ -83,14 +86,14 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     try {
-      const decodedToken = await admin.auth ( ).verifyIdToken ( logoutToken )
+      const decodedToken = await getAuth ( ).verifyIdToken ( logoutToken )
       const uid = decodedToken.uid
 
-      await admin.auth ( ).revokeRefreshTokens ( uid )
+      await getAuth ( ).revokeRefreshTokens ( uid )
 
       const firestore = getFirestore ( ).collection ( "users" ).doc ( uid )
       await firestore.update ( {
-        sessionExpiry: admin.firestore.FieldValue.delete ( )
+        sessionExpiry: FieldValue.delete ( )
       } )
 
       return res.status ( 200 ).send ( { message: "User logged out successfully" } )
@@ -115,7 +118,7 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     try {
-      const decodedToken = await admin.auth ( ).verifyIdToken ( verifyToken )
+      const decodedToken = await getAuth ( ).verifyIdToken ( verifyToken )
       const uid = decodedToken.uid
 
       const firestore = getFirestore ( ).collection ( "users" ).doc ( uid )
@@ -126,7 +129,7 @@ export const router: FastifyPluginAsync = async app => {
       }
 
       const data = doc.data ( )
-      const sessionExpiry: admin.firestore.Timestamp = data?. [ "sessionExpiry" ]
+      const sessionExpiry: Timestamp = data?. [ "sessionExpiry" ]
 
       const user = {
         uid,
@@ -164,9 +167,9 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     try {
-      const decodedToken = await admin.auth ( ).verifyIdToken ( newSessionToken )
+      const decodedToken = await getAuth ( ).verifyIdToken ( newSessionToken )
       const uid = decodedToken.uid
-      const user = await admin.auth ( ).getUser ( uid )
+      const user = await getAuth ( ).getUser ( uid )
 
       let role = user.customClaims?. [ "role" ] || "viewer"
 
@@ -174,7 +177,7 @@ export const router: FastifyPluginAsync = async app => {
       else if ( ADMIN_EMAIL && user.email === ADMIN_EMAIL ) role = "admin"
 
       if ( !user.customClaims?. [ "role" ] || user.customClaims [ "role" ] !== role ) {
-        await admin.auth ( ).setCustomUserClaims ( uid, { role } )
+        await getAuth ( ).setCustomUserClaims ( uid, { role } )
       }
 
       const firestore = getFirestore ( ).collection ( "users" ).doc ( uid )
@@ -190,8 +193,8 @@ export const router: FastifyPluginAsync = async app => {
       }
 
       await firestore.set ( {
-        lastLogin: admin.firestore.FieldValue.serverTimestamp ( ),
-        sessionExpiry: admin.firestore.Timestamp.fromDate ( new Date ( Date.now ( ) + 7 * 24 * 60 * 60 * 1000 ) )
+        lastLogin: FieldValue.serverTimestamp ( ),
+        sessionExpiry: Timestamp.fromDate ( new Date ( Date.now ( ) + 7 * 24 * 60 * 60 * 1000 ) )
       }, { merge: true } )
 
       return res.status ( 200 ).send ( { uid: user.uid, role } )
@@ -216,9 +219,9 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     try {
-      const decodedToken = await admin.auth ( ).verifyIdToken ( isAdminToken )
+      const decodedToken = await getAuth ( ).verifyIdToken ( isAdminToken )
       const uid = decodedToken.uid
-      const user = await admin.auth ( ).getUser ( uid )
+      const user = await getAuth ( ).getUser ( uid )
 
       const role = user.customClaims?. [ "role" ] || "viewer"
       const isAdmin = role === "admin" || role === "superadmin"

@@ -57,7 +57,8 @@ export default defineConfig (
           "ignore": [
             ".ts$",
             ".js$",
-            ".json$"
+            ".json$",
+            "^firebase-admin/.+"
           ], // Ignore unresolved imports that end with .ts or .js
         }
       ],

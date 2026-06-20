@@ -12,7 +12,7 @@
           </p>
           @if (nextEvent()?.webpageUrl) {
             <a class="btn-outline-light rounded-full px-6 py-2.5 font-medium inline-flex items-center gap-2 transition-all hover:-translate-y-0.5"
-               [href]="nextEvent()?.webpageUrl" target="_blank">
+               [href]="$safeNavigationMigration(nextEvent()?.webpageUrl)" target="_blank">
               Get Details <app-icon icon="arrow-right" />
             </a>
           }
