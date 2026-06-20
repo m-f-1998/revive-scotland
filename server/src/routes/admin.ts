@@ -3,26 +3,28 @@ import { router as fileExplorerRouter } from "./admin/fileExplorer.js"
 import { router as heroEditorRouter } from "./admin/heroEditor.js"
 import { router as eventsRouter } from "./admin/events.js"
 
-import admin, { ServiceAccount } from "firebase-admin"
+import { initializeApp, cert, ServiceAccount } from "firebase-admin/app"
+import { getAuth as getFirebaseAuth, Auth } from "firebase-admin/auth"
+import { getFirestore as getFirebaseFirestore, Firestore, FieldValue, Timestamp } from "firebase-admin/firestore"
 import serviceAccount from "../revive-scotland-firebase.json" with { type: "json" }
 import { isDevMode } from "./static.js"
 import rateLimit from "@fastify/rate-limit"
 import { FastifyPluginAsync } from "fastify"
 
-admin.initializeApp ( {
-  credential: admin.credential.cert ( serviceAccount as ServiceAccount )
+initializeApp ( {
+  credential: cert ( serviceAccount as ServiceAccount )
 } )
 
-export const getAuth = ( ): admin.auth.Auth => {
-  return admin.auth ( )
+export const getAuth = ( ): Auth => {
+  return getFirebaseAuth ( )
 }
 
-export const getFirestore = ( ): admin.firestore.Firestore => {
-  return admin.firestore ( )
+export const getFirestore = ( ): Firestore => {
+  return getFirebaseFirestore ( )
 }
 
-export const incrementValue = ( value: number ): admin.firestore.FieldValue => {
-  return admin.firestore.FieldValue.increment ( value )
+export const incrementValue = ( value: number ): FieldValue => {
+  return FieldValue.increment ( value )
 }
 
 export const router: FastifyPluginAsync = async app => {
@@ -46,11 +48,11 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     try {
-      await admin.auth ( ).revokeRefreshTokens ( uid )
+      await getAuth ( ).revokeRefreshTokens ( uid )
 
       const firestore = getFirestore ( ).collection ( "users" ).doc ( uid )
       await firestore.update ( {
-        sessionExpiry: admin.firestore.FieldValue.delete ( )
+        sessionExpiry: FieldValue.delete ( )
       } )
 
       return res.status ( 200 ).send ( { message: "User logged out successfully" } )
@@ -76,7 +78,7 @@ export const router: FastifyPluginAsync = async app => {
       }
 
       const data = doc.data ( )
-      const sessionExpiry: admin.firestore.Timestamp = data?. [ "sessionExpiry" ]
+      const sessionExpiry: Timestamp = data?. [ "sessionExpiry" ]
 
       const user = {
         uid,
@@ -109,7 +111,7 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     try {
-      const user = await admin.auth ( ).getUser ( uid )
+      const user = await getAuth ( ).getUser ( uid )
       if ( !user ) {
         return res.status ( 404 ).send ( { error: "User not found" } )
       }
@@ -120,7 +122,7 @@ export const router: FastifyPluginAsync = async app => {
       else if ( user.email === "revivescotlandx@gmail.com" ) role = "admin"
 
       if ( !user.customClaims?. [ "role" ] || user.customClaims [ "role" ] !== role ) {
-        await admin.auth ( ).setCustomUserClaims ( uid, { role } )
+        await getAuth ( ).setCustomUserClaims ( uid, { role } )
       }
 
       // Store the Session Expiry time here in Firestore
@@ -138,8 +140,8 @@ export const router: FastifyPluginAsync = async app => {
       }
 
       await firestore.set ( {
-        lastLogin: admin.firestore.FieldValue.serverTimestamp ( ),
-        sessionExpiry: admin.firestore.Timestamp.fromDate ( new Date ( Date.now ( ) + 7 * 24 * 60 * 60 * 1000 ) ) // 7 days
+        lastLogin: FieldValue.serverTimestamp ( ),
+        sessionExpiry: Timestamp.fromDate ( new Date ( Date.now ( ) + 7 * 24 * 60 * 60 * 1000 ) ) // 7 days
       }, { merge: true } )
 
       return res.status ( 200 ).send ( { uid: user.uid, role } )
@@ -157,7 +159,7 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     try {
-      const user = await admin.auth ( ).getUser ( uid )
+      const user = await getAuth ( ).getUser ( uid )
       if ( !user ) {
         return res.status ( 404 ).send ( { error: "User not found" } )
       }

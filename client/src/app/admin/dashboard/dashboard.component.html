@@ -10,7 +10,7 @@
       <div class="d-flex align-items-center">
         <div class="flex-shrink-0 me-4">
           <img
-            [src]="authSvc.currentUser()?.photoURL"
+            [src]="$safeNavigationMigration(authSvc.currentUser()?.photoURL)"
             class="rounded-circle border border-primary border-3"
             alt="User Avatar"
             style="width: 64px; height: 64px; object-fit: cover;"

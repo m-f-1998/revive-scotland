@@ -13,7 +13,7 @@
           </div>
 
           @if (nextEvent()?.webpageUrl) {
-            <a class="btn btn-outline-light btn-lg rounded-pill px-4 transition-all" [href]="nextEvent()?.webpageUrl" target="_blank">
+            <a class="btn btn-outline-light btn-lg rounded-pill px-4 transition-all" [href]="$safeNavigationMigration(nextEvent()?.webpageUrl)" target="_blank">
               Get Details <app-icon icon="arrow-right" class="ms-2" />
             </a>
           }

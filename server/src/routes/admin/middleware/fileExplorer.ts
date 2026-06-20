@@ -1,10 +1,10 @@
-import { auth } from "firebase-admin"
+import { DecodedIdToken } from "firebase-admin/auth"
 import { getAuth } from "../../../routes/admin.js"
 import { FastifyReply, FastifyRequest } from "fastify"
 
 declare module "fastify" {
   interface FastifyRequest {
-    user?: auth.DecodedIdToken & {
+    user?: DecodedIdToken & {
       s3Path?: string
     }
   }
