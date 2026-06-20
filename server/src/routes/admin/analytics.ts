@@ -1,16 +1,12 @@
 import { BetaAnalyticsDataClient } from "@google-analytics/data"
-import { GoogleAuth } from "google-auth-library"
 import serviceAccount from "../../revive-scotland-firebase.json" with { type: "json" }
 import { FastifyPluginAsync } from "fastify"
 
-const auth = new GoogleAuth ( {
+const analyticsDataClient = new BetaAnalyticsDataClient ( {
   credentials: serviceAccount,
-  scopes: "https://www.googleapis.com/auth/analytics.readonly"
+  projectId: serviceAccount.project_id
 } )
 
-const analyticsDataClient = new BetaAnalyticsDataClient ( {
-  auth
-} )
 const projectID = "477989791"
 const dateRanges = [ { startDate: "90daysAgo", endDate: "today" } ]
 
