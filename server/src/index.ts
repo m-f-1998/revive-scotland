@@ -121,7 +121,8 @@ await app.register ( helmet, {
         "https://static.cloudflareinsights.com",
         "https://www.google.com",
         "https://www.gstatic.com",
-        "https://apis.google.com"
+        "https://apis.google.com",
+        "'unsafe-inline'"
       ],
       scriptSrcAttr: [
         "'none'"
