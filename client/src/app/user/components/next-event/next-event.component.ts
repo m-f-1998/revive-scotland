@@ -1,5 +1,5 @@
 
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, signal, WritableSignal } from "@angular/core"
+import { ChangeDetectionStrategy, Component, inject, OnDestroy, signal, WritableSignal } from "@angular/core"
 import { IconComponent } from "@revive/src/app/icon/icon.component"
 import { EventsService, ReviveEvent } from "@services/events.service"
 import { intervalToDuration } from "date-fns"
@@ -21,7 +21,7 @@ interface TimeRemaining {
   styleUrl: "./next-event.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
-export class NextEventComponent {
+export class NextEventComponent implements OnDestroy {
   public readonly nextEvent: WritableSignal<ReviveEvent | null> = signal ( null )
   public readonly timeRemaining: WritableSignal<TimeRemaining> = signal ( {
     months: "0",
@@ -31,17 +31,16 @@ export class NextEventComponent {
     seconds: "0"
   } )
 
+  private intervalId: ReturnType<typeof setInterval> | null = null
   private readonly eventSvc: EventsService = inject ( EventsService )
-  private readonly changeDetector: ChangeDetectorRef = inject ( ChangeDetectorRef )
 
   public constructor (  ) {
     this.eventSvc.getNextEvent ( ).then ( ( nextEvent: ReviveEvent | undefined ) => {
       if ( nextEvent ) {
         this.nextEvent.set ( nextEvent )
 
-        setInterval ( ( ) => {
+        this.intervalId = setInterval ( ( ) => {
           this.getTimeRemaining ( )
-          this.changeDetector.detectChanges ( )
         }, 1000 )
       }
     } )
@@ -49,6 +48,10 @@ export class NextEventComponent {
 
   public get validNextEvent ( ) : boolean {
     return this.nextEvent ( ) !== null && this.nextEvent ( )!.startDate > new Date ( )
+  }
+
+  public ngOnDestroy ( ): void {
+    if ( this.intervalId !== null ) clearInterval ( this.intervalId )
   }
 
   public getTimeRemaining ( ) {

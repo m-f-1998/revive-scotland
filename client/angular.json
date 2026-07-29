@@ -43,7 +43,10 @@
               }
             ],
             "styles": [
-              "src/styles.scss"
+              "node_modules/@angular/cdk/overlay-prebuilt.css",
+              "src/styles.css",
+              "@fortawesome/fontawesome-svg-core/styles.css",
+              "node_modules/@m-f-1998/ngx-toastr/toastr.css"
             ]
           },
           "configurations": {

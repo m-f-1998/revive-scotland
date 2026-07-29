@@ -1,0 +1,212 @@
+<div class="flex flex-col min-h-screen">
+<app-admin-navbar />
+<div class="flex-1 w-full max-w-screen-xl mx-auto p-4 md:p-8">
+
+  <h2 class="text-2xl font-bold mb-2 flex items-center gap-2">
+    <app-icon icon="book-open" />
+    Resources Editor
+  </h2>
+  <p class="text-gray-500 text-sm mb-4">Manage prayers and video reflections shown on the public Resources page.</p>
+  <hr class="border-gray-200 mb-6">
+
+  @if (loading()) {
+    <div class="flex flex-col items-center justify-center gap-2 p-10 text-gray-500">
+      <app-icon icon="spinner" iconAnimation="spin" iconSize="2x" />
+      <p class="mt-2">Loading...</p>
+    </div>
+  } @else {
+
+    <!-- ── Prayers ───────────────────────────────────────── -->
+    <div class="card mb-6 shadow-sm">
+      <div class="card-header flex items-center justify-between cursor-pointer select-none" (click)="prayersSectionCollapsed.set(!prayersSectionCollapsed())">
+        <h5 class="mb-0 font-semibold flex items-center gap-2">
+          <app-icon icon="hands-praying" />
+          Prayers
+          <span class="text-xs font-normal text-gray-400">({{ prayers().length }})</span>
+        </h5>
+        <span class="inline-block transition-transform duration-200" [class.rotate-180]="!prayersSectionCollapsed()">
+          <app-icon icon="chevron-down" />
+        </span>
+      </div>
+
+      @if (!prayersSectionCollapsed()) {
+        <div class="card-body">
+          @if (prayers().length === 0) {
+            <p class="text-muted text-sm text-center py-4">No prayers yet. Add one below.</p>
+          }
+          @for (prayer of prayers(); track prayer.id) {
+            <div class="card mb-3 shadow-sm border border-gray-200 dark:border-slate-600">
+              <div class="card-header flex items-center justify-between cursor-pointer select-none py-3 px-4" (click)="togglePrayer($index)">
+                <span class="font-medium text-sm">{{ prayer.name || 'Prayer ' + ($index + 1) }}</span>
+                <div class="flex items-center gap-1">
+                  <button class="btn-outline-secondary btn-sm" (click)="movePrayerUp($index); $event.stopPropagation()" [disabled]="$index === 0" title="Move up">
+                    <app-icon icon="chevron-up" />
+                  </button>
+                  <button class="btn-outline-secondary btn-sm" (click)="movePrayerDown($index); $event.stopPropagation()" [disabled]="$index === prayers().length - 1" title="Move down">
+                    <app-icon icon="chevron-down" />
+                  </button>
+                  <button class="btn-danger btn-sm" (click)="removePrayer($index); $event.stopPropagation()" title="Remove">
+                    <app-icon icon="trash" />
+                  </button>
+                  <span class="inline-block transition-transform duration-200 ml-1" [class.rotate-180]="expandedPrayer() === $index">
+                    <app-icon icon="chevron-down" />
+                  </span>
+                </div>
+              </div>
+
+              @if (expandedPrayer() === $index) {
+                <div class="card-body space-y-4 pt-0">
+                  <div>
+                    <label class="block text-sm font-medium mb-1">Name <span class="text-red-500">*</span></label>
+                    <input type="text" maxlength="100" class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="e.g. The Angelus"
+                      [value]="prayer.name" (input)="updatePrayer($index, 'name', $any($event.target).value)" />
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium mb-1">Category</label>
+                      <select class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
+                        [value]="prayer.category" (change)="updatePrayer($index, 'category', $any($event.target).value)">
+                        @for (cat of categories; track cat.value) {
+                          <option [value]="cat.value">{{ cat.label }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium mb-1">Type</label>
+                      <select class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
+                        [value]="prayer.type" (change)="updatePrayer($index, 'type', $any($event.target).value)">
+                        @for (type of prayerTypes; track type.value) {
+                          <option [value]="type.value">{{ type.label }}</option>
+                        }
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium mb-1">Prayer Text <span class="text-red-500">*</span></label>
+                    <textarea rows="8" maxlength="10000" class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary resize-y font-mono"
+                      placeholder="Enter the full prayer text..."
+                      [value]="prayer.text" (input)="updatePrayer($index, 'text', $any($event.target).value)"></textarea>
+                    <p class="text-xs text-gray-400 mt-1 text-right">{{ prayer.text.length }}/10000</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium mb-1">Latin Translation <span class="text-gray-400 font-normal">(optional)</span></label>
+                    <textarea rows="6" maxlength="10000" class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary resize-y font-mono"
+                      placeholder="Enter Latin text if available — users can toggle between English and Latin..."
+                      [value]="prayer.latin ?? ''" (input)="updatePrayer($index, 'latin', $any($event.target).value)"></textarea>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+        <div class="card-footer flex flex-col items-center sm:flex-row sm:justify-between gap-2">
+          <div class="flex gap-2">
+            <button class="btn-success" (click)="addPrayer()">
+              <app-icon icon="plus-circle" /> Add Prayer
+            </button>
+            <button class="btn-outline-secondary" (click)="restoreDefaultPrayers()" title="Reset to the built-in default prayers">
+              <app-icon icon="refresh" /> Restore Defaults
+            </button>
+          </div>
+          @if (prayers().length > 0) {
+            <button class="btn-primary" [disabled]="savingPrayers() || prayersSomeEmpty()" (click)="savePrayers()">
+              @if (savingPrayers()) { <app-icon icon="spinner" iconAnimation="spin" /> } @else { <app-icon icon="save" /> }
+              Save Prayers
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- ── Reflections ───────────────────────────────────── -->
+    <div class="card mb-6 shadow-sm">
+      <div class="card-header flex items-center justify-between cursor-pointer select-none" (click)="reflectionsSectionCollapsed.set(!reflectionsSectionCollapsed())">
+        <h5 class="mb-0 font-semibold flex items-center gap-2">
+          <app-icon icon="youtube" />
+          Reflections
+          <span class="text-xs font-normal text-gray-400">({{ reflections().length }})</span>
+        </h5>
+        <span class="inline-block transition-transform duration-200" [class.rotate-180]="!reflectionsSectionCollapsed()">
+          <app-icon icon="chevron-down" />
+        </span>
+      </div>
+
+      @if (!reflectionsSectionCollapsed()) {
+        <div class="card-body">
+          @if (reflections().length === 0) {
+            <p class="text-muted text-sm text-center py-4">No reflections yet. Add one below.</p>
+          }
+          @for (reflection of reflections(); track reflection.id) {
+            <div class="card mb-3 shadow-sm border border-gray-200 dark:border-slate-600">
+              <div class="card-header flex items-center justify-between cursor-pointer select-none py-3 px-4" (click)="toggleReflection($index)">
+                <span class="font-medium text-sm">{{ reflection.title || 'Reflection ' + ($index + 1) }}</span>
+                <div class="flex items-center gap-1">
+                  <button class="btn-outline-secondary btn-sm" (click)="moveReflectionUp($index); $event.stopPropagation()" [disabled]="$index === 0" title="Move up">
+                    <app-icon icon="chevron-up" />
+                  </button>
+                  <button class="btn-outline-secondary btn-sm" (click)="moveReflectionDown($index); $event.stopPropagation()" [disabled]="$index === reflections().length - 1" title="Move down">
+                    <app-icon icon="chevron-down" />
+                  </button>
+                  <button class="btn-danger btn-sm" (click)="removeReflection($index); $event.stopPropagation()" title="Remove">
+                    <app-icon icon="trash" />
+                  </button>
+                  <span class="inline-block transition-transform duration-200 ml-1" [class.rotate-180]="expandedReflection() === $index">
+                    <app-icon icon="chevron-down" />
+                  </span>
+                </div>
+              </div>
+
+              @if (expandedReflection() === $index) {
+                <div class="card-body space-y-4 pt-0">
+                  <div>
+                    <label class="block text-sm font-medium mb-1">Title <span class="text-red-500">*</span></label>
+                    <input type="text" maxlength="150" class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="e.g. Devotion to the Sacred Heart of Jesus"
+                      [value]="reflection.title" (input)="updateReflection($index, 'title', $any($event.target).value)" />
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium mb-1">Category</label>
+                      <select class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary"
+                        [value]="reflection.category" (change)="updateReflection($index, 'category', $any($event.target).value)">
+                        @for (cat of categories; track cat.value) {
+                          <option [value]="cat.value">{{ cat.label }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium mb-1">YouTube Video ID <span class="text-red-500">*</span></label>
+                      <input type="text" maxlength="20" class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary font-mono"
+                        placeholder="e.g. dQw4w9WgXcQ"
+                        [value]="reflection.youtubeId" (input)="updateReflection($index, 'youtubeId', $any($event.target).value)" />
+                      @if (reflection.youtubeId) {
+                        <a [href]="'https://www.youtube.com/watch?v=' + reflection.youtubeId" target="_blank" rel="noopener noreferrer" class="text-xs text-primary hover:text-primary-hover mt-1 inline-block">
+                          Preview on YouTube ↗
+                        </a>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+        <div class="card-footer flex flex-col items-center sm:flex-row sm:justify-between gap-2">
+          <button class="btn-success" (click)="addReflection()">
+            <app-icon icon="plus-circle" /> Add Reflection
+          </button>
+          @if (reflections().length > 0) {
+            <button class="btn-primary" [disabled]="savingReflections() || reflectionsSomeEmpty()" (click)="saveReflections()">
+              @if (savingReflections()) { <app-icon icon="spinner" iconAnimation="spin" /> } @else { <app-icon icon="save" /> }
+              Save Reflections
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+  }
+</div>
+<app-admin-footer />
+</div>

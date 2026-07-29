@@ -16,8 +16,23 @@ import { router as mailerRouter } from "./routes/mailer.js"
 import { router as imagesRouter } from "./routes/images.js"
 import { router as adminRouter } from "./routes/admin.js"
 import { router as publicRouter } from "./routes/admin/public.js"
+import { router as galleryRouter } from "./routes/gallery.js"
+import { router as feastRouter } from "./routes/feast.js"
 
 import { randomBytes } from "crypto"
+
+const REQUIRED_ENV_VARS = [
+  "SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "SMTP_DESTINATION",
+  "RECAPTCHA_API_KEY", "RECAPTCHA_SITE",
+  "R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME",
+  "SUPERADMIN_EMAIL"
+]
+
+const missingVars = REQUIRED_ENV_VARS.filter ( v => !process.env [ v ] )
+if ( missingVars.length > 0 ) {
+  console.error ( `Missing required environment variables: ${missingVars.join ( ", " )}` )
+  if ( !isDevMode ( ) ) process.exit ( 1 )
+}
 
 const app = Fastify ( {
   logger: false,
@@ -34,7 +49,7 @@ await app.register ( cookie )
 await app.register ( formbody )
 
 await app.register ( compress, {
-  threshold: 1024 * 20,
+  threshold: 1024,
   zlibOptions: {
     flush: zlib.constants.Z_SYNC_FLUSH // Forces chunks to be sent immediately
   }
@@ -63,14 +78,16 @@ if ( !isDevMode ( ) ) {
 
 const logger: pino.Logger = pino ( {
   level: "info",
-  transport: {
-    target: "pino-pretty",
-    options: {
-      colorize: true,
-      translateTime: "HH:MM:ss",
-      ignore: "pid,hostname",
+  ...( isDevMode ( ) ? {
+    transport: {
+      target: "pino-pretty",
+      options: {
+        colorize: true,
+        translateTime: "HH:MM:ss",
+        ignore: "pid,hostname",
+      },
     },
-  },
+  } : { } )
 } )
 
 app.addHook ( "onRequest", async ( req, _reply ) => {
@@ -94,32 +111,21 @@ await app.register ( helmet, {
       ],
       styleSrc: [
         "'self'",
-        // ( req: IncomingMessage ) => {
-        //   if ( req.cspNonce ) {
-        //     return `'nonce-${req.cspNonce}'`
-        //   }
-        //   return ""
-        // },
         "'unsafe-inline'"
       ],
       scriptSrcElem: [
         "'self'",
-        "'unsafe-inline'",
-        // ( req: IncomingMessage ) => {
-        //   if ( req.cspNonce ) {
-        //     return `'nonce-${req.cspNonce}'`
-        //   }
-        //   return ""
-        // },
+        ( req: IncomingMessage ) => req.cspNonce ? `'nonce-${req.cspNonce}'` : "",
         "https://www.youtube.com",
         "https://www.googletagmanager.com",
         "https://static.cloudflareinsights.com",
         "https://www.google.com",
         "https://www.gstatic.com",
-        "https://apis.google.com"
+        "https://apis.google.com",
+        "'unsafe-inline'"
       ],
       scriptSrcAttr: [
-        "'unsafe-inline'"
+        "'none'"
       ],
       imgSrc: [
         "'self'",
@@ -127,7 +133,8 @@ await app.register ( helmet, {
         "https://\*.jsdelivr.net",
         "https://lh3.googleusercontent.com",
         "https://googletagmanager.com",
-        "https://\*.r2.cloudflarestorage.com"
+        "https://\*.r2.cloudflarestorage.com",
+        "https://img.youtube.com"
       ],
       connectSrc: [
         "'self'",
@@ -142,7 +149,8 @@ await app.register ( helmet, {
       frameSrc: [
         "'self'",
         "https://www.google.com",
-        "https://revive-scotland-admin.firebaseapp.com"
+        "https://revive-scotland-admin.firebaseapp.com",
+        "https://revive-scotland-dev.firebaseapp.com"
       ],
       mediaSrc: [
         "'self'"
@@ -194,8 +202,10 @@ app.addHook ( "onRequest", async request => {
 
 app.register ( mailerRouter, { prefix: "/api/mailer" } )
 app.register ( imagesRouter, { prefix: "/api/img" } )
+app.register ( galleryRouter, { prefix: "/api/gallery" } )
 app.register ( adminRouter, { prefix: "/api/admin" } )
 app.register ( publicRouter, { prefix: "/api/public" } )
+app.register ( feastRouter, { prefix: "/api/feast" } )
 app.register ( staticRouter, { prefix: "/" } )
 
 console.log ( "Server is starting..." )

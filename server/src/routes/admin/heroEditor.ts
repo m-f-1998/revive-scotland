@@ -105,6 +105,11 @@ export const router: FastifyPluginAsync = async app => {
       const shared_links = getFirestore ( ).collection ( "shared_links" )
       const snapshot = await shared_links.where ( "type", "==", "hero_editor" ).get ( )
 
+      // Fetch events once outside the loop to avoid N+1 Firestore reads
+      const eventsSnapshot = ( ( await getFirestore ( ).collection ( "events" ).doc ( "default" ).get ( ) ).data ( )?. [ "events" ] || [ ] ) as {
+        imageUrl?: string
+      } [ ]
+
       for ( const doc of snapshot.docs ) {
         const id = doc.id
         const expectedUrlEnding = `/api/public/s/${id}`
@@ -112,10 +117,6 @@ export const router: FastifyPluginAsync = async app => {
           return hero.url.endsWith ( expectedUrlEnding )
         } )
 
-        const events = getFirestore ( ).collection ( "events" )
-        const eventsSnapshot = ( ( await events.doc ( "default" ).get ( ) ).data ( )?. [ "events" ] || [ ] ) as {
-          imageUrl?: string
-        } [ ]
         const isInEvents = eventsSnapshot.some ( event => {
           return event.imageUrl && event.imageUrl.endsWith ( expectedUrlEnding )
         } )

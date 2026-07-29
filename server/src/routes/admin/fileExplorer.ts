@@ -10,6 +10,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import { randomUUID } from "crypto"
 
 import { addUserPath, checkFirebaseAuth, validateS3Key } from "./middleware/fileExplorer.js"
+import { onFilesDeleted, onFileRenamed, onFolderRenamed } from "./mediaReferences.js"
 import { getFirestore, incrementValue } from "../admin.js"
 import { FastifyPluginAsync } from "fastify"
 
@@ -82,35 +83,30 @@ export const router: FastifyPluginAsync = async app => {
       } ) )
 
       // Files (Contents)
-      const files: Promise<{
-        name?: string
-        key?: string
-        lastModified?: Date
-        size?: number
-        isFolder: false
-        contentType?: string
-      }> [ ] = [ ]
-      for ( const f of ( data.Contents || [ ] ).filter ( f => f.Key !== prefix ) ) {
-        files.push ( ( async ( ) => {
-          const head = await s3Client.send (
-            new HeadObjectCommand ( {
-              Bucket: R2_BUCKET_NAME,
-              Key: f.Key!,
-            } )
-          )
-
-          return {
-            name: f.Key?.replace ( prefix, "" ),
-            key: f.Key,
-            lastModified: f.LastModified,
-            size: f.Size, // In bytes
-            isFolder: false,
-            contentType: head.ContentType // Will be fetched on demand if needed
-          }
-        } ) ( ) )
+      const EXTENSION_TYPES: Record<string, string> = {
+        jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif",
+        webp: "image/webp", avif: "image/avif", svg: "image/svg+xml",
+        pdf: "application/pdf", txt: "text/plain",
+        mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime",
+        mp3: "audio/mpeg", wav: "audio/wav",
+        zip: "application/zip", json: "application/json",
+        doc: "application/msword", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        xls: "application/vnd.ms-excel", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       }
 
-      return rep.status ( 200 ).send ( [ ...folders, ...( await Promise.all ( files ) ) ] )
+      const files = ( data.Contents || [ ] ).filter ( f => f.Key !== prefix ).map ( f => {
+        const ext = f.Key?.split ( "." ).pop ( )?.toLowerCase ( ) ?? ""
+        return {
+          name: f.Key?.replace ( prefix, "" ),
+          key: f.Key,
+          lastModified: f.LastModified,
+          size: f.Size,
+          isFolder: false,
+          contentType: EXTENSION_TYPES [ ext ] ?? "application/octet-stream"
+        }
+      } )
+
+      return rep.status ( 200 ).send ( [ ...folders, ...files ] )
     } catch ( error ) {
       console.error ( "Error listing files:", error )
       return rep.status ( 500 ).send ( "Failed to list files." )
@@ -247,15 +243,15 @@ export const router: FastifyPluginAsync = async app => {
         const deletePromises = files.map ( file =>
           s3Client.send ( new DeleteObjectCommand ( { Bucket: R2_BUCKET_NAME, Key: file.key } ) )
         )
+
+        // Cascade: remove media references BEFORE deleting share links
+        await onFilesDeleted ( files.map ( f => f.key ) )
+
         await Promise.all ( deletePromises )
       } else {
         try {
           // First, get the file size for quota update
-          const headCommand = new HeadObjectCommand ( {
-            Bucket: R2_BUCKET_NAME,
-            Key: key,
-          } )
-          const headData = await s3Client.send ( headCommand )
+          const headData = await s3Client.send ( new HeadObjectCommand ( { Bucket: R2_BUCKET_NAME, Key: key } ) ) as { ContentLength?: number }
           totalSizeDeleted = headData.ContentLength || 0
         } catch ( error ) {
           const { name, $metadata } = error as { name: string; $metadata?: { httpStatusCode?: number } }
@@ -274,6 +270,10 @@ export const router: FastifyPluginAsync = async app => {
 
         const db = getFirestore ( )
         const querySnapshot = await db.collection ( "shared_links" ).where ( "key", "==", key ).get ( )
+
+        // Cascade: remove media references BEFORE deleting share links
+        await onFilesDeleted ( [ key ] )
+
         const batch = db.batch ( )
         querySnapshot.forEach ( doc => {
           batch.delete ( doc.ref )
@@ -328,27 +328,21 @@ export const router: FastifyPluginAsync = async app => {
         // 1. List all files under the prefix
         const files = await listAllKeys ( oldKey )
 
-        // 2. Copy+Delete each file to the new location
-        const operationPromises = files.flatMap ( file => {
-          const targetKey = file.key.replace ( oldKey, newKey )
+        // 2. Copy all files to the new location first
+        await Promise.all ( files.map ( file => s3Client.send ( new CopyObjectCommand ( {
+          Bucket: R2_BUCKET_NAME,
+          CopySource: `${R2_BUCKET_NAME}/${file.key}`,
+          Key: file.key.replace ( oldKey, newKey ),
+        } ) ) ) )
 
-          // Return an array of two promises per file: Copy and Delete
-          return [
-            // 1. Copy
-            s3Client.send ( new CopyObjectCommand ( {
-              Bucket: R2_BUCKET_NAME,
-              CopySource: `${R2_BUCKET_NAME}/${file.key}`,
-              Key: targetKey,
-            } ) ),
-            // 2. Delete
-            s3Client.send ( new DeleteObjectCommand ( {
-              Bucket: R2_BUCKET_NAME,
-              Key: file.key,
-            } ) )
-          ]
-        } )
-        // Execute ALL Copy and Delete operations concurrently
-        await Promise.all ( operationPromises )
+        // 3. Update share links before deleting originals so active URLs remain valid
+        await onFolderRenamed ( oldKey, newKey )
+
+        // 4. Only delete originals after share links are updated
+        await Promise.all ( files.map ( file => s3Client.send ( new DeleteObjectCommand ( {
+          Bucket: R2_BUCKET_NAME,
+          Key: file.key,
+        } ) ) ) )
       } else {
         // 1. Copy the object
         const copyCommand = new CopyObjectCommand ( {
@@ -358,7 +352,10 @@ export const router: FastifyPluginAsync = async app => {
         } )
         await s3Client.send ( copyCommand )
 
-        // 2. Delete the old object
+        // 2. Update share link key before deleting so existing URLs remain valid
+        await onFileRenamed ( oldKey, newKey )
+
+        // 3. Delete the old object
         const deleteCommand = new DeleteObjectCommand ( {
           Bucket: R2_BUCKET_NAME,
           Key: oldKey,
@@ -462,7 +459,7 @@ export const router: FastifyPluginAsync = async app => {
    * Called by the client AFTER a successful S3 upload.
    */
   app.post ( "/upload-complete", async ( req, rep ) => {
-    const { key } = req.body as { key?: string } // Only need the key
+    const { key, fileSize } = req.body as { key?: string; fileSize?: number }
 
     if ( !key ) {
       return rep.status ( 400 ).send ( "Missing 'key'." )
@@ -470,35 +467,18 @@ export const router: FastifyPluginAsync = async app => {
 
     const userRef = getFirestore ( ).collection ( "users" ).doc ( req.user!.uid )
 
-    if ( !key ) {
-      return rep.status ( 400 ).send ( "Missing 'key'." )
-    }
-
     try {
-      const userPrefix = req.user!.s3Path!
-      const allFiles = await listAllKeys ( userPrefix )
-      const totalSize = allFiles.reduce ( ( acc, file ) => acc + file.size, 0 )
-      await userRef.set ( {
-        storageUsed: totalSize
-      }, { merge: true } )
+      const headResult = await s3Client.send ( new HeadObjectCommand ( { Bucket: R2_BUCKET_NAME, Key: key } ) )
+      const actualSize = headResult.ContentLength ?? 0
+
+      if ( typeof fileSize === "number" && fileSize > 0 && Math.abs ( actualSize - fileSize ) > 1024 ) {
+        return rep.status ( 400 ).send ( "File size mismatch." )
+      }
+
+      await userRef.set ( { storageUsed: incrementValue ( actualSize ) }, { merge: true } )
 
       return rep.status ( 200 ).send ( { message: "Quota updated." } )
     } catch ( error ) {
-      const { name, $metadata } = error as { name: string; $metadata?: { httpStatusCode?: number } }
-      if ( name === "NotFound" || $metadata?.httpStatusCode === 404 ) {
-        return rep.status ( 404 ).send ( "Upload not found. Could not update quota." )
-      }
-      if ( ( error as { code?: number } ).code === 5 ) {
-        // User doc doesn't exist yet, create it with zero usage
-        try {
-          await userRef.set ( {
-            storageUsed: 0
-          } )
-          return rep.status ( 200 ).send ( { message: "Quota initialized." } )
-        } catch ( e ) {
-          console.error ( "Error initializing quota for new user.", e )
-        }
-      }
       console.error ( "Error updating quota:", error )
       return rep.status ( 500 ).send ( "Failed to update quota." )
     }

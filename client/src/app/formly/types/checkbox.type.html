@@ -1,0 +1,14 @@
+<div class="flex items-center gap-2">
+  <input
+    type="checkbox"
+    [id]="id"
+    [formControl]="$any(formControl)"
+    class="h-4 w-4 rounded border-gray-300 text-primary accent-primary cursor-pointer"
+  />
+  @if (props.label) {
+    <label [attr.for]="id" class="text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+      {{ props.label }}
+      @if (props.required) { <span class="text-red-500 ml-0.5">*</span> }
+    </label>
+  }
+</div>

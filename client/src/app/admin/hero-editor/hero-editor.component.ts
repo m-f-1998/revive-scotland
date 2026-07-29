@@ -40,7 +40,7 @@ export class HeroEditorComponent implements OnInit {
   public ngOnInit ( ): void {
     this.fields = [
       this.formlySvc.SelectInput ( "pageID", {
-        label: "Page Selection",
+        label: "Page",
         options: [
           { label: "Home Page", value: "home" },
           { label: "Events", value: "events" },
@@ -66,7 +66,10 @@ export class HeroEditorComponent implements OnInit {
       {
         id: `hero-${Date.now ( )}`,
         fields: this.getHeroEntryFields ( ),
-        model: { },
+        model: {
+          title: "Revive Scotland",
+          description: "Enter a short description for this banner slide..."
+        },
         form: new FormGroup ( { } )
       }
     ] )
@@ -162,16 +165,16 @@ export class HeroEditorComponent implements OnInit {
   private getHeroEntryFields ( ): FormlyFieldConfig [ ] {
     return [
       this.formlySvc.TextInput ( "title", {
-        label: "Hero Title",
+        label: "Title",
         maxLength: 100
       } ),
       this.formlySvc.TextAreaInput ( "description", {
-        label: "Hero Description",
+        label: "Description",
         maxLength: 500,
       } ),
       this.formlySvc.ImagePickerInput ( "url", {
-        label: "Hero Image URL",
-        placeholder: "Select or enter the image URL for the hero",
+        label: "Image",
+        placeholder: "Select or enter the banner image URL",
         required: true
       } )
     ]

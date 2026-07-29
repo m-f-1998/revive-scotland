@@ -1,4 +1,4 @@
-<div class="w-100 input-group">
+<div class="w-full space-y-3">
   <input
     type="text"
     [formControl]="inputControl"
@@ -6,26 +6,24 @@
     [id]="id"
     [required]="props.required || false"
     [placeholder]="props.placeholder || 'Search for an address...'"
-    class="w-100 form-control"
+    class="form-control"
     (input)="searchAddress($event.target.value)">
 
   @if (searchResults().length > 0) {
-    <div class="mt-3 w-100">
-      <formly-form
-        [form]="selectAddressForm"
-        [model]="selectAddressModel"
-        [fields]="selectAddressFields" />
-    </div>
+    <formly-form
+      [form]="selectAddressForm"
+      [model]="selectAddressModel"
+      [fields]="selectAddressFields" />
   }
 
   @if (loading()) {
-    <div class="mt-3">
+    <div class="flex items-center gap-2 text-sm text-gray-500">
       <app-icon icon="spinner" iconAnimation="spin" />
       Loading...
     </div>
   }
 
   @if (formControl.invalid && (formControl.dirty || formControl.touched)) {
-    <formly-validation-message [field]="field" class="invalid-feedback ng-star-inserted" />
+    <formly-validation-message [field]="field" class="invalid-feedback" />
   }
 </div>

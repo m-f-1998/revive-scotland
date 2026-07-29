@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, inject, signal, WritableSignal } from "@angular/core"
-import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
+import { ModalService } from "@revive/src/app/services/modal.service"
 import { FormlyFieldConfig } from "@ngx-formly/core"
 import { InputDialogComponent } from "../input-dialog/input-dialog.component"
 import { FormlyService } from "../../services/formly.service"
-import { FieldType } from "@ngx-formly/bootstrap/form-field"
+import { FieldType } from "@ngx-formly/core"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { IconComponent } from "../../icon/icon.component"
 
@@ -19,7 +19,7 @@ export class RepeatFieldComponent extends FieldType {
   public editingIndex: number | null = null
   public valuesInModel: WritableSignal<unknown[]> = signal ( [ ] )
 
-  private readonly modalSvc: NgbModal = inject ( NgbModal )
+  private readonly modalSvc: ModalService = inject ( ModalService )
   private readonly formlySvc: FormlyService = inject ( FormlyService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
 
@@ -59,15 +59,14 @@ export class RepeatFieldComponent extends FieldType {
     const modalRef = this.modalSvc.open ( InputDialogComponent, {
       centered: true
     } )
-    modalRef.componentInstance.title = "Add New Item"
-    modalRef.componentInstance.fields = this.fieldsCanAdd || [ ]
+    modalRef.setInput ( "title", "Add New Item" )
+    modalRef.setInput ( "fields", this.fieldsCanAdd || [ ] )
     modalRef.result.then ( ( result: { label: string; type: string; placeholder?: string; required?: boolean } ) => {
       if ( result ) {
         this.addNewFieldToModel ( this.formControl?.value?.length || 0, result )
       }
     } ).catch ( ( ) => { } ).finally ( ( ) => {
       modalRef.componentInstance.form.reset ( )
-      modalRef.componentInstance.model = { }
     } )
   }
 
@@ -80,14 +79,14 @@ export class RepeatFieldComponent extends FieldType {
     const modalRef = this.modalSvc.open ( InputDialogComponent, {
       centered: true
     } )
-    modalRef.componentInstance.title = "Edit Item"
-    modalRef.componentInstance.fields = this.fieldsCanAdd || [ ]
-    modalRef.componentInstance.model = {
+    modalRef.setInput ( "title", "Edit Item" )
+    modalRef.setInput ( "fields", this.fieldsCanAdd || [ ] )
+    modalRef.setInput ( "model", {
       required: fieldToEdit?.props?.required || false,
       label: fieldToEdit?.props?.label || "",
       placeholder: fieldToEdit?.props?.placeholder || "",
       type: fieldToEdit?.props?.type || fieldToEdit?.type || ""
-    }
+    } )
     modalRef.result.then ( ( result: { label: string; type: string; placeholder?: string; required?: boolean } ) => {
       if ( result ) {
         this.addNewFieldToModel ( index, result )

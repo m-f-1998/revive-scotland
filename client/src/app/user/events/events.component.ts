@@ -6,7 +6,7 @@ import { ContactComponent } from "@components/contact/contact.component"
 import { SliderComponent } from "@components/slider/slider.component"
 import { FormlyService } from "../../services/formly.service"
 import { NavbarComponent } from "../components/navbar/navbar.component"
-import { NgbModal } from "@ng-bootstrap/ng-bootstrap"
+import { ModalService } from "@revive/src/app/services/modal.service"
 import { InputDialogComponent } from "../../formly/input-dialog/input-dialog.component"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { ApiService } from "../../services/api.service"
@@ -30,12 +30,12 @@ export class EventsComponent implements OnInit {
     {
       title: "Upcoming Events",
       content: "Revive Scotland",
-      image: "skye/skye-1.jpg"
+      image: "gallery/skye/skye-1.jpg"
     },
     {
       title: "Upcoming Events",
       content: "Revive Scotland",
-      image: "skye/skye-3.jpg"
+      image: "gallery/skye/skye-3.jpg"
     },
   ]
 
@@ -45,7 +45,7 @@ export class EventsComponent implements OnInit {
   public readonly eventsSvc: EventsService = inject ( EventsService )
   public readonly dateSvc: DatesService = inject ( DatesService )
   public readonly formlySvc: FormlyService = inject ( FormlyService )
-  private readonly modalSvc: NgbModal = inject ( NgbModal )
+  private readonly modalSvc: ModalService = inject ( ModalService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
   private readonly apiSvc: ApiService = inject ( ApiService )
 
@@ -61,11 +61,11 @@ export class EventsComponent implements OnInit {
     const modalRef = this.modalSvc.open ( InputDialogComponent, {
       centered: true
     } )
-    modalRef.componentInstance.title = `Contact Organiser for ${event.title}`
-    modalRef.componentInstance.body = `Please fill out the form below to get in touch with the organiser of "${event.title}".`
-    modalRef.componentInstance.confirmText = "Submit"
-    modalRef.componentInstance.recaptchaActive = true
-    modalRef.componentInstance.fields = event.contactFormFields || [ ]
+    modalRef.setInput ( "title", `Contact Organiser for ${event.title}` )
+    modalRef.setInput ( "body", `Please fill out the form below to get in touch with the organiser of "${event.title}".` )
+    modalRef.setInput ( "confirmText", "Submit" )
+    modalRef.setInput ( "recaptchaActive", true )
+    modalRef.setInput ( "fields", event.contactFormFields || [ ] )
     await modalRef.result.then ( async ( result: Record<string, unknown> ) => {
       if ( result ) {
         if ( !modalRef.componentInstance.captchaToken ) {

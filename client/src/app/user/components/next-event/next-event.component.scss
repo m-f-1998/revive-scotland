@@ -1,17 +1,12 @@
-.backdrop-blur {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
 .timer-num {
-  font-family: 'JetBrains Mono', 'Courier New', monospace; /* Monospaced looks more technical/modern */
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
   font-size: clamp(2rem, 5vw, 3.5rem);
   font-weight: 800;
   line-height: 1;
 }
 
 .timer-label {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   letter-spacing: 0.2rem;
   text-transform: uppercase;
   margin-top: 0.5rem;
@@ -23,18 +18,4 @@
   font-weight: 300;
   opacity: 0.3;
   padding-top: 0.5rem;
-}
-
-.transition-all {
-  transition: all 0.3s ease;
-}
-
-.btn-outline-light:hover {
-  background-color: white;
-  color: var(--bs-primary);
-  transform: translateY(-2px);
-}
-
-.bg-primary-shade {
-  background: #3399FF;
 }

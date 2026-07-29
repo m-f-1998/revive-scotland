@@ -4,7 +4,8 @@ import { AuthService } from "../../services/auth.service"
 import { FileEntry, Quota } from "../../interfaces/fileExplorer.interface"
 import { FileExplorerService } from "../../services/fileExplorer.service"
 import { ApiService } from "../../services/api.service"
-import { NgbActiveModal, NgbDropdownModule, NgbModal } from "@ng-bootstrap/ng-bootstrap"
+import { DialogRef } from "@angular/cdk/dialog"
+import { ModalService } from "@revive/src/app/services/modal.service"
 import { FileExplorerModalComponent } from "./file-explorer-modal/file-explorer-modal.component"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { DatePipe } from "@angular/common"
@@ -20,7 +21,6 @@ import { IconComponent } from "../../icon/icon.component"
     AdminNavbarComponent,
     DatePipe,
     IconComponent,
-    NgbDropdownModule,
     AdminFooterComponent
   ],
   templateUrl: "./file-explorer.component.html",
@@ -29,7 +29,7 @@ import { IconComponent } from "../../icon/icon.component"
 export class FileExplorerComponent {
   public readonly authSvc: AuthService = inject ( AuthService )
   public readonly fileExplorerSvc: FileExplorerService = inject ( FileExplorerService )
-  public readonly activeModal: NgbActiveModal | null = inject ( NgbActiveModal, { optional: true } )
+  public readonly activeModal: DialogRef | null = inject ( DialogRef, { optional: true } )
 
   public readonly fileInput: Signal<ElementRef<HTMLInputElement> | undefined> = viewChild ( "fileInput" )
 
@@ -44,11 +44,12 @@ export class FileExplorerComponent {
 
   public isSelectionMode: boolean = false
   public readonly allowedMimeTypes: string [ ] = [ "image/jpeg", "image/png", "image/webp", "image/gif" ]
+  public uploadDropdownOpen: WritableSignal<boolean> = signal ( false )
 
   private draggedFile: FileEntry | null = null
 
   private readonly apiSvc: ApiService = inject ( ApiService )
-  private readonly modalSvc: NgbModal = inject ( NgbModal )
+  private readonly modalSvc: ModalService = inject ( ModalService )
   private readonly formlySvc: FormlyService = inject ( FormlyService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
 
@@ -65,7 +66,7 @@ export class FileExplorerComponent {
 
   public closeSelectionMode ( ) {
     if ( !this.activeModal ) return
-    this.activeModal.dismiss ( )
+    this.activeModal.close ( )
   }
 
   public async selectFile ( fileEntry: FileEntry ) {
@@ -94,8 +95,12 @@ export class FileExplorerComponent {
         } ) )
         const data = response as { shareUrl: string }
 
-        // Close the modal and pass the permanent URL back
-        this.activeModal.close ( data.shareUrl )
+        // Store as a relative path so it works in dev/preview without cross-origin issues
+        const shareUrl = data.shareUrl
+        const relativePath = shareUrl.startsWith ( "http" )
+          ? new URL ( shareUrl ).pathname
+          : shareUrl
+        this.activeModal.close ( relativePath )
 
       } catch ( err ) {
         if ( isDevMode ( ) ) {
@@ -187,7 +192,7 @@ export class FileExplorerComponent {
       backdrop: "static",
       size: "md"
     } )
-    modalRef.componentInstance.fields = [
+    modalRef.setInput ( "fields", [
       this.formlySvc.SelectInput ( "expiry", {
         label: "Link Expiry",
         required: true,
@@ -200,11 +205,11 @@ export class FileExplorerComponent {
       }, {
         defaultValue: 86400
       } )
-    ]
-    modalRef.componentInstance.title = "Generate Shareable Link"
-    modalRef.componentInstance.body =`Select options for the shareable link to: <strong>${fileName}</strong>`
-    modalRef.componentInstance.confirmText = "Generate Link"
-    modalRef.componentInstance.cancelText = "Cancel"
+    ] )
+    modalRef.setInput ( "title", "Generate Shareable Link" )
+    modalRef.setInput ( "body", `Select options for the shareable link to: <strong>${fileName}</strong>` )
+    modalRef.setInput ( "confirmText", "Generate Link" )
+    modalRef.setInput ( "cancelText", "Cancel" )
     await modalRef.result.then ( async ( model: { expiry: number } ) => {
       this.loading.set ( true )
       try {
@@ -219,7 +224,9 @@ export class FileExplorerComponent {
 
         await navigator.clipboard.writeText ( data.shareUrl )
 
-        this.toastrSvc.success ( "Share URL copied to clipboard! (Link expires in 24 hours)" )
+        const expiryLabels: Record<number, string> = { 3600: "1 hour", 21600: "6 hours", 43200: "12 hours", 86400: "24 hours" }
+        const expiryLabel = expiryLabels [ expiry ] ?? `${expiry / 3600} hours`
+        this.toastrSvc.success ( `Share URL copied to clipboard! (Link expires in ${expiryLabel})` )
       } catch ( err ) {
         if ( isDevMode ( ) ) {
           console.error ( "Share file error:", err )
@@ -286,13 +293,13 @@ export class FileExplorerComponent {
             backdrop: "static",
             size: "md"
           } )
-          modalRef.componentInstance.title = "Overwrite Confirmation"
-          modalRef.componentInstance.body = `File "<strong>${f.name}</strong>" already exists. Do you want to overwrite it?`
-          modalRef.componentInstance.fields = [
+          modalRef.setInput ( "title", "Overwrite Confirmation" )
+          modalRef.setInput ( "body", `File "<strong>${f.name}</strong>" already exists. Do you want to overwrite it?` )
+          modalRef.setInput ( "fields", [
             this.formlySvc.CheckboxInput ( "overwriteAll", { label: "Apply to all files", required: false } )
-          ]
-          modalRef.componentInstance.confirmText = "Overwrite"
-          modalRef.componentInstance.cancelText = "Skip"
+          ] )
+          modalRef.setInput ( "confirmText", "Overwrite" )
+          modalRef.setInput ( "cancelText", "Skip" )
           let skipFile = false
           await modalRef.result.then ( ( model: { overwriteAll: boolean } ) => {
             if ( model.overwriteAll ) {
@@ -309,10 +316,16 @@ export class FileExplorerComponent {
         tasks.push ( this.uploadFile ( f ) )
       }
     }
-    Promise.all ( tasks )
-    const fileInputRef = this.fileInput ( )
-    if ( fileInputRef ) {
-      fileInputRef.nativeElement.value = ""
+
+    try {
+      await Promise.all ( tasks )
+    } catch {
+      // Individual upload errors are handled inside uploadFile
+    } finally {
+      const fileInputRef = this.fileInput ( )
+      if ( fileInputRef ) {
+        fileInputRef.nativeElement.value = ""
+      }
     }
   }
 
@@ -322,10 +335,10 @@ export class FileExplorerComponent {
       backdrop: "static",
       size: "md"
     } )
-    modalRef.componentInstance.type = type
-    modalRef.componentInstance.file = data
-    modalRef.componentInstance.userS3Path = this.userS3Path
-    modalRef.componentInstance.currentPath = this.currentPath ( )
+    modalRef.setInput ( "type", type )
+    modalRef.setInput ( "file", data )
+    modalRef.setInput ( "userS3Path", this.userS3Path )
+    modalRef.setInput ( "currentPath", this.currentPath ( ) )
 
     modalRef.result.then ( async result => {
       // Result is the model
@@ -404,7 +417,7 @@ export class FileExplorerComponent {
         }
       }
     } ).catch ( ( err?: string ) => {
-      if ( err ) {
+      if ( err && err !== "dismissed" ) {
         this.toastrSvc.error ( err )
       }
       // Modal dismissed
@@ -450,10 +463,10 @@ export class FileExplorerComponent {
         backdrop: "static",
         size: "md"
       } )
-      modalRef.componentInstance.title = "Overwrite Confirmation"
-      modalRef.componentInstance.body = `File "<strong>${this.draggedFile.name}</strong>" already exists in the target folder. Do you want to overwrite it?`
-      modalRef.componentInstance.confirmText = "Overwrite"
-      modalRef.componentInstance.cancelText = "Cancel"
+      modalRef.setInput ( "title", "Overwrite Confirmation" )
+      modalRef.setInput ( "body", `File "<strong>${this.draggedFile.name}</strong>" already exists in the target folder. Do you want to overwrite it?` )
+      modalRef.setInput ( "confirmText", "Overwrite" )
+      modalRef.setInput ( "cancelText", "Cancel" )
       let skipMove = false
       await modalRef.result.then ( async ( ) => {
         // Confirmed
@@ -504,10 +517,10 @@ export class FileExplorerComponent {
         backdrop: "static",
         size: "md"
       } )
-      modalRef.componentInstance.title = "Overwrite Confirmation"
-      modalRef.componentInstance.body = `File "<strong>${this.draggedFile.name}</strong>" already exists in the target folder. Do you want to overwrite it?`
-      modalRef.componentInstance.confirmText = "Overwrite"
-      modalRef.componentInstance.cancelText = "Cancel"
+      modalRef.setInput ( "title", "Overwrite Confirmation" )
+      modalRef.setInput ( "body", `File "<strong>${this.draggedFile.name}</strong>" already exists in the target folder. Do you want to overwrite it?` )
+      modalRef.setInput ( "confirmText", "Overwrite" )
+      modalRef.setInput ( "cancelText", "Cancel" )
       let skipMove = false
       await modalRef.result.then ( async ( ) => {
         // Confirmed
@@ -580,7 +593,7 @@ export class FileExplorerComponent {
         body: file
       } )
       if ( response.ok ) {
-        await this.completeUpload ( key )
+        await this.completeUpload ( key, file.size )
       } else {
         throw new Error ( "R2 upload failed: " + response.statusText )
       }
@@ -593,9 +606,9 @@ export class FileExplorerComponent {
     }
   }
 
-  private async completeUpload ( key: string ) {
+  private async completeUpload ( key: string, fileSize: number ) {
     try {
-      await this.apiSvc.post ( `${this.baseRoute}/upload-complete`, { key }, new HttpHeaders ( {
+      await this.apiSvc.post ( `${this.baseRoute}/upload-complete`, { key, fileSize }, new HttpHeaders ( {
         "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || "" }`
       } ) )
       this.listPath ( this.currentPath ( ) )

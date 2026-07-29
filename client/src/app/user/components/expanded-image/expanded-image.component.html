@@ -1,44 +1,55 @@
-<div class="modal-header">
-  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" (click)="this.close()"></button>
+<!-- Header -->
+<div class="lightbox-header">
+  <span class="lightbox-counter">{{ currentIndex() + 1 }} / {{ items().length }}</span>
+  <button type="button" class="lightbox-close" aria-label="Close" (click)="close()">
+    <app-icon icon="xmark" />
+  </button>
 </div>
-<div class="modal-body" style="padding: 0">
-  <div id="images" class="carousel slide">
-    <div class="carousel-inner">
-      <div class="carousel-item active">
-        <img [attr.src]="'/api/img/' + imageURLs [ this.index ] + '?w=640&f=webp'"
-          [attr.srcset]="
-            '/api/img/' + imageURLs [ this.index ] + '?w=320&f=webp 320w, ' +
-            '/api/img/' + imageURLs [ this.index ] + '?w=640&f=webp 640w, ' +
-            '/api/img/' + imageURLs [ this.index ] + '?w=1024&f=webp 1024w'
-          "
-          sizes="(max-width: 600px) 100vw, 600px"
-          alt="Image {{ index + 1 }} - Expanded"
-          decoding="async"
-          class="img-big d-block w-100"
-          style="object-fit: contain; max-height: 80vh;"
-        />
-      </div>
-    </div>
-  </div>
-</div>
-<div class="modal-footer">
-  <!-- Next, Previous and Download -->
-  <button type="button" class="btn btn-secondary" (click)="prevImage()">
+
+<!-- Media -->
+<div class="lightbox-body">
+  <button class="lightbox-arrow lightbox-arrow--left" type="button" aria-label="Previous" (click)="prevItem()">
     <app-icon icon="chevron-left" />
   </button>
-  <a [href]="'/api/img/' + imageURLs [ this.index ] + '?w=1024&f=webp'" class="btn btn-primary" download>
-    <app-icon icon="download" /> Download
-  </a>
-  <button type="button" class="btn btn-secondary" (click)="nextImage()">
+
+  @if (items()[currentIndex()].type === 'video') {
+    <video controls autoplay class="lightbox-video"
+      [src]="videoSrc(items()[currentIndex()].url)">
+      Your browser does not support HTML video.
+    </video>
+  } @else {
+    <img
+      [src]="imgSrc(items()[currentIndex()].url, 1024)"
+      [srcset]="imgSrcset(items()[currentIndex()].url)"
+      sizes="(max-width: 600px) 100vw, 90vw"
+      decoding="async"
+      [alt]="'Gallery image ' + (currentIndex() + 1)"
+      class="lightbox-img"
+    />
+  }
+
+  <button class="lightbox-arrow lightbox-arrow--right" type="button" aria-label="Next" (click)="nextItem()">
     <app-icon icon="chevron-right" />
   </button>
 </div>
 
-<div style="display: none;">
-  @if (imageURLs[index + 1]) {
-    <img [src]="'/api/img/' + imageURLs[index + 1] + '?w=1024&f=webp'">
+<!-- Footer -->
+<div class="lightbox-footer">
+  @if (items()[currentIndex()].type === 'image') {
+    <a [href]="imgSrc(items()[currentIndex()].url, 1024)"
+       [download]="items()[currentIndex()].url.split('/').pop()"
+       class="lightbox-download">
+      <app-icon icon="download" /> Download
+    </a>
   }
-  @if (imageURLs[index - 1]) {
-    <img [src]="'/api/img/' + imageURLs[index - 1] + '?w=1024&f=webp'">
+</div>
+
+<!-- Preload adjacent images -->
+<div class="hidden">
+  @if (items()[currentIndex() + 1]?.type === 'image') {
+    <img [src]="imgSrc(items()[currentIndex() + 1].url, 1024)" alt="" />
+  }
+  @if (items()[currentIndex() - 1]?.type === 'image') {
+    <img [src]="imgSrc(items()[currentIndex() - 1].url, 1024)" alt="" />
   }
 </div>

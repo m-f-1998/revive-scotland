@@ -8,12 +8,36 @@ import { AddressAutocompleteComponent } from "./address-lookup/address-lookup.co
 import { ValidWebPageURL } from "./validators/URL.validator"
 import { ImagePickerComponent } from "./image-picker/image-picker.component"
 import { RepeatFieldComponent } from "./repeat-formly-field/repeat-formly-field.component"
+import { FormlyWrapperFormFieldComponent } from "./types/form-field.wrapper"
+import { FormlyFieldInputComponent } from "./types/input.type"
+import { FormlyFieldSelectComponent } from "./types/select.type"
+import { FormlyFieldTextareaComponent } from "./types/textarea.type"
+import { FormlyFieldCheckboxComponent } from "./types/checkbox.type"
 
 @Injectable ( {
   providedIn: "root"
 } )
 export class FormlyConfig implements ConfigOption {
   public types = [
+    {
+      name: "input",
+      component: FormlyFieldInputComponent,
+      wrappers: [ "form-field" ]
+    },
+    {
+      name: "select",
+      component: FormlyFieldSelectComponent,
+      wrappers: [ "form-field" ]
+    },
+    {
+      name: "textarea",
+      component: FormlyFieldTextareaComponent,
+      wrappers: [ "form-field" ]
+    },
+    {
+      name: "checkbox",
+      component: FormlyFieldCheckboxComponent,
+    },
     {
       name: "datepicker",
       component: DatePickerComponent,
@@ -35,6 +59,13 @@ export class FormlyConfig implements ConfigOption {
     }
   ]
 
+  public wrappers = [
+    {
+      name: "form-field",
+      component: FormlyWrapperFormFieldComponent
+    }
+  ]
+
   public validationMessages = [
     { name: "required", message: "This Field is Required" },
     { name: "minLength", message: ( _: unknown, field: FormlyFieldConfig ) => {
@@ -52,7 +83,6 @@ export class FormlyConfig implements ConfigOption {
     { name: "PasswordsDoNotMatch", message: "The 'New Password' field cannot match the 'Current Password' field" },
     { name: "invalidClassName", message: "Invalid Class Name" },
     { name: "invalidFormID", message: "Invalid Form ID" },
-    { name: "ngbDate", message: "Invalid Date" },
   ]
 
   public validators = [

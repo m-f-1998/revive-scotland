@@ -1,28 +1,27 @@
-<div [class.is-invalid]="formControl.invalid && (formControl.touched || formControl.dirty)" class="card p-3 mb-3">
-  <div class="d-flex flex-row justify-content-between">
-    <h5 class="m-0 align-self-center">
+<div [class.ring-2]="formControl.invalid && (formControl.touched || formControl.dirty)" [class.ring-red-500]="formControl.invalid && (formControl.touched || formControl.dirty)"
+     class="card p-4 mb-4">
+  <div class="flex items-center justify-between mb-3">
+    <h5 class="font-semibold m-0">
       Form Fields
       @if (props.required) {
-        <span>*</span>
+        <span class="text-red-500">*</span>
       }
     </h5>
-    <button type="button" class="btn btn-primary" (click)="addField()">
+    <button type="button" class="btn-primary btn-sm" (click)="addField()">
       <app-icon icon="plus" /> Add Field
     </button>
   </div>
-  <hr />
+  <hr class="border-gray-200 mb-3" />
 
   @for (field of formControl.value || []; track $index) {
-    <div class="card mb-2 p-2">
-      <div class="d-flex justify-content-between align-items-center">
-        <div>
-          {{ getSummary(field) }}
-        </div>
-        <div class="d-flex flex-row gap-3">
-          <button type="button" class="btn btn-sm btn-primary" (click)="edit($index)">
+    <div class="card mb-2 p-3">
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-700">{{ getSummary(field) }}</span>
+        <div class="flex gap-2">
+          <button type="button" class="btn-primary btn-sm" (click)="edit($index)">
             <app-icon icon="edit" />
           </button>
-          <button type="button" class="btn btn-sm btn-danger" (click)="removeField($index)">
+          <button type="button" class="btn-danger btn-sm" (click)="removeField($index)">
             <app-icon icon="trash-alt" />
           </button>
         </div>

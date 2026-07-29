@@ -1,22 +1,22 @@
 import { Routes } from "@angular/router"
-import { HomeComponent } from "./user/home/home.component"
-import { EventsComponent } from "./user/events/events.component"
-import { ErrorComponent } from "./user/error/error.component"
-import { GalleryComponent } from "./user/gallery/gallery.component"
 import { authGuard } from "../guards/auth.guard"
+import { provideCharts, withDefaultRegisterables } from "ng2-charts"
 
 export const routes: Routes = [
   {
     path: "",
-    component: HomeComponent
+    loadComponent: ( ) =>
+      import ( "./user/home/home.component" ).then ( m => m.HomeComponent )
   },
   {
     path: "events",
-    component: EventsComponent
+    loadComponent: ( ) =>
+      import ( "./user/events/events.component" ).then ( m => m.EventsComponent )
   },
   {
     path: "gallery",
-    component: GalleryComponent
+    loadComponent: ( ) =>
+      import ( "./user/gallery/gallery.component" ).then ( m => m.GalleryComponent )
   },
   {
     path: "admin",
@@ -28,7 +28,14 @@ export const routes: Routes = [
     canActivate: [ authGuard ],
     children: [
       {
+        path: "resourcesEditor",
+        loadComponent: ( ) =>
+          import ( "./admin/resources-editor/resources-editor.component" )
+            .then ( m => m.ResourcesEditorComponent )
+      },
+      {
         path: "dashboard",
+        providers: [ provideCharts ( withDefaultRegisterables ( ) ) ],
         loadComponent: ( ) =>
           import ( "./admin/dashboard/dashboard.component" )
             .then ( m => m.DashboardComponent )
@@ -40,29 +47,66 @@ export const routes: Routes = [
             .then ( m => m.FileExplorerComponent )
       },
       {
-        path: "heroEditor",
+        path: "galleryEditor",
         loadComponent: ( ) =>
-          import ( "./admin/hero-editor/hero-editor.component" )
-            .then ( m => m.HeroEditorComponent )
+          import ( "./admin/gallery-editor/gallery-editor.component" )
+            .then ( m => m.GalleryEditorComponent )
       },
       {
         path: "eventEditor",
         loadComponent: ( ) =>
           import ( "./admin/event-editor/event-editor.component" )
             .then ( m => m.EventEditorComponent )
+      },
+      {
+        path: "contactEditor",
+        loadComponent: ( ) =>
+          import ( "./admin/contact-editor/contact-editor.component" )
+            .then ( m => m.ContactEditorComponent )
+      },
+      {
+        path: "storyEditor",
+        loadComponent: ( ) =>
+          import ( "./admin/story-editor/story-editor.component" )
+            .then ( m => m.StoryEditorComponent )
+      },
+      {
+        path: "homeEditor",
+        loadComponent: ( ) =>
+          import ( "./admin/home-editor/home-editor.component" )
+            .then ( m => m.HomeEditorComponent )
+      },
+      {
+        path: "testimonialsEditor",
+        loadComponent: ( ) =>
+          import ( "./admin/testimonials-editor/testimonials-editor.component" )
+            .then ( m => m.TestimonialsEditorComponent )
       }
     ]
   },
   {
+    path: "resources",
+    loadComponent: ( ) =>
+      import ( "./user/resources/resources.component" ).then ( m => m.ResourcesComponent )
+  },
+  {
+    path: "donate/thank-you",
+    loadComponent: ( ) =>
+      import ( "./user/donate-thankyou/donate-thankyou.component" ).then ( m => m.DonateThankyouComponent )
+  },
+  {
     path: "error",
-    component: ErrorComponent
+    loadComponent: ( ) =>
+      import ( "./user/error/error.component" ).then ( m => m.ErrorComponent )
   },
   {
     path: "error/:code",
-    component: ErrorComponent
+    loadComponent: ( ) =>
+      import ( "./user/error/error.component" ).then ( m => m.ErrorComponent )
   },
   {
     path: "**",
     redirectTo: "/error/404"
   }
 ]
+

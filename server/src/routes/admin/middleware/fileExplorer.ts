@@ -53,8 +53,6 @@ export const validateS3Key = async (
     return reply.code ( 401 ).send ( "Unauthorized: User not authenticated." )
   }
 
-  console.log ( `Validating S3 key for user ${request.user.uid} with path prefix ${request.user.s3Path}` )
-
   const body = request.body as { key?: string; oldKey?: string; newKey?: string } | undefined
   const query = request.query as { key?: string; path?: string } | undefined
 

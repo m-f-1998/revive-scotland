@@ -3,6 +3,8 @@ import { getFirestore } from "../admin.js" // Your existing firebase admin expor
 // import { Readable } from "stream"
 import { FastifyPluginAsync } from "fastify"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
+import rateLimit from "@fastify/rate-limit"
+import { isDevMode } from "../static.js"
 
 // Duplicate env setup or import from a shared config file
 const R2_ACCOUNT_ID = process.env [ "R2_ACCOUNT_ID" ]
@@ -28,6 +30,13 @@ interface CachedShare {
 const shareCache = new Map<string, CachedShare> ()
 
 export const router: FastifyPluginAsync = async app => {
+  if ( !isDevMode ( ) ) {
+    await app.register ( rateLimit, {
+      max: 60,
+      timeWindow: "1 minute"
+    } )
+  }
+
   /**
    * PUBLIC ROUTE: /s/:id
    * This is the link users click (e.g., revivescotland.co.uk/api/public/s/abc-123)

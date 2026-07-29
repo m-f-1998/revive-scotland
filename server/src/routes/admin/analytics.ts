@@ -6,6 +6,7 @@ const analyticsDataClient = new BetaAnalyticsDataClient ( {
   credentials: serviceAccount,
   projectId: serviceAccount.project_id
 } )
+
 const projectID = "477989791"
 const dateRanges = [ { startDate: "90daysAgo", endDate: "today" } ]
 

@@ -5,6 +5,7 @@ import { FirebaseApp, initializeApp } from "firebase/app"
 import { Auth, getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut, User } from "firebase/auth"
 import { environment } from "@revive/src/environments/environment"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
+import { HttpHeaders } from "@angular/common/http"
 
 @Injectable ( {
   providedIn: "root"
@@ -25,6 +26,10 @@ export class AuthService {
     return this.currentUser$.asReadonly ( )
   }
 
+  public get profilePhoto ( ) {
+    return this.profilePhoto$.asReadonly ( )
+  }
+
   public get loading ( ) {
     return this.loading$.asReadonly ( )
   }
@@ -32,8 +37,9 @@ export class AuthService {
   public async login ( ) {
     try {
       const userCredential = await signInWithPopup ( this.auth, this.provider )
-      await this.apiSvc.get ( "/api/admin/newSession", { uid: userCredential.user.uid } )
-      await this.apiSvc.get ( "/api/admin/isAdmin", { uid: userCredential.user.uid } )
+      const token = await userCredential.user.getIdToken ( )
+      const headers = new HttpHeaders ( { "Authorization": `Bearer ${token}` } )
+      await this.apiSvc.get ( "/api/admin/newSession", { }, headers )
       return userCredential.user
     } catch {
       await this.logout ( )
@@ -43,9 +49,11 @@ export class AuthService {
   }
 
   public logout ( ) {
-    this.apiSvc.get ( "/api/admin/logout", { uid: this.currentUser$ ( )?.uid || "" } ).catch ( ( ) => {
-      // Ignore errors during logout
-    } )
+    this.currentUser$ ( )?.getIdToken ( ).then ( token => {
+      this.apiSvc.get ( "/api/admin/logout", { }, new HttpHeaders ( { "Authorization": `Bearer ${token}` } ) ).catch ( ( ) => {
+        // Ignore errors during logout
+      } )
+    } ).catch ( ( ) => { } )
     this.currentUser$.set ( null )
     return signOut ( this.auth )
   }
@@ -77,7 +85,9 @@ export class AuthService {
       // Check if the user session is still valid on the server
       try {
         if ( user ) {
-          const res = await this.apiSvc.get ( "/api/admin/verify", { uid: user?.uid || "" } ) as { uid: string; role: string; profilePhoto: string | null }
+          const token = await user.getIdToken ( )
+          const headers = new HttpHeaders ( { "Authorization": `Bearer ${token}` } )
+          const res = await this.apiSvc.get ( "/api/admin/verify", { }, headers ) as { uid: string; role: string; profilePhoto: string | null }
           if ( res.profilePhoto ) {
             this.profilePhoto$.set ( res.profilePhoto )
           }
