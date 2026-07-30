@@ -1,4 +1,4 @@
-import { inject, Injectable } from "@angular/core"
+import { inject, Service } from "@angular/core"
 import { Dialog, DialogConfig } from "@angular/cdk/dialog"
 import { ComponentType } from "@angular/cdk/portal"
 
@@ -53,7 +53,7 @@ export interface ModalOptions {
   lightbox?: boolean
 }
 
-@Injectable ( { providedIn: "root" } )
+@Service ( )
 export class ModalService {
   private readonly dialog = inject ( Dialog )
 

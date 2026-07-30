@@ -1,13 +1,11 @@
-import { inject, Injectable } from "@angular/core"
+import { inject, Service } from "@angular/core"
 import { FileEntry } from "../interfaces/fileExplorer.interface"
 import { HttpHeaders } from "@angular/common/http"
 import { ApiService } from "./api.service"
 import { AuthService } from "./auth.service"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 
-@Injectable ( {
-  providedIn: "root"
-} )
+@Service ( )
 export class FileExplorerService {
   private readonly apiSvc: ApiService = inject ( ApiService )
   private readonly authSvc: AuthService = inject ( AuthService )

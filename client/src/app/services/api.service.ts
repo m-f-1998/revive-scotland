@@ -1,10 +1,8 @@
 import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http"
-import { inject, Injectable, isDevMode } from "@angular/core"
+import { inject, Service, isDevMode } from "@angular/core"
 import { parse } from "date-fns"
 
-@Injectable ( {
-  providedIn: "root"
-} )
+@Service ( )
 export class ApiService {
   private static readonly datePattern = /^\d{4}-\d{2}-\d{2}|^\d{2}\/\d{2}\/\d{4}/
 

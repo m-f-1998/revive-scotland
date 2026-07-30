@@ -1,4 +1,4 @@
-import { Injectable } from "@angular/core"
+import { Service } from "@angular/core"
 import { format, parse } from "date-fns"
 
 export interface NgbDateStruct {
@@ -7,9 +7,7 @@ export interface NgbDateStruct {
   day: number
 }
 
-@Injectable ( {
-  providedIn: "root"
-} )
+@Service ( )
 export class DatesService {
   public reformat ( date: Date | string, outputFormat: string ) {
     try {

@@ -33,15 +33,15 @@
     "ng2-charts": "^10.0.0"
   },
   "devDependencies": {
-    "@angular/build": "^22.0.8",
-    "@angular/cli": "^22.0.8",
+    "@angular/build": "^22.0.9",
+    "@angular/cli": "^22.0.9",
     "@angular/compiler-cli": "^22.0.2",
     "@angular/localize": "^22.0.8",
     "@ngx-formly/schematics": "^7.1.0",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@tailwindcss/postcss": "^4.3.3",
     "angular-eslint": "^22.1.0",
-    "postcss": "^8.5.23",
+    "postcss": "^8.5.25",
     "tailwindcss": "^4.2.4",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.65.0"

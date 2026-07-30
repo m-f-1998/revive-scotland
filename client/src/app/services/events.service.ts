@@ -1,4 +1,4 @@
-import { inject, Injectable } from "@angular/core"
+import { inject, Service } from "@angular/core"
 import { ApiService } from "./api.service"
 import { FormlyFieldConfig } from "@ngx-formly/core"
 
@@ -17,9 +17,7 @@ export interface ReviveEvent {
   contactFormFields?: FormlyFieldConfig [ ]
 }
 
-@Injectable ( {
-  providedIn: "root"
-} )
+@Service ( )
 export class EventsService {
   private events: Array<ReviveEvent> | undefined
 

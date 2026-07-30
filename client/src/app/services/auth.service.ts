@@ -1,4 +1,4 @@
-import { inject, Injectable, InjectionToken, Injector, signal, WritableSignal } from "@angular/core"
+import { inject, Service, InjectionToken, Injector, signal, WritableSignal } from "@angular/core"
 import { ApiService } from "./api.service"
 import { Router } from "@angular/router"
 import { FirebaseApp, initializeApp } from "firebase/app"
@@ -7,9 +7,7 @@ import { environment } from "@revive/src/environments/environment"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { HttpHeaders } from "@angular/common/http"
 
-@Injectable ( {
-  providedIn: "root"
-} )
+@Service ( )
 export class AuthService {
   private auth: Auth
   private readonly apiSvc: ApiService = inject ( ApiService )

@@ -1,4 +1,4 @@
-import { Injectable } from "@angular/core"
+import { Service } from "@angular/core"
 import { FormlyFieldConfig } from "@ngx-formly/core"
 import {
   FormlyDate,
@@ -7,9 +7,7 @@ import {
   FormlyText,
 } from "../formly/formly-types"
 
-@Injectable ( {
-  providedIn: "root"
-} )
+@Service ( )
 export class FormlyService {
   public TextInput (
     key: string,
