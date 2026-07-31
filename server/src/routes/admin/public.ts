@@ -5,6 +5,8 @@ import { FastifyPluginAsync } from "fastify"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import rateLimit from "@fastify/rate-limit"
 import { isDevMode } from "../static.js"
+import Stripe from "stripe"
+import { FieldValue } from "firebase-admin/firestore"
 
 // Duplicate env setup or import from a shared config file
 const R2_ACCOUNT_ID = process.env [ "R2_ACCOUNT_ID" ]
@@ -93,5 +95,129 @@ export const router: FastifyPluginAsync = async app => {
       console.error ( "Public Share Error:", error )
       return rep.status ( 500 ).send ( "Error retrieving file." )
     }
+  } )
+
+  app.post ( "/events/:eventId/register", async ( req, rep ) => {
+    const { eventId } = req.params as { eventId: string }
+    const formData = req.body as Record<string, unknown>
+    const recaptchaToken = formData?.["recaptchaToken"] as string | undefined
+
+    if ( !recaptchaToken ) {
+      return rep.status ( 400 ).send ( { message: "reCAPTCHA token missing." } )
+    }
+
+    try {
+      const response = await fetch (
+        "https://recaptchaenterprise.googleapis.com/v1/projects/revive-scotland/assessments?key=" + ( process.env [ "RECAPTCHA_API_KEY" ] || "" ),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Referer": process.env [ "PUBLIC_DOMAIN" ] || ""
+          },
+          body: JSON.stringify ( {
+            event: {
+              token: recaptchaToken,
+              siteKey: process.env [ "RECAPTCHA_SITE" ] || "",
+              expectedAction: "contactForm"
+            }
+          } )
+        }
+      )
+
+      if ( !response.ok ) return rep.status ( 500 ).send ( { message: "reCAPTCHA verification failed." } )
+
+      const data = await response.json ( ) as { tokenProperties: { valid: boolean }; riskAnalysis: { score: number } }
+      console.log ( data.tokenProperties )
+      if ( !data.tokenProperties.valid || data.riskAnalysis.score < 0.5 ) {
+        return rep.status ( 400 ).send ( { message: "reCAPTCHA failed." } )
+      }
+    } catch ( err ) {
+      console.error ( "reCAPTCHA verification error:", err )
+      return rep.status ( 500 ).send ( { message: "reCAPTCHA verification error." } )
+    }
+
+    delete formData [ "recaptchaToken" ]
+
+    const eventsDoc = await getFirestore ().collection ( "events" ).doc ( "default" ).get ()
+    const event = ( eventsDoc.data ( )?. [ "events" ] || [] ).find ( ( e: { id: string } ) => e.id === eventId )
+
+    if ( !event ) {
+      return rep.status ( 404 ).send ( { message: "Event not found." } )
+    }
+
+    const registrationRef = getFirestore ().collection ( "event_registrations" ).doc ()
+
+    let stripeUrl: string | undefined
+
+    if ( event.donationRequired && event.donationRequired !== "none" && event.stripePriceId && process.env["STRIPE_SECRET_KEY"] ) {
+      const stripe = new Stripe ( process.env["STRIPE_SECRET_KEY"] )
+      const host = isDevMode ( ) ? "http://localhost:4200" : "https://revivescotland.co.uk"
+
+      const session = await stripe.checkout.sessions.create ( {
+        payment_method_types: [ "card" ],
+        line_items: [
+          {
+            price: event.stripePriceId,
+            quantity: 1,
+          },
+        ],
+        mode: "payment",
+        success_url: `${host}/events?registration=success`,
+        cancel_url: `${host}/events?registration=cancelled`,
+        client_reference_id: registrationRef.id,
+      } )
+
+      stripeUrl = session.url || undefined
+    }
+
+    await registrationRef.set ( {
+      eventId,
+      eventTitle: event.title,
+      formData,
+      status: stripeUrl ? "pending_payment" : "completed",
+      createdAt: FieldValue.serverTimestamp ()
+    } )
+
+    return rep.send ( { 
+      message: "Registration recorded.", 
+      checkoutUrl: stripeUrl 
+    } )
+  } )
+
+  app.post ( "/stripe/webhook", async ( req, rep ) => {
+    const sig = req.headers["stripe-signature"]
+    const endpointSecret = process.env["STRIPE_WEBHOOK_SECRET"]
+    const stripeKey = process.env["STRIPE_SECRET_KEY"]
+
+    if ( !sig || !endpointSecret || !stripeKey ) {
+      return rep.status ( 400 ).send ( "Missing Stripe config" )
+    }
+
+    const stripe = new Stripe ( stripeKey )
+    let event: Stripe.Event
+
+    try {
+      event = stripe.webhooks.constructEvent (
+        JSON.stringify ( req.body ), // fallback
+        sig,
+        endpointSecret
+      )
+    } catch ( err ) {
+      console.error ( "Webhook Error:", err )
+      return rep.status ( 400 ).send ( `Webhook Error` )
+    }
+
+    if ( event.type === "checkout.session.completed" ) {
+      const session = event.data.object as Stripe.Checkout.Session
+      if ( session.client_reference_id ) {
+        await getFirestore ().collection ( "event_registrations" ).doc ( session.client_reference_id ).update ( {
+          status: "completed",
+          paymentIntent: session.payment_intent
+        } )
+      }
+    }
+
+    return rep.send ( { received: true } )
   } )
 }

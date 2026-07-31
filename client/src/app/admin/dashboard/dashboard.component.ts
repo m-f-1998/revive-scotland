@@ -5,10 +5,12 @@ import { BaseChartDirective } from "ng2-charts"
 import { DashboardData, OverviewMetrics } from "../../interfaces/analytics.interface"
 import { AnalyticsService } from "../../services/analytics.service"
 import { ChartData, ChartOptions } from "chart.js"
-import { DecimalPipe } from "@angular/common"
+import { DecimalPipe, DatePipe, CurrencyPipe, UpperCasePipe } from "@angular/common"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { AdminFooterComponent } from "../footer/footer.component"
 import { IconComponent } from "../../icon/icon.component"
+import { ApiService } from "../../services/api.service"
+import { HttpHeaders } from "@angular/common/http"
 
 @Component ( {
   selector: "app-admin-dashboard",
@@ -17,6 +19,9 @@ import { IconComponent } from "../../icon/icon.component"
     IconComponent,
     BaseChartDirective,
     DecimalPipe,
+    DatePipe,
+    CurrencyPipe,
+    UpperCasePipe,
     AdminFooterComponent
   ],
   templateUrl: "./dashboard.component.html",
@@ -25,6 +30,7 @@ import { IconComponent } from "../../icon/icon.component"
 export class DashboardComponent implements OnInit {
   public loading: WritableSignal<boolean> = signal ( true )
   public dashboardData: DashboardData | null = null
+  public donations: WritableSignal<Array<Record<string, unknown>>> = signal ( [ ] )
 
   public overview!: OverviewMetrics
 
@@ -61,20 +67,43 @@ export class DashboardComponent implements OnInit {
   public readonly authSvc: AuthService = inject ( AuthService )
   private readonly analyticsSvc: AnalyticsService = inject ( AnalyticsService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
+  private readonly apiSvc: ApiService = inject ( ApiService )
 
   public ngOnInit ( ): void {
-    this.analyticsSvc.getDashboardData ( ).then ( data => {
-      this.dashboardData = data
-      this.overview = data.overview
+    Promise.all ( [
+      this.analyticsSvc.getDashboardData ( ).then ( data => {
+        this.dashboardData = data
+        this.overview = data.overview
 
-      this.prepareTrendChartData ( data )
-      this.prepareDeviceChartData ( data )
-    } ).catch ( error => {
-      console.error ( "Error loading dashboard data:", error )
-      this.toastrSvc.error ( "Failed to load dashboard data. Please try again later." )
-    } ).finally ( ( ) => {
+        this.prepareTrendChartData ( data )
+        this.prepareDeviceChartData ( data )
+      } ).catch ( error => {
+        console.error ( "Error loading dashboard data:", error )
+        this.toastrSvc.error ( "Failed to load dashboard data. Please try again later." )
+      } ),
+      this.loadDonations ()
+    ] ).finally ( ( ) => {
       this.loading.set ( false )
     } )
+  }
+
+  /**
+   * Safe navigation wrapper for template to avoid syntax errors
+   * when authSvc.currentUser() might be undefined before async checks complete.
+   */
+  public $safeNavigationMigration ( value: unknown ): unknown {
+    return value
+  }
+
+  private async loadDonations () {
+    try {
+      const res = await this.apiSvc.get ( "/api/admin/donations", {}, new HttpHeaders ( {
+        "Authorization": `Bearer ${await this.authSvc.currentUser ()?.getIdToken () || ""}`
+      } ) ) as { donations: Array<Record<string, unknown>> }
+      this.donations.set ( res.donations )
+    } catch {
+      this.toastrSvc.error ( "Failed to load recent donations." )
+    }
   }
 
   private prepareTrendChartData ( data: DashboardData ): void {

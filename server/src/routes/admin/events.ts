@@ -1,6 +1,7 @@
 import { FastifyPluginAsync } from "fastify"
 import { getFirestore } from "../admin.js"
 import { checkFirebaseAuth } from "./middleware/fileExplorer.js"
+import Stripe from "stripe"
 
 interface Event {
   id: string
@@ -10,17 +11,38 @@ interface Event {
   imageUrl?: string
   startDate: string
   endDate: string
+  startTime?: string
+  endTime?: string
 
   actionType: "webpage" | "contact"
   webpageUrl?: string
 
   contactFormFields?: Record<string, object> [ ]
+
+  donationRequired?: "none" | "optional" | "required"
+  donationDescription?: string
+  donationPrice?: number
+  stripeProductId?: string
+  stripePriceId?: string
 }
 
 let eventsCache: { events: Event [ ] } | null = null
 let cacheTime = 0
 
 const TTL = 60000
+
+const filterActiveAndRecentEvents = ( events: Event [ ] ): Event [ ] => {
+  const threeWeeksAgo = new Date ( )
+  threeWeeksAgo.setDate ( threeWeeksAgo.getDate ( ) - 21 )
+
+  return events.filter ( event => {
+    const eventEndDate = new Date ( event.endDate )
+    if ( !isNaN ( eventEndDate.getTime ( ) ) ) {
+      return eventEndDate >= threeWeeksAgo
+    }
+    return true
+  } )
+}
 
 export const router: FastifyPluginAsync = async app => {
   /**
@@ -42,39 +64,54 @@ export const router: FastifyPluginAsync = async app => {
       }
 
       const data = doc.data ( ) as {
-        events: {
-          id: string
-          title: string
-          description: string
-          location: string
-          imageUrl?: string
-          startDate: string
-          endDate: string
-
-          actionType: "webpage" | "contact"
-          webpageUrl?: string
-        } [ ]
+        events: Event [ ]
       } | undefined
 
-      if ( data && Array.isArray ( data.events ) ) {
-        const currentTime = new Date ( )
+      const eventsList = data && Array.isArray ( data.events ) ? filterActiveAndRecentEvents ( data.events ) : [ ]
 
-        data.events = data.events.filter ( event => {
-          const eventEndDate = new Date ( event.endDate )
-          if ( !isNaN ( eventEndDate.getTime ( ) ) ) {
-            return eventEndDate >= currentTime
-          }
-          return true
-        } )
-      }
-
-      eventsCache = data ?? { events: [] }
+      eventsCache = { events: eventsList }
       cacheTime = Date.now ( )
 
-      return rep.status ( 200 ).send ( data || { events: [ ] } )
+      return rep.status ( 200 ).send ( eventsCache )
     } catch ( error ) {
       console.error ( "Error fetching events data:", error )
       return rep.status ( 500 ).send ( "Failed to fetch events configuration." )
+    }
+  } )
+
+  app.get ( "/registrations", { preHandler: checkFirebaseAuth }, async ( req, rep ) => {
+    try {
+      const { eventId } = req.query as { eventId: string }
+
+      console.log ( `Fetching registrations for eventId: ${eventId}` )
+
+      const registrationsRef = getFirestore ( ).collection ( "event_registrations" )
+      const snapshot = await registrationsRef.where ( "eventId", "==", eventId ).get ( )
+
+      console.log ( `Fetched ${snapshot.size} registrations for eventId: ${eventId}` )
+
+      const registrations = snapshot.docs.map ( doc => {
+        const data = doc.data ( )
+        return {
+          id: doc.id,
+          eventId: data["eventId"],
+          eventTitle: data["eventTitle"],
+          formData: data["formData"],
+          status: data["status"],
+          createdAt: data["createdAt"]?.toDate ?. ()?.toISOString () || null
+        }
+      } )
+
+      registrations.sort ( ( a, b ) => {
+        const timeA = a.createdAt ? new Date ( a.createdAt ).getTime ( ) : 0
+        const timeB = b.createdAt ? new Date ( b.createdAt ).getTime ( ) : 0
+        return timeB - timeA
+      } )
+
+      return rep.status ( 200 ).send ( { registrations } )
+    } catch ( error ) {
+      console.error ( "Error fetching registrations:", error )
+      return rep.status ( 500 ).send ( "Failed to fetch registrations." )
     }
   } )
 
@@ -97,20 +134,57 @@ export const router: FastifyPluginAsync = async app => {
       return rep.status ( 400 ).send ( "All event entries must have a valid title." )
     }
 
+    let stripe: Stripe | null = null
+    if ( process.env [ "STRIPE_SECRET_KEY" ] ) {
+      stripe = new Stripe ( process.env [ "STRIPE_SECRET_KEY" ] )
+    }
+
     // Sanitize and validate fields (e.g., ensure titles are short, dates are valid)
-    let sanitizedEvents: Event [ ] = [ ]
+    const sanitizedEvents: Event [ ] = [ ]
     try {
-      sanitizedEvents = events.map ( event => {
+      for ( const event of events ) {
         const model: Event = {
           id: event.id,
           title: String ( event.title || "" ).substring ( 0, 100 ),
           description: String ( event.description || "" ).substring ( 0, 500 ),
           location: String ( event.location || "" ).substring ( 0, 200 ),
-          imageUrl: event.imageUrl ? String ( event.imageUrl ).trim ( ) : undefined,
           startDate: event.startDate,
           endDate: event.endDate,
           actionType: event.actionType === "contact" ? "contact" : "webpage"
         }
+
+        if ( event.imageUrl ) {
+          model.imageUrl = String ( event.imageUrl ).trim ()
+        }
+
+        if ( event.startTime ) {
+          model.startTime = event.startTime
+        }
+
+        if ( event.endTime ) {
+          model.endTime = event.endTime
+        }
+
+        if ( event.donationRequired ) {
+          model.donationRequired = event.donationRequired
+        }
+
+        if ( event.donationDescription ) {
+          model.donationDescription = String ( event.donationDescription ).substring ( 0, 500 )
+        }
+
+        if ( event.donationPrice != null ) {
+          model.donationPrice = Number ( event.donationPrice )
+        }
+
+        if ( event.stripeProductId ) {
+          model.stripeProductId = event.stripeProductId
+        }
+
+        if ( event.stripePriceId ) {
+          model.stripePriceId = event.stripePriceId
+        }
+
         if ( model.actionType === "contact" ) {
           if ( !Array.isArray ( event.contactFormFields ) || event.contactFormFields.length === 0 ) {
             throw "Contact form events must have at least one contact form field."
@@ -125,8 +199,26 @@ export const router: FastifyPluginAsync = async app => {
           }
           model.webpageUrl = String ( event.webpageUrl ).trim ( )
         }
-        return model
-      } )
+
+        // Stripe Product Creation
+        if ( stripe && model.donationRequired && model.donationRequired !== "none" && model.donationPrice ) {
+          if ( !model.stripeProductId || !model.stripePriceId ) {
+            const product = await stripe.products.create ( {
+              name: model.title,
+              description: model.donationDescription || model.description
+            } )
+            const price = await stripe.prices.create ( {
+              product: product.id,
+              unit_amount: model.donationPrice,
+              currency: "gbp",
+            } )
+            model.stripeProductId = product.id
+            model.stripePriceId = price.id
+          }
+        }
+
+        sanitizedEvents.push ( model )
+      }
     } catch ( error ) {
       console.error ( "Error processing events data:", error )
       return rep.status ( 400 ).send ( "Error processing events data." )
@@ -138,11 +230,7 @@ export const router: FastifyPluginAsync = async app => {
 
       await docRef.set ( { events: sanitizedEvents } )
 
-      const currentTime = new Date ( )
-      eventsCache = { events: sanitizedEvents.filter ( event => {
-        const eventEndDate = new Date ( event.endDate )
-        return isNaN ( eventEndDate.getTime ( ) ) || eventEndDate >= currentTime
-      } ) }
+      eventsCache = { events: filterActiveAndRecentEvents ( sanitizedEvents ) }
       cacheTime = Date.now ( )
 
       const shared_links = getFirestore ( ).collection ( "shared_links" )
@@ -194,7 +282,8 @@ export const router: FastifyPluginAsync = async app => {
 
       await docRef.update ( { events: filtered } )
 
-      eventsCache = { events: filtered }
+      eventsCache = { events: filterActiveAndRecentEvents ( filtered ) }
+      cacheTime = Date.now ( )
 
       return rep.status ( 200 ).send ( { message: `Events data deleted successfully.` } )
     } catch ( error ) {

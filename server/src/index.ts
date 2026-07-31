@@ -5,24 +5,23 @@ import { IncomingMessage } from "http"
 
 import helmet from "@fastify/helmet"
 import compress from "@fastify/compress"
-import cookie from "@fastify/cookie"
+import { fastifyCookie as cookie } from "@fastify/cookie"
 import rateLimit from "@fastify/rate-limit"
 import sensible from "@fastify/sensible"
 import formbody from "@fastify/formbody"
 import cors from "@fastify/cors"
 
 import { isDevMode, router as staticRouter } from "./routes/static.js"
-import { router as mailerRouter } from "./routes/mailer.js"
 import { router as imagesRouter } from "./routes/images.js"
 import { router as adminRouter } from "./routes/admin.js"
 import { router as publicRouter } from "./routes/admin/public.js"
 import { router as galleryRouter } from "./routes/gallery.js"
 import { router as feastRouter } from "./routes/feast.js"
+import { router as donationsRouter } from "./routes/admin/donations.js"
 
 import { randomBytes } from "crypto"
 
 const REQUIRED_ENV_VARS = [
-  "SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "SMTP_DESTINATION",
   "RECAPTCHA_API_KEY", "RECAPTCHA_SITE",
   "R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME",
   "SUPERADMIN_EMAIL"
@@ -61,11 +60,11 @@ await app.register ( cors, {
     if ( !origin || allowedOrigins.includes ( origin ) ) {
       callback ( null, true )
     } else {
-      callback ( new Error ( "Not allowed by CORS" ), false )
+      callback ( null, false ) // Reject properly without causing a 500 error
     }
   },
   methods: [ "GET", "POST", "DELETE" ],
-  allowedHeaders: [ "Content-Type", "Authorization" ],
+  allowedHeaders: [ "Content-Type", "Authorization", "stripe-signature" ],
   credentials: true
 } )
 
@@ -121,8 +120,7 @@ await app.register ( helmet, {
         "https://static.cloudflareinsights.com",
         "https://www.google.com",
         "https://www.gstatic.com",
-        "https://apis.google.com",
-        "'unsafe-inline'"
+        "https://apis.google.com"
       ],
       scriptSrcAttr: [
         "'none'"
@@ -200,10 +198,10 @@ app.addHook ( "onRequest", async request => {
   ;( request.raw as IncomingMessage ).cspNonce = nonce
 } )
 
-app.register ( mailerRouter, { prefix: "/api/mailer" } )
 app.register ( imagesRouter, { prefix: "/api/img" } )
 app.register ( galleryRouter, { prefix: "/api/gallery" } )
 app.register ( adminRouter, { prefix: "/api/admin" } )
+app.register ( donationsRouter, { prefix: "/api/admin/donations" } )
 app.register ( publicRouter, { prefix: "/api/public" } )
 app.register ( feastRouter, { prefix: "/api/feast" } )
 app.register ( staticRouter, { prefix: "/" } )

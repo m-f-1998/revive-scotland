@@ -1,5 +1,5 @@
 <div class="space-y-3">
-  <input type="text" class="form-control" [value]="this.formControl.value" name="url-{{this.id}}" placeholder="URL of Selected File" readonly>
+  <input type="text" class="form-control" [value]="displayFilename()" name="url-{{this.id}}" placeholder="Name of Selected File" readonly>
   <button class="btn-primary" type="button" (click)="openFileSelector()">
     <app-icon icon="folder-open" />
     Select File

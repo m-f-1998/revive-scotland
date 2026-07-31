@@ -16,7 +16,7 @@
   @for (field of formControl.value || []; track $index) {
     <div class="card mb-2 p-3">
       <div class="flex items-center justify-between">
-        <span class="text-sm text-gray-700">{{ getSummary(field) }}</span>
+        <span class="text-sm">{{ getSummary(field) }}</span>
         <div class="flex gap-2">
           <button type="button" class="btn-primary btn-sm" (click)="edit($index)">
             <app-icon icon="edit" />

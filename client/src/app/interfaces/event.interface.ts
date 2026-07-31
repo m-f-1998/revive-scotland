@@ -8,6 +8,8 @@ export interface Event {
   imageUrl?: string // S3 URL after upload
   startDate: Date
   endDate: Date
+  startTime?: string // format "HH:MM"
+  endTime?: string // format "HH:MM"
 
   // Action Fields
   actionType: "webpage" | "contact" // Determines which fields are shown
@@ -15,4 +17,11 @@ export interface Event {
 
   // Contact Form Fields
   contactFormFields?: FormlyFieldConfig [ ] // The Formly fields array (for contact form)
+
+  // Donation / Payment Fields
+  donationRequired?: "none" | "optional" | "required"
+  donationDescription?: string
+  donationPrice?: number // in pence/cents
+  stripeProductId?: string
+  stripePriceId?: string
 }

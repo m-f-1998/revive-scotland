@@ -57,13 +57,17 @@ export class EventsComponent implements OnInit {
     window.open ( imageUrl, "_blank" )
   }
 
+  public getGoogleMapsUrl ( location: string ): string {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent ( location )}`
+  }
+
   public async openContactForm ( event: ReviveEvent ) {
     const modalRef = this.modalSvc.open ( InputDialogComponent, {
       centered: true
     } )
-    modalRef.setInput ( "title", `Contact Organiser for ${event.title}` )
-    modalRef.setInput ( "body", `Please fill out the form below to get in touch with the organiser of "${event.title}".` )
-    modalRef.setInput ( "confirmText", "Submit" )
+    modalRef.setInput ( "title", `Register for ${event.title}` )
+    modalRef.setInput ( "body", `Please fill out the form below to register for "${event.title}".` )
+    modalRef.setInput ( "confirmText", event.donationRequired === "required" ? "Proceed to Payment" : "Submit" )
     modalRef.setInput ( "recaptchaActive", true )
     modalRef.setInput ( "fields", event.contactFormFields || [ ] )
     await modalRef.result.then ( async ( result: Record<string, unknown> ) => {
@@ -73,29 +77,23 @@ export class EventsComponent implements OnInit {
           return
         }
 
-        const messageLines = Object.entries ( result ).map ( ( [ key, value ] ) => {
-          const label = event.contactFormFields?.find ( f => f.key === key )?.props?.label || key
-          let messageValue = value || "(No Response)"
-          if ( messageValue instanceof Boolean ) {
-            messageValue = messageValue ? "Yes" : "No"
-          }
-          return `<p><strong>${label}:</strong> ${messageValue}</p>`
-        } )
-        const messageHtml = messageLines.join ( "" )
-
         this.loading.set ( true )
         try {
-          await this.apiSvc.post ( "/api/mailer", {
-            subject: `Event Enquiry: ${event.title}`,
-            message: messageHtml,
+          const res = await this.apiSvc.post ( `/api/public/events/${event.id}/register`, {
+            ...result,
             recaptchaToken: modalRef.componentInstance.captchaToken
-          } )
-          this.toastrSvc.success ( "Your message has been sent successfully.", "Thank You!" )
+          } ) as { message: string; checkoutUrl?: string }
+
+          if ( res.checkoutUrl ) {
+            window.location.href = res.checkoutUrl
+          } else {
+            this.toastrSvc.success ( "Your registration has been submitted successfully.", "Thank You!" )
+          }
         } catch ( e ) {
           if ( isDevMode ( ) ) {
             console.error ( e )
           }
-          this.toastrSvc.error ( "An error occurred while sending your message. Please try again later.", "Error" )
+          this.toastrSvc.error ( "An error occurred while submitting your registration. Please try again later.", "Error" )
         } finally {
           this.loading.set ( false )
         }

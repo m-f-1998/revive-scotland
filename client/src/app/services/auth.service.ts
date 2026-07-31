@@ -4,12 +4,11 @@ import { Router } from "@angular/router"
 import { FirebaseApp, initializeApp } from "firebase/app"
 import { Auth, getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut, User } from "firebase/auth"
 import { environment } from "@revive/src/environments/environment"
-import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { HttpHeaders } from "@angular/common/http"
 
 @Service ( )
 export class AuthService {
-  private auth: Auth
+  private auth!: Auth
   private readonly apiSvc: ApiService = inject ( ApiService )
   private readonly router: Router = inject ( Router )
   private readonly injector: Injector = inject ( Injector )
@@ -18,7 +17,6 @@ export class AuthService {
   private profilePhoto$: WritableSignal<string | null> = signal ( null )
   private provider = new GoogleAuthProvider ( )
   private loading$: WritableSignal<boolean> = signal ( true )
-  private readonly toastrSvc: ToastrService = inject ( ToastrService )
 
   public get currentUser ( ) {
     return this.currentUser$.asReadonly ( )
@@ -46,14 +44,20 @@ export class AuthService {
     }
   }
 
-  public logout ( ) {
-    this.currentUser$ ( )?.getIdToken ( ).then ( token => {
-      this.apiSvc.get ( "/api/admin/logout", { }, new HttpHeaders ( { "Authorization": `Bearer ${token}` } ) ).catch ( ( ) => {
-        // Ignore errors during logout
-      } )
-    } ).catch ( ( ) => { } )
-    this.currentUser$.set ( null )
-    return signOut ( this.auth )
+  public async logout ( ) {
+    try {
+      const user = this.currentUser$ ( )
+      if ( user ) {
+        const token = await user.getIdToken ( )
+        await this.apiSvc.get ( "/api/admin/logout", { }, new HttpHeaders ( { "Authorization": `Bearer ${token}` } ) )
+      }
+    } catch {
+      // Ignore errors during backend logout, always proceed with local sign out
+    } finally {
+      this.currentUser$.set ( null )
+      this.profilePhoto$.set ( null )
+      await signOut ( this.auth )
+    }
   }
 
   public loadAuth ( ) {
@@ -80,28 +84,24 @@ export class AuthService {
     this.auth = dynamicInjector.get ( FIREBASE_AUTH )
 
     onAuthStateChanged ( this.auth, async user => {
-      // Check if the user session is still valid on the server
-      try {
-        if ( user ) {
+      this.currentUser$.set ( user )
+
+      if ( user ) {
+        try {
           const token = await user.getIdToken ( )
           const headers = new HttpHeaders ( { "Authorization": `Bearer ${token}` } )
           const res = await this.apiSvc.get ( "/api/admin/verify", { }, headers ) as { uid: string; role: string; profilePhoto: string | null }
           if ( res.profilePhoto ) {
             this.profilePhoto$.set ( res.profilePhoto )
           }
-          this.currentUser$.set ( user ) // Will be null if not logged in
-          this.loading$.set ( false )
-        } else {
-          this.currentUser$.set ( null )
-          this.loading$.set ( false )
+        } catch ( err ) {
+          console.warn ( "Could not fetch extended profile data from backend. Using local Firebase session.", err )
         }
-      } catch {
-        await this.logout ( )
-        await this.router.navigate ( [ "/" ] )
-        setTimeout ( ( ) => {
-          this.toastrSvc.error ( "Session has expired. Redirecting to login page." )
-        }, 500 )
+      } else {
+        this.profilePhoto$.set ( null )
       }
+
+      this.loading$.set ( false )
     } )
   }
 }

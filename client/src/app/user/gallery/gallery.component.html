@@ -3,13 +3,24 @@
 
   <div class="flex-1 max-w-screen-xl mx-auto w-full px-4 py-10">
     <div class="flex items-center justify-end mb-6 gap-2">
-      @for (name of galleryNames(); track name) {
-        <button
-          [class]="filter() === name ? 'btn-primary shadow-lg scale-105' : 'btn-outline-secondary'"
-          (click)="setFilter(name)">
-          {{ name | titlecase }}
-          @if (filter() === name) { <app-icon icon="check-circle" /> }
-        </button>
+      @if (galleryNames().length <= 6) {
+        @for (name of galleryNames(); track name) {
+          <button
+            [class]="filter() === name ? 'btn-primary shadow-lg scale-105' : 'btn-outline-secondary'"
+            (click)="setFilter(name)">
+            {{ name | titlecase }}
+            @if (filter() === name) { <app-icon icon="check-circle" /> }
+          </button>
+        }
+      } @else {
+        <select
+          class="btn-outline-secondary cursor-pointer pr-8"
+          [value]="filter()"
+          (change)="setFilter($any($event.target).value)">
+          @for (name of galleryNames(); track name) {
+            <option [value]="name">{{ name | titlecase }}</option>
+          }
+        </select>
       }
     </div>
 

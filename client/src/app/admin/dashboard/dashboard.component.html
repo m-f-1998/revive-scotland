@@ -124,6 +124,44 @@
         }
       </div>
     </div>
+
+    <!-- General Donations -->
+    <div class="card shadow h-full mb-4">
+      <div class="card-header bg-green-600 text-white flex items-center justify-between">
+        <h5 class="mb-0 font-semibold flex items-center gap-2">
+          <app-icon icon="credit-card" /> General Donations
+        </h5>
+        <span class="text-sm opacity-80">Processed via Stripe</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="table mb-0">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Donor Email</th>
+              <th>Donor Name</th>
+              <th class="text-right">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (donation of donations(); track donation['id']) {
+              <tr class="hover:bg-gray-50 dark:hover:bg-slate-800">
+                <td class="whitespace-nowrap">{{ donation['createdAt'] ? ($any(donation['createdAt']) | date:'medium') : 'Unknown' }}</td>
+                <td>{{ $any(donation['customerDetails'])?.email || 'Anonymous' }}</td>
+                <td>{{ $any(donation['customerDetails'])?.name || 'Anonymous' }}</td>
+                <td class="text-right font-bold text-green-700 dark:text-green-400">
+                  {{ ($any(donation['amount']) / 100) | currency: ($any(donation['currency']) | uppercase) }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (donations().length === 0) {
+        <div class="card-footer text-gray-500">No general donations found.</div>
+      }
+    </div>
+
   </div>
 }
 <app-admin-footer />

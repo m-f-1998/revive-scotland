@@ -1,33 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal, WritableSignal } from "@angular/core"
 import { NavbarComponent } from "../components/navbar/navbar.component"
 import { FooterComponent } from "../components/footer/footer.component"
-import { ContactComponent } from "../components/contact/contact.component"
 import { SliderComponent } from "../components/slider/slider.component"
 import { IconComponent } from "../../icon/icon.component"
 import { ApiService } from "@revive/src/app/services/api.service"
-
-export interface Prayer {
-  id: string
-  name: string
-  category: "our-lady" | "our-lord" | "angels" | "martyrs"
-  type: "devotional" | "intercessory" | "liturgical"
-  text: string
-  latin?: string
-}
-
-export interface Reflection {
-  id: string
-  title: string
-  category: "our-lady" | "our-lord" | "angels" | "martyrs"
-  youtubeId: string
-}
-
-export interface FeastDay {
-  name: string
-  colour: string
-  date: string
-  universalisUrl: string
-}
+import { DomSanitizer, SafeHtml } from "@angular/platform-browser"
+import { Prayer, Reflection, FeastDay, ColourMap, CategoryLabel, CategoryOrder, TypeLabel, PrayerType, PrayerCategory } from "./resources.interface"
 
 export const DEFAULT_PRAYERS: Prayer[] = [
   {
@@ -108,35 +86,9 @@ export const DEFAULT_PRAYERS: Prayer[] = [
   }
 ]
 
-const CATEGORY_ORDER = [ "our-lord", "our-lady", "martyrs", "angels" ] as const
-
-const CATEGORY_LABELS: Record<string, string> = {
-  "our-lord": "Our Lord",
-  "our-lady": "Our Lady",
-  "martyrs": "Martyrs",
-  "angels": "Angels"
-}
-
-const TYPE_LABELS: Record<string, string> = {
-  "devotional": "Devotional",
-  "intercessory": "Intercessory",
-  "liturgical": "Liturgical"
-}
-
-const COLOUR_MAP: Record<string, string> = {
-  "White": "#FFFFFF",
-  "Black": "#000000",
-  "Purple": "#7C3AED",
-  "Red": "#DC2626",
-  "Green": "#16A34A",
-  "Rose": "#EC4899",
-  "Gold": "#B8962E",
-  "Violet": "#7C3AED"
-}
-
 @Component ( {
   selector: "app-resources",
-  imports: [ NavbarComponent, FooterComponent, ContactComponent, SliderComponent, IconComponent ],
+  imports: [ NavbarComponent, FooterComponent, SliderComponent, IconComponent ],
   templateUrl: "./resources.component.html",
   styleUrl: "./resources.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -150,27 +102,23 @@ export class ResourcesComponent implements OnInit {
   public reflectionFilter: WritableSignal<string> = signal ( "all" )
   public selectedPrayer: WritableSignal<Prayer | null> = signal ( null )
   public showLatin: WritableSignal<boolean> = signal ( false )
+  public showPrayers: WritableSignal<boolean> = signal ( false )
   public selectedPrayerCategory: WritableSignal<string> = signal ( "our-lord" )
+  public activeReadingTab: WritableSignal<"firstReading" | "secondReading" | "psalm" | "gospelAcclamation" | "gospel"> = signal ( "firstReading" )
 
-  public readonly typeLabels = TYPE_LABELS
-  public readonly categoryLabels = CATEGORY_LABELS
-
-  // Prayers grouped by category in the correct order, empty categories excluded
   public readonly categorisedPrayers = computed ( ( ) =>
-    CATEGORY_ORDER
+    CategoryOrder
       .map ( cat => ( {
         key: cat,
-        label: CATEGORY_LABELS [ cat ],
+        label: CategoryLabel [ cat ],
         prayers: this.prayers ( ).filter ( p => p.category === cat )
       } ) )
       .filter ( c => c.prayers.length > 0 )
   )
 
-  // Prayers for the currently selected tab
   public readonly activePrayers = computed ( ( ) => {
     const groups = this.categorisedPrayers ( )
     const selected = this.selectedPrayerCategory ( )
-    // If selected tab no longer has prayers, fall back to first available
     return groups.find ( g => g.key === selected ) ?? groups [ 0 ] ?? null
   } )
 
@@ -181,11 +129,11 @@ export class ResourcesComponent implements OnInit {
     return this.reflections ( ).filter ( r => cat === "all" || r.category === cat )
   } )
 
-  public readonly categoryKeys = Object.keys ( CATEGORY_LABELS )
+  public readonly categoryKeys: ( keyof typeof CategoryLabel )[] = Object.keys ( CategoryLabel ) as ( keyof typeof CategoryLabel )[]
 
   public readonly feastColourHex = computed ( ( ) => {
     const colour = this.feast ( )?.colour ?? "Green"
-    return COLOUR_MAP [ colour ] ?? COLOUR_MAP [ "Green" ]
+    return ColourMap [ colour ] ?? ColourMap [ "Green" ]
   } )
 
   // For white vestments, borders and text use near-black so the badge stands out
@@ -202,13 +150,35 @@ export class ResourcesComponent implements OnInit {
     this.darkMode ( ) ? "#F9FAFB" : "#111827"
   )
 
+  public readonly safeReadings = computed ( () => {
+    const r = this.feast ()?.readings
+    if ( !r ) return null
+    return {
+      firstReading: r.firstReading ? this.sanitizer.bypassSecurityTrustHtml ( r.firstReading ) : null,
+      firstReadingSource: r.firstReadingSource ? this.sanitizer.bypassSecurityTrustHtml ( r.firstReadingSource ) : null,
+      secondReading: r.secondReading ? this.sanitizer.bypassSecurityTrustHtml ( r.secondReading ) : null,
+      secondReadingSource: r.secondReadingSource ? this.sanitizer.bypassSecurityTrustHtml ( r.secondReadingSource ) : null,
+      psalm: r.psalm ? this.sanitizer.bypassSecurityTrustHtml ( r.psalm ) : null,
+      psalmSource: r.psalmSource ? this.sanitizer.bypassSecurityTrustHtml ( r.psalmSource ) : null,
+      gospelAcclamation: r.gospelAcclamation ? this.sanitizer.bypassSecurityTrustHtml ( r.gospelAcclamation ) : null,
+      gospelAcclamationSource: r.gospelAcclamationSource ? this.sanitizer.bypassSecurityTrustHtml ( r.gospelAcclamationSource ) : null,
+      gospel: r.gospel ? this.sanitizer.bypassSecurityTrustHtml ( r.gospel ) : null,
+      gospelSource: r.gospelSource ? this.sanitizer.bypassSecurityTrustHtml ( r.gospelSource ) : null,
+      copyright: r.copyright ? this.sanitizer.bypassSecurityTrustHtml ( r.copyright ) : null,
+    }
+  } )
+
   public readonly slides = [
     {
-      title: "Resources",
+      title: "Liturgy & Prayers",
       content: "Deepen your faith with prayers, video reflections, and today's Mass from the Scottish liturgical calendar.",
       image: "gallery/kinloss/kinloss-13.jpg"
     }
   ]
+
+  public selectedReading: WritableSignal<{ title: string; content: SafeHtml } | null> = signal ( null )
+
+  private readonly sanitizer = inject ( DomSanitizer )
 
   // Reactive dark mode signal — updates when OS preference changes
   private readonly darkMode: WritableSignal<boolean> = signal (
@@ -216,6 +186,14 @@ export class ResourcesComponent implements OnInit {
   )
 
   private readonly apiSvc: ApiService = inject ( ApiService )
+
+  public get getCategoryLabel ( ): Record<string, string> {
+    return CategoryLabel
+  }
+
+  public get getTypeLabel ( ): Record<PrayerType, string> {
+    return TypeLabel
+  }
 
   public ngOnInit ( ): void {
     const mq = window.matchMedia ( "(prefers-color-scheme: dark)" )
@@ -240,6 +218,17 @@ export class ResourcesComponent implements OnInit {
     document.body.style.overflow = "hidden"
   }
 
+  public openReading ( title: string, content: SafeHtml ): void {
+    this.selectedReading.set ( { title, content } )
+    document.body.style.overflow = "hidden"
+  }
+
+  public closeReading ( ): void {
+    this.selectedReading.set ( null )
+    document.body.style.overflow = ""
+  }
+
+
   public closePrayer ( ): void {
     this.selectedPrayer.set ( null )
     document.body.style.overflow = ""
@@ -247,12 +236,12 @@ export class ResourcesComponent implements OnInit {
 
   public setReflectionFilter ( value: string ): void { this.reflectionFilter.set ( value ) }
 
-  public formatCategory ( value: string ): string {
-    return CATEGORY_LABELS [ value ] ?? value
+  public formatCategory ( value: PrayerCategory ): string {
+    return CategoryLabel [ value ] ?? value
   }
 
-  public formatType ( value: string ): string {
-    return TYPE_LABELS [ value ] ?? value
+  public formatType ( value: PrayerType ): string {
+    return TypeLabel [ value ] ?? value
   }
 
   public prayerPreview ( text: string ): string {

@@ -1,139 +1,66 @@
-import { Component, ChangeDetectionStrategy, signal, WritableSignal, inject, OnInit } from "@angular/core"
-import { FormControl, FormGroup, ReactiveFormsModule } from "@angular/forms"
-import { FieldType, FormlyFieldConfig, FormlyForm, FormlyValidationMessage } from "@ngx-formly/core"
-import { NominatimResult } from "./address-lookup.interface"
-import { FormlyService } from "../../services/formly.service"
-import { IconComponent } from "../../icon/icon.component"
+import { Component, ChangeDetectionStrategy, OnInit } from "@angular/core"
+import { FormControl, ReactiveFormsModule } from "@angular/forms"
+import { FieldType, FormlyFieldConfig, FormlyValidationMessage } from "@ngx-formly/core"
 
-// Define the custom field component for address autocomplete
 @Component ( {
   selector: "app-formly-address-autocomplete",
   imports: [
-    FormlyForm,
     ReactiveFormsModule,
-    FormlyValidationMessage,
-    IconComponent
+    FormlyValidationMessage
   ],
   standalone: true,
   templateUrl: "./address-lookup.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class AddressAutocompleteComponent extends FieldType<FormlyFieldConfig> implements OnInit {
-  public selectAddressForm: FormGroup = new FormGroup ( { } )
-  public selectAddressFields: FormlyFieldConfig [ ] = [ ]
-  public selectAddressModel: { addressSelection?: NominatimResult } = { }
-
-  public searchResults: WritableSignal<NominatimResult[]> = signal ( [] )
-  public loading: WritableSignal<boolean> = signal ( false )
-  public focusedIndex: WritableSignal<number> = signal ( -1 )
-
-  private readonly formlySvc: FormlyService = inject ( FormlyService )
-
-  private debounceTimer: ReturnType<typeof setTimeout> | undefined
-  private readonly debounceTimeMs = 300
-
-  public constructor ( ) {
-    super ( )
-    this.selectAddressFields = [
-      this.formlySvc.SelectInput ( "addressSelection", {
-        label: "Autocomplete Results",
-        options: [ ],
-        required: true,
-        change: ( field: FormlyFieldConfig ) => {
-          const selectedResult: NominatimResult = field.formControl?.value
-          if ( selectedResult ) {
-            this.selectAddress ( selectedResult )
-          }
-        }
-      }, { } )
-    ]
-  }
-
-  public get inputControl ( ): FormControl {
-    return this.formControl as FormControl
-  }
+  // Split manual entry form fields
+  public line1Control: FormControl = new FormControl ( "" )
+  public line2Control: FormControl = new FormControl ( "" )
+  public cityControl: FormControl = new FormControl ( "" )
+  public postcodeFieldControl: FormControl = new FormControl ( "" )
 
   public ngOnInit ( ): void {
-    const modelValue = this.formControl?.value || ""
-    this.inputControl.setValue ( modelValue )
-  }
-
-  public searchAddress ( value?: string ): void {
-    clearTimeout ( this.debounceTimer )
-    const query = this.inputControl.value.trim ( )
-
-    this.formControl.setValue ( null )
-    this.inputControl.setValue ( value ?? null )
-
-    if ( query.length < 3 ) {
-      this.searchResults.set ( [ ] )
-      this.selectAddressFields [ 0 ].props = {
-        ...this.selectAddressFields [ 0 ].props,
-        options: [ ]
-      }
-      return
+    const initialValue = this.formControl?.value || ""
+    if ( initialValue ) {
+      this.parseAndSetAddress ( initialValue )
     }
-
-    this.loading.set ( true )
-
-    this.debounceTimer = setTimeout ( async ( ) => {
-      try {
-        const response = await fetch ( `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent ( query )}`, {
-          headers: {
-            "Accept": "application/json"
-          }
-        } )
-
-        if ( !response.ok ) {
-          throw new Error ( "Nominatim API search failed" )
-        }
-
-        const results: NominatimResult [ ] = await response.json ( )
-        if ( Array.isArray ( results ) && ( results.length === 1 && results [ 0 ].display_name === this.inputControl.value ) ) {
-          this.selectAddress ( results [ 0 ] )
-          return
-        }
-
-        this.searchResults.set ( results )
-        this.selectAddressFields [ 0 ].props = {
-          ...this.selectAddressFields [ 0 ].props,
-          options: results.map ( r => ( {
-            label: r.display_name,
-            value: r
-          } ) )
-        }
-      } catch ( error ) {
-        console.error ( "Error fetching addresses from Nominatim:", error )
-        this.searchResults.set ( [ ] )
-        this.selectAddressFields [ 0 ].props = {
-          ...this.selectAddressFields [ 0 ].props,
-          options: [ ]
-        }
-      } finally {
-        this.loading.set ( false )
-      }
-    }, this.debounceTimeMs )
   }
 
-  public selectAddress ( result: NominatimResult ) {
-    this.inputControl.setValue ( result.display_name )
-    this.inputControl.markAsTouched ( )
-    this.inputControl.markAsDirty ( )
-    this.searchResults.set ( [ ] )
+  public onAddressFieldChange ( ): void {
+    const line1 = ( this.line1Control.value || "" ).trim ( )
+    const line2 = ( this.line2Control.value || "" ).trim ( )
+    const city = ( this.cityControl.value || "" ).trim ( )
+    const postcode = ( this.postcodeFieldControl.value || "" ).trim ( )
 
-    // const address = result.address
+    const parts = [ ]
+    if ( line1 ) parts.push ( line1 )
+    if ( line2 ) parts.push ( line2 )
+    if ( city ) parts.push ( city )
+    if ( postcode ) parts.push ( postcode )
 
-    // const newModel = {
-    //   formattedAddress: result.display_name,
-    //   street: `${address.house_number ? address.house_number + " " : ""}${address.road || ""}`,
-    //   city: address.city || address.town || address.village || "",
-    //   state: address.state || "",
-    //   zip: address.postcode || "",
-    //   country: address.country || "",
-    //   latitude: result.lat,
-    //   longitude: result.lon,
-    // }
+    const combinedAddress = parts.join ( ", " )
+    this.formControl.setValue ( combinedAddress )
+    this.formControl.markAsDirty ( )
+    this.formControl.markAsTouched ( )
+  }
 
-    this.formControl.setValue ( result.display_name )
+  private parseAndSetAddress ( addressStr: string ): void {
+    const parts = addressStr.split ( "," ).map ( p => p.trim ( ) )
+    if ( parts.length >= 4 ) {
+      this.line1Control.setValue ( parts [ 0 ], { emitEvent: false } )
+      this.line2Control.setValue ( parts [ 1 ], { emitEvent: false } )
+      this.cityControl.setValue ( parts [ 2 ], { emitEvent: false } )
+      this.postcodeFieldControl.setValue ( parts [ 3 ], { emitEvent: false } )
+    } else if ( parts.length === 3 ) {
+      this.line1Control.setValue ( parts [ 0 ], { emitEvent: false } )
+      this.line2Control.setValue ( "", { emitEvent: false } )
+      this.cityControl.setValue ( parts [ 1 ], { emitEvent: false } )
+      this.postcodeFieldControl.setValue ( parts [ 2 ], { emitEvent: false } )
+    } else {
+      this.line1Control.setValue ( addressStr, { emitEvent: false } )
+      this.line2Control.setValue ( "", { emitEvent: false } )
+      this.cityControl.setValue ( "", { emitEvent: false } )
+      this.postcodeFieldControl.setValue ( "", { emitEvent: false } )
+    }
   }
 }

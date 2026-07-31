@@ -5,6 +5,9 @@ import { ModalService } from "@revive/src/app/services/modal.service"
 import { IconComponent } from "../../icon/icon.component"
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop"
 import { DestroyRef } from "@angular/core"
+import { ApiService } from "../../services/api.service"
+import { AuthService } from "../../services/auth.service"
+import { HttpHeaders } from "@angular/common/http"
 
 @Component ( {
   selector: "app-formly-image-picker",
@@ -16,9 +19,12 @@ import { DestroyRef } from "@angular/core"
 } )
 export class ImagePickerComponent extends FieldType implements OnInit {
   public readonly value: WritableSignal<string> = signal ( "" )
+  public displayFilename: WritableSignal<string> = signal ( "" )
 
   private readonly modalSvc: ModalService = inject ( ModalService )
   private readonly destroyRef: DestroyRef = inject ( DestroyRef )
+  private readonly apiSvc: ApiService = inject ( ApiService )
+  private readonly authSvc: AuthService = inject ( AuthService )
 
   public get previewUrl ( ): string {
     const val = this.value ( )
@@ -35,10 +41,14 @@ export class ImagePickerComponent extends FieldType implements OnInit {
     const initial = this.formControl?.value ?? ""
     this.formControl?.setValue ( initial )
     this.value.set ( initial )
+    this.updateDisplayFilename ( initial )
 
     this.formControl.valueChanges
       .pipe ( takeUntilDestroyed ( this.destroyRef ) )
-      .subscribe ( v => this.value.set ( v ?? "" ) )
+      .subscribe ( v => {
+        this.value.set ( v ?? "" )
+        this.updateDisplayFilename ( v ?? "" )
+      } )
   }
 
   public openFileSelector ( ): void {
@@ -46,10 +56,57 @@ export class ImagePickerComponent extends FieldType implements OnInit {
 
     modalRef.componentInstance.isSelectionMode = true
 
-    modalRef.result.then ( ( result: string | undefined ) => {
+    modalRef.result.then ( ( result: { url: string; filename: string } | string | undefined ) => {
       if ( result ) {
-        this.formControl?.setValue ( result )
+        if ( typeof result === "object" && result.url ) {
+          // Store the display filename
+          this.displayFilename.set ( result.filename || "" )
+          // Save the clean URL to the actual form control
+          this.formControl?.setValue ( result.url )
+          this.formControl?.markAsDirty ( )
+          this.formControl?.markAsTouched ( )
+        } else if ( typeof result === "string" ) {
+          this.formControl?.setValue ( result )
+          this.formControl?.markAsDirty ( )
+          this.formControl?.markAsTouched ( )
+        }
       }
     } ).catch ( ( ) => { /* Modal dismissed */ } )
+  }
+
+  private async updateDisplayFilename ( val: string ): Promise<void> {
+    if ( !val ) {
+      this.displayFilename.set ( "" )
+      return
+    }
+
+    // Only update if we don't already have a friendly filename set from the selector
+    // (This handles initial load where we only have the URL)
+    if ( !this.displayFilename ( ) || this.displayFilename ( ).length > 40 ) {
+      const isShareUrl = val.includes ( "/api/public/s/" )
+
+      if ( isShareUrl ) {
+        const uuid = val.split ( "/" ).pop ( )?.split ( "?" ) [ 0 ]
+        if ( uuid ) {
+          try {
+            const token = await this.authSvc.currentUser ( )?.getIdToken ( ) || ""
+            const res = await this.apiSvc.get ( `/api/admin/file-explorer/share-info/${uuid}`, { }, new HttpHeaders ( {
+              "Authorization": `Bearer ${token}`
+            } ) ) as { filename: string }
+
+            if ( res && res.filename ) {
+              this.displayFilename.set ( res.filename )
+              return
+            }
+          } catch {
+            // Fall through to fallback
+          }
+        }
+      }
+
+      // Fallback to the last segment of the path
+      const parts = val.split ( "?" ) [ 0 ].split ( "/" )
+      this.displayFilename.set ( parts [ parts.length - 1 ] )
+    }
   }
 }

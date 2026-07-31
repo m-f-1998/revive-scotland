@@ -101,7 +101,6 @@ export const router: FastifyPluginAsync = async app => {
       if ( isFirebaseAuthError ( error ) ) {
         return res.status ( 401 ).send ( { error: "Unauthorized" } )
       }
-      console.error ( "Error logging out user:", error )
       return res.status ( 500 ).send ( { error: "Internal server error" } )
     }
   } )
@@ -150,7 +149,6 @@ export const router: FastifyPluginAsync = async app => {
       if ( isFirebaseAuthError ( error ) ) {
         return res.status ( 401 ).send ( { error: "Unauthorized" } )
       }
-      console.error ( "Error verifying user session:", error )
       return res.status ( 500 ).send ( { error: "Internal server error" } )
     }
   } )
@@ -202,7 +200,6 @@ export const router: FastifyPluginAsync = async app => {
       if ( isFirebaseAuthError ( error ) ) {
         return res.status ( 401 ).send ( { error: "Unauthorized" } )
       }
-      console.error ( "Error fetching user data:", error )
       return res.status ( 500 ).send ( { error: "Internal server error" } )
     }
   } )
@@ -231,7 +228,6 @@ export const router: FastifyPluginAsync = async app => {
       if ( isFirebaseAuthError ( error ) ) {
         return res.status ( 401 ).send ( { error: "Unauthorized" } )
       }
-      console.error ( "Error fetching user data:", error )
       return res.status ( 500 ).send ( { error: "Internal server error" } )
     }
   } )

@@ -5,6 +5,19 @@ interface FeastDay {
   colour: string
   date: string
   universalisUrl: string
+  readings?: {
+    firstReading?: string
+    firstReadingSource?: string
+    psalm?: string
+    psalmSource?: string
+    secondReading?: string
+    secondReadingSource?: string
+    gospelAcclamation?: string
+    gospelAcclamationSource?: string
+    gospel?: string
+    gospelSource?: string
+    copyright?: string
+  }
 }
 
 let feastCache: FeastDay | null = null
@@ -28,9 +41,10 @@ const formatDate = ( yyyymmdd: string ): string => {
 
 // Universalis calendar.json returns HTML. Parse the <tr> row for today's date.
 const parseFeastFromHtml = ( html: string, dateKey: string ): { name: string; colour: string } => {
-  const marker = `${dateKey}/today.htm">`
-  const markerIdx = html.indexOf ( marker )
-  if ( markerIdx === -1 ) return { name: "Today's Mass", colour: "Green" }
+  const markerRegex = new RegExp ( `${dateKey}/today\\.htm` )
+  const match = html.match ( markerRegex )
+  if ( !match || match.index === undefined ) return { name: "Today's Mass", colour: "Green" }
+  const markerIdx = match.index
 
   // Grab up to the next </tr>
   const rowEnd = html.indexOf ( "</tr>", markerIdx )
@@ -54,6 +68,51 @@ const parseFeastFromHtml = ( html: string, dateKey: string ): { name: string; co
   return { name, colour }
 }
 
+const cleanReadingHtml = ( html?: string ): string | undefined => {
+  if ( !html ) return undefined
+  // Strip out all wrapper divs entirely and separate blocks with exactly two new lines.
+  // This produces clean, raw text blocks that play nicely with Angular/Tailwind Prose.
+  let clean = html
+    .replace ( /<div style="text-align:justify; text-indent:1em;">&#160;&#160;/g, "\n\n" )
+    .replace ( /<div style="text-indent: -2em; margin-left: 3em;">&#160;&#160;/g, "\n\n" )
+    .replace ( /<div style="text-align:justify;">/g, "" ) // First paragraph usually starts with this
+    .replace ( /<\/div>/g, "" )
+
+  // Replace <br> tags with single new lines in case Universalis uses them mid-paragraph
+  clean = clean.replace ( /<br\s*\/?>/gi, "\n" )
+
+  return clean.trim ()
+}
+
+const fetchReadings = async (): Promise<FeastDay["readings"]> => {
+  try {
+    const res = await fetch ( "https://universalis.com/Europe.Scotland/jsonpmass.js" )
+    const text = await res.text ()
+    const firstParen = text.indexOf ( "(" )
+    const lastParen = text.lastIndexOf ( ")" )
+    if ( firstParen !== -1 && lastParen > firstParen ) {
+      const jsonStr = text.slice ( firstParen + 1, lastParen ).trim ( )
+      const data = JSON.parse ( jsonStr )
+      return {
+        firstReading: cleanReadingHtml ( data.Mass_R1?.text ),
+        firstReadingSource: data.Mass_R1?.source,
+        psalm: data.Mass_Ps?.text, // Leave psalm alone for exact indentation
+        psalmSource: data.Mass_Ps?.source,
+        secondReading: cleanReadingHtml ( data.Mass_R2?.text ),
+        secondReadingSource: data.Mass_R2?.source,
+        gospelAcclamation: data.Mass_GA?.text, // Leave acclamation alone
+        gospelAcclamationSource: data.Mass_GA?.source,
+        gospel: cleanReadingHtml ( data.Mass_G?.text ),
+        gospelSource: data.Mass_G?.source,
+        copyright: data.copyright?.text
+      }
+    }
+  } catch ( error ) {
+    console.error ( "Failed to fetch readings:", error )
+  }
+  return undefined
+}
+
 export const router: FastifyPluginAsync = async app => {
   app.get ( "/", async ( _req, rep ) => {
     const dateKey = getDateKey ( )
@@ -67,12 +126,14 @@ export const router: FastifyPluginAsync = async app => {
       const calendarHtml = await calendarRes.text ( )
 
       const { name, colour } = parseFeastFromHtml ( calendarHtml, dateKey )
+      const readings = await fetchReadings ()
 
       const result: FeastDay = {
         name,
         colour,
         date: formatDate ( dateKey ),
-        universalisUrl: `https://universalis.com/Europe.Scotland/${dateKey}/Mass.htm`
+        universalisUrl: `https://universalis.com/Europe.Scotland/${dateKey}/Mass.htm`,
+        readings
       }
 
       feastCache = result

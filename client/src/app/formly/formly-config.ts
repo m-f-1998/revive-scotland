@@ -1,9 +1,10 @@
-import { Injectable } from "@angular/core"
+import { Service } from "@angular/core"
 import { ConfigOption, FormlyFieldConfig } from "@ngx-formly/core"
 import { ValidPhoneNumber } from "./validators/PhoneNumber.validator"
 import { ValidEmail } from "./validators/EmailAddress.validator"
 import { ValidDate } from "./validators/Date.validator"
 import { DatePickerComponent } from "./date-picker/date-picker.component"
+import { TimePickerComponent } from "./time-picker/time-picker.component"
 import { AddressAutocompleteComponent } from "./address-lookup/address-lookup.component"
 import { ValidWebPageURL } from "./validators/URL.validator"
 import { ImagePickerComponent } from "./image-picker/image-picker.component"
@@ -14,9 +15,7 @@ import { FormlyFieldSelectComponent } from "./types/select.type"
 import { FormlyFieldTextareaComponent } from "./types/textarea.type"
 import { FormlyFieldCheckboxComponent } from "./types/checkbox.type"
 
-@Injectable ( {
-  providedIn: "root"
-} )
+@Service ( )
 export class FormlyConfig implements ConfigOption {
   public types = [
     {
@@ -41,6 +40,11 @@ export class FormlyConfig implements ConfigOption {
     {
       name: "datepicker",
       component: DatePickerComponent,
+      extends: "input"
+    },
+    {
+      name: "timepicker",
+      component: TimePickerComponent,
       extends: "input"
     },
     {

@@ -100,7 +100,12 @@ export class FileExplorerComponent {
         const relativePath = shareUrl.startsWith ( "http" )
           ? new URL ( shareUrl ).pathname
           : shareUrl
-        this.activeModal.close ( relativePath )
+
+        // Return an object containing both the clean url and the display filename
+        this.activeModal.close ( {
+          url: relativePath,
+          filename: fileEntry.name || "file"
+        } )
 
       } catch ( err ) {
         if ( isDevMode ( ) ) {

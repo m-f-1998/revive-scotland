@@ -408,13 +408,36 @@ export const router: FastifyPluginAsync = async app => {
       } )
 
       // Return the URL for your domain
-      // Assuming you mount the public router at /api/public
       const shareUrl = `${PUBLIC_DOMAIN}/api/public/s/${shareId}`
 
       return rep.status ( 200 ).send ( { shareUrl } )
     } catch ( error ) {
       console.error ( "Error generating share URL:", error )
       return rep.status ( 500 ).send ( "Failed to generate URL." )
+    }
+  } )
+
+  /**
+   * 5b. GET SHARE INFO
+   * Resolves the filename from a shared UUID.
+   */
+  app.get ( "/share-info/:id", async ( req, rep ) => {
+    const { id } = req.params as { id: string }
+    if ( !id ) return rep.status ( 400 ).send ( "Missing id parameter." )
+
+    try {
+      const doc = await getFirestore ( ).collection ( "shared_links" ).doc ( id ).get ( )
+      if ( !doc.exists ) {
+        return rep.status ( 404 ).send ( { error: "Link not found." } )
+      }
+
+      const key = doc.data ( )?. [ "key" ] || ""
+      const filename = key.split ( "/" ).pop ( ) || id
+
+      return rep.status ( 200 ).send ( { filename } )
+    } catch ( error ) {
+      console.error ( "Error getting share info:", error )
+      return rep.status ( 500 ).send ( "Failed to get share info." )
     }
   } )
 

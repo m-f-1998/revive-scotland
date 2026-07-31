@@ -33,19 +33,17 @@
           />
           <div class="card-body">
             <h4 class="font-bold text-lg mb-2">{{event.title}}</h4>
-            <p class="text-gray-500 text-sm mb-4">{{event.description}}</p>
+            <p class="text-sm mb-4">{{event.description}}</p>
             <div class="space-y-2 mb-4 text-sm">
-              <div class="flex items-center gap-2 text-gray-600">
+              <div class="flex items-center gap-2">
                 <app-icon icon="calendar" />
-                @if(dateSvc.sameDay(event.startDate, event.endDate)) {
-                  {{this.dateSvc.reformat(event.startDate, 'E do LLL yyyy h:mma')}} - {{this.dateSvc.reformat(event.endDate, 'h:mma')}}
-                } @else {
-                  {{this.dateSvc.reformat(event.startDate, 'E do LLL yyyy')}} - {{this.dateSvc.reformat(event.endDate, 'E do LLL yyyy')}}
-                }
+                {{dateSvc.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime)}}
               </div>
-              <div class="flex items-center gap-2 text-gray-600">
+              <div class="flex items-center gap-2">
                 <app-icon icon="map-marker" />
-                {{event.location}}
+                <a [href]="getGoogleMapsUrl(event.location)" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">
+                  {{ event.location }}
+                </a>
               </div>
             </div>
             <div class="flex gap-2 flex-wrap">
@@ -55,7 +53,7 @@
                   More Info
                 </a>
               } @else if (event.actionType === 'contact') {
-                <button type="button" class="btn-primary" (click)="openContactForm(event)">
+                <button type="button" class="btn-primary" (click)="openContactForm(event)" [disabled]="loading()">
                   <app-icon icon="envelope" />
                   Contact Organiser
                 </button>
@@ -72,8 +70,8 @@
       }
     </div>
 
-    <figure class="px-8 py-12 text-center bg-gray-50 m-0">
-      <blockquote class="italic text-gray-600 text-lg mb-4">
+    <figure class="px-8 py-12 text-center bg-primary/10 m-0">
+      <blockquote class="italic text-lg mb-4">
         "Prayer, as a means of drawing ever new strength from Christ, is concretely and urgently needed."
       </blockquote>
       <figcaption class="text-sm text-gray-500">— Benedict XVI</figcaption>

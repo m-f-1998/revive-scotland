@@ -1,29 +1,49 @@
 <div class="w-full space-y-3">
-  <input
-    type="text"
-    [formControl]="inputControl"
-    [class.is-invalid]="formControl.invalid && (formControl.touched || formControl.dirty)"
-    [id]="id"
-    [required]="props.required || false"
-    [placeholder]="props.placeholder || 'Search for an address...'"
-    class="form-control"
-    (input)="searchAddress($event.target.value)">
+  <!-- Address Lines Section (Always visible) -->
+  <div class="border border-gray-200 dark:border-slate-700 rounded-lg p-4 space-y-3 bg-gray-50/50 dark:bg-slate-800/10">
 
-  @if (searchResults().length > 0) {
-    <formly-form
-      [form]="selectAddressForm"
-      [model]="selectAddressModel"
-      [fields]="selectAddressFields" />
-  }
-
-  @if (loading()) {
-    <div class="flex items-center gap-2 text-sm text-gray-500">
-      <app-icon icon="spinner" iconAnimation="spin" />
-      Loading...
+    <!-- Address Line 1 -->
+    <div class="space-y-1">
+      <label class="text-xs font-semibold text-gray-500 block">Address Line 1</label>
+      <input
+        type="text"
+        [formControl]="line1Control"
+        placeholder="e.g., 1 High St"
+        class="form-control w-full"
+        (input)="onAddressFieldChange()">
     </div>
-  }
 
-  @if (formControl.invalid && (formControl.dirty || formControl.touched)) {
-    <formly-validation-message [field]="field" class="invalid-feedback" />
-  }
+    <!-- Address Line 2 -->
+    <div class="space-y-1">
+      <label class="text-xs font-semibold text-gray-500 block">Address Line 2 (Optional)</label>
+      <input
+        type="text"
+        [formControl]="line2Control"
+        placeholder="e.g., Flat 3, 2nd Floor"
+        class="form-control w-full"
+        (input)="onAddressFieldChange()">
+    </div>
+
+    <!-- Town/City & Postcode Row -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div class="space-y-1">
+        <label class="text-xs font-semibold text-gray-500 block">Town/City</label>
+        <input
+          type="text"
+          [formControl]="cityControl"
+          placeholder="e.g., Edinburgh"
+          class="form-control w-full"
+          (input)="onAddressFieldChange()">
+      </div>
+      <div class="space-y-1">
+        <label class="text-xs font-semibold text-gray-500 block">Postcode</label>
+        <input
+          type="text"
+          [formControl]="postcodeFieldControl"
+          placeholder="e.g., EH1 1AA"
+          class="form-control w-full"
+          (input)="onAddressFieldChange()">
+      </div>
+    </div>
+  </div>
 </div>

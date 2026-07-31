@@ -10,6 +10,7 @@ import { AuthService } from "../../services/auth.service"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { AdminFooterComponent } from "../footer/footer.component"
 import { IconComponent } from "../../icon/icon.component"
+import { DatePipe, KeyValuePipe } from "@angular/common"
 
 interface SlideFormEntry {
   form: FormGroup
@@ -38,7 +39,9 @@ const DEFAULT_EVENTS_HEROES = [
     AdminNavbarComponent,
     IconComponent,
     FormlyForm,
-    AdminFooterComponent
+    AdminFooterComponent,
+    DatePipe,
+    KeyValuePipe
   ],
   templateUrl: "./event-editor.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -58,6 +61,8 @@ export class EventEditorComponent implements OnInit {
 
   // Slider section state
   public sliderForms: WritableSignal<SlideFormEntry [ ]> = signal ( [ ] )
+
+  public registrations: WritableSignal<Record<string, Array<Record<string, unknown>>>> = signal ( { } )
 
   private readonly apiSvc: ApiService = inject ( ApiService )
   private readonly formlySvc: FormlyService = inject ( FormlyService )
@@ -90,8 +95,14 @@ export class EventEditorComponent implements OnInit {
 
   public toggleCollapsed ( index: number ): void {
     if ( this.collapsedIndices.has ( index ) ) {
+      // Deleting from collapsedIndices means EXPANDING the card
       this.collapsedIndices.delete ( index )
+      const model = this.eventForm ( ) [ index ]?.model
+      if ( model && model [ "id" ] && model [ "actionType" ] === "contact" ) {
+        this.loadRegistrations ( model [ "id" ] as string )
+      }
     } else {
+      // Adding to collapsedIndices means COLLAPSING the card
       this.collapsedIndices.add ( index )
     }
   }
@@ -104,6 +115,8 @@ export class EventEditorComponent implements OnInit {
       location: "",
       startDate: new Date ( ),
       endDate: new Date ( ),
+      startTime: "",
+      endTime: "",
       actionType: "webpage" as const
     }
     this.eventsModified.set ( true )
@@ -136,9 +149,16 @@ export class EventEditorComponent implements OnInit {
           imageUrl: ef.model [ "imageUrl" ] as string,
           startDate: ef.model [ "startDate" ] as Date,
           endDate: ef.model [ "endDate" ] as Date,
+          startTime: ef.model [ "startTime" ] as string,
+          endTime: ef.model [ "endTime" ] as string,
           actionType: ef.model [ "actionType" ] as "webpage" | "contact",
           webpageUrl: ef.model [ "webpageUrl" ] as string,
-          contactFormFields: ef.model [ "contactFormFields" ] as FormlyFieldConfig [ ] || [ ]
+          contactFormFields: ef.model [ "contactFormFields" ] as FormlyFieldConfig [ ] || [ ],
+          donationRequired: ef.model [ "donationRequired" ] as "required" | "none" | "optional" | undefined,
+          donationDescription: ef.model [ "donationDescription" ] as string,
+          donationPrice: ef.model [ "donationPrice" ] as number,
+          stripeProductId: ef.model [ "stripeProductId" ] as string,
+          stripePriceId: ef.model [ "stripePriceId" ] as string
         }
       } )
     }
@@ -194,6 +214,49 @@ export class EventEditorComponent implements OnInit {
 
   public someFormDirty ( ): boolean {
     return this.eventsModified ( ) || this.eventForm ( ).some ( ef => ef.form.dirty )
+  }
+
+  public async loadRegistrations ( eventId: string ): Promise<void> {
+    if ( this.registrations ( ) [ eventId ] ) return
+    try {
+      const token = await this.authSvc.currentUser ( )?.getIdToken ( ) || ""
+      const res = await this.apiSvc.get ( `/api/admin/events/registrations`, { eventId }, new HttpHeaders ( {
+        "Authorization": `Bearer ${token}`
+      } ) )
+      const data = res as { registrations: Array<Record<string, unknown>> }
+      this.registrations.update ( r => ( { ...r, [ eventId ]: data.registrations } ) )
+    } catch ( e ) {
+      console.error ( "Failed to load registrations:", e )
+      this.toastrSvc.error ( "Failed to load registrations." )
+    }
+  }
+
+  public isEventFinished ( endDate: string | Date ): boolean {
+    if ( !endDate ) return false
+    const end = new Date ( endDate )
+    return !isNaN ( end.getTime ( ) ) && end < new Date ( )
+  }
+
+  public getEventTimeoutText ( endDate: string | Date ): string {
+    if ( !endDate ) return ""
+    const end = new Date ( endDate )
+    if ( isNaN ( end.getTime ( ) ) ) return ""
+    const removalDate = new Date ( end.getTime ( ) + 21 * 24 * 60 * 60 * 1000 )
+    const diffTime = removalDate.getTime ( ) - Date.now ( )
+    const diffDays = Math.ceil ( diffTime / ( 1000 * 60 * 60 * 24 ) )
+    if ( diffDays <= 0 ) return "Deleting soon..."
+    return `Finished - Deletes in ${diffDays} ${diffDays === 1 ? "day" : "days"}`
+  }
+
+  public getFieldLabel ( event: Event, key: string | number | symbol ): string {
+    if ( !event.contactFormFields || !Array.isArray ( event.contactFormFields ) ) {
+      return key.toString ( )
+    }
+    const field = event.contactFormFields.find ( f => f.key === key )
+    if ( field ) {
+      return ( ( field.props?.label as string ) || ( field.templateOptions?.label as string ) || key ).toString ( )
+    }
+    return key.toString ( )
   }
 
   // Slider methods
@@ -329,11 +392,22 @@ export class EventEditorComponent implements OnInit {
         required: true,
         minDate: new Date ( )
       }, { } ),
+      this.formlySvc.TimeInput ( "startTime", {
+        label: "Start Time",
+        placeholder: "19:00",
+        required: false
+      }, { } ),
       this.formlySvc.DateInput ( "endDate", {
         label: "End Date",
         placeholder: "Select end date",
         required: true,
         minDate: new Date ( )
+      }, { } ),
+      this.formlySvc.TimeInput ( "endTime", {
+        label: "End Time",
+        placeholder: "21:00",
+        required: false
+
       }, { } ),
       this.formlySvc.ImagePickerInput ( "imageUrl", {
         label: "Event Image",
@@ -371,7 +445,43 @@ export class EventEditorComponent implements OnInit {
           "props.required": ( formlyField: FormlyFieldConfig ) => ( formlyField.form?.value || { } ).actionType === "contact",
           hide: ( formlyField: FormlyFieldConfig ) => ( formlyField.form?.value || { } ).actionType !== "contact"
         }
-      }
+      },
+      this.formlySvc.SelectInput ( "donationRequired", {
+        label: "Donation Status",
+        options: [
+          { label: "No Donation", value: "none" },
+          { label: "Optional Donation", value: "optional" },
+          { label: "Required Donation", value: "required" }
+        ],
+        required: false
+      }, {
+        defaultValue: "none",
+        expressions: {
+          hide: ( formlyField: FormlyFieldConfig ) => ( formlyField.form?.value || { } ).actionType !== "contact"
+        }
+      } ),
+      this.formlySvc.TextAreaInput ( "donationDescription", {
+        label: "Donation Description",
+        placeholder: "Enter description for the donation step",
+        required: false,
+        maxLength: 500
+      }, {
+        expressions: {
+          hide: "model.donationRequired === 'none' || !model.donationRequired || model.actionType !== 'contact'"
+        }
+      } ),
+      this.formlySvc.TextInput ( "donationPrice", {
+        label: "Donation Price (in pence, e.g. 1000 for £10.00)",
+        placeholder: "1000",
+        required: false,
+        type: "number"
+      }, {
+        expressions: {
+          hide: "model.donationRequired === 'none' || !model.donationRequired || model.actionType !== 'contact'",
+          "props.required": "model.donationRequired !== 'none' && model.donationRequired"
+        }
+      } )
     ]
   }
 }
+

@@ -81,6 +81,11 @@ export class FormlyService {
     return this.CustomField ( key, "datepicker", { ...expressions, props }, focus )
   }
 
+  public TimeInput ( key: string, props: FormlyProps = { }, expressions: FormlyExpressions = { }, focus: boolean = false ): FormlyFieldConfig {
+    expressions.name = key
+    return this.CustomField ( key, "timepicker", { ...expressions, props }, focus )
+  }
+
   public AddressAutocompleteInput (
     key: string,
     props: FormlyProps = { },
