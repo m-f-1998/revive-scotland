@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal, WritableSignal } from "@angular/core"
 import { AdminNavbarComponent } from "../navbar/navbar.component"
 import { AuthService } from "../../services/auth.service"
 import { BaseChartDirective } from "ng2-charts"
@@ -29,10 +29,49 @@ import { HttpHeaders } from "@angular/common/http"
 } )
 export class DashboardComponent implements OnInit {
   public loading: WritableSignal<boolean> = signal ( true )
-  public dashboardData: DashboardData | null = null
+  public dashboardData: WritableSignal<DashboardData | null> = signal ( null )
   public donations: WritableSignal<Array<Record<string, unknown>>> = signal ( [ ] )
 
   public overview!: OverviewMetrics
+
+  // --- Pagination State ---
+  public readonly pageSize = 10
+  public geoPage: WritableSignal<number> = signal ( 0 )
+  public trafficPage: WritableSignal<number> = signal ( 0 )
+  public donationsPage: WritableSignal<number> = signal ( 0 )
+
+  // --- Computed Paginated Data ---
+  public readonly paginatedGeoData = computed ( ( ) => {
+    const data = this.dashboardData ( )?.geographyData || [ ]
+    const start = this.geoPage ( ) * this.pageSize
+    return data.slice ( start, start + this.pageSize )
+  } )
+
+  public readonly hasMoreGeo = computed ( ( ) => {
+    const data = this.dashboardData ( )?.geographyData || [ ]
+    return ( this.geoPage ( ) + 1 ) * this.pageSize < data.length
+  } )
+
+  public readonly paginatedTrafficData = computed ( ( ) => {
+    const data = this.dashboardData ( )?.trafficSourceData || [ ]
+    const start = this.trafficPage ( ) * this.pageSize
+    return data.slice ( start, start + this.pageSize )
+  } )
+
+  public readonly hasMoreTraffic = computed ( ( ) => {
+    const data = this.dashboardData ( )?.trafficSourceData || [ ]
+    return ( this.trafficPage ( ) + 1 ) * this.pageSize < data.length
+  } )
+
+  public readonly paginatedDonations = computed ( ( ) => {
+    const data = this.donations ( )
+    const start = this.donationsPage ( ) * this.pageSize
+    return data.slice ( start, start + this.pageSize )
+  } )
+
+  public readonly hasMoreDonations = computed ( ( ) => {
+    return ( this.donationsPage ( ) + 1 ) * this.pageSize < this.donations ( ).length
+  } )
 
   // --- Chart Properties ---
   // 1. Line Chart (Trend Data)
@@ -72,7 +111,7 @@ export class DashboardComponent implements OnInit {
   public ngOnInit ( ): void {
     Promise.all ( [
       this.analyticsSvc.getDashboardData ( ).then ( data => {
-        this.dashboardData = data
+        this.dashboardData.set ( data )
         this.overview = data.overview
 
         this.prepareTrendChartData ( data )
@@ -85,6 +124,31 @@ export class DashboardComponent implements OnInit {
     ] ).finally ( ( ) => {
       this.loading.set ( false )
     } )
+  }
+
+  // --- Pagination Controls ---
+  public nextGeoPage ( ): void {
+    if ( this.hasMoreGeo ( ) ) this.geoPage.update ( p => p + 1 )
+  }
+
+  public prevGeoPage ( ): void {
+    if ( this.geoPage ( ) > 0 ) this.geoPage.update ( p => p - 1 )
+  }
+
+  public nextTrafficPage ( ): void {
+    if ( this.hasMoreTraffic ( ) ) this.trafficPage.update ( p => p + 1 )
+  }
+
+  public prevTrafficPage ( ): void {
+    if ( this.trafficPage ( ) > 0 ) this.trafficPage.update ( p => p - 1 )
+  }
+
+  public nextDonationsPage ( ): void {
+    if ( this.hasMoreDonations ( ) ) this.donationsPage.update ( p => p + 1 )
+  }
+
+  public prevDonationsPage ( ): void {
+    if ( this.donationsPage ( ) > 0 ) this.donationsPage.update ( p => p - 1 )
   }
 
   /**

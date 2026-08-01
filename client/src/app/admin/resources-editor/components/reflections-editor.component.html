@@ -1,0 +1,82 @@
+    <div class="card mb-6 shadow-sm">
+      <div class="card-header flex items-center justify-between cursor-pointer select-none" (click)="sectionCollapsed.set(!sectionCollapsed())">
+        <h5 class="mb-0 font-semibold flex items-center gap-2">
+          <app-icon icon="lightbulb" /> Reflections
+        </h5>
+        <span class="inline-block transition-transform duration-200" [class.rotate-180]="!sectionCollapsed()"><app-icon icon="chevron-down" /></span>
+      </div>
+
+      <div [class.hidden]="sectionCollapsed()">
+        <div class="card-body">
+          <p class="text-sm text-gray-500 mb-4">Manage the video reflections available on the resources page. Each reflection needs a title, category, and a YouTube Video ID.</p>
+
+          @for (reflection of reflections; track reflection.id; let i = $index) {
+            <div class="card mb-3 shadow-sm border border-gray-200 dark:border-slate-600">
+              <div class="card-header flex items-center justify-between cursor-pointer select-none py-3 px-4" (click)="toggleReflection(i)">
+                <div class="flex items-center gap-2 font-medium">
+                  <span class="inline-block transition-transform duration-200" [class.rotate-180]="expandedReflection() !== i">
+                    <app-icon icon="chevron-down" />
+                  </span>
+                  {{ reflection.title || 'New Reflection' }}
+                </div>
+                <div class="flex items-center gap-1">
+                  <button class="btn-outline-secondary btn-sm px-2 py-1" [disabled]="i === 0" (click)="$event.stopPropagation(); moveReflectionUp(i)" title="Move Up"><app-icon icon="arrow-up" /></button>
+                  <button class="btn-outline-secondary btn-sm px-2 py-1" [disabled]="i === reflections.length - 1" (click)="$event.stopPropagation(); moveReflectionDown(i)" title="Move Down"><app-icon icon="arrow-right" /></button>
+                  <button class="btn-danger btn-sm px-2 py-1 ml-2" (click)="$event.stopPropagation(); removeReflection(i)" title="Remove"><app-icon icon="trash" /></button>
+                </div>
+              </div>
+
+              <div [class.hidden]="expandedReflection() !== i">
+                <hr class="m-0 border-gray-200 dark:border-slate-700">
+                <div class="card-body space-y-4 pt-0">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                      <label class="block text-sm font-medium mb-1">Title <span class="text-red-500">*</span></label>
+                      <input type="text" class="form-control" [ngModel]="reflection.title" (ngModelChange)="updateReflection(i, 'title', $event)" placeholder="e.g. Reflection on the Rosary">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium mb-1">YouTube ID <span class="text-red-500">*</span></label>
+                      <div class="flex gap-2 items-center">
+                        <input type="text" class="form-control" [ngModel]="reflection.youtubeId" (ngModelChange)="updateReflection(i, 'youtubeId', $event)" placeholder="e.g. dQw4w9WgXcQ">
+                        @if (reflection.youtubeId) {
+                          <a [href]="'https://youtube.com/watch?v=' + reflection.youtubeId" target="_blank" class="btn-outline-primary btn-sm flex-shrink-0" title="Preview video">
+                            <app-icon icon="link" />
+                          </a>
+                        }
+                      </div>
+                      <p class="text-xs text-gray-500 mt-1">The 11-character code in the YouTube URL (v=<strong>ID</strong>).</p>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium mb-1">Category <span class="text-red-500">*</span></label>
+                      <select class="form-select" [ngModel]="reflection.category" (ngModelChange)="updateReflection(i, 'category', $event)">
+                        @for (cat of categories; track cat.value) {
+                          <option [value]="cat.value">{{ cat.label }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium mb-1">Internal ID <span class="text-gray-400 font-normal">(auto-generated)</span></label>
+                      <input type="text" class="form-control bg-gray-50 dark:bg-slate-800 text-gray-500" [ngModel]="reflection.id" disabled>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          <button class="btn-success btn-sm mt-2" (click)="addReflection()">
+            <app-icon icon="plus-circle" /> Add New Reflection
+          </button>
+        </div>
+
+        <div class="card-footer flex flex-col items-end sm:flex-row sm:justify-end gap-2">
+          <button class="btn-primary" [disabled]="saving || reflectionsSomeEmpty()" (click)="save.emit()">
+            @if (saving) { <app-icon icon="spinner" iconAnimation="spin" /> } @else { <app-icon icon="save" /> }
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>

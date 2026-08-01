@@ -2,7 +2,7 @@
   <app-navbar />
   <app-slider [defaultSlides]="slides" pageid="resources" />
 
-  @if (loading()) {
+  @if (state.loading()) {
     <section class="py-14 border-t border-gray-200 dark:border-slate-700">
       <div class="max-w-screen-xl mx-auto px-4 flex items-center gap-2 text-muted">
         <app-icon icon="spinner" iconAnimation="spin" iconSize="2x" />
@@ -11,23 +11,23 @@
     </section>
   } @else {
     <section
-      [style.border-left]="'6px solid ' + (isNeutralVestment() ? feastNeutralAccent() : feastColourHex())"
+      [style.border-left]="'6px solid ' + (state.isNeutralVestment() ? feastNeutralAccent() : state.feastColourHex())"
       class="border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900">
       <div class="max-w-screen-xl mx-auto px-4 py-10">
         <div class="flex items-center gap-3 mb-2">
           <p class="text-serif text-primary mb-0">Today's Mass</p>
         </div>
-        <h2 class="text-2xl font-bold mb-3">{{ feast()!.name }}</h2>
+        <h2 class="text-2xl font-bold mb-3">{{ state.feast()!.name }}</h2>
         <div class="flex flex-wrap items-center gap-3 mb-6">
-          <p class="text-sm text-muted mb-0">{{ feast()!.date }}</p>
+          <p class="text-sm text-muted mb-0">{{ state.feast()!.date }}</p>
           <span
             class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold border-2"
-            [style.border-color]="isNeutralVestment() ? feastNeutralAccent() : feastColourHex()"
-            [style.color]="isNeutralVestment() ? feastNeutralAccent() : feastColourHex()"
+            [style.border-color]="state.isNeutralVestment() ? feastNeutralAccent() : state.feastColourHex()"
+            [style.color]="state.isNeutralVestment() ? feastNeutralAccent() : state.feastColourHex()"
           >
             <span class="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ring-1 ring-gray-400"
-                  [style.background-color]="feastColourHex()"></span>
-            {{ feast()!.colour }}
+                  [style.background-color]="state.feastColourHex()"></span>
+            {{ state.feast()!.colour }}
           </span>
         </div>
 
@@ -39,14 +39,14 @@
               Readings
             </button>
           }
-          @if (categorisedPrayers().length > 0) {
+          @if (state.categorisedPrayers().length > 0) {
             <button class="btn-primary inline-flex items-center gap-2"
                     (click)="contentToShow.set(contentType.Prayer)" [disabled]="contentToShow() === contentType.Prayer">
               <app-icon icon="hands-praying" />
               Prayers
             </button>
           }
-          @if (reflections().length > 0) {
+          @if (state.reflections().length > 0) {
             <button class="btn-primary inline-flex items-center gap-2"
                     (click)="contentToShow.set(contentType.Reflections)" [disabled]="contentToShow() === contentType.Reflections">
               <app-icon icon="video" />
@@ -166,7 +166,7 @@
               </div>
 
               <a
-                [href]="feast()!.universalisUrl"
+                [href]="state.feast()!.universalisUrl"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="btn-primary inline-flex items-center gap-2 mt-6"
@@ -184,29 +184,29 @@
         }
       }
 
-    @if (contentToShow() === contentType.Prayer && categorisedPrayers().length > 0) {
+    @if (contentToShow() === contentType.Prayer && state.categorisedPrayers().length > 0) {
       <section id="prayers" class="py-14 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
         <div class="max-w-screen-xl mx-auto px-4">
           <h2 class="font-bold mb-6">Prayers</h2>
 
           <div class="flex flex-wrap gap-2 mb-8 border-b border-gray-200 dark:border-slate-700 pb-4">
-            @for (group of categorisedPrayers(); track group.key) {
+            @for (group of state.categorisedPrayers(); track group.key) {
               <button
                 class="px-4 py-2 rounded-t text-sm font-medium transition-colors duration-150 border-b-2 -mb-px"
-                [class.border-primary]="activePrayerKey() === group.key"
-                [class.text-primary]="activePrayerKey() === group.key"
-                [class.border-transparent]="activePrayerKey() !== group.key"
-                [class.text-gray-500]="activePrayerKey() !== group.key"
-                [class.dark:text-gray-400]="activePrayerKey() !== group.key"
-                [class.hover:text-gray-700]="activePrayerKey() !== group.key"
-                (click)="selectedPrayerCategory.set(group.key)"
+                [class.border-primary]="state.activePrayerKey() === group.key"
+                [class.text-primary]="state.activePrayerKey() === group.key"
+                [class.border-transparent]="state.activePrayerKey() !== group.key"
+                [class.text-gray-500]="state.activePrayerKey() !== group.key"
+                [class.dark:text-gray-400]="state.activePrayerKey() !== group.key"
+                [class.hover:text-gray-700]="state.activePrayerKey() !== group.key"
+                (click)="state.setSelectedPrayerCategory(group.key)"
               >{{ group.label }}</button>
             }
           </div>
 
-          @if (activePrayers()) {
+          @if (state.activePrayers()) {
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              @for (prayer of activePrayers()!.prayers; track prayer.id) {
+              @for (prayer of state.activePrayers()!.prayers; track prayer.id) {
                 <button
                   class="group flex flex-col text-left rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-primary dark:hover:border-primary hover:shadow-md transition-all duration-200 cursor-pointer w-full overflow-hidden"
                   (click)="openPrayer(prayer)"
@@ -236,32 +236,32 @@
       </section>
     }
 
-    @if (contentToShow() === contentType.Reflections && reflections().length > 0) {
+    @if (contentToShow() === contentType.Reflections && state.reflections().length > 0) {
     <section id="reflections" class="py-14 bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700">
       <div class="max-w-screen-xl mx-auto px-4">
         <p class="text-serif text-primary mb-1">Video Reflections</p>
         <h2 class="font-bold mb-6">Reflections</h2>
 
           <div class="flex flex-wrap gap-2 mb-8 border-b border-gray-200 dark:border-slate-700 pb-4">
-            @for (key of ['all'].concat(categoryKeys()); track key) {
-              @if ((key === 'all' || $any(categoryKeys()).includes(key)) && doReflectionsExist(key)) {
+            @for (key of ['all'].concat(state.categoryKeys()); track key) {
+              @if ((key === 'all' || $any(state.categoryKeys()).includes(key)) && state.doReflectionsExist(key)) {
               <button
                 class="px-4 py-2 rounded-t text-sm font-medium transition-colors duration-150 border-b-2 -mb-px"
-                [class.border-primary]="reflectionFilter() === key"
-                [class.text-primary]="reflectionFilter() === key"
-                [class.border-transparent]="reflectionFilter() !== key"
-                [class.text-gray-500]="reflectionFilter() !== key"
-                [class.dark:text-gray-400]="reflectionFilter() !== key"
-                [class.hover:text-gray-700]="reflectionFilter() !== key"
-                (click)="setReflectionFilter(key)"
+                [class.border-primary]="state.reflectionFilter() === key"
+                [class.text-primary]="state.reflectionFilter() === key"
+                [class.border-transparent]="state.reflectionFilter() !== key"
+                [class.text-gray-500]="state.reflectionFilter() !== key"
+                [class.dark:text-gray-400]="state.reflectionFilter() !== key"
+                [class.hover:text-gray-700]="state.reflectionFilter() !== key"
+                (click)="state.setReflectionFilter(key)"
               >{{ key === 'all' ? 'All' : getCategoryLabel[key] }}</button>
               }
             }
           </div>
 
-          @if (filteredReflections().length > 0) {
+          @if (state.filteredReflections().length > 0) {
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              @for (reflection of filteredReflections(); track reflection.id) {
+              @for (reflection of state.filteredReflections(); track reflection.id) {
                 <a
                   [href]="youtubeUrl(reflection.youtubeId)"
                   target="_blank"

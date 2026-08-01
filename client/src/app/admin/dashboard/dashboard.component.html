@@ -26,11 +26,11 @@
     </header>
 
     <div class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 mb-4">
-      <div class="card shadow h-full">
+      <div class="card shadow h-full flex flex-col">
         <div class="card-header bg-primary text-white">
           <h5 class="mb-0 font-semibold">Daily Traffic Trends</h5>
         </div>
-        <div class="card-body" style="height: 400px;">
+        <div class="card-body flex-1 relative min-h-[400px]">
           <canvas baseChart
             [type]="'line'"
             [datasets]="trendChartData.datasets"
@@ -41,11 +41,11 @@
         </div>
       </div>
 
-      <div class="card shadow h-full">
+      <div class="card shadow h-full flex flex-col">
         <div class="card-header bg-gray-600 text-white">
           <h5 class="mb-0 font-semibold">Sessions by Device Category</h5>
         </div>
-        <div class="card-body flex justify-center items-center" style="height: 400px;">
+        <div class="card-body flex-1 flex justify-center items-center relative min-h-[400px]">
           <canvas baseChart
             [type]="'doughnut'"
             [datasets]="deviceChartData.datasets"
@@ -58,12 +58,13 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-      <div class="card shadow h-full">
-        <div class="card-header bg-sky-500 text-white">
-          <h5 class="mb-0 font-semibold">Top 10 Locations by Active Users</h5>
+      <div class="card shadow h-full flex flex-col">
+        <div class="card-header bg-sky-500 text-white flex justify-between items-center">
+          <h5 class="mb-0 font-semibold">Locations by Active Users</h5>
+          <span class="text-sm opacity-80">Page {{ geoPage() + 1 }}</span>
         </div>
-        <div class="overflow-x-auto">
-          <table class="table">
+        <div class="overflow-x-auto flex-1">
+          <table class="table mb-0">
             <thead>
               <tr>
                 <th>Country</th>
@@ -73,8 +74,8 @@
               </tr>
             </thead>
             <tbody>
-              @for (geo of dashboardData!.geographyData; track geo.country + geo.city) {
-                <tr>
+              @for (geo of paginatedGeoData(); track geo.country + geo.city) {
+                <tr class="hover:bg-gray-50 dark:hover:bg-slate-800">
                   <td><strong>{{ geo.country }}</strong></td>
                   <td>{{ geo.city }}</td>
                   <td class="text-right">{{ geo.activeUsers | number }}</td>
@@ -84,17 +85,20 @@
             </tbody>
           </table>
         </div>
-        @if (dashboardData!.geographyData.length === 0) {
-          <div class="card-footer">No location data found for this period.</div>
-        }
+        <div class="card-footer flex justify-between items-center bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700">
+          <button class="btn-outline-secondary btn-sm" [disabled]="geoPage() === 0" (click)="prevGeoPage()">Previous</button>
+          <span class="text-xs text-gray-500">Showing 10 per page</span>
+          <button class="btn-outline-secondary btn-sm" [disabled]="!hasMoreGeo()" (click)="nextGeoPage()">Next</button>
+        </div>
       </div>
 
-      <div class="card shadow h-full">
-        <div class="card-header bg-gray-600 text-white">
+      <div class="card shadow h-full flex flex-col">
+        <div class="card-header bg-gray-600 text-white flex justify-between items-center">
           <h5 class="mb-0 font-semibold">Sessions by Channel Group</h5>
+          <span class="text-sm opacity-80">Page {{ trafficPage() + 1 }}</span>
         </div>
-        <div class="overflow-x-auto">
-          <table class="table">
+        <div class="overflow-x-auto flex-1">
+          <table class="table mb-0">
             <thead>
               <tr>
                 <th>Channel Group</th>
@@ -103,13 +107,13 @@
               </tr>
             </thead>
             <tbody>
-              @for (source of dashboardData!.trafficSourceData; track source.channel) {
-                <tr>
+              @for (source of paginatedTrafficData(); track source.channel) {
+                <tr class="hover:bg-gray-50 dark:hover:bg-slate-800">
                   <td><span class="font-bold">{{ source.channel }}</span></td>
                   <td class="text-right">{{ source.sessions | number }}</td>
                   <td class="text-right">
-                    @if (dashboardData?.overview?.sessions) {
-                      {{(source.sessions / dashboardData!.overview!.sessions) * 100 | number:'1.1-1'}}
+                    @if (overview.sessions) {
+                      {{(source.sessions / overview.sessions) * 100 | number:'1.1-1'}}
                     } @else {
                       0.0
                     }%
@@ -119,21 +123,23 @@
             </tbody>
           </table>
         </div>
-        @if (dashboardData!.trafficSourceData.length === 0) {
-          <div class="card-footer">No traffic source data found for this period.</div>
-        }
+        <div class="card-footer flex justify-between items-center bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700">
+          <button class="btn-outline-secondary btn-sm" [disabled]="trafficPage() === 0" (click)="prevTrafficPage()">Previous</button>
+          <span class="text-xs text-gray-500">Showing 10 per page</span>
+          <button class="btn-outline-secondary btn-sm" [disabled]="!hasMoreTraffic()" (click)="nextTrafficPage()">Next</button>
+        </div>
       </div>
     </div>
 
     <!-- General Donations -->
-    <div class="card shadow h-full mb-4">
+    <div class="card shadow h-full mb-4 flex flex-col">
       <div class="card-header bg-green-600 text-white flex items-center justify-between">
         <h5 class="mb-0 font-semibold flex items-center gap-2">
           <app-icon icon="credit-card" /> General Donations
         </h5>
-        <span class="text-sm opacity-80">Processed via Stripe</span>
+        <span class="text-sm opacity-80">Page {{ donationsPage() + 1 }}</span>
       </div>
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto flex-1">
         <table class="table mb-0">
           <thead>
             <tr>
@@ -144,7 +150,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (donation of donations(); track donation['id']) {
+            @for (donation of paginatedDonations(); track donation['id']) {
               <tr class="hover:bg-gray-50 dark:hover:bg-slate-800">
                 <td class="whitespace-nowrap">{{ donation['createdAt'] ? ($any(donation['createdAt']) | date:'medium') : 'Unknown' }}</td>
                 <td>{{ $any(donation['customerDetails'])?.email || 'Anonymous' }}</td>
@@ -159,6 +165,12 @@
       </div>
       @if (donations().length === 0) {
         <div class="card-footer text-gray-500">No general donations found.</div>
+      } @else {
+        <div class="card-footer flex justify-between items-center bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700">
+          <button class="btn-outline-secondary btn-sm" [disabled]="donationsPage() === 0" (click)="prevDonationsPage()">Previous</button>
+          <span class="text-xs text-gray-500">Showing 10 per page (Total: {{ donations().length }})</span>
+          <button class="btn-outline-secondary btn-sm" [disabled]="!hasMoreDonations()" (click)="nextDonationsPage()">Next</button>
+        </div>
       }
     </div>
 
@@ -166,3 +178,5 @@
 }
 <app-admin-footer />
 </div>
+
+

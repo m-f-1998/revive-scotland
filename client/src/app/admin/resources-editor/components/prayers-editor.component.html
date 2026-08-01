@@ -1,0 +1,92 @@
+    <div class="card mb-6 shadow-sm">
+      <div class="card-header flex items-center justify-between cursor-pointer select-none" (click)="sectionCollapsed.set(!sectionCollapsed())">
+        <h5 class="mb-0 font-semibold flex items-center gap-2">
+          <app-icon icon="praying-hands" /> Prayers
+        </h5>
+        <span class="inline-block transition-transform duration-200" [class.rotate-180]="!sectionCollapsed()"><app-icon icon="chevron-down" /></span>
+      </div>
+
+      <div [class.hidden]="sectionCollapsed()">
+        <div class="card-body">
+          <p class="text-sm text-gray-500 mb-4">Manage the standard prayers available on the resources page. Each prayer must have a title, category, type, and text content.</p>
+
+          @for (prayer of prayers; track prayer.id; let i = $index) {
+            <div class="card mb-3 shadow-sm border border-gray-200 dark:border-slate-600">
+              <div class="card-header flex items-center justify-between cursor-pointer select-none py-3 px-4" (click)="togglePrayer(i)">
+                <div class="flex items-center gap-2 font-medium">
+                  <span class="inline-block transition-transform duration-200" [class.rotate-180]="expandedPrayer() !== i">
+                    <app-icon icon="chevron-down" />
+                  </span>
+                  {{ prayer.name || 'New Prayer' }}
+                </div>
+                <div class="flex items-center gap-1">
+                  <button class="btn-outline-secondary btn-sm px-2 py-1" [disabled]="i === 0" (click)="$event.stopPropagation(); movePrayerUp(i)" title="Move Up"><app-icon icon="arrow-up" /></button>
+                  <button class="btn-outline-secondary btn-sm px-2 py-1" [disabled]="i === prayers.length - 1" (click)="$event.stopPropagation(); movePrayerDown(i)" title="Move Down"><app-icon icon="arrow-right" /></button>
+                  <button class="btn-danger btn-sm px-2 py-1 ml-2" (click)="$event.stopPropagation(); removePrayer(i)" title="Remove"><app-icon icon="trash" /></button>
+                </div>
+              </div>
+
+              <div [class.hidden]="expandedPrayer() !== i">
+                <hr class="m-0 border-gray-200 dark:border-slate-700">
+                <div class="card-body space-y-4 pt-0">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                      <label class="block text-sm font-medium mb-1">Title <span class="text-red-500">*</span></label>
+                      <input type="text" class="form-control" [ngModel]="prayer.name" (ngModelChange)="updatePrayer(i, 'name', $event)" placeholder="e.g. Our Father">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium mb-1">Internal ID <span class="text-gray-400 font-normal">(auto-generated)</span></label>
+                      <input type="text" class="form-control bg-gray-50 dark:bg-slate-800 text-gray-500" [ngModel]="prayer.id" disabled>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium mb-1">Category <span class="text-red-500">*</span></label>
+                      <select class="form-select" [ngModel]="prayer.category" (ngModelChange)="updatePrayer(i, 'category', $event)">
+                        @for (cat of categories; track cat.value) {
+                          <option [value]="cat.value">{{ cat.label }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium mb-1">Prayer Type <span class="text-red-500">*</span></label>
+                      <select class="form-select" [ngModel]="prayer.type" (ngModelChange)="updatePrayer(i, 'type', $event)">
+                        @for (t of prayerTypes; track t.value) {
+                          <option [value]="t.value">{{ t.label }}</option>
+                        }
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium mb-1">Prayer Text <span class="text-red-500">*</span></label>
+                    <textarea class="form-control font-serif" rows="6" [ngModel]="prayer.text" (ngModelChange)="updatePrayer(i, 'text', $event)" placeholder="Enter the prayer text here..."></textarea>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium mb-1">Latin Translation <span class="text-gray-400 font-normal">(optional)</span></label>
+                    <textarea class="form-control font-serif" rows="4" [ngModel]="prayer.latin" (ngModelChange)="updatePrayer(i, 'latin', $event)" placeholder="Enter the traditional Latin translation if applicable..."></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          <button class="btn-success btn-sm mt-2" (click)="addPrayer()">
+            <app-icon icon="plus-circle" /> Add New Prayer
+          </button>
+        </div>
+
+        <div class="card-footer flex flex-col items-center sm:flex-row sm:justify-between gap-2">
+          <button class="btn-outline-secondary btn-sm" (click)="restoreDefaultPrayers()">
+            <app-icon icon="refresh" /> Restore Defaults
+          </button>
+          <button class="btn-primary" [disabled]="saving || prayersSomeEmpty()" (click)="save.emit()">
+            @if (saving) { <app-icon icon="spinner" iconAnimation="spin" /> } @else { <app-icon icon="save" /> }
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  `,

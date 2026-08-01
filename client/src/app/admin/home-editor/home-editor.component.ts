@@ -11,6 +11,7 @@ import { AuthService } from "../../services/auth.service"
 import { FormlyService } from "../../services/formly.service"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { HttpHeaders } from "@angular/common/http"
+import { AboutCard, DEFAULT_ABOUT_CARDS, DEFAULT_ADORATION, DEFAULT_PILGRIMAGE, DEFAULT_SLIDES, DEFAULT_WEEKENDS, getSlideFields } from "./config/home-editor.config"
 
 interface SlideModel {
   id: string
@@ -24,68 +25,6 @@ interface SlideFormEntry {
   model: WritableSignal<Record<string, unknown>>
   fields: FormlyFieldConfig [ ]
 }
-
-interface AboutCard {
-  icon: string
-  title: string
-  description: string
-}
-
-const DEFAULT_WEEKENDS = {
-  title: "Revive Weekends",
-  videoUrl: "/api/img/gallery/kinloss/kinloss-14.mp4",
-  description: "A Revive Weekend is a profound Catholic experience designed to delve deeper into specific aspects of the faith while fostering a sense of community and spiritual growth among young adults.\n\nRooted in prayer, particularly through the Mass, adoration and the rosary, these weekends offer participants an opportunity for profound spiritual renewal and connection with God. The core aim of Revive Weekends is to bring young adults together in a supportive environment where they can deepen their understanding of the Catholic faith and build lasting friendships.\n\nAlongside structured prayer, Revive Weekends also include quality social time, engaging games, and thoughtful discussions aimed at facilitating personal reflection and sharing.\n\nWhether through moments of worship, fellowship, or recreation, Revive Weekends provide an experience that nurtures both the soul and the spirit, empowering participants to grow in their faith and relationship with God while forging meaningful connections with others on the journey of faith."
-}
-
-const DEFAULT_PILGRIMAGE = {
-  heading: "Pilgrimages",
-  body: "All our pilgrimages are in a true spirit of simplicity where we forgo the luxuries and pleasures of the world in order to be able to appreciate the basic things in life. All pilgrimages include daily mass and prayer time and a series of formational talks. We are also able to design and lead pilgrimages suited for parish, youth and other groups. Please contact us directly if you wish to set up a custom pilgrimage.",
-  image: "pilgrimage.jpg"
-}
-
-const DEFAULT_ADORATION = {
-  title: "Adoration Missions",
-  body: "We offer to run a parish adoration mission in which we work together with the parish priest to prepare and run continuous adoration for set periods of time either with the goal of increasing already existing adoration in the parish or to help begin this devotional practice. For more information on what a mission can look like, please Contact Us."
-}
-
-const DEFAULT_ABOUT_CARDS: AboutCard [ ] = [
-  {
-    icon: "bible",
-    title: "Scripture",
-    description: "We promote the basic message of the Gospel and the transformative truth that the Holy Spirit is living and active within hearts that are in a state of grace."
-  },
-  {
-    icon: "church",
-    title: "Transformed by the Spirit",
-    description: "We aim to provide a space for people to encounter the love of God and to be transformed by the power of the Holy Spirit."
-  },
-  {
-    icon: "praying-hands",
-    title: "Evangelisation",
-    description: "We focus, but are not limited to the evangelisation of youth and young adults with the aim to lead them to live a grace filled lifestyle, actively giving back to their own parish community."
-  }
-]
-
-const DEFAULT_SLIDES: SlideModel [ ] = [
-  {
-    id: "hero-1",
-    title: "Revive Scotland",
-    description: "We are dedicated to reviving the faith in people's hearts through the power of the Holy Spirit. We deliver this through formation, community and prayer; mainly Pilgrimages, Revive Weekends and Eucharistic Adoration.",
-    url: "gallery/kinloss/kinloss-13.jpg"
-  },
-  {
-    id: "hero-2",
-    title: "Join the Prayer",
-    description: "Revive exists to give people a real and transformational HOPE, through a FAITH filled lifestyle centered on the sacraments, catechesis and real authentic friendships as a way to encounter God's LOVE.",
-    url: "gallery/dunoon/dunoon-1.jpg"
-  },
-  {
-    id: "hero-3",
-    title: "God is Love",
-    description: "'Let anyone who is thirsty come to me and drink. Whoever believes in me, as Scripture has said, rivers of living water will flow from within them. By this he meant the Holy Spirit' (Jn 7:38-39)",
-    url: "gallery/skye/skye-1.jpg"
-  }
-]
 
 @Component ( {
   selector: "app-admin-home-editor",
@@ -159,7 +98,7 @@ export class HomeEditorComponent implements OnInit {
     Promise.all ( [
       this.loadSection ( "revive-weekends" ).then ( d => {
         const res = d as Partial<typeof DEFAULT_WEEKENDS>
-        if ( res?.title ) {
+        if ( res?.heading ) {
           this.weekendsModel.set ( d as Record<string, unknown> )
         } else {
           this.weekendsModel.set ( { ...DEFAULT_WEEKENDS } )
@@ -320,7 +259,7 @@ export class HomeEditorComponent implements OnInit {
         description: "",
         url: ""
       } ),
-      fields: this.getSlideFields ( )
+      fields: getSlideFields ( this.formlySvc )
     } ] )
   }
 
@@ -333,16 +272,8 @@ export class HomeEditorComponent implements OnInit {
     return slides.map ( slide => ( {
       form: new FormGroup ( { } ),
       model: signal<Record<string, unknown>> ( { ...slide } ),
-      fields: this.getSlideFields ( )
+      fields: getSlideFields ( this.formlySvc )
     } ) )
-  }
-
-  private getSlideFields ( ): FormlyFieldConfig [ ] {
-    return [
-      this.formlySvc.TextInput ( "title", { label: "Title", placeholder: "Enter slide title", required: true, maxLength: 100 } ),
-      this.formlySvc.TextAreaInput ( "description", { label: "Text", placeholder: "Enter slide description", required: true, maxLength: 500, includeMaxDescription: true } ),
-      this.formlySvc.ImagePickerInput ( "url", { label: "Image", required: true } )
-    ]
   }
 
   private async loadSection ( section: string ): Promise<unknown> {

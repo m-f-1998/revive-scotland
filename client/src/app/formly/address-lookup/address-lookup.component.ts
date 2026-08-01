@@ -1,12 +1,11 @@
 import { Component, ChangeDetectionStrategy, OnInit } from "@angular/core"
 import { FormControl, ReactiveFormsModule } from "@angular/forms"
-import { FieldType, FormlyFieldConfig, FormlyValidationMessage } from "@ngx-formly/core"
+import { FieldType, FormlyFieldConfig } from "@ngx-formly/core"
 
 @Component ( {
   selector: "app-formly-address-autocomplete",
   imports: [
-    ReactiveFormsModule,
-    FormlyValidationMessage
+    ReactiveFormsModule
   ],
   standalone: true,
   templateUrl: "./address-lookup.component.html",
