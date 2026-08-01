@@ -112,7 +112,7 @@ export const router: FastifyPluginAsync = async app => {
 
       for ( const doc of snapshot.docs ) {
         const id = doc.id
-        const expectedUrlEnding = `/api/public/s/${id}`
+        const expectedUrlEnding = `/api/share/${id}`
         const isInHeroes = sanitizedHeroes.some ( hero => {
           return hero.url.endsWith ( expectedUrlEnding )
         } )

@@ -195,12 +195,10 @@
           <button class="btn-success" (click)="addReflection()">
             <app-icon icon="plus-circle" /> Add Reflection
           </button>
-          @if (reflections().length > 0) {
-            <button class="btn-primary" [disabled]="savingReflections() || reflectionsSomeEmpty()" (click)="saveReflections()">
-              @if (savingReflections()) { <app-icon icon="spinner" iconAnimation="spin" /> } @else { <app-icon icon="save" /> }
-              Save Reflections
-            </button>
-          }
+          <button class="btn-primary" [disabled]="savingReflections() || reflectionsSomeEmpty()" (click)="saveReflections()">
+            @if (savingReflections()) { <app-icon icon="spinner" iconAnimation="spin" /> } @else { <app-icon icon="save" /> }
+            Save Reflections
+          </button>
         </div>
       }
     </div>

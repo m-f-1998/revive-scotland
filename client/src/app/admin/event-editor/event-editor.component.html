@@ -79,9 +79,16 @@
                   </span>
                 }
               </div>
-              <button class="btn-danger btn-sm" (click)="$event.stopPropagation(); removeEvent(event.id)">
-                <app-icon icon="trash" />
-              </button>
+              <div class="flex items-center gap-2">
+                @if (event.id && eventForm()[$index].model['id']) {
+                  <button class="btn-outline-secondary btn-sm flex items-center gap-1" (click)="$event.stopPropagation(); copyDirectLink(eventForm()[$index].model['id'])">
+                    <app-icon icon="link" /> Direct Link
+                  </button>
+                }
+                <button class="btn-danger btn-sm" (click)="$event.stopPropagation(); removeEvent(event.id)">
+                  <app-icon icon="trash" />
+                </button>
+              </div>
             </div>
             <div [class.hidden]="collapsedIndices.has($index)">
               <div class="card-body">

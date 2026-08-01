@@ -5,7 +5,7 @@
  * references stored in Firestore (gallery additional images, hidden image lists,
  * etc.) must be updated accordingly.
  *
- * Share URL format used throughout:  /api/public/s/{shareId}
+ * Share URL format used throughout:  /api/share/{shareId}
  * Share links collection:            shared_links/{shareId} → { key: string, ... }
  *
  * On DELETE: share link docs are removed → cascade to gallery-settings
@@ -40,7 +40,7 @@ export const onFilesDeleted = async ( deletedKeys: string [ ] ): Promise<void> =
   for ( const key of deletedKeys ) {
     const snapshot = await db.collection ( "shared_links" ).where ( "key", "==", key ).get ( )
     snapshot.forEach ( doc => {
-      shareUrlPaths.push ( `/api/public/s/${doc.id}` )
+      shareUrlPaths.push ( `/api/share/${doc.id}` )
     } )
   }
 

@@ -14,7 +14,9 @@ import cors from "@fastify/cors"
 import { isDevMode, router as staticRouter } from "./routes/static.js"
 import { router as imagesRouter } from "./routes/images.js"
 import { router as adminRouter } from "./routes/admin.js"
-import { router as publicRouter } from "./routes/admin/public.js"
+import { router as shareRouter } from "./routes/share.js"
+import { router as eventsRouter } from "./routes/events.js"
+
 import { router as galleryRouter } from "./routes/gallery.js"
 import { router as feastRouter } from "./routes/feast.js"
 import { router as donationsRouter } from "./routes/admin/donations.js"
@@ -56,14 +58,15 @@ await app.register ( compress, {
 
 await app.register ( cors, {
   origin: ( origin, callback ) => {
-    const allowedOrigins = [ "http://localhost:4200", "http://localhost:3000", "https://revivescotland.co.uk", "https://dev.revivescotland.co.uk" ]
+    const corsEnv = process.env [ "CORS_ORIGINS" ]
+    const allowedOrigins = corsEnv ? corsEnv.split ( "," ).map ( s => s.trim ( ) ) : [ "http://localhost:4200", "http://localhost:3000" ]
     if ( !origin || allowedOrigins.includes ( origin ) ) {
       callback ( null, true )
     } else {
       callback ( null, false ) // Reject properly without causing a 500 error
     }
   },
-  methods: [ "GET", "POST", "DELETE" ],
+  methods: [ "GET", "POST", "DELETE", "PUT", "PATCH" ],
   allowedHeaders: [ "Content-Type", "Authorization", "stripe-signature" ],
   credentials: true
 } )
@@ -202,7 +205,9 @@ app.register ( imagesRouter, { prefix: "/api/img" } )
 app.register ( galleryRouter, { prefix: "/api/gallery" } )
 app.register ( adminRouter, { prefix: "/api/admin" } )
 app.register ( donationsRouter, { prefix: "/api/admin/donations" } )
-app.register ( publicRouter, { prefix: "/api/public" } )
+app.register ( shareRouter, { prefix: "/api/share" } )
+app.register ( shareRouter, { prefix: "/api/public/s" } )
+app.register ( eventsRouter, { prefix: "/api/events" } )
 app.register ( feastRouter, { prefix: "/api/feast" } )
 app.register ( staticRouter, { prefix: "/" } )
 

@@ -32,21 +32,32 @@
         </div>
 
         <div class="flex flex-row gap-2">
-          <button class="btn-primary inline-flex items-center gap-2"
-                  (click)="showPrayers.set(false)" [disabled]="!safeReadings() || !showPrayers()">
-            <app-icon icon="cross" />
-            Readings
-          </button>
-          <button class="btn-primary inline-flex items-center gap-2"
-                  (click)="showPrayers.set(true)" [disabled]="categorisedPrayers().length === 0 || showPrayers()">
-            <app-icon icon="hands-praying" />
-            Prayers
-          </button>
+          @if (safeReadings()) {
+            <button class="btn-primary inline-flex items-center gap-2"
+                    (click)="contentToShow.set(contentType.Readings)" [disabled]="contentToShow() === contentType.Readings">
+              <app-icon icon="cross" />
+              Readings
+            </button>
+          }
+          @if (categorisedPrayers().length > 0) {
+            <button class="btn-primary inline-flex items-center gap-2"
+                    (click)="contentToShow.set(contentType.Prayer)" [disabled]="contentToShow() === contentType.Prayer">
+              <app-icon icon="hands-praying" />
+              Prayers
+            </button>
+          }
+          @if (reflections().length > 0) {
+            <button class="btn-primary inline-flex items-center gap-2"
+                    (click)="contentToShow.set(contentType.Reflections)" [disabled]="contentToShow() === contentType.Reflections">
+              <app-icon icon="video" />
+              Reflections
+            </button>
+          }
         </div>
       </div>
       </section>
 
-      @if (!showPrayers()) {
+      @if (contentToShow() === contentType.Readings && safeReadings()) {
         @if (safeReadings()) {
           <section id="todays-mass" class="py-14 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
             <div class="max-w-screen-xl mx-auto px-4">
@@ -173,7 +184,7 @@
         }
       }
 
-    @if (categorisedPrayers().length > 0 && showPrayers()) {
+    @if (contentToShow() === contentType.Prayer && categorisedPrayers().length > 0) {
       <section id="prayers" class="py-14 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
         <div class="max-w-screen-xl mx-auto px-4">
           <h2 class="font-bold mb-6">Prayers</h2>
@@ -193,7 +204,6 @@
             }
           </div>
 
-          <!-- Active category grid -->
           @if (activePrayers()) {
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               @for (prayer of activePrayers()!.prayers; track prayer.id) {
@@ -226,34 +236,30 @@
       </section>
     }
 
-    <!-- Reflections -->
-    @if (!loading() && reflections().length > 0) {
+    @if (contentToShow() === contentType.Reflections && reflections().length > 0) {
     <section id="reflections" class="py-14 bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700">
       <div class="max-w-screen-xl mx-auto px-4">
         <p class="text-serif text-primary mb-1">Video Reflections</p>
         <h2 class="font-bold mb-6">Reflections</h2>
 
-        <!-- Category filter -->
-          <div class="flex flex-wrap gap-2 mb-8">
-            @for (key of ['all'].concat(categoryKeys); track key) {
+          <div class="flex flex-wrap gap-2 mb-8 border-b border-gray-200 dark:border-slate-700 pb-4">
+            @for (key of ['all'].concat(categoryKeys()); track key) {
+              @if ((key === 'all' || $any(categoryKeys()).includes(key)) && doReflectionsExist(key)) {
               <button
-                class="px-3 py-1 rounded-full text-sm font-medium border transition-colors duration-150"
-                [class.bg-primary]="reflectionFilter() === key"
-                [class.text-white]="reflectionFilter() === key"
+                class="px-4 py-2 rounded-t text-sm font-medium transition-colors duration-150 border-b-2 -mb-px"
                 [class.border-primary]="reflectionFilter() === key"
-                [class.bg-white]="reflectionFilter() !== key"
-                [class.dark:bg-slate-800]="reflectionFilter() !== key"
-                [class.text-gray-600]="reflectionFilter() !== key"
-                [class.dark:text-gray-300]="reflectionFilter() !== key"
-                [class.border-gray-300]="reflectionFilter() !== key"
+                [class.text-primary]="reflectionFilter() === key"
+                [class.border-transparent]="reflectionFilter() !== key"
+                [class.text-gray-500]="reflectionFilter() !== key"
+                [class.dark:text-gray-400]="reflectionFilter() !== key"
+                [class.hover:text-gray-700]="reflectionFilter() !== key"
                 (click)="setReflectionFilter(key)"
               >{{ key === 'all' ? 'All' : getCategoryLabel[key] }}</button>
+              }
             }
           </div>
 
-          @if (filteredReflections().length === 0) {
-            <p class="text-muted text-sm py-6 text-center">No reflections found for the selected category.</p>
-          } @else {
+          @if (filteredReflections().length > 0) {
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               @for (reflection of filteredReflections(); track reflection.id) {
                 <a
@@ -286,7 +292,6 @@
     </section>
     }
 
-    <!-- Prayer Modal -->
     @if (selectedPrayer()) {
       <div
         class="fixed inset-0 z-50 flex items-center justify-center p-4"

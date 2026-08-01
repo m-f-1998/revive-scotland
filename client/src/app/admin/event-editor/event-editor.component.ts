@@ -259,6 +259,16 @@ export class EventEditorComponent implements OnInit {
     return key.toString ( )
   }
 
+  public copyDirectLink ( eventId: unknown ): void {
+    if ( !eventId || typeof eventId !== "string" ) return
+    const url = `${window.location.origin}/events?id=${eventId}`
+    navigator.clipboard.writeText ( url ).then ( ( ) => {
+      this.toastrSvc.success ( "Direct link copied to clipboard!" )
+    } ).catch ( ( ) => {
+      this.toastrSvc.error ( "Failed to copy link." )
+    } )
+  }
+
   // Slider methods
   public addSliderHero ( ): void {
     if ( this.sliderForms ( ).length >= 3 ) return
@@ -484,4 +494,5 @@ export class EventEditorComponent implements OnInit {
     ]
   }
 }
+
 

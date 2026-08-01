@@ -83,7 +83,7 @@ export class ImagePickerComponent extends FieldType implements OnInit {
     // Only update if we don't already have a friendly filename set from the selector
     // (This handles initial load where we only have the URL)
     if ( !this.displayFilename ( ) || this.displayFilename ( ).length > 40 ) {
-      const isShareUrl = val.includes ( "/api/public/s/" )
+      const isShareUrl = val.includes ( "/api/share/" ) || val.includes ( "/api/public/s/" )
 
       if ( isShareUrl ) {
         const uuid = val.split ( "/" ).pop ( )?.split ( "?" ) [ 0 ]

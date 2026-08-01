@@ -47,7 +47,7 @@ const filterActiveAndRecentEvents = ( events: Event [ ] ): Event [ ] => {
 export const router: FastifyPluginAsync = async app => {
   /**
    * GET /api/admin/events
-   * Fetches the events data array
+   * Fetches all event documents
    */
   app.get ( "/", async ( _req, rep ) => {
     try {
@@ -56,18 +56,22 @@ export const router: FastifyPluginAsync = async app => {
       }
 
       const eventsCollection = getFirestore ( ).collection ( "events" )
-      const docRef = eventsCollection.doc ( "default" ) // Could be used to categorize by page in future
-      const doc = await docRef.get ( )
+      const snapshot = await eventsCollection.get ( )
 
-      if ( !doc.exists ) {
-        return rep.status ( 200 ).send ( { events: [ ] } )
+      let events: Event[] = []
+      
+      // Fallback logic for legacy `default` document migration
+      const legacyDoc = snapshot.docs.find ( doc => doc.id === "default" )
+      if ( legacyDoc && legacyDoc.exists ) {
+        const legacyData = legacyDoc.data () as { events?: Event[] }
+        if ( legacyData.events && Array.isArray ( legacyData.events ) ) {
+          events = legacyData.events
+        }
+      } else {
+        events = snapshot.docs.map ( doc => doc.data () as Event )
       }
 
-      const data = doc.data ( ) as {
-        events: Event [ ]
-      } | undefined
-
-      const eventsList = data && Array.isArray ( data.events ) ? filterActiveAndRecentEvents ( data.events ) : [ ]
+      const eventsList = filterActiveAndRecentEvents ( events )
 
       eventsCache = { events: eventsList }
       cacheTime = Date.now ( )
@@ -83,12 +87,8 @@ export const router: FastifyPluginAsync = async app => {
     try {
       const { eventId } = req.query as { eventId: string }
 
-      console.log ( `Fetching registrations for eventId: ${eventId}` )
-
       const registrationsRef = getFirestore ( ).collection ( "event_registrations" )
       const snapshot = await registrationsRef.where ( "eventId", "==", eventId ).get ( )
-
-      console.log ( `Fetched ${snapshot.size} registrations for eventId: ${eventId}` )
 
       const registrations = snapshot.docs.map ( doc => {
         const data = doc.data ( )
@@ -117,7 +117,7 @@ export const router: FastifyPluginAsync = async app => {
 
   /**
    * POST /api/admin/events
-   * Saves (overwrites) the entire events data array.
+   * Saves events individually as documents.
    */
   app.post ( "/", { preHandler: checkFirebaseAuth }, async ( req, rep ) => {
     const { events } = req.body as { events?: Event [ ] }
@@ -139,12 +139,11 @@ export const router: FastifyPluginAsync = async app => {
       stripe = new Stripe ( process.env [ "STRIPE_SECRET_KEY" ] )
     }
 
-    // Sanitize and validate fields (e.g., ensure titles are short, dates are valid)
     const sanitizedEvents: Event [ ] = [ ]
     try {
       for ( const event of events ) {
         const model: Event = {
-          id: event.id,
+          id: event.id || `event-${Date.now ()}-${Math.floor ( Math.random () * 1000 )}`,
           title: String ( event.title || "" ).substring ( 0, 100 ),
           description: String ( event.description || "" ).substring ( 0, 500 ),
           location: String ( event.location || "" ).substring ( 0, 200 ),
@@ -153,45 +152,20 @@ export const router: FastifyPluginAsync = async app => {
           actionType: event.actionType === "contact" ? "contact" : "webpage"
         }
 
-        if ( event.imageUrl ) {
-          model.imageUrl = String ( event.imageUrl ).trim ()
-        }
-
-        if ( event.startTime ) {
-          model.startTime = event.startTime
-        }
-
-        if ( event.endTime ) {
-          model.endTime = event.endTime
-        }
-
-        if ( event.donationRequired ) {
-          model.donationRequired = event.donationRequired
-        }
-
-        if ( event.donationDescription ) {
-          model.donationDescription = String ( event.donationDescription ).substring ( 0, 500 )
-        }
-
-        if ( event.donationPrice != null ) {
-          model.donationPrice = Number ( event.donationPrice )
-        }
-
-        if ( event.stripeProductId ) {
-          model.stripeProductId = event.stripeProductId
-        }
-
-        if ( event.stripePriceId ) {
-          model.stripePriceId = event.stripePriceId
-        }
+        if ( event.imageUrl ) model.imageUrl = String ( event.imageUrl ).trim ()
+        if ( event.startTime ) model.startTime = event.startTime
+        if ( event.endTime ) model.endTime = event.endTime
+        if ( event.donationRequired ) model.donationRequired = event.donationRequired
+        if ( event.donationDescription ) model.donationDescription = String ( event.donationDescription ).substring ( 0, 500 )
+        if ( event.donationPrice != null ) model.donationPrice = Number ( event.donationPrice )
+        if ( event.stripeProductId ) model.stripeProductId = event.stripeProductId
+        if ( event.stripePriceId ) model.stripePriceId = event.stripePriceId
 
         if ( model.actionType === "contact" ) {
           if ( !Array.isArray ( event.contactFormFields ) || event.contactFormFields.length === 0 ) {
             throw "Contact form events must have at least one contact form field."
           }
-          model.contactFormFields = Array.isArray ( event.contactFormFields )
-            ? event.contactFormFields
-            : [ ]
+          model.contactFormFields = Array.isArray ( event.contactFormFields ) ? event.contactFormFields : [ ]
         }
         if ( model.actionType === "webpage" ) {
           if ( !event.webpageUrl ) {
@@ -225,25 +199,47 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     try {
-      const eventsCollection = getFirestore ( ).collection ( "events" )
-      const docRef = eventsCollection.doc ( "default" ) // Could be used to categorize by page in future
+      const db = getFirestore ( )
+      const eventsCollection = db.collection ( "events" )
 
-      await docRef.set ( { events: sanitizedEvents } )
+      const batch = db.batch ( )
+
+      // Handle legacy default doc if it exists
+      const defaultDoc = await eventsCollection.doc ( "default" ).get ()
+      if ( defaultDoc.exists ) {
+        batch.delete ( defaultDoc.ref )
+      }
+
+      // Read current events to find ones to delete
+      const currentSnap = await eventsCollection.get ()
+      const currentIds = currentSnap.docs.filter ( d => d.id !== "default" ).map ( d => d.id )
+      const incomingIds = sanitizedEvents.map ( e => e.id )
+
+      // Delete events that were removed
+      const idsToDelete = currentIds.filter ( id => !incomingIds.includes ( id ) )
+      for ( const id of idsToDelete ) {
+        batch.delete ( eventsCollection.doc ( id ) )
+      }
+
+      // Set new/updated events
+      for ( const event of sanitizedEvents ) {
+        batch.set ( eventsCollection.doc ( event.id ), event )
+      }
+
+      await batch.commit ()
 
       eventsCache = { events: filterActiveAndRecentEvents ( sanitizedEvents ) }
       cacheTime = Date.now ( )
 
-      const shared_links = getFirestore ( ).collection ( "shared_links" )
+      const shared_links = db.collection ( "shared_links" )
       const snapshot = await shared_links.where ( "type", "==", "hero_editor" ).get ( )
 
-      // Fetch heroes once outside the loop to avoid N+1 Firestore reads
-      const heroesSnapshot = ( ( await getFirestore ( ).collection ( "heroes" ).doc ( "home" ).get ( ) ).data ( )?. [ "heroes" ] || [ ] ) as { url?: string } [ ]
+      const heroesSnapshot = ( ( await db.collection ( "heroes" ).doc ( "home" ).get ( ) ).data ( )?. [ "heroes" ] || [ ] ) as { url?: string } [ ]
 
       await Promise.all ( snapshot.docs.map ( async doc => {
         const id = doc.id
         const expectedUrlEnding = `/api/public/s/${id}`
         const isInHeroes = sanitizedEvents.some ( hero => hero.imageUrl?.endsWith ( expectedUrlEnding ) )
-
         const isInEvents = heroesSnapshot.some ( hero => hero.url?.endsWith ( expectedUrlEnding ) )
 
         if ( !isInHeroes && !isInEvents ) {
@@ -260,7 +256,7 @@ export const router: FastifyPluginAsync = async app => {
 
   /**
    * DELETE /api/admin/events
-   * Deletes the events data document.
+   * Deletes a specific event document.
    */
   app.delete ( "/", { preHandler: checkFirebaseAuth }, async ( req, rep ) => {
     try {
@@ -270,25 +266,23 @@ export const router: FastifyPluginAsync = async app => {
         return rep.status ( 400 ).send ( { error: "Missing parameter" } )
       }
 
-      const docRef = getFirestore ( ).collection ( "events" ).doc ( "default" )
+      const docRef = getFirestore ( ).collection ( "events" ).doc ( id )
       const doc = await docRef.get ( )
-      const data = doc.data ( )
 
-      if ( !data?. [ "events" ] ) {
-        return rep.status ( 404 ).send ( { error: "Events data not found" } )
+      if ( !doc.exists ) {
+        return rep.status ( 404 ).send ( { error: "Event not found" } )
       }
 
-      const filtered = data [ "events" ].filter ( ( e: { id: string } ) => e.id !== id )
+      await docRef.delete ( )
 
-      await docRef.update ( { events: filtered } )
+      if ( eventsCache ) {
+        eventsCache.events = eventsCache.events.filter ( e => e.id !== id )
+      }
 
-      eventsCache = { events: filterActiveAndRecentEvents ( filtered ) }
-      cacheTime = Date.now ( )
-
-      return rep.status ( 200 ).send ( { message: `Events data deleted successfully.` } )
+      return rep.status ( 200 ).send ( { message: `Event deleted successfully.` } )
     } catch ( error ) {
-      console.error ( "Error deleting events data:", error )
-      return rep.status ( 500 ).send ( "Failed to delete events configuration." )
+      console.error ( "Error deleting event data:", error )
+      return rep.status ( 500 ).send ( "Failed to delete event configuration." )
     }
   } )
 }

@@ -408,7 +408,7 @@ export const router: FastifyPluginAsync = async app => {
       } )
 
       // Return the URL for your domain
-      const shareUrl = `${PUBLIC_DOMAIN}/api/public/s/${shareId}`
+      const shareUrl = `${PUBLIC_DOMAIN}/api/share/${shareId}`
 
       return rep.status ( 200 ).send ( { shareUrl } )
     } catch ( error ) {
@@ -530,7 +530,7 @@ export const router: FastifyPluginAsync = async app => {
         type: "admin_view"
       } )
 
-      const viewUrl = `${PUBLIC_DOMAIN}/api/public/s/${shareId}`
+      const viewUrl = `${PUBLIC_DOMAIN}/api/share/${shareId}`
       return rep.status ( 200 ).send ( { viewUrl } )
     } catch ( error ) {
       console.error ( "Error generating view URL:", error )

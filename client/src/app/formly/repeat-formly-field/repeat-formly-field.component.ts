@@ -109,11 +109,11 @@ export class RepeatFieldComponent extends FieldType {
 
   private addNewFieldToModel ( index: number, fieldData: { label: string; type: string; placeholder?: string; required?: boolean } ) {
     let field: FormlyFieldConfig = { }
-    const timestamp = new Date ( ).getTime ( )
+    const uuid = crypto.randomUUID ( )
     switch ( fieldData.type ) {
       case "text":
         field = this.formlySvc.TextInput (
-          "repeat-text-" + timestamp,
+          "repeat-text-" + uuid,
           {
             label: fieldData.label,
             placeholder: fieldData.placeholder || "",
@@ -123,7 +123,7 @@ export class RepeatFieldComponent extends FieldType {
         break
       case "textarea":
         field = this.formlySvc.TextAreaInput (
-          "repeat-textarea-" + timestamp,
+          "repeat-textarea-" + uuid,
           {
             label: fieldData.label,
             placeholder: fieldData.placeholder || "",
@@ -133,7 +133,7 @@ export class RepeatFieldComponent extends FieldType {
         break
       case "checkbox":
         field = this.formlySvc.CheckboxInput (
-          "repeat-checkbox-" + timestamp,
+          "repeat-checkbox-" + uuid,
           {
             label: fieldData.label,
             required: fieldData.required || false
@@ -142,7 +142,7 @@ export class RepeatFieldComponent extends FieldType {
         break
       case "email":
         field = this.formlySvc.EmailInput (
-          "repeat-email-" + timestamp,
+          "repeat-email-" + uuid,
           {
             label: fieldData.label,
             placeholder: fieldData.placeholder || "",
@@ -152,7 +152,7 @@ export class RepeatFieldComponent extends FieldType {
         break
       case "phone":
         field = this.formlySvc.TelInput (
-          "repeat-phone-" + timestamp,
+          "repeat-phone-" + uuid,
           {
             label: fieldData.label,
             placeholder: fieldData.placeholder || "",
