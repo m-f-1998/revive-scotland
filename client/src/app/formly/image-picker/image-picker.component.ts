@@ -7,7 +7,8 @@ import { takeUntilDestroyed, toObservable } from "@angular/core/rxjs-interop"
 import { DestroyRef } from "@angular/core"
 import { ApiService } from "../../services/api.service"
 import { AuthService } from "../../services/auth.service"
-import { HttpHeaders } from "@angular/common/http"
+import { HttpErrorResponse, HttpHeaders } from "@angular/common/http"
+import { ToastrService } from "@m-f-1998/ngx-toastr"
 
 @Component ( {
   selector: "app-formly-image-picker",
@@ -20,11 +21,13 @@ import { HttpHeaders } from "@angular/common/http"
 export class ImagePickerComponent extends FieldType implements OnInit {
   public readonly value: WritableSignal<string> = signal ( "" )
   public displayFilename: WritableSignal<string> = signal ( "" )
+  public uploading: WritableSignal<boolean> = signal ( false )
 
   private readonly modalSvc: ModalService = inject ( ModalService )
   private readonly destroyRef: DestroyRef = inject ( DestroyRef )
   private readonly apiSvc: ApiService = inject ( ApiService )
   private readonly authSvc: AuthService = inject ( AuthService )
+  private readonly toastrSvc: ToastrService = inject ( ToastrService )
 
   public constructor ( ) {
     super ( )
@@ -62,6 +65,12 @@ export class ImagePickerComponent extends FieldType implements OnInit {
       } )
   }
 
+  public openPreview ( ): void {
+    if ( this.previewUrl ) {
+      window.open ( this.previewUrl, "_blank" )
+    }
+  }
+
   public openFileSelector ( ): void {
     const modalRef = this.modalSvc.open ( FileExplorerComponent, { size: "lg", centered: true } )
 
@@ -83,6 +92,97 @@ export class ImagePickerComponent extends FieldType implements OnInit {
         }
       }
     } ).catch ( ( ) => { /* Modal dismissed */ } )
+  }
+
+  public async onQuickUpload ( event: Event ): Promise<void> {
+    const input = event.target as HTMLInputElement
+    const file = input.files?.item ( 0 )
+
+    if ( !file ) return
+
+    if ( file.size > 20 * 1024 * 1024 ) {
+      this.toastrSvc.error ( "File is too large (max 20MB)." )
+      return
+    }
+
+    const accept = this.props.attributes?. [ "accept" ] as string
+    if ( accept ) {
+      const acceptedTypes = accept.split ( "," ).map ( t => t.trim ().toLowerCase () )
+      const fileType = file.type.toLowerCase ()
+      const isAccepted = acceptedTypes.some ( type => {
+        if ( type.endsWith ( "/*" ) ) {
+          return fileType.startsWith ( type.replace ( "/*", "" ) )
+        }
+        return fileType === type || file.name.toLowerCase ().endsWith ( type )
+      } )
+
+      if ( !isAccepted ) {
+        this.toastrSvc.error ( `Invalid file type. Accepted types: ${accept}` )
+        input.value = "" // Reset input
+        return
+      }
+    }
+
+    this.uploading.set ( true )
+
+    try {
+      const user = await this.authSvc.currentUser ( )
+      const token = await user?.getIdToken ( ) || ""
+      const headers = new HttpHeaders ( { "Authorization": `Bearer ${token}` } )
+
+      const safeName = file.name.replace ( /[^a-zA-Z0-9.-]/g, "_" )
+      const fullKey = `users/${user?.uid}/uploads/${Date.now ()}-${safeName}`
+
+      // 1. Get upload URL
+      const response = await this.apiSvc.post ( "/api/admin/file-explorer/upload-url", {
+        key: fullKey,
+        fileSize: file.size,
+        contentType: file.type || "application/octet-stream"
+      }, headers ) as { uploadUrl: string }
+
+      // 2. Upload to R2
+      const uploadRes = await fetch ( response.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file
+      } )
+
+      if ( !uploadRes.ok ) {
+        throw new Error ( "R2 upload failed" )
+      }
+
+      // 3. Complete upload
+      await this.apiSvc.post ( "/api/admin/file-explorer/upload-complete", {
+        key: fullKey,
+        fileSize: file.size
+      }, headers )
+
+      // 4. Get Share URL to use in the form
+      const shareRes = await this.apiSvc.get ( "/api/admin/file-explorer/share-url", {
+        key: fullKey,
+        expiresIn: 0
+      }, headers ) as { shareUrl: string }
+
+      const shareUrl = shareRes.shareUrl
+      const relativePath = shareUrl.startsWith ( "http" ) ? new URL ( shareUrl ).pathname : shareUrl
+
+      this.displayFilename.set ( file.name )
+      this.formControl?.setValue ( relativePath )
+      this.formControl?.markAsDirty ( )
+      this.formControl?.markAsTouched ( )
+
+      this.toastrSvc.success ( "File uploaded successfully." )
+
+    } catch ( err ) {
+      if ( err instanceof HttpErrorResponse ) {
+        this.toastrSvc.error ( err.error || "Upload failed." )
+      } else {
+        this.toastrSvc.error ( "Upload failed." )
+      }
+    } finally {
+      this.uploading.set ( false )
+      input.value = "" // Reset input
+    }
   }
 
   private async updateDisplayFilename ( val: string ): Promise<void> {

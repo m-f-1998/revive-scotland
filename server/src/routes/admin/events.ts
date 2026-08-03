@@ -59,7 +59,7 @@ export const router: FastifyPluginAsync = async app => {
       const snapshot = await eventsCollection.get ( )
 
       let events: Event[] = []
-      
+
       // Fallback logic for legacy `default` document migration
       const legacyDoc = snapshot.docs.find ( doc => doc.id === "default" )
       if ( legacyDoc && legacyDoc.exists ) {
@@ -175,8 +175,11 @@ export const router: FastifyPluginAsync = async app => {
         }
 
         // Stripe Product Creation
-        if ( stripe && model.donationRequired && model.donationRequired !== "none" && model.donationPrice ) {
-          if ( !model.stripeProductId || !model.stripePriceId ) {
+        if ( model.donationRequired && model.donationRequired !== "none" ) {
+          if ( !stripe ) {
+            throw "Stripe is not configured. Cannot create a donation-required event. Please add STRIPE_SECRET_KEY."
+          }
+          if ( model.donationPrice && !model.stripeProductId ) {
             const product = await stripe.products.create ( {
               name: model.title,
               description: model.donationDescription || model.description
@@ -195,7 +198,7 @@ export const router: FastifyPluginAsync = async app => {
       }
     } catch ( error ) {
       console.error ( "Error processing events data:", error )
-      return rep.status ( 400 ).send ( "Error processing events data." )
+      return rep.status ( 400 ).send ( typeof error === "string" ? error : "Error processing events data." )
     }
 
     try {
@@ -266,14 +269,31 @@ export const router: FastifyPluginAsync = async app => {
         return rep.status ( 400 ).send ( { error: "Missing parameter" } )
       }
 
-      const docRef = getFirestore ( ).collection ( "events" ).doc ( id )
+      const db = getFirestore ( )
+      const docRef = db.collection ( "events" ).doc ( id )
       const doc = await docRef.get ( )
 
       if ( !doc.exists ) {
         return rep.status ( 404 ).send ( { error: "Event not found" } )
       }
 
-      await docRef.delete ( )
+      const eventData = doc.data ( ) as Event
+
+      // Cascade delete registrations
+      const registrationsRef = db.collection ( "event_registrations" )
+      const regsSnapshot = await registrationsRef.where ( "eventId", "==", id ).get ( )
+
+      const batch = db.batch ( )
+      batch.delete ( docRef )
+      regsSnapshot.docs.forEach ( d => batch.delete ( d.ref ) )
+
+      await batch.commit ( )
+
+      // Deactivate Stripe Product if it exists
+      if ( eventData.stripeProductId && process.env [ "STRIPE_SECRET_KEY" ] ) {
+        const stripe = new Stripe ( process.env [ "STRIPE_SECRET_KEY" ] )
+        await stripe.products.update ( eventData.stripeProductId, { active: false } ).catch ( () => null )
+      }
 
       if ( eventsCache ) {
         eventsCache.events = eventsCache.events.filter ( e => e.id !== id )

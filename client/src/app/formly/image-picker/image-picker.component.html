@@ -1,19 +1,27 @@
 <div class="space-y-3">
   <input type="text" class="form-control" [value]="displayFilename()" name="url-{{this.id}}" placeholder="Name of Selected File" readonly>
-  <button class="btn-primary" type="button" (click)="openFileSelector()">
-    <app-icon icon="folder-open" />
-    Select File
-  </button>
 
-  @if (this.formControl.value) {
-    <div class="flex justify-center">
-      @if (isVideo) {
-        <video [src]="previewUrl" controls class="max-h-48 object-contain border border-gray-300 rounded">
-          Your browser does not support the video tag.
-        </video>
+  <div class="grid grid-cols-3 gap-3">
+    <button class="btn-secondary w-full border border-zinc-200 bg-white dark:bg-zinc-800 dark:border-zinc-700 items-center justify-center gap-2 font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors" type="button" (click)="quickUploadInput.click()" [disabled]="uploading()">
+      @if (uploading()) {
+        <app-icon icon="spinner" class="animate-spin" />
+        Uploading
       } @else {
-        <img [src]="previewUrl" alt="Preview" class="max-h-48 object-contain border border-gray-300 rounded">
+        <app-icon icon="upload" />
+        Upload
       }
-    </div>
-  }
+    </button>
+    <input type="file" #quickUploadInput class="hidden" accept="image/*,video/*" (change)="onQuickUpload($event)">
+
+    <button class="btn-secondary w-full border border-zinc-200 bg-white dark:bg-zinc-800 dark:border-zinc-700 items-center justify-center gap-2 font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors" type="button" (click)="openFileSelector()">
+      <app-icon icon="folder-open" />
+      Select
+    </button>
+
+    <button class="btn-secondary w-full border border-zinc-200 bg-white dark:bg-zinc-800 dark:border-zinc-700 items-center justify-center gap-2 font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors" type="button" [disabled]="!this.formControl.value" (click)="openPreview()">
+      <app-icon icon="external-link-alt" />
+      Preview
+    </button>
+  </div>
 </div>
+

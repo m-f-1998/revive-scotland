@@ -79,7 +79,7 @@ export class EventsComponent implements OnInit {
 
         this.loading.set ( true )
         try {
-          const res = await this.apiSvc.post ( `/api/public/events/${event.id}/register`, {
+          const res = await this.apiSvc.post ( `/api/events/${event.id}/register`, {
             ...result,
             recaptchaToken: modalRef.componentInstance.captchaToken
           } ) as { message: string; checkoutUrl?: string }

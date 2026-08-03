@@ -105,16 +105,22 @@ export const getEventFields = ( formlySvc: FormlyService ): FormlyFieldConfig [ 
         hide: "model.donationRequired === 'none' || !model.donationRequired || model.actionType !== 'contact'"
       }
     } ),
-    formlySvc.TextInput ( "donationPrice", {
-      label: "Donation Price (in pence, e.g. 1000 for £10.00)",
-      placeholder: "1000",
-      required: false,
-      type: "number"
-    }, {
-      expressions: {
-        hide: "model.donationRequired === 'none' || !model.donationRequired || model.actionType !== 'contact'",
-        "props.required": "model.donationRequired !== 'none' && model.donationRequired"
-      }
-    } )
+    {
+      ...formlySvc.TextInput ( "donationPrice", {
+        label: "Donation Price (£)",
+        placeholder: "10.00",
+        required: false,
+        type: "number",
+        attributes: {
+          min: "0.50",
+          step: "0.01"
+        }
+      }, {
+        expressions: {
+          hide: "model.donationRequired === 'none' || !model.donationRequired || model.actionType !== 'contact'",
+          "props.required": "model.donationRequired !== 'none' && model.donationRequired"
+        }
+      } )
+    }
   ]
 }

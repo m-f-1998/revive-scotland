@@ -1,182 +1,180 @@
 <div class="flex flex-col min-h-screen">
-<app-admin-navbar />
-@if (authSvc.loading() || loading()) {
-  <div class="flex-1 flex flex-col items-center justify-center gap-2 p-8">
-    <app-icon icon="spinner" iconAnimation="spin" iconSize="3x" />
-    <div class="mt-2 text-gray-600">Loading dashboard...</div>
-  </div>
-} @else {
-  <div class="flex-1 w-full max-w-screen-xl mx-auto p-4 md:p-8">
-    <header class="flex items-center gap-4 p-4 mb-6 border-b border-gray-200 rounded-lg shadow-sm">
-      <img
-        [src]="$safeNavigationMigration(authSvc.currentUser()?.photoURL)"
-        class="w-16 h-16 rounded-full border-2 border-primary object-cover flex-shrink-0"
-        alt="User Avatar"
-        onerror="this.onerror=null; this.src='default-avatar.png';"
-      >
-      <div>
-        <h1 class="text-2xl font-bold mb-1">
-          Welcome{{ authSvc.currentUser()?.displayName ? ', ' + authSvc.currentUser()?.displayName : '' }}! 👋
-        </h1>
-        <p class="text-gray-500 text-sm mb-0">Website analytics for the last 90 days. Data refreshes daily.</p>
-        @if (authSvc.currentUser()?.email) {
-          <small class="text-gray-400 text-xs">Signed in as: {{ authSvc.currentUser()?.email }}</small>
-        }
-      </div>
-    </header>
-
-    <div class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 mb-4">
-      <div class="card shadow h-full flex flex-col">
-        <div class="card-header bg-primary text-white">
-          <h5 class="mb-0 font-semibold">Daily Traffic Trends</h5>
-        </div>
-        <div class="card-body flex-1 relative min-h-[400px]">
-          <canvas baseChart
-            [type]="'line'"
-            [datasets]="trendChartData.datasets"
-            [labels]="trendChartData.labels"
-            [options]="trendChartOptions"
-            [legend]="true">
-          </canvas>
-        </div>
-      </div>
-
-      <div class="card shadow h-full flex flex-col">
-        <div class="card-header bg-gray-600 text-white">
-          <h5 class="mb-0 font-semibold">Sessions by Device Category</h5>
-        </div>
-        <div class="card-body flex-1 flex justify-center items-center relative min-h-[400px]">
-          <canvas baseChart
-            [type]="'doughnut'"
-            [datasets]="deviceChartData.datasets"
-            [labels]="deviceChartData.labels"
-            [options]="deviceChartOptions"
-            [legend]="true">
-          </canvas>
-        </div>
-      </div>
+  <app-admin-navbar />
+  @if (authSvc.loading() || loading()) {
+    <div class="flex-1 flex flex-col items-center justify-center gap-2 p-8">
+      <app-icon icon="spinner" iconAnimation="spin" iconSize="3x" />
+      <div class="mt-2 text-gray-600">Loading dashboard...</div>
     </div>
+  } @else {
+    <div class="flex-1 w-full max-w-screen-xl mx-auto p-4 md:p-8">
+      <header class="flex items-center gap-4 p-4 mb-6 border-b border-gray-200 rounded-lg shadow-sm">
+        <img
+          [src]="$safeNavigationMigration(authSvc.currentUser()?.photoURL)"
+          class="w-16 h-16 rounded-full border-2 border-primary object-cover flex-shrink-0"
+          alt="User Avatar"
+          onerror="this.onerror=null; this.src='default-avatar.png';"
+        >
+        <div>
+          <h1 class="text-2xl font-bold mb-1">
+            Welcome{{ authSvc.currentUser()?.displayName ? ', ' + authSvc.currentUser()?.displayName : '' }}! 👋
+          </h1>
+          <p class="text-gray-500 text-sm mb-0">Website analytics for the last 90 days. Data refreshes daily.</p>
+          @if (authSvc.currentUser()?.email) {
+            <small class="text-gray-400 text-xs">Signed in as: {{ authSvc.currentUser()?.email }}</small>
+          }
+        </div>
+      </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-      <div class="card shadow h-full flex flex-col">
-        <div class="card-header bg-sky-500 text-white flex justify-between items-center">
-          <h5 class="mb-0 font-semibold">Locations by Active Users</h5>
-          <span class="text-sm opacity-80">Page {{ geoPage() + 1 }}</span>
+      <div class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 mb-4">
+        <div class="card shadow h-full flex flex-col">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0 font-semibold">Daily Traffic Trends</h5>
+          </div>
+          <div class="card-body flex-1 relative min-h-[400px]">
+            <canvas baseChart
+              [type]="'line'"
+              [datasets]="trendChartData.datasets"
+              [labels]="trendChartData.labels"
+              [options]="trendChartOptions"
+              [legend]="true">
+            </canvas>
+          </div>
         </div>
-        <div class="overflow-x-auto flex-1">
-          <table class="table mb-0">
-            <thead>
-              <tr>
-                <th>Country</th>
-                <th>City</th>
-                <th class="text-right">Users</th>
-                <th class="text-right">Sessions</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (geo of paginatedGeoData(); track geo.country + geo.city) {
-                <tr class="hover:bg-gray-50 dark:hover:bg-slate-800">
-                  <td><strong>{{ geo.country }}</strong></td>
-                  <td>{{ geo.city }}</td>
-                  <td class="text-right">{{ geo.activeUsers | number }}</td>
-                  <td class="text-right">{{ geo.sessions | number }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-        <div class="card-footer flex justify-between items-center bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700">
-          <button class="btn-outline-secondary btn-sm" [disabled]="geoPage() === 0" (click)="prevGeoPage()">Previous</button>
-          <span class="text-xs text-gray-500">Showing 10 per page</span>
-          <button class="btn-outline-secondary btn-sm" [disabled]="!hasMoreGeo()" (click)="nextGeoPage()">Next</button>
+
+        <div class="card shadow h-full flex flex-col">
+          <div class="card-header bg-gray-600 text-white">
+            <h5 class="mb-0 font-semibold">Sessions by Device Category</h5>
+          </div>
+          <div class="card-body flex-1 flex justify-center items-center relative min-h-[400px]">
+            <canvas baseChart
+              [type]="'doughnut'"
+              [datasets]="deviceChartData.datasets"
+              [labels]="deviceChartData.labels"
+              [options]="deviceChartOptions"
+              [legend]="true">
+            </canvas>
+          </div>
         </div>
       </div>
 
-      <div class="card shadow h-full flex flex-col">
-        <div class="card-header bg-gray-600 text-white flex justify-between items-center">
-          <h5 class="mb-0 font-semibold">Sessions by Channel Group</h5>
-          <span class="text-sm opacity-80">Page {{ trafficPage() + 1 }}</span>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div class="card shadow h-full flex flex-col">
+          <div class="card-header bg-sky-500 text-white flex justify-between items-center">
+            <h5 class="mb-0 font-semibold">Locations by Active Users</h5>
+            <span class="text-sm opacity-80">Page {{ geoPage() + 1 }}</span>
+          </div>
+          <div class="overflow-x-auto flex-1">
+            <table class="table mb-0">
+              <thead>
+                <tr>
+                  <th>Country</th>
+                  <th>City</th>
+                  <th class="text-right">Users</th>
+                  <th class="text-right">Sessions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (geo of paginatedGeoData(); track geo.country + geo.city) {
+                  <tr class="hover:bg-gray-50 dark:hover:bg-slate-800">
+                    <td><strong>{{ geo.country }}</strong></td>
+                    <td>{{ geo.city }}</td>
+                    <td class="text-right">{{ geo.activeUsers | number }}</td>
+                    <td class="text-right">{{ geo.sessions | number }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="card-footer flex justify-between items-center bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700">
+            <button class="btn-outline-secondary btn-sm" [disabled]="geoPage() === 0" (click)="prevGeoPage()">Previous</button>
+            <span class="text-xs text-gray-500">Showing 10 per page</span>
+            <button class="btn-outline-secondary btn-sm" [disabled]="!hasMoreGeo()" (click)="nextGeoPage()">Next</button>
+          </div>
+        </div>
+
+        <div class="card shadow h-full flex flex-col">
+          <div class="card-header bg-gray-600 text-white flex justify-between items-center">
+            <h5 class="mb-0 font-semibold">Sessions by Channel Group</h5>
+            <span class="text-sm opacity-80">Page {{ trafficPage() + 1 }}</span>
+          </div>
+          <div class="overflow-x-auto flex-1">
+            <table class="table mb-0">
+              <thead>
+                <tr>
+                  <th>Channel Group</th>
+                  <th class="text-right">Sessions</th>
+                  <th class="text-right">Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (source of paginatedTrafficData(); track source.channel) {
+                  <tr class="hover:bg-gray-50 dark:hover:bg-slate-800">
+                    <td><span class="font-bold">{{ source.channel }}</span></td>
+                    <td class="text-right">{{ source.sessions | number }}</td>
+                    <td class="text-right">
+                      @if (overview.sessions) {
+                        {{(source.sessions / overview.sessions) * 100 | number:'1.1-1'}}
+                      } @else {
+                        0.0
+                      }%
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="card-footer flex justify-between items-center bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700">
+            <button class="btn-outline-secondary btn-sm" [disabled]="trafficPage() === 0" (click)="prevTrafficPage()">Previous</button>
+            <span class="text-xs text-gray-500">Showing 10 per page</span>
+            <button class="btn-outline-secondary btn-sm" [disabled]="!hasMoreTraffic()" (click)="nextTrafficPage()">Next</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- General Donations -->
+      <div class="card shadow h-full mb-4 flex flex-col">
+        <div class="card-header bg-green-600 text-white flex items-center justify-between">
+          <h5 class="mb-0 font-semibold flex items-center gap-2">
+            <app-icon icon="credit-card" /> General Donations
+          </h5>
+          <span class="text-sm opacity-80">Page {{ donationsPage() + 1 }}</span>
         </div>
         <div class="overflow-x-auto flex-1">
           <table class="table mb-0">
             <thead>
               <tr>
-                <th>Channel Group</th>
-                <th class="text-right">Sessions</th>
-                <th class="text-right">Percentage</th>
+                <th>Date</th>
+                <th>Donor Email</th>
+                <th>Donor Name</th>
+                <th class="text-right">Amount</th>
               </tr>
             </thead>
             <tbody>
-              @for (source of paginatedTrafficData(); track source.channel) {
+              @for (donation of paginatedDonations(); track donation['id']) {
                 <tr class="hover:bg-gray-50 dark:hover:bg-slate-800">
-                  <td><span class="font-bold">{{ source.channel }}</span></td>
-                  <td class="text-right">{{ source.sessions | number }}</td>
-                  <td class="text-right">
-                    @if (overview.sessions) {
-                      {{(source.sessions / overview.sessions) * 100 | number:'1.1-1'}}
-                    } @else {
-                      0.0
-                    }%
+                  <td class="whitespace-nowrap">{{ donation['createdAt'] ? ($any(donation['createdAt']) | date:'medium') : 'Unknown' }}</td>
+                  <td>{{ $any(donation['customerDetails'])?.email || 'Anonymous' }}</td>
+                  <td>{{ $any(donation['customerDetails'])?.name || 'Anonymous' }}</td>
+                  <td class="text-right font-bold text-green-700 dark:text-green-400">
+                    {{ ($any(donation['amount']) / 100) | currency: ($any(donation['currency']) | uppercase) }}
                   </td>
                 </tr>
               }
             </tbody>
           </table>
         </div>
-        <div class="card-footer flex justify-between items-center bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700">
-          <button class="btn-outline-secondary btn-sm" [disabled]="trafficPage() === 0" (click)="prevTrafficPage()">Previous</button>
-          <span class="text-xs text-gray-500">Showing 10 per page</span>
-          <button class="btn-outline-secondary btn-sm" [disabled]="!hasMoreTraffic()" (click)="nextTrafficPage()">Next</button>
-        </div>
+        @if (donations().length === 0) {
+          <div class="card-footer text-gray-500">No general donations found.</div>
+        } @else {
+          <div class="card-footer flex justify-between items-center bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700">
+            <button class="btn-outline-secondary btn-sm" [disabled]="donationsPage() === 0" (click)="prevDonationsPage()">Previous</button>
+            <span class="text-xs text-gray-500">Showing 10 per page (Total: {{ donations().length }})</span>
+            <button class="btn-outline-secondary btn-sm" [disabled]="!hasMoreDonations()" (click)="nextDonationsPage()">Next</button>
+          </div>
+        }
       </div>
-    </div>
 
-    <!-- General Donations -->
-    <div class="card shadow h-full mb-4 flex flex-col">
-      <div class="card-header bg-green-600 text-white flex items-center justify-between">
-        <h5 class="mb-0 font-semibold flex items-center gap-2">
-          <app-icon icon="credit-card" /> General Donations
-        </h5>
-        <span class="text-sm opacity-80">Page {{ donationsPage() + 1 }}</span>
-      </div>
-      <div class="overflow-x-auto flex-1">
-        <table class="table mb-0">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Donor Email</th>
-              <th>Donor Name</th>
-              <th class="text-right">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (donation of paginatedDonations(); track donation['id']) {
-              <tr class="hover:bg-gray-50 dark:hover:bg-slate-800">
-                <td class="whitespace-nowrap">{{ donation['createdAt'] ? ($any(donation['createdAt']) | date:'medium') : 'Unknown' }}</td>
-                <td>{{ $any(donation['customerDetails'])?.email || 'Anonymous' }}</td>
-                <td>{{ $any(donation['customerDetails'])?.name || 'Anonymous' }}</td>
-                <td class="text-right font-bold text-green-700 dark:text-green-400">
-                  {{ ($any(donation['amount']) / 100) | currency: ($any(donation['currency']) | uppercase) }}
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-      @if (donations().length === 0) {
-        <div class="card-footer text-gray-500">No general donations found.</div>
-      } @else {
-        <div class="card-footer flex justify-between items-center bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700">
-          <button class="btn-outline-secondary btn-sm" [disabled]="donationsPage() === 0" (click)="prevDonationsPage()">Previous</button>
-          <span class="text-xs text-gray-500">Showing 10 per page (Total: {{ donations().length }})</span>
-          <button class="btn-outline-secondary btn-sm" [disabled]="!hasMoreDonations()" (click)="nextDonationsPage()">Next</button>
-        </div>
-      }
     </div>
-
-  </div>
-}
-<app-admin-footer />
+  }
+  <app-admin-footer />
 </div>
-
-

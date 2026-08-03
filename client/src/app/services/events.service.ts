@@ -19,6 +19,10 @@ export interface ReviveEvent {
   contactFormFields?: FormlyFieldConfig [ ]
 
   donationRequired?: "none" | "optional" | "required"
+  donationDescription?: string
+  donationPrice?: number
+  stripeProductId?: string
+  stripePriceId?: string
 }
 
 @Service ( )
@@ -43,7 +47,7 @@ export class EventsService {
 
   private async initialize ( ) {
     try {
-      const response = await this.apiSvc.get ( "/api/admin/events" ) as { events: ReviveEvent [ ] }
+      const response = await this.apiSvc.get ( "/api/events" ) as { events: ReviveEvent [ ] }
       const currentTime = new Date ( )
       this.events = ( response.events || [ ] )
         .filter ( event => {

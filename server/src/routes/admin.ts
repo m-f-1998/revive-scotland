@@ -172,7 +172,7 @@ export const router: FastifyPluginAsync = async app => {
       let role = user.customClaims?. [ "role" ] || "viewer"
 
       if ( SUPERADMIN_EMAIL && user.email === SUPERADMIN_EMAIL ) role = "superadmin"
-      else if ( ADMIN_EMAIL && user.email === ADMIN_EMAIL ) role = "admin"
+      else if ( ADMIN_EMAIL && user.email === ADMIN_EMAIL && role !== "superadmin" ) role = "admin"
 
       if ( !user.customClaims?. [ "role" ] || user.customClaims [ "role" ] !== role ) {
         await getAuth ( ).setCustomUserClaims ( uid, { role } )
@@ -192,7 +192,8 @@ export const router: FastifyPluginAsync = async app => {
 
       await firestore.set ( {
         lastLogin: FieldValue.serverTimestamp ( ),
-        sessionExpiry: Timestamp.fromDate ( new Date ( Date.now ( ) + 7 * 24 * 60 * 60 * 1000 ) )
+        sessionExpiry: Timestamp.fromDate ( new Date ( Date.now ( ) + 7 * 24 * 60 * 60 * 1000 ) ),
+        role
       }, { merge: true } )
 
       return res.status ( 200 ).send ( { uid: user.uid, role } )

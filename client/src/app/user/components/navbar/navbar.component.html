@@ -1,6 +1,6 @@
-<nav class="bg-gray-100 dark:bg-slate-900 shadow-sm dark:shadow-slate-800">
-  <div class="max-w-screen-xl mx-auto px-4 flex items-center justify-between h-16">
-    <a href="/" class="flex-shrink-0">
+<nav class="fixed top-0 left-0 w-full z-50 transition-all duration-300 shadow-sm border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg">
+  <div class="max-w-screen-xl mx-auto px-6 flex items-center justify-between h-16 md:h-20">
+    <a href="/" class="flex-shrink-0 transition-opacity hover:opacity-80">
       <img src="/api/img/logo.png?w=640&f=webp"
         srcset="
           /api/img/logo.png?w=320&f=webp 320w,
@@ -8,80 +8,112 @@
           /api/img/logo.png?w=1024&f=webp 1024w
         "
         sizes="(max-width: 600px) 100vw, 600px"
-        alt="Site Logo"
-        loading="lazy"
-        width="80"
-        decoding="async"
+        alt="Revive Scotland"
+        loading="eager"
+        class="h-10 md:h-12 w-auto object-contain"
       />
     </a>
 
-    <ul class="hidden sm:flex gap-1">
+    <!-- Desktop Navigation -->
+    <ul class="hidden sm:flex items-center gap-2 lg:gap-4 m-0 p-0 list-none">
       <li>
-        <a class="nav-link" (click)="goTo('/')" [class.active]="url() === '/'">
-          <app-icon icon="home" />
-          Home
+        <a (click)="goTo('/')"
+           class="px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors cursor-pointer text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100"
+           [class.bg-zinc-100]="url() === '/'"
+           [class.dark:bg-zinc-800]="url() === '/'"
+           [class.text-blue-600]="url() === '/'"
+           [class.dark:text-blue-400]="url() === '/'">
+          <app-icon icon="home" /> Home
         </a>
       </li>
       <li>
-        <a class="nav-link" (click)="goTo('/events')" [class.active]="url() === '/events'">
-          <app-icon icon="calendar" />
-          Events
+        <a (click)="goTo('/events')"
+           class="px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors cursor-pointer text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100"
+           [class.bg-zinc-100]="url() === '/events'"
+           [class.dark:bg-zinc-800]="url() === '/events'"
+           [class.text-blue-600]="url() === '/events'"
+           [class.dark:text-blue-400]="url() === '/events'">
+          <app-icon icon="calendar" /> Events
         </a>
       </li>
       <li>
-        <a class="nav-link" (click)="goTo('/gallery')" [class.active]="url() === '/gallery'">
-          <app-icon icon="image" />
-          Gallery
+        <a (click)="goTo('/gallery')"
+           class="px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors cursor-pointer text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100"
+           [class.bg-zinc-100]="url() === '/gallery'"
+           [class.dark:bg-zinc-800]="url() === '/gallery'"
+           [class.text-blue-600]="url() === '/gallery'"
+           [class.dark:text-blue-400]="url() === '/gallery'">
+          <app-icon icon="image" /> Gallery
         </a>
       </li>
       <li>
-        <a class="nav-link" (click)="goTo('/liturgy')" [class.active]="url() === '/liturgy'">
-          <app-icon icon="hands-praying" />
-          Liturgy
+        <a (click)="goTo('/liturgy')"
+           class="px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors cursor-pointer text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100"
+           [class.bg-zinc-100]="url() === '/liturgy'"
+           [class.dark:bg-zinc-800]="url() === '/liturgy'"
+           [class.text-blue-600]="url() === '/liturgy'"
+           [class.dark:text-blue-400]="url() === '/liturgy'">
+          <app-icon icon="hands-praying" /> Liturgy
         </a>
       </li>
     </ul>
 
-    <div class="relative sm:hidden mobile-menu-container">
-      <button class="p-2 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors" type="button" (click)="toggleMenu()" aria-label="Toggle navigation">
-        <app-icon [icon]="isMenuCollapsed() ? 'bars' : 'xmark'" />
-      </button>
-      @if (!isMenuCollapsed()) {
-        <ul class="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg py-1 z-50">
-          <li>
-            <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
-               [class.text-primary]="url() === '/'"
-               (click)="goTo('/')">
-              <app-icon icon="home" />
-              Home
-            </a>
-          </li>
-          <li>
-            <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
-               [class.text-primary]="url() === '/events'"
-               (click)="goTo('/events')">
-              <app-icon icon="calendar" />
-              Events
-            </a>
-          </li>
-          <li>
-            <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
-               [class.text-primary]="url() === '/gallery'"
-               (click)="goTo('/gallery')">
-              <app-icon icon="image" />
-              Gallery
-            </a>
-          </li>
-          <li>
-            <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
-               [class.text-primary]="url() === '/liturgy'"
-               (click)="goTo('/liturgy')">
-              <app-icon icon="hands-praying" />
-              Liturgy
-            </a>
-          </li>
-        </ul>
-      }
-    </div>
+    <!-- Mobile Menu Toggle -->
+    <button class="sm:hidden p-2 -mr-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            type="button"
+            (click)="toggleMenu()"
+            aria-label="Toggle navigation">
+      <app-icon [icon]="isMenuCollapsed() ? 'bars' : 'xmark'" class="text-2xl" />
+    </button>
+  </div>
+
+  <!-- Mobile Dropdown -->
+  <div class="sm:hidden transition-all duration-300 overflow-hidden"
+       [class.h-0]="isMenuCollapsed()"
+       [class.h-auto]="!isMenuCollapsed()"
+       [class.opacity-0]="isMenuCollapsed()"
+       [class.opacity-100]="!isMenuCollapsed()">
+    <ul class="flex flex-col m-0 p-4 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 list-none shadow-xl">
+      <li>
+        <a (click)="goTo('/')"
+           class="block px-4 py-3 rounded-lg font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+           [class.text-blue-600]="url() === '/'"
+           [class.dark:text-blue-400]="url() === '/'"
+           [class.bg-blue-50]="url() === '/'"
+           [class.dark:bg-blue-900]="url() === '/'">
+          <app-icon icon="home" /> Home
+        </a>
+      </li>
+      <li>
+        <a (click)="goTo('/events')"
+           class="block px-4 py-3 rounded-lg font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 mt-1"
+           [class.text-blue-600]="url() === '/events'"
+           [class.dark:text-blue-400]="url() === '/events'"
+           [class.bg-blue-50]="url() === '/events'"
+           [class.dark:bg-blue-900]="url() === '/events'">
+          <app-icon icon="calendar" /> Events
+        </a>
+      </li>
+      <li>
+        <a (click)="goTo('/gallery')"
+           class="block px-4 py-3 rounded-lg font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 mt-1"
+           [class.text-blue-600]="url() === '/gallery'"
+           [class.dark:text-blue-400]="url() === '/gallery'"
+           [class.bg-blue-50]="url() === '/gallery'"
+           [class.dark:bg-blue-900]="url() === '/gallery'">
+          <app-icon icon="image" /> Gallery
+        </a>
+      </li>
+      <li>
+        <a (click)="goTo('/liturgy')"
+           class="block px-4 py-3 rounded-lg font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 mt-1"
+           [class.text-blue-600]="url() === '/liturgy'"
+           [class.dark:text-blue-400]="url() === '/liturgy'"
+           [class.bg-blue-50]="url() === '/liturgy'"
+           [class.dark:bg-blue-900]="url() === '/liturgy'">
+          <app-icon icon="hands-praying" /> Liturgy
+        </a>
+      </li>
+    </ul>
   </div>
 </nav>

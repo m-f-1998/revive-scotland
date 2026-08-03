@@ -1,33 +1,36 @@
 @if (!isSelectionMode) {
   <app-admin-navbar />
 } @else {
-  <div class="modal-header">
-    <h5 class="modal-title">
-      <app-icon icon="folder" class="mr-2" />
-      Select File
+  <div class="modal-header border-b border-zinc-200 dark:border-zinc-800 p-4 flex justify-between items-center bg-zinc-50 dark:bg-zinc-900">
+    <h5 class="modal-title font-semibold text-zinc-800 dark:text-zinc-100 flex items-center gap-2 m-0">
+      <app-icon icon="folder-open" class="text-blue-500" />
+      Select Media
     </h5>
-    <button type="button" class="btn-close" aria-label="Close" (click)="closeSelectionMode()"></button>
+    <button type="button" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors p-1" aria-label="Close" (click)="closeSelectionMode()">
+      <app-icon icon="xmark" class="text-xl" />
+    </button>
   </div>
 }
 
-<div [class]="!isSelectionMode ? 'min-h-screen p-4 md:p-10' : 'p-4'">
+<div [class]="!isSelectionMode ? 'min-h-screen p-4 md:p-10' : 'p-4 bg-zinc-50/50 dark:bg-zinc-900/50'">
   <div class="max-w-screen-xl mx-auto">
+    
     @if (!isSelectionMode) {
-      <div class="mb-6 p-4 shadow-sm rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-4 border-primary gap-4">
-        <h1 class="text-2xl font-bold flex items-center gap-2">
-          <app-icon icon="folder" />
+      <div class="mb-6 p-4 shadow-sm rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-4 border-blue-500 gap-4 bg-white dark:bg-zinc-800">
+        <h1 class="text-2xl font-bold flex items-center gap-2 m-0 text-zinc-800 dark:text-zinc-100">
+          <app-icon icon="folder-open" class="text-blue-500" />
           File Explorer
         </h1>
 
-        @if (!loading()) {
+        @if (!loading() && dataSource() === 's3') {
           @if (quota().max > 0) {
             <div class="flex flex-col items-start sm:items-end gap-1 w-full sm:w-auto">
-              <p class="text-sm font-mono text-gray-500 mb-1">
-                Storage Used: <span class="font-semibold">{{ fileExplorerSvc.formatBytes(quota().used) }}</span> / {{ fileExplorerSvc.formatBytes(quota().max) }}
+              <p class="text-sm font-mono text-zinc-500 dark:text-zinc-400 mb-1 m-0">
+                Storage Used: <span class="font-semibold text-zinc-800 dark:text-zinc-200">{{ fileExplorerSvc.formatBytes(quota().used) }}</span> / {{ fileExplorerSvc.formatBytes(quota().max) }}
               </p>
-              <div class="progress w-full sm:w-64">
+              <div class="w-full sm:w-64 bg-zinc-200 dark:bg-zinc-700 rounded-full h-2 overflow-hidden">
                 <div
-                  class="progress-bar"
+                  class="bg-blue-500 h-2 rounded-full transition-all duration-500"
                   role="progressbar"
                   [style.width]="(quota().used / quota().max * 100) + '%'"
                 ></div>
@@ -38,143 +41,202 @@
       </div>
     }
 
-    <div class="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-      <nav aria-label="breadcrumb">
-        <ol class="breadcrumb bg-gray-100 dark:bg-slate-700 rounded-lg px-3 py-2 shadow-sm m-0">
-          @for (crumb of breadcrumbs(); track crumb.path) {
-            <li class="breadcrumb-item">
-              @if (crumb.path !== currentPath()) {
-                <a (click)="listPath(crumb.path)" class="text-primary font-bold cursor-pointer hover:underline">
-                  {{ crumb.label }}
-                </a>
-              } @else {
-                <span class="font-bold text-gray-500">{{ crumb.label }}</span>
-              }
-            </li>
-          }
-        </ol>
-      </nav>
-
-      <div class="flex flex-wrap gap-2 justify-end">
-        <input type="file" #fileInput (change)="onFileSelected($event);" multiple class="hidden">
-
-        <div class="relative">
-          <button type="button" class="btn-primary btn-sm" (click)="uploadDropdownOpen.set(!uploadDropdownOpen())" [disabled]="loading()">
-            <app-icon icon="cloud-upload-alt" />
-            Upload
-          </button>
-          @if (uploadDropdownOpen()) {
-            <div class="absolute right-0 mt-1 w-44 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-gray-200 dark:border-slate-600 z-50">
-              <button class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 dark:text-gray-200 flex items-center gap-2" (click)="fileInput.webkitdirectory=false; fileInput.click(); uploadDropdownOpen.set(false)">
-                <app-icon icon="file-upload" /> File
-              </button>
-              <button class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-slate-700 dark:text-gray-200 flex items-center gap-2" (click)="fileInput.webkitdirectory=true; fileInput.click(); uploadDropdownOpen.set(false)">
-                <app-icon icon="folder" /> Folder
-              </button>
-            </div>
-          }
-        </div>
-
-        <button (click)="openModal('createFolder')" [disabled]="loading()" class="btn-success btn-sm">
-          <app-icon icon="folder-plus" />
-          New Folder
+    <!-- Top Toolbar: Toggle and Actions -->
+    <div class="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      
+      <!-- Source Toggle -->
+      <div class="flex bg-zinc-200/70 dark:bg-zinc-800/70 p-1 rounded-lg">
+        <button 
+          class="px-4 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-2"
+          [class.bg-white]="dataSource() === 's3'"
+          [class.dark:bg-zinc-700]="dataSource() === 's3'"
+          [class.shadow-sm]="dataSource() === 's3'"
+          [class.text-blue-600]="dataSource() === 's3'"
+          [class.dark:text-blue-400]="dataSource() === 's3'"
+          [class.text-zinc-600]="dataSource() !== 's3'"
+          [class.dark:text-zinc-400]="dataSource() !== 's3'"
+          [class.hover:bg-zinc-300]="dataSource() !== 's3'"
+          [class.dark:hover:bg-zinc-700]="dataSource() !== 's3'"
+          (click)="setDataSource('s3')">
+          <app-icon icon="cloud" />
+          My Uploads
         </button>
-        <button (click)="listPath(currentPath())" [disabled]="loading()" class="btn-info btn-sm" title="Refresh List">
-          <app-icon icon="refresh" [iconAnimation]="loading() ? 'spin' : undefined" />
+        <button 
+          class="px-4 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-2"
+          [class.bg-white]="dataSource() === 'static'"
+          [class.dark:bg-zinc-700]="dataSource() === 'static'"
+          [class.shadow-sm]="dataSource() === 'static'"
+          [class.text-blue-600]="dataSource() === 'static'"
+          [class.dark:text-blue-400]="dataSource() === 'static'"
+          [class.text-zinc-600]="dataSource() !== 'static'"
+          [class.dark:text-zinc-400]="dataSource() !== 'static'"
+          [class.hover:bg-zinc-300]="dataSource() !== 'static'"
+          [class.dark:hover:bg-zinc-700]="dataSource() !== 'static'"
+          (click)="setDataSource('static')">
+          <app-icon icon="images" />
+          Built-in Media
+        </button>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex flex-wrap gap-2 justify-end w-full md:w-auto">
+        @if (dataSource() === 's3') {
+          <input type="file" #fileInput (change)="onFileSelected($event);" multiple class="hidden">
+          <div class="relative">
+            <button type="button" class="btn-primary py-1.5 px-3 text-sm font-semibold rounded-lg flex items-center gap-2" (click)="uploadDropdownOpen.set(!uploadDropdownOpen())" [disabled]="loading()">
+              <app-icon icon="cloud-upload-alt" />
+              Upload
+            </button>
+            @if (uploadDropdownOpen()) {
+              <div class="absolute right-0 mt-1 w-44 bg-white dark:bg-zinc-800 rounded-lg shadow-xl border border-zinc-200 dark:border-zinc-700 z-50 overflow-hidden">
+                <button class="w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700 dark:text-zinc-200 flex items-center gap-2 transition-colors border-b border-zinc-100 dark:border-zinc-700/50" (click)="fileInput.webkitdirectory=false; fileInput.click(); uploadDropdownOpen.set(false)">
+                  <app-icon icon="file-upload" class="text-blue-500" /> File
+                </button>
+                <button class="w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700 dark:text-zinc-200 flex items-center gap-2 transition-colors" (click)="fileInput.webkitdirectory=true; fileInput.click(); uploadDropdownOpen.set(false)">
+                  <app-icon icon="folder-open" class="text-yellow-500" /> Folder
+                </button>
+              </div>
+            }
+          </div>
+
+          <button (click)="openModal('createFolder')" [disabled]="loading()" class="btn-secondary bg-white border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700 py-1.5 px-3 text-sm font-semibold rounded-lg flex items-center gap-2">
+            <app-icon icon="folder-plus" />
+            New Folder
+          </button>
+        }
+        <button (click)="listPath(currentPath())" [disabled]="loading()" class="btn-secondary bg-white border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700 py-1.5 px-3 text-sm font-semibold rounded-lg flex items-center gap-2" title="Refresh List">
+          <app-icon icon="arrows-rotate" [iconAnimation]="loading() ? 'spin' : undefined" />
           Refresh
         </button>
       </div>
     </div>
 
-    <div class="card shadow-lg">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb" class="mb-4">
+      <ol class="flex items-center gap-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-4 py-2 shadow-sm m-0 list-none">
+        @for (crumb of breadcrumbs(); track crumb.path; let isLast = $last) {
+          <li class="flex items-center gap-2">
+            @if (!isLast) {
+              <a (click)="listPath(crumb.path)" class="text-blue-600 dark:text-blue-400 font-medium cursor-pointer hover:underline">
+                {{ crumb.label }}
+              </a>
+              <app-icon icon="chevron-right" class="text-zinc-400 text-xs" />
+            } @else {
+              <span class="font-semibold text-zinc-600 dark:text-zinc-300">{{ crumb.label }}</span>
+            }
+          </li>
+        }
+      </ol>
+    </nav>
+
+    <!-- File List -->
+    <div class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-sm overflow-hidden relative min-h-[300px]">
       @if (loading()) {
-        <div class="p-12 text-center text-gray-500">
-          <div class="spinner-border text-primary mx-auto mb-3"></div>
-          <p class="mt-2">Loading files and folders...</p>
+        <div class="absolute inset-0 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-[1px] flex flex-col items-center justify-center z-10 text-blue-500">
+          <app-icon icon="circle-notch" class="animate-spin text-4xl mb-3" />
+          <p class="font-medium text-zinc-600 dark:text-zinc-300 m-0">Loading items...</p>
         </div>
-      } @else {
-        <div class="overflow-x-auto">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th class="hidden sm:table-cell">Size</th>
-                <th class="hidden md:table-cell">Last Modified</th>
-                @if (!isSelectionMode) {
-                  <th class="text-right">Actions</th>
+      } 
+      
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-700">
+              <th class="py-3 px-4 font-semibold text-sm text-zinc-600 dark:text-zinc-400">Name</th>
+              <th class="py-3 px-4 font-semibold text-sm text-zinc-600 dark:text-zinc-400 hidden sm:table-cell">Size</th>
+              <th class="py-3 px-4 font-semibold text-sm text-zinc-600 dark:text-zinc-400 hidden md:table-cell">Last Modified</th>
+              @if (!isSelectionMode && dataSource() === 's3') {
+                <th class="py-3 px-4 font-semibold text-sm text-zinc-600 dark:text-zinc-400 text-right">Actions</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @if (currentPath() !== '') {
+              <tr class="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700/30 transition-colors cursor-pointer" 
+                  (dragover)="onDragOver($event)" (drop)="upAFolder($event)">
+                <td class="py-3 px-4">
+                  <a (click)="goUp()" class="text-blue-600 dark:text-blue-400 font-medium flex items-center gap-3">
+                    <div class="bg-blue-100 dark:bg-blue-900/30 p-1.5 rounded-md">
+                      <app-icon icon="level-up-alt" class="text-sm" />
+                    </div>
+                    Up to parent folder
+                  </a>
+                </td>
+                <td class="py-3 px-4 hidden sm:table-cell text-zinc-400">--</td>
+                <td class="py-3 px-4 hidden md:table-cell text-zinc-400">--</td>
+                @if (!isSelectionMode && dataSource() === 's3') {
+                  <td class="py-3 px-4 text-right"></td>
                 }
               </tr>
-            </thead>
-            <tbody>
-              @if (currentPath() !== '') {
-                <tr class="cursor-pointer" (dragover)="onDragOver($event)" (drop)="upAFolder($event)">
-                  <td>
-                    <a (click)="goUp()" class="text-primary font-semibold flex items-center gap-2 cursor-pointer hover:underline">
-                      <app-icon icon="arrow-up" />
-                      ...
-                    </a>
-                  </td>
-                  <td class="hidden sm:table-cell text-gray-400">--</td>
-                  <td class="hidden md:table-cell text-gray-400">--</td>
-                  <td></td>
-                </tr>
-              }
+            }
 
-              @for (file of fileList(); track file.key) {
-                <tr class="cursor-pointer"
-                    (click)="isSelectionMode ? selectFile(file) : null"
-                    [draggable]="!file.isFolder && !isSelectionMode"
-                    (dragstart)="!file.isFolder && !isSelectionMode ? onDragStart($event, file) : null"
-                    (dragover)="file.isFolder && !isSelectionMode ? onDragOver($event) : null"
-                    (drop)="file.isFolder && !isSelectionMode ? onDrop($event, file) : null">
-                  <td>
-                    <a (click)="isSelectionMode ? null : (file.isFolder ? navigateTo(file.name) : viewFile(file.key))"
-                       class="flex items-center gap-2 no-underline cursor-pointer">
-                      @if (file.isFolder) {
-                        <app-icon icon="folder" class="text-yellow-500" />
-                      } @else {
-                        <app-icon icon="file-alt" class="text-sky-500" />
+            @for (file of fileList(); track file.key) {
+              <tr class="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700/30 transition-colors cursor-pointer group"
+                  (click)="isSelectionMode ? selectFile(file) : null"
+                  [draggable]="!file.isFolder && !isSelectionMode && dataSource() === 's3'"
+                  (dragstart)="!file.isFolder && !isSelectionMode && dataSource() === 's3' ? onDragStart($event, file) : null"
+                  (dragover)="file.isFolder && !isSelectionMode && dataSource() === 's3' ? onDragOver($event) : null"
+                  (drop)="file.isFolder && !isSelectionMode && dataSource() === 's3' ? onDrop($event, file) : null">
+                <td class="py-3 px-4">
+                  <a (click)="isSelectionMode ? null : (file.isFolder ? navigateTo(file.name) : viewFile(file.key))"
+                     class="flex items-center gap-3 no-underline">
+                    @if (file.isFolder) {
+                      <app-icon icon="folder" class="text-yellow-500 text-xl" />
+                    } @else if (file.contentType?.startsWith('image/')) {
+                      <app-icon icon="file-image" class="text-emerald-500 text-xl" />
+                    } @else if (file.contentType?.startsWith('video/')) {
+                      <app-icon icon="file-video" class="text-purple-500 text-xl" />
+                    } @else {
+                      <app-icon icon="file-alt" class="text-blue-500 text-xl" />
+                    }
+                    <span class="truncate font-medium text-zinc-700 dark:text-zinc-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+                          [class.font-semibold]="file.isFolder">
+                      {{ file.name }}
+                    </span>
+                  </a>
+                </td>
+                <td class="py-3 px-4 hidden sm:table-cell text-zinc-500 dark:text-zinc-400 text-sm">
+                  {{ file.isFolder ? '--' : fileExplorerSvc.formatBytes(file.size ?? 0) }}
+                </td>
+                <td class="py-3 px-4 hidden md:table-cell text-zinc-500 dark:text-zinc-400 text-sm">
+                  {{ file.lastModified | date:'medium' }}
+                </td>
+                @if (!isSelectionMode && dataSource() === 's3') {
+                  <td class="py-3 px-4 text-right">
+                    <div class="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button (click)="openModal('rename', file)" title="Rename/Move" class="p-1.5 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                        <app-icon icon="pen-to-square" />
+                      </button>
+                      <button (click)="openModal('delete', file)" title="Delete" class="p-1.5 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors">
+                        <app-icon icon="trash-can" />
+                      </button>
+                      @if (!file.isFolder) {
+                        <button (click)="shareFile(file.key)" title="Share Link" class="p-1.5 text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                          <app-icon icon="share-nodes" />
+                        </button>
                       }
-                      <span [class.font-bold]="file.isFolder" [class.text-primary]="file.isFolder">
-                        {{ file.name }}
-                      </span>
-                    </a>
+                    </div>
                   </td>
-                  <td class="hidden sm:table-cell text-gray-400">
-                    {{ file.isFolder ? '--' : fileExplorerSvc.formatBytes(file.size ?? 0) }}
-                  </td>
-                  <td class="hidden md:table-cell text-gray-400">
-                    {{ file.lastModified | date:'medium' }}
-                  </td>
-                  @if (!isSelectionMode) {
-                    <td class="text-right">
-                      <div class="flex gap-1 justify-end">
-                        <button (click)="openModal('rename', file)" title="Rename/Move" class="btn-outline-secondary btn-sm rounded-full p-1.5">
-                          <app-icon icon="pen-to-square" />
-                        </button>
-                        <button (click)="openModal('delete', file)" title="Delete" class="btn-outline-danger btn-sm rounded-full p-1.5">
-                          <app-icon icon="trash" />
-                        </button>
-                        @if (!file.isFolder) {
-                          <button (click)="shareFile(file.key)" title="Share Link" class="btn-outline-info btn-sm rounded-full p-1.5">
-                            <app-icon icon="share" />
-                          </button>
-                        }
-                      </div>
-                    </td>
-                  }
-                </tr>
-              } @empty {
+                }
+              </tr>
+            } @empty {
+              @if (!loading()) {
                 <tr>
-                  <td colspan="4" class="py-12 text-center text-gray-400">
-                    <app-icon icon="triangle-exclamation" class="mr-2" /> This folder is empty.
+                  <td [colSpan]="isSelectionMode || dataSource() === 'static' ? 3 : 4" class="py-16 text-center text-zinc-400 dark:text-zinc-500">
+                    <div class="bg-zinc-50 dark:bg-zinc-800/50 inline-flex p-4 rounded-full mb-3">
+                      <app-icon icon="folder-open" class="text-3xl opacity-50" />
+                    </div>
+                    <p class="m-0 font-medium">This folder is empty.</p>
+                    @if (dataSource() === 's3' && !isSelectionMode) {
+                      <p class="text-sm mt-1">Upload files or create a new folder to get started.</p>
+                    }
                   </td>
                 </tr>
               }
-            </tbody>
-          </table>
-        </div>
-      }
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>

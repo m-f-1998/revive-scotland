@@ -5,11 +5,15 @@ import { onFilesDeleted, onFileRenamed, onFolderRenamed } from "./mediaReference
 import { getFirestore, incrementValue } from "../admin.js"
 import { FastifyPluginAsync } from "fastify"
 import { S3Service } from "../../services/s3.service.js"
+import { join } from "path"
+import { readdir, stat } from "fs/promises"
 
 const PUBLIC_DOMAIN = process.env [ "PUBLIC_DOMAIN" ] || "https://revivescotland.co.uk"
 
 const MAX_STORAGE_GB = 5
 const MAX_STORAGE_BYTES = MAX_STORAGE_GB * 1024 * 1024 * 1024
+
+const STATIC_ASSETS_DIR = join ( process.cwd ( ), "../", "assets", "img" )
 
 export const router: FastifyPluginAsync = async app => {
   // app prehandler
@@ -77,6 +81,63 @@ export const router: FastifyPluginAsync = async app => {
     } catch ( error ) {
       console.error ( "Error listing files:", error )
       return rep.status ( 500 ).send ( "Failed to list files." )
+    }
+  } )
+
+  /**
+   * 1b. NAVIGATE STATIC ASSETS
+   * Lists built-in files and folders from the local assets directory.
+   */
+  app.get ( "/static-list", async ( req, rep ) => {
+    const { path } = req.query as { path?: string }
+    const relativePath = path || "/"
+
+    if ( relativePath && ( typeof relativePath !== "string" || relativePath.includes ( ".." ) ) ) {
+      return rep.status ( 400 ).send ( "Invalid path." )
+    }
+
+    const currentDir = join ( STATIC_ASSETS_DIR, relativePath )
+
+    try {
+      const entries = await readdir ( currentDir, { withFileTypes: true } )
+      const folders = [ ]
+      const files = [ ]
+
+      const EXTENSION_TYPES: Record<string, string> = {
+        jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif",
+        webp: "image/webp", avif: "image/avif", svg: "image/svg+xml",
+        mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime"
+      }
+
+      for ( const entry of entries ) {
+        if ( entry.isDirectory ( ) ) {
+          const folderKey = relativePath === "/" ? `${entry.name}/` : `${relativePath}${entry.name}/`
+          folders.push ( {
+            name: entry.name,
+            key: folderKey,
+            isFolder: true
+          } )
+        } else if ( entry.isFile ( ) ) {
+          const ext = entry.name.split ( "." ).pop ( )?.toLowerCase ( ) ?? ""
+          if ( Object.keys ( EXTENSION_TYPES ).includes ( ext ) ) {
+            const fileStat = await stat ( join ( currentDir, entry.name ) )
+            const fileKey = relativePath === "/" ? entry.name : `${relativePath}${entry.name}`
+            files.push ( {
+              name: entry.name,
+              key: fileKey,
+              lastModified: fileStat.mtime,
+              size: fileStat.size,
+              isFolder: false,
+              contentType: EXTENSION_TYPES [ ext ] ?? "application/octet-stream"
+            } )
+          }
+        }
+      }
+
+      return rep.status ( 200 ).send ( [ ...folders, ...files ] )
+    } catch ( error ) {
+      console.error ( "Error listing static files:", error )
+      return rep.status ( 500 ).send ( "Failed to list static files." )
     }
   } )
 
