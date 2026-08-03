@@ -120,7 +120,7 @@ export class DashboardComponent implements OnInit {
         console.error ( "Error loading dashboard data:", error )
         this.toastrSvc.error ( "Failed to load dashboard data. Please try again later." )
       } ),
-      this.loadDonations ()
+      this.loadDonations ( )
     ] ).finally ( ( ) => {
       this.loading.set ( false )
     } )
@@ -153,16 +153,16 @@ export class DashboardComponent implements OnInit {
 
   /**
    * Safe navigation wrapper for template to avoid syntax errors
-   * when authSvc.currentUser() might be undefined before async checks complete.
+   * when authSvc.currentUser( ) might be undefined before async checks complete.
    */
   public $safeNavigationMigration ( value: unknown ): unknown {
     return value
   }
 
-  private async loadDonations () {
+  private async loadDonations ( ) {
     try {
       const res = await this.apiSvc.get ( "/api/admin/donations", {}, new HttpHeaders ( {
-        "Authorization": `Bearer ${await this.authSvc.currentUser ()?.getIdToken () || ""}`
+        "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || ""}`
       } ) ) as { donations: Array<Record<string, unknown>> }
       this.donations.set ( res.donations )
     } catch {

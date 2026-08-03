@@ -1,0 +1,82 @@
+<div class="card-header bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-700/80 px-5 py-4">
+  <h5 class="mb-0 font-semibold flex items-center gap-2 text-primary dark:text-white text-base">
+    <app-icon icon="book-open" /> Our Story
+  </h5>
+</div>
+<div class="card-body p-5 flex-1 space-y-4">
+  @if (loading()) {
+    <div class="flex flex-col items-center justify-center gap-3 py-10 text-gray-500 dark:text-gray-400">
+      <app-icon icon="spinner" iconAnimation="spin" iconSize="2x" class="text-primary" />
+      <p class="text-sm font-medium">Loading...</p>
+    </div>
+  } @else {
+    <p class="text-gray-500 dark:text-gray-400 text-sm">
+      Edit the text blocks shown in the "Our Story" section on the home page.
+      Tick <strong>Show as bullet point</strong> to display a check-circle icon alongside an item.
+    </p>
+
+    <formly-form [form]="form" [model]="model()" [fields]="fields" (modelChange)="onModelChange($event)" />
+
+    <div class="space-y-4 mt-4">
+      @for (item of model().items; track $index) {
+        <div class="border border-gray-100 dark:border-slate-700/50 rounded-xl bg-white dark:bg-slate-800 shadow-xs transition-all duration-300 overflow-hidden">
+          <div class="flex items-center justify-between p-4 cursor-pointer select-none bg-gray-50/50 dark:bg-slate-800/50 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors" (click)="toggleExpand($index)">
+            <span class="font-semibold text-sm">{{ item.description ? (item.description.length > 60 ? (item.description | slice:0:60) + '…' : item.description) : 'Item ' + ($index + 1) }}</span>
+            <div class="flex items-center gap-1.5">
+              <button class="btn-outline-secondary btn-sm p-1.5" (click)="moveUp($index); $event.stopPropagation()" [disabled]="$index === 0" title="Move up">
+                <app-icon icon="chevron-up" class="w-3.5 h-3.5 flex items-center justify-center" />
+              </button>
+              <button class="btn-outline-secondary btn-sm p-1.5" (click)="moveDown($index); $event.stopPropagation()" [disabled]="$index === model().items.length - 1" title="Move down">
+                <app-icon icon="chevron-down" class="w-3.5 h-3.5 flex items-center justify-center" />
+              </button>
+              <button class="btn-danger btn-sm p-1.5" (click)="remove($index); $event.stopPropagation()" title="Remove">
+                <app-icon icon="trash" class="w-3.5 h-3.5 flex items-center justify-center" />
+              </button>
+              <span class="inline-block transition-transform duration-200 ml-1 text-gray-400" [class.rotate-180]="activeIndex() === $index"><app-icon icon="chevron-down" /></span>
+            </div>
+          </div>
+
+          @if (activeIndex() === $index) {
+            <div class="p-5 border-t border-gray-100 dark:border-slate-700/50 space-y-4">
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Description <span class="text-red-500">*</span></label>
+                <textarea
+                  class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary resize-y transition-shadow"
+                  rows="3"
+                  maxlength="1000"
+                  placeholder="Enter paragraph text..."
+                  [value]="item.description"
+                  (input)="updateDescription($index, $any($event.target).value)"
+                ></textarea>
+                <p class="text-xs text-gray-400 mt-1 text-right">{{ item.description.length }}/1000</p>
+              </div>
+              <label class="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" class="w-4 h-4 accent-primary" [checked]="item.bullet" (change)="toggleBullet($index)" />
+                <span class="text-sm text-gray-700 dark:text-gray-300">Show as bullet point <span class="text-gray-500 dark:text-gray-400">(displays a check-circle icon)</span></span>
+              </label>
+            </div>
+          }
+        </div>
+      }
+
+      <div class="pt-2">
+        <button type="button" class="px-4 py-2.5 text-sm font-semibold rounded-lg text-primary hover:bg-primary/5 dark:hover:bg-primary/10 border border-dashed border-primary/30 flex items-center justify-center gap-2 w-full transition-all cursor-pointer" (click)="add()">
+          <app-icon icon="plus-circle" /> Add Item
+        </button>
+      </div>
+    </div>
+  }
+</div>
+<div class="card-footer flex justify-between items-center bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 px-5 py-4">
+  <button class="btn-outline-secondary btn-sm" (click)="restoreDefaults()" title="Reset to built-in defaults" [disabled]="loading()">
+    <app-icon icon="refresh" /> Restore Defaults
+  </button>
+  <button class="btn-primary" [disabled]="saving() || hasEmpty() || !isDirty() || loading()" (click)="save()">
+    @if (saving()) {
+      <app-icon icon="spinner" iconAnimation="spin" />
+    } @else {
+      <app-icon icon="save" />
+    }
+    Save Changes
+  </button>
+</div>

@@ -1,175 +1,331 @@
-<div class="flex flex-col min-h-screen">
-<app-admin-navbar />
-<div class="flex-1 w-full max-w-screen-xl mx-auto p-4 md:p-8">
-  <h2 class="text-2xl font-bold mb-2 flex items-center gap-2">
-    <app-icon icon="calendar-alt" />
-    Events
-  </h2>
-  <p class="text-gray-500 text-sm mb-6">Manage the events page slider and event listings.</p>
-  <hr class="border-gray-200 mb-6">
+<div class="flex flex-col min-h-screen bg-gray-50 dark:bg-slate-900">
+  <app-admin-navbar />
 
-  @if (loading()) {
-    <div class="flex flex-col items-center justify-center gap-2 p-10 text-gray-500">
-      <app-icon icon="spinner" iconAnimation="spin" iconSize="2x" />
-      <p class="mt-2">Loading data...</p>
-    </div>
-  } @else {
-
-    <div class="card mb-4 shadow-sm">
-      <div class="card-header flex items-center justify-between cursor-pointer" (click)="toggleSection('slider')">
-        <h5 class="mb-0 font-semibold flex items-center gap-2">
-          <app-icon icon="image" /> Page Slider
-        </h5>
-        <span class="inline-block transition-transform duration-200" [class.rotate-180]="!collapsed()['slider']"><app-icon icon="chevron-down" /></span>
-      </div>
-      <div [class.hidden]="collapsed()['slider']">
-        <div class="card-body space-y-4">
-          @if (isDefault('slider')) {
-            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
-              <app-icon icon="info-circle" />
-              Showing built-in default slides. Edit any slide or add new ones, then save your changes.
-            </div>
-          }
-          <p class="text-gray-500 text-sm">Each slide shows a full-width background image with a title and text overlay at the top of the events page.</p>
-          @for (sf of sliderForms(); track $index) {
-            <div class="border border-gray-200 dark:border-slate-700 rounded p-4">
-              <div class="flex justify-between items-center mb-3">
-                <span class="text-sm font-semibold">Slide {{ $index + 1 }}</span>
-                <button class="btn-danger btn-sm" (click)="removeSliderHero($index)"><app-icon icon="trash" /></button>
-              </div>
-              <formly-form [form]="sf.form" [model]="sf.model()" [fields]="sf.fields" (modelChange)="onSliderHeroChange($index, sf, $event)" />
-            </div>
-          }
-          <button class="btn-success btn-sm" [disabled]="sliderForms().length >= 3" (click)="addSliderHero()">
-            <app-icon icon="plus-circle" /> Add Slide
-          </button>
-          @if (sliderForms().length >= 3) {
-            <p class="text-xs text-amber-600 dark:text-amber-400">Maximum of 3 slides reached.</p>
-          }
-        </div>
-        <div class="card-footer flex flex-col items-center sm:flex-row sm:justify-between sm:items-center gap-2">
-          <button class="btn-outline-secondary btn-sm" (click)="restoreSlider()" title="Reset slides to built-in defaults">
-            <app-icon icon="refresh" /> Restore Defaults
-          </button>
-          <button class="btn-primary" [disabled]="isSaving('slider') || isSaveDisabled('slider')" (click)="saveSlider()">
-            @if (isSaving('slider')) { <app-icon icon="spinner" iconAnimation="spin" /> } @else { <app-icon icon="save" /> }
-            Save Changes
-          </button>
-        </div>
-      </div>
+  <div class="flex-1 w-full max-w-screen-xl mx-auto p-4 md:p-8">
+    <div class="mb-6">
+      <h2 class="text-2xl md:text-3xl font-bold flex items-center gap-2.5 text-gray-900 dark:text-white">
+        <app-icon icon="calendar-days" class="text-primary" />
+        Events Editor
+      </h2>
+      <p class="text-gray-500 dark:text-gray-400 text-sm mt-1.5">Manage the events page slider and event listings with a modern, split tab interface.</p>
     </div>
 
-    <div class="card mb-4 shadow-sm">
-      <div class="card-header flex items-center gap-2">
-        <app-icon icon="calendar-days" />
-        <h5 class="mb-0 font-semibold">Event Listings</h5>
+    @if (loading()) {
+      <div class="flex flex-col items-center justify-center gap-3 py-10 text-gray-500 dark:text-gray-400">
+        <app-icon icon="spinner" iconAnimation="spin" iconSize="2x" class="text-primary" />
+        <p class="text-sm font-medium">Loading data...</p>
       </div>
-      <div class="card-body">
-        @for (event of eventData().events; track $index) {
-          <div class="card mb-3 shadow-sm">
-            <div class="card-header flex justify-between items-center cursor-pointer" (click)="toggleCollapsed($index)">
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="inline-block transition-transform duration-200" [class.rotate-180]="!collapsedIndices.has($index)"><app-icon icon="chevron-down" /></span>
-                <h5 class="mb-0 font-semibold">
-                  {{ eventForm()[$index].model['title'] || 'Event #' + ($index + 1) }}
-                </h5>
-                @if (isEventFinished(event.endDate)) {
-                  <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
-                    {{ getEventTimeoutText(event.endDate) }}
-                  </span>
-                }
-              </div>
-              <div class="flex items-center gap-2">
-                @if (event.id && eventForm()[$index].model['id']) {
-                  <button class="btn-outline-secondary btn-sm flex items-center gap-1" (click)="$event.stopPropagation(); copyDirectLink(eventForm()[$index].model['id'])">
-                    <app-icon icon="link" /> Direct Link
-                  </button>
-                }
-                <button class="btn-danger btn-sm" (click)="$event.stopPropagation(); removeEvent(event.id)">
-                  <app-icon icon="trash" />
-                </button>
-              </div>
-            </div>
-            <div [class.hidden]="collapsedIndices.has($index)">
-              <div class="card-body">
-                <formly-form [form]="eventForm()[$index].form" [model]="eventForm()[$index].model" [fields]="eventForm()[$index].fields" />
-
-                @if (event.actionType === 'contact' && event.id) {
-                  <hr class="my-6 border-gray-200 dark:border-slate-700">
-                  <div class="flex justify-between items-center mb-4">
-                    <h6 class="font-semibold m-0 flex items-center gap-2">
-                      <app-icon icon="users" /> Registrations
-                    </h6>
-                    <button class="btn-outline-primary btn-sm" (click)="loadRegistrations(event.id)">
-                      <app-icon icon="refresh" /> Refresh List
-                    </button>
-                  </div>
-
-                  @if (registrations()[event.id]) {
-                    @if (registrations()[event.id].length === 0) {
-                      <p class="text-sm text-gray-500 italic">No registrations found for this event.</p>
-                    } @else {
-                      <div class="overflow-x-auto rounded border border-gray-200 dark:border-slate-700">
-                        <table class="w-full text-sm text-left">
-                          <thead class="bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-gray-300">
-                            <tr>
-                              <th class="px-4 py-2 border-b">Date</th>
-                              <th class="px-4 py-2 border-b">Status</th>
-                              <th class="px-4 py-2 border-b">Details</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            @for (reg of registrations()[event.id]; track reg['id']) {
-                              <tr class="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-slate-800/50">
-                                <td class="px-4 py-3 whitespace-nowrap">{{ $any(reg['createdAt']) | date:'short' }}</td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                  <span class="px-2 py-1 text-xs rounded-full" 
-                                    [class.bg-green-100]="reg['status'] === 'completed'"
-                                    [class.text-green-800]="reg['status'] === 'completed'"
-                                    [class.bg-amber-100]="reg['status'] === 'pending_payment'"
-                                    [class.text-amber-800]="reg['status'] === 'pending_payment'">
-                                    {{ reg['status'] === 'completed' ? 'Completed' : 'Pending Payment' }}
-                                  </span>
-                                </td>
-                                <td class="px-4 py-3">
-                                  <div class="flex flex-col gap-1">
-                                    @for (field of $any(reg['formData']) | keyvalue; track field.key) {
-                                      <div class="text-xs">
-                                        <span class="font-semibold text-gray-600 dark:text-gray-400">{{ getFieldLabel(event, field.key) }}:</span> 
-                                        {{ field.value }}
-                                      </div>
-                                    }
-                                  </div>
-                                </td>
-                              </tr>
-                            }
-                          </tbody>
-                        </table>
-                      </div>
-                    }
-                  } @else {
-                    <p class="text-sm text-gray-500">Click refresh to load registrations.</p>
-                  }
-                }
-              </div>
-            </div>
-          </div>
-        }
-        <div class="flex flex-col items-center sm:flex-row sm:justify-between gap-2 mt-4">
-          <button class="btn-success" (click)="addNewEvent()">
-            <app-icon icon="plus-circle" /> Add Event
-          </button>
-          @if (eventData().events.length > 0) {
-            <button class="btn-primary" (click)="saveEventData()" [disabled]="loading() || someFormInvalid() || !someFormDirty()">
-              <app-icon icon="save" /> Save Changes
+    } @else {
+      <div class="flex flex-col md:flex-row gap-6 items-start">
+        <div class="w-full md:w-64 flex-shrink-0 flex flex-nowrap md:flex-col gap-2 overflow-x-auto md:overflow-visible snap-x md:snap-none pb-3 md:pb-0 px-4 md:mx-0 md:px-0 scrollbar-none">
+          @for (tab of tabs; track $index) {
+            <button type="button"
+              class="flex-shrink-0 px-4 py-2.5 rounded-full md:rounded-lg text-left flex items-center justify-center md:justify-start gap-3 transition-all duration-200 snap-start font-medium text-sm border md:border-0 cursor-pointer"
+              [class.bg-primary]="activeTab() === tab.id"
+              [class.text-white]="activeTab() === tab.id"
+              [class.border-primary]="activeTab() === tab.id"
+              [class.shadow-md]="activeTab() === tab.id"
+              [class.shadow-primary/20]="activeTab() === tab.id"
+              [class.bg-white]="activeTab() !== tab.id"
+              [class.dark:bg-slate-800]="activeTab() !== tab.id"
+              [class.text-gray-600]="activeTab() !== tab.id"
+              [class.dark:text-gray-300]="activeTab() !== tab.id"
+              [class.border-gray-200]="activeTab() !== tab.id"
+              [class.dark:border-slate-700]="activeTab() !== tab.id"
+              [class.hover:bg-gray-50]="activeTab() !== tab.id"
+              [class.dark:hover:bg-slate-700/50]="activeTab() !== tab.id"
+              (click)="setActiveTab(tab.id)">
+              <app-icon [icon]="tab.icon" [class.text-white]="activeTab() === tab.id" [class.text-gray-400]="activeTab() !== tab.id" class="w-4 h-4" />
+              <span class="whitespace-nowrap">{{ tab.label }}</span>
             </button>
           }
         </div>
+
+        <div class="flex-1 w-full min-w-0">
+          <div class="card bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col transition-all duration-300">
+            @switch (activeTab()) {
+              @case ('slider') {
+                <div class="card-header bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-700/80 px-5 py-4">
+                  <h5 class="mb-0 font-semibold flex items-center gap-2 text-primary dark:text-white text-base">
+                    <app-icon icon="image" /> Page Slider
+                  </h5>
+                </div>
+                
+                <div class="card-body p-5 space-y-4">
+                  @if (isDefault('slider')) {
+                    <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
+                      <app-icon icon="info-circle" />
+                      Showing built-in default slides. Edit any slide or add new ones, then save your changes.
+                    </div>
+                  }
+                  <p class="text-gray-500 dark:text-gray-400 text-sm">Each slide shows a full-width background image with a title and text overlay at the top of the events page. Max of 3 slides.</p>
+                  
+                  <div class="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-gray-100 dark:border-slate-700/50">
+                    @for (sf of sliderForms(); track $index) {
+                      <div class="flex items-stretch gap-0 border rounded-lg transition-all duration-200 overflow-hidden shadow-xs cursor-pointer"
+                           [class.bg-primary]="activeSlideIndex() === $index"
+                           [class.border-primary]="activeSlideIndex() === $index"
+                           [class.shadow-primary/20]="activeSlideIndex() === $index"
+                           [class.bg-gray-50]="activeSlideIndex() !== $index"
+                           [class.dark:bg-slate-900]="activeSlideIndex() !== $index"
+                           [class.border-gray-200]="activeSlideIndex() !== $index"
+                           [class.dark:border-slate-700]="activeSlideIndex() !== $index"
+                           [class.text-white]="activeSlideIndex() === $index"
+                           [class.text-gray-600]="activeSlideIndex() !== $index"
+                           [class.dark:text-gray-300]="activeSlideIndex() !== $index"
+                           (click)="activeSlideIndex.set($index)">
+
+                        <button type="button" class="px-3 py-2 text-xs font-semibold flex items-center gap-2 outline-none">
+                          <app-icon icon="image" class="w-3.5 h-3.5" />
+                          <span>Slide {{ $index + 1 }}</span>
+                        </button>
+
+                        <button type="button"
+                          class="w-10 flex items-center justify-center outline-none transition-colors border-l"
+                          [class.border-primary-600]="activeSlideIndex() === $index"
+                          [class.border-gray-200]="activeSlideIndex() !== $index"
+                          [class.dark:border-slate-700]="activeSlideIndex() !== $index"
+                          [class.hover:bg-red-500]="activeSlideIndex() === $index"
+                          [class.hover:text-white]="activeSlideIndex() === $index"
+                          [class.hover:text-red-500]="activeSlideIndex() !== $index"
+                          title="Remove slide"
+                          (click)="removeSliderHero($index); $event.stopPropagation()">
+                          <app-icon icon="trash" />
+                        </button>
+                      </div>
+                    }
+
+                    @if (sliderForms().length < 3) {
+                      <button type="button"
+                        class="px-3 py-2 text-xs font-semibold rounded-lg text-primary hover:bg-primary/5 dark:hover:bg-primary/10 border border-dashed border-primary/30 flex items-center gap-1.5 transition-all cursor-pointer"
+                        (click)="addSliderHero()">
+                        <app-icon icon="plus-circle" class="w-4 h-4" />
+                        <span>Add Slide</span>
+                      </button>
+                    }
+                  </div>
+                  
+                  @if (sliderForms()[activeSlideIndex()]; as sf) {
+                    <div class="border border-gray-100 dark:border-slate-700/50 rounded-xl p-5 bg-white dark:bg-slate-800 shadow-xs transition-all duration-300">
+                      <formly-form [form]="sf.form" [model]="sf.model()" [fields]="sf.fields" (modelChange)="onSliderHeroChange(activeSlideIndex(), sf, $event)" />
+                    </div>
+                  } @else {
+                    <div class="text-center p-8 text-gray-400 dark:text-gray-500 border border-dashed border-gray-200 dark:border-slate-700 rounded-xl">
+                      <app-icon icon="image" iconSize="2x" class="opacity-40 mb-2 block mx-auto" />
+                      No slides configured. Click "Add Slide" above to create one.
+                    </div>
+                  }
+                </div>
+                
+                <div class="card-footer flex justify-between items-center bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 px-5 py-4">
+                  <button class="btn-outline-secondary btn-sm" (click)="restoreSlider()" title="Reset slides to built-in defaults">
+                    <app-icon icon="refresh" /> Restore Defaults
+                  </button>
+                  <button class="btn-primary" [disabled]="isSaving('slider') || isSaveDisabled('slider')" (click)="saveSlider()">
+                    @if (isSaving('slider')) {
+                      <app-icon icon="spinner" iconAnimation="spin" />
+                    } @else {
+                      <app-icon icon="save" />
+                    }
+                    Save Changes
+                  </button>
+                </div>
+              }
+
+              @case ('listings') {
+                <div class="card-header bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-700/80 px-5 py-4">
+                  <h5 class="mb-0 font-semibold flex items-center gap-2 text-primary dark:text-white text-base">
+                    <app-icon icon="calendar-days" /> Event Listings
+                  </h5>
+                </div>
+                
+                <div class="card-body p-5 space-y-4">
+                  <p class="text-gray-500 dark:text-gray-400 text-sm">Add, remove, and update upcoming events. View registrations in the dedicated tab.</p>
+                  
+                  @for (event of eventData().events; track $index) {
+                    <div class="border border-gray-100 dark:border-slate-700/50 rounded-xl bg-white dark:bg-slate-800 shadow-xs transition-all duration-300 overflow-hidden mb-4">
+                      <div class="flex items-center justify-between p-4 cursor-pointer select-none bg-gray-50/50 dark:bg-slate-800/50 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors" (click)="toggleCollapsed($index)">
+                        <div class="flex items-center gap-2 flex-wrap text-sm">
+                          <span class="inline-block transition-transform duration-200 text-gray-400" [class.rotate-180]="!collapsedIndices.has($index)">
+                            <app-icon icon="chevron-down" />
+                          </span>
+                          <span class="font-semibold text-gray-800 dark:text-gray-200">
+                            {{ eventForm()[$index].model['title'] || 'Event #' + ($index + 1) }}
+                          </span>
+                          @if (isEventFinished(event.endDate)) {
+                            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 ml-2">
+                              {{ getEventTimeoutText(event.endDate) }}
+                            </span>
+                          }
+                        </div>
+                        <div class="flex items-center gap-2">
+                          @if (event.id && eventForm()[$index].model['id']) {
+                            <button class="btn-outline-secondary btn-sm flex items-center gap-1 py-1" (click)="$event.stopPropagation(); copyDirectLink(eventForm()[$index].model['id'])">
+                              <app-icon icon="link" /> Direct Link
+                            </button>
+                          }
+                          <button class="btn-danger btn-sm p-1.5" (click)="$event.stopPropagation(); removeEvent(event.id)">
+                            <app-icon icon="trash" class="w-3.5 h-3.5 flex items-center justify-center" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div [class.hidden]="collapsedIndices.has($index)" class="p-5 border-t border-gray-100 dark:border-slate-700/50">
+                        <formly-form [form]="eventForm()[$index].form" [model]="eventForm()[$index].model" [fields]="eventForm()[$index].fields" />
+                      </div>
+                    </div>
+                  }
+                  
+                  <div class="pt-2">
+                    <button class="px-4 py-2.5 text-sm font-semibold rounded-lg text-primary hover:bg-primary/5 dark:hover:bg-primary/10 border border-dashed border-primary/30 flex items-center justify-center gap-2 w-full transition-all cursor-pointer" (click)="addNewEvent()">
+                      <app-icon icon="plus-circle" /> Add Event
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="card-footer flex justify-end items-center bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 px-5 py-4">
+                  @if (eventData().events.length > 0) {
+                    <button class="btn-primary" (click)="saveEventData()" [disabled]="loading() || someFormInvalid() || !someFormDirty()">
+                      @if (loading()) {
+                        <app-icon icon="spinner" iconAnimation="spin" />
+                      } @else {
+                        <app-icon icon="save" />
+                      }
+                      Save Changes
+                    </button>
+                  }
+                </div>
+              }
+
+              @case ('registrations') {
+                <div class="card-header bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-700/80 px-5 py-4">
+                  <h5 class="mb-0 font-semibold flex items-center gap-2 text-primary dark:text-white text-base">
+                    <app-icon icon="users" /> Registrations Manager
+                  </h5>
+                </div>
+                
+                <div class="card-body p-5 space-y-6">
+                  <!-- Control Panel -->
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-100 dark:border-slate-700/50">
+                    <div>
+                      <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Select Event</label>
+                      <select class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                              [ngModel]="selectedRegEventId()"
+                              (ngModelChange)="onRegEventSelect($event)">
+                        <option value="" disabled>-- Select an event --</option>
+                        @for (event of contactEvents; track event.id) {
+                          <option [value]="event.id">{{ event.title }}</option>
+                        }
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Payment Status</label>
+                      <select class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                              [ngModel]="regStatusFilter()"
+                              (ngModelChange)="regStatusFilter.set($event)">
+                        <option value="all">All Registrations</option>
+                        <option value="completed">Completed (Paid)</option>
+                        <option value="pending_payment">Pending Payment</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Search Details</label>
+                      <div class="relative">
+                        <input type="text" 
+                               class="w-full border border-gray-300 dark:border-slate-600 rounded pl-9 pr-3 py-2 text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                               placeholder="Search name, email, details..."
+                               [ngModel]="regSearchQuery()"
+                               (input)="regSearchQuery.set($any($event.target).value)">
+                        <span class="absolute left-3 top-2.5 text-gray-400">
+                          <app-icon icon="search" class="w-3.5 h-3.5" />
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Table / Results -->
+                  @if (!selectedRegEventId()) {
+                    <div class="text-center p-8 text-gray-400 dark:text-gray-500 border border-dashed border-gray-200 dark:border-slate-700 rounded-xl">
+                      <app-icon icon="users" iconSize="2x" class="opacity-40 mb-2 block mx-auto" />
+                      Please select an event from the dropdown to view registrations.
+                    </div>
+                  } @else {
+                    @if (loadingRegs()) {
+                      <div class="flex flex-col items-center justify-center gap-2 py-12 text-gray-500">
+                        <app-icon icon="spinner" iconAnimation="spin" iconSize="2x" class="text-primary" />
+                        <p class="text-sm font-medium">Loading registrations...</p>
+                      </div>
+                    } @else {
+                      @if (getRegsForSelectedEvent().length === 0) {
+                        <p class="text-sm text-gray-500 italic text-center py-6">No registrations found for this event.</p>
+                      } @else if (filteredRegistrations().length === 0) {
+                        <p class="text-sm text-gray-500 italic text-center py-6">No registrations match your search or filter criteria.</p>
+                      } @else {
+                        <div class="flex justify-between items-center mb-2">
+                          <span class="text-xs text-gray-500 font-medium">Showing {{ filteredRegistrations().length }} of {{ getRegsForSelectedEvent().length }} registrations</span>
+                          <button class="btn-outline-primary btn-sm flex items-center gap-1.5 py-1 px-2.5 text-xs font-semibold rounded-lg" (click)="refreshSelectedRegistrations()">
+                            <app-icon icon="refresh" /> Refresh
+                          </button>
+                        </div>
+                        
+                        <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-700 shadow-xs bg-white dark:bg-slate-900">
+                          <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-50 dark:bg-slate-800/80 text-gray-700 dark:text-gray-300">
+                              <tr>
+                                <th class="px-5 py-3 border-b border-gray-200 dark:border-slate-700 font-semibold text-xs uppercase tracking-wider">Date</th>
+                                <th class="px-5 py-3 border-b border-gray-200 dark:border-slate-700 font-semibold text-xs uppercase tracking-wider">Status</th>
+                                <th class="px-5 py-3 border-b border-gray-200 dark:border-slate-700 font-semibold text-xs uppercase tracking-wider">Details</th>
+                              </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 dark:divide-slate-800">
+                              @for (reg of filteredRegistrations(); track reg['id']) {
+                                <tr class="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
+                                  <td class="px-5 py-4 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
+                                    {{ $any(reg['createdAt']) | date:'medium' }}
+                                  </td>
+                                  <td class="px-5 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full" 
+                                      [class.bg-green-100]="reg['status'] === 'completed'"
+                                      [class.text-green-800]="reg['status'] === 'completed'"
+                                      [class.dark:bg-green-900/30]="reg['status'] === 'completed'"
+                                      [class.dark:text-green-300]="reg['status'] === 'completed'"
+                                      [class.bg-amber-100]="reg['status'] === 'pending_payment'"
+                                      [class.text-amber-800]="reg['status'] === 'pending_payment'"
+                                      [class.dark:bg-amber-900/30]="reg['status'] === 'pending_payment'"
+                                      [class.dark:text-amber-300]="reg['status'] === 'pending_payment'">
+                                      <span class="w-1.5 h-1.5 rounded-full" 
+                                            [class.bg-green-600]="reg['status'] === 'completed'" 
+                                            [class.bg-amber-500]="reg['status'] === 'pending_payment'"></span>
+                                      {{ reg['status'] === 'completed' ? 'Completed' : 'Pending' }}
+                                    </span>
+                                  </td>
+                                  <td class="px-5 py-4 font-normal">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1 text-xs">
+                                      @for (field of $any(reg['formData']) | keyvalue; track field.key) {
+                                        <div class="flex items-start gap-1 py-0.5">
+                                          <span class="font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap min-w-[100px]">{{ getSelectedEventFieldLabel(field.key) }}:</span> 
+                                          <span class="text-gray-800 dark:text-gray-200 break-words">{{ field.value }}</span>
+                                        </div>
+                                      }
+                                    </div>
+                                  </td>
+                                </tr>
+                              }
+                            </tbody>
+                          </table>
+                        </div>
+                      }
+                    }
+                  }
+                </div>
+              }
+            }
+          </div>
+        </div>
       </div>
-    </div>
-
-  }
+    }
+  </div>
+  <app-admin-footer />
 </div>
-<app-admin-footer />
-</div>
-

@@ -14,7 +14,7 @@ import { IconComponent } from "./icon/icon.component"
   styleUrl: "./app.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    "(window:scroll)": "onScroll()"
+    "(window:scroll)": "onScroll( )"
   }
 } )
 export class AppComponent implements OnInit {

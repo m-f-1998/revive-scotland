@@ -7,7 +7,7 @@
   @if (props.placeholder) {
     <option value="" disabled>{{ props.placeholder }}</option>
   }
-  @for (opt of resolvedOptions(); track opt.value) {
+  @for (opt of resolvedOptions( ); track opt.value) {
     <option [value]="opt.value" [disabled]="opt.disabled ?? false">{{ opt.label }}</option>
   }
 </select>

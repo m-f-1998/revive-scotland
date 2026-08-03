@@ -63,12 +63,12 @@ export const router: FastifyPluginAsync = async app => {
       // Fallback logic for legacy `default` document migration
       const legacyDoc = snapshot.docs.find ( doc => doc.id === "default" )
       if ( legacyDoc && legacyDoc.exists ) {
-        const legacyData = legacyDoc.data () as { events?: Event[] }
+        const legacyData = legacyDoc.data ( ) as { events?: Event[] }
         if ( legacyData.events && Array.isArray ( legacyData.events ) ) {
           events = legacyData.events
         }
       } else {
-        events = snapshot.docs.map ( doc => doc.data () as Event )
+        events = snapshot.docs.map ( doc => doc.data ( ) as Event )
       }
 
       const eventsList = filterActiveAndRecentEvents ( events )
@@ -98,7 +98,7 @@ export const router: FastifyPluginAsync = async app => {
           eventTitle: data["eventTitle"],
           formData: data["formData"],
           status: data["status"],
-          createdAt: data["createdAt"]?.toDate ?. ()?.toISOString () || null
+          createdAt: data["createdAt"]?.toDate ?. ( )?.toISOString ( ) || null
         }
       } )
 
@@ -143,7 +143,7 @@ export const router: FastifyPluginAsync = async app => {
     try {
       for ( const event of events ) {
         const model: Event = {
-          id: event.id || `event-${Date.now ()}-${Math.floor ( Math.random () * 1000 )}`,
+          id: event.id || `event-${Date.now ( )}-${Math.floor ( Math.random ( ) * 1000 )}`,
           title: String ( event.title || "" ).substring ( 0, 100 ),
           description: String ( event.description || "" ).substring ( 0, 500 ),
           location: String ( event.location || "" ).substring ( 0, 200 ),
@@ -152,7 +152,7 @@ export const router: FastifyPluginAsync = async app => {
           actionType: event.actionType === "contact" ? "contact" : "webpage"
         }
 
-        if ( event.imageUrl ) model.imageUrl = String ( event.imageUrl ).trim ()
+        if ( event.imageUrl ) model.imageUrl = String ( event.imageUrl ).trim ( )
         if ( event.startTime ) model.startTime = event.startTime
         if ( event.endTime ) model.endTime = event.endTime
         if ( event.donationRequired ) model.donationRequired = event.donationRequired
@@ -205,13 +205,13 @@ export const router: FastifyPluginAsync = async app => {
       const batch = db.batch ( )
 
       // Handle legacy default doc if it exists
-      const defaultDoc = await eventsCollection.doc ( "default" ).get ()
+      const defaultDoc = await eventsCollection.doc ( "default" ).get ( )
       if ( defaultDoc.exists ) {
         batch.delete ( defaultDoc.ref )
       }
 
       // Read current events to find ones to delete
-      const currentSnap = await eventsCollection.get ()
+      const currentSnap = await eventsCollection.get ( )
       const currentIds = currentSnap.docs.filter ( d => d.id !== "default" ).map ( d => d.id )
       const incomingIds = sanitizedEvents.map ( e => e.id )
 
@@ -226,7 +226,7 @@ export const router: FastifyPluginAsync = async app => {
         batch.set ( eventsCollection.doc ( event.id ), event )
       }
 
-      await batch.commit ()
+      await batch.commit ( )
 
       eventsCache = { events: filterActiveAndRecentEvents ( sanitizedEvents ) }
       cacheTime = Date.now ( )
@@ -238,7 +238,7 @@ export const router: FastifyPluginAsync = async app => {
 
       await Promise.all ( snapshot.docs.map ( async doc => {
         const id = doc.id
-        const expectedUrlEnding = `/api/public/s/${id}`
+        const expectedUrlEnding = `/api/share/${id}`
         const isInHeroes = sanitizedEvents.some ( hero => hero.imageUrl?.endsWith ( expectedUrlEnding ) )
         const isInEvents = heroesSnapshot.some ( hero => hero.url?.endsWith ( expectedUrlEnding ) )
 

@@ -4,7 +4,7 @@ import { NavigationEnd, Router } from "@angular/router"
 import { AuthService } from "../../services/auth.service"
 import { IconComponent } from "../../icon/icon.component"
 
-const CONTENT_ROUTES = [ "/admin/homeEditor", "/admin/eventEditor", "/admin/testimonialsEditor", "/admin/contactEditor", "/admin/storyEditor", "/admin/galleryEditor", "/admin/resourcesEditor" ]
+const CONTENT_ROUTES = [ "/admin/homeEditor", "/admin/eventEditor", "/admin/galleryEditor", "/admin/liturgyEditor" ]
 
 @Component ( {
   selector: "app-admin-navbar",

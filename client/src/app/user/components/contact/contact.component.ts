@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
-import { IconComponent } from "@revive/src/app/icon/icon.component"
-import { ApiService } from "@revive/src/app/services/api.service"
+import { IconComponent } from "@app/icon/icon.component"
+import { ApiService } from "@app/services/api.service"
 
 interface ContactDetails {
   phone: string

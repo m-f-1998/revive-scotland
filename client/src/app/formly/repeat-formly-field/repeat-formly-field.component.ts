@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal, WritableSignal } from "@angular/core"
-import { ModalService } from "@revive/src/app/services/modal.service"
+import { ModalService } from "@app/services/modal.service"
 import { FormlyFieldConfig } from "@ngx-formly/core"
 import { InputDialogComponent } from "../input-dialog/input-dialog.component"
 import { FormlyService } from "../../services/formly.service"

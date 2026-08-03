@@ -92,8 +92,8 @@ export const router: FastifyPluginAsync = async app => {
       <script nonce="${nonce}" async src="https://www.googletagmanager.com/gtag/js?id=${gaId}"></script>
       <script nonce="${nonce}">
         window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
+        function gtag( ){dataLayer.push(arguments);}
+        gtag('js', new Date( ));
         gtag('config', '${gaId}');
       </script>`
 

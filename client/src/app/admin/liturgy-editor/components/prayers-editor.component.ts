@@ -118,7 +118,6 @@ export class PrayersEditorComponent {
   public readonly save = output<void> ( )
 
   public expandedPrayer: WritableSignal<number | null> = signal ( null )
-  public sectionCollapsed: WritableSignal<boolean> = signal ( false )
 
   public readonly categories = CATEGORIES
   public readonly prayerTypes = PRAYER_TYPES
@@ -127,7 +126,6 @@ export class PrayersEditorComponent {
     const p = [ ...this.prayers, { id: generateId ( ), name: "", category: "our-lord" as const, type: "devotional" as const, text: "" } ]
     this.prayersChange.emit ( p )
     this.expandedPrayer.set ( p.length - 1 )
-    this.sectionCollapsed.set ( false )
   }
 
   public removePrayer ( index: number ): void {
@@ -162,7 +160,6 @@ export class PrayersEditorComponent {
   public restoreDefaultPrayers ( ): void {
     this.prayersChange.emit ( [ ...DEFAULT_PRAYERS ] )
     this.expandedPrayer.set ( null )
-    this.sectionCollapsed.set ( false )
   }
 
   public prayersSomeEmpty ( ): boolean {

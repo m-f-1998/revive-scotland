@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
 import { FieldType } from "@ngx-formly/core"
 import { FileExplorerComponent } from "../../admin/file-explorer/file-explorer.component"
-import { ModalService } from "@revive/src/app/services/modal.service"
+import { ModalService } from "@app/services/modal.service"
 import { IconComponent } from "../../icon/icon.component"
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop"
+import { takeUntilDestroyed, toObservable } from "@angular/core/rxjs-interop"
 import { DestroyRef } from "@angular/core"
 import { ApiService } from "../../services/api.service"
 import { AuthService } from "../../services/auth.service"
@@ -25,6 +25,17 @@ export class ImagePickerComponent extends FieldType implements OnInit {
   private readonly destroyRef: DestroyRef = inject ( DestroyRef )
   private readonly apiSvc: ApiService = inject ( ApiService )
   private readonly authSvc: AuthService = inject ( AuthService )
+
+  public constructor ( ) {
+    super ( )
+    toObservable ( this.authSvc.currentUser )
+      .pipe ( takeUntilDestroyed ( this.destroyRef ) )
+      .subscribe ( user => {
+        if ( user ) {
+          this.updateDisplayFilename ( this.formControl?.value ?? "" )
+        }
+      } )
+  }
 
   public get previewUrl ( ): string {
     const val = this.value ( )

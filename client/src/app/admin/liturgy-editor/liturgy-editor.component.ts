@@ -10,18 +10,25 @@ import { Prayer, PrayersEditorComponent } from "./components/prayers-editor.comp
 import { Reflection, ReflectionsEditorComponent } from "./components/reflections-editor.component"
 
 @Component ( {
-  selector: "app-admin-resources-editor",
+  selector: "app-admin-liturgy-editor",
   imports: [ AdminNavbarComponent, AdminFooterComponent, IconComponent, PrayersEditorComponent, ReflectionsEditorComponent ],
-  templateUrl: "./resources-editor.component.html",
+  templateUrl: "./liturgy-editor.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
-export class ResourcesEditorComponent implements OnInit {
+export class LiturgyEditorComponent implements OnInit {
   public loading: WritableSignal<boolean> = signal ( true )
   public savingPrayers: WritableSignal<boolean> = signal ( false )
   public savingReflections: WritableSignal<boolean> = signal ( false )
 
   public prayers: WritableSignal<Prayer [ ]> = signal ( [ ] )
   public reflections: WritableSignal<Reflection [ ]> = signal ( [ ] )
+
+  public activeTab: WritableSignal<"prayers" | "reflections"> = signal ( "prayers" )
+
+  public readonly tabs = [
+    { id: "prayers" as const, label: "Prayers", icon: "praying-hands" as const },
+    { id: "reflections" as const, label: "Video Reflections", icon: "lightbulb" as const }
+  ]
 
   private readonly apiSvc: ApiService = inject ( ApiService )
   private readonly authSvc: AuthService = inject ( AuthService )
@@ -39,6 +46,10 @@ export class ResourcesEditorComponent implements OnInit {
     } ).catch ( ( ) => {
       this.toastrSvc.error ( "Failed to load resources." )
     } ).finally ( ( ) => this.loading.set ( false ) )
+  }
+
+  public setActiveTab ( tab: "prayers" | "reflections" ): void {
+    this.activeTab.set ( tab )
   }
 
   public onPrayersChange ( updated: Prayer [ ] ): void {

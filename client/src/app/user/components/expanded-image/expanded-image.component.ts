@@ -1,7 +1,7 @@
 
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal, WritableSignal } from "@angular/core"
 import { DialogRef } from "@angular/cdk/dialog"
-import { IconComponent } from "@revive/src/app/icon/icon.component"
+import { IconComponent } from "@app/icon/icon.component"
 
 export type LightboxItem = { url: string; type: "image" | "video" }
 
@@ -14,8 +14,8 @@ export type LightboxItem = { url: string; type: "image" | "video" }
   styleUrl: "./expanded-image.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    "(document:keydown.arrowleft)": "prevItem()",
-    "(document:keydown.arrowright)": "nextItem()"
+    "(document:keydown.arrowleft)": "prevItem( )",
+    "(document:keydown.arrowright)": "nextItem( )"
   }
 } )
 export class ExpandedImageComponent {

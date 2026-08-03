@@ -1,0 +1,28 @@
+<div class="card-header bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-700/80 px-5 py-4">
+  <h5 class="mb-0 font-semibold flex items-center gap-2 text-primary dark:text-white text-base">
+    <app-icon icon="praying-hands" /> Adoration Missions
+  </h5>
+</div>
+<div class="card-body p-5 flex-1">
+  @if (loading()) {
+    <div class="flex flex-col items-center justify-center gap-3 py-10 text-gray-500 dark:text-gray-400">
+      <app-icon icon="spinner" iconAnimation="spin" iconSize="2x" class="text-primary" />
+      <p class="text-sm font-medium">Loading...</p>
+    </div>
+  } @else {
+    <formly-form [form]="form" [model]="model()" [fields]="fields" (modelChange)="onModelChange($event)" />
+  }
+</div>
+<div class="card-footer flex justify-between items-center bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 px-5 py-4">
+  <button class="btn-outline-secondary btn-sm" (click)="restoreDefaults()" title="Reset to built-in defaults" [disabled]="loading()">
+    <app-icon icon="refresh" /> Restore Defaults
+  </button>
+  <button class="btn-primary" [disabled]="saving() || form.invalid || !form.dirty || loading()" (click)="save()">
+    @if (saving()) {
+      <app-icon icon="spinner" iconAnimation="spin" />
+    } @else {
+      <app-icon icon="save" />
+    }
+    Save Changes
+  </button>
+</div>

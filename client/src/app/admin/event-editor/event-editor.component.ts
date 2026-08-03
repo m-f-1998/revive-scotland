@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal, computed } from "@angular/core"
 import { AdminNavbarComponent } from "../navbar/navbar.component"
 import { Event } from "../../interfaces/event.interface"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
-import { FormGroup } from "@angular/forms"
+import { FormGroup, FormsModule } from "@angular/forms"
 import { ApiService } from "../../services/api.service"
 import { FormlyService } from "../../services/formly.service"
 import { HttpErrorResponse, HttpHeaders } from "@angular/common/http"
@@ -34,6 +34,8 @@ const DEFAULT_EVENTS_HEROES = [
   }
 ]
 
+export type EventTab = "slider" | "listings" | "registrations"
+
 @Component ( {
   selector: "app-admin-event-editor",
   imports: [
@@ -42,7 +44,8 @@ const DEFAULT_EVENTS_HEROES = [
     FormlyForm,
     AdminFooterComponent,
     DatePipe,
-    KeyValuePipe
+    KeyValuePipe,
+    FormsModule
   ],
   templateUrl: "./event-editor.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -54,8 +57,16 @@ export class EventEditorComponent implements OnInit {
   public collapsedIndices: Set<number> = new Set ( )
   public eventsModified: WritableSignal<boolean> = signal ( false )
 
-  // Section collapse state — all start closed
-  public collapsed: WritableSignal<Record<string, boolean>> = signal ( { slider: true } )
+  public activeTab: WritableSignal<EventTab> = signal ( "slider" )
+  public activeSlideIndex: WritableSignal<number> = signal ( 0 )
+
+  public readonly tabs = [
+    { id: "slider" as const, label: "Page Slider", icon: "image" as const },
+    { id: "listings" as const, label: "Event Listings", icon: "calendar-days" as const },
+    { id: "registrations" as const, label: "Registrations", icon: "users" as const }
+  ]
+
+  // Section state
   public saving: WritableSignal<Record<string, boolean>> = signal ( { } )
   public defaultSections: WritableSignal<Record<string, boolean>> = signal ( { } )
   public dirtyManual: WritableSignal<Record<string, boolean>> = signal ( { } )
@@ -63,18 +74,56 @@ export class EventEditorComponent implements OnInit {
   // Slider section state
   public sliderForms: WritableSignal<SlideFormEntry [ ]> = signal ( [ ] )
 
+  // Registrations state
   public registrations: WritableSignal<Record<string, Array<Record<string, unknown>>>> = signal ( { } )
+  public selectedRegEventId: WritableSignal<string> = signal ( "" )
+  public regStatusFilter: WritableSignal<"all" | "completed" | "pending_payment"> = signal ( "all" )
+  public regSearchQuery: WritableSignal<string> = signal ( "" )
+  public loadingRegs: WritableSignal<boolean> = signal ( false )
+
+  public filteredRegistrations = computed ( ( ) => {
+    const eventId = this.selectedRegEventId ( )
+    const regs = this.registrations ( ) [ eventId ] || [ ]
+    const status = this.regStatusFilter ( )
+    const query = this.regSearchQuery ( ).toLowerCase ( ).trim ( )
+
+    return regs.filter ( reg => {
+      // 1. Status Filter
+      if ( status !== "all" && reg [ "status" ] !== status ) {
+        return false
+      }
+
+      // 2. Search Filter
+      if ( query ) {
+        const formData = ( reg [ "formData" ] || { } ) as Record<string, unknown>
+        const stringifiedValues = Object.values ( formData ).map ( v => String ( v ).toLowerCase ( ) ).join ( " " )
+        const creationDate = String ( reg [ "createdAt" ] || "" ).toLowerCase ( )
+        const regStatus = String ( reg [ "status" ] || "" ).toLowerCase ( )
+        return stringifiedValues.includes ( query ) || creationDate.includes ( query ) || regStatus.includes ( query )
+      }
+
+      return true
+    } )
+  } )
 
   private readonly apiSvc: ApiService = inject ( ApiService )
   private readonly formlySvc: FormlyService = inject ( FormlyService )
   private readonly authSvc: AuthService = inject ( AuthService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
 
+  public get contactEvents ( ) {
+    return this.eventData ( ).events.filter ( e => e.actionType === "contact" )
+  }
+
   public ngOnInit ( ): void {
     Promise.all ( [
       this.loadEventData ( ),
       this.loadSlider ( )
     ] ).finally ( ( ) => this.loading.set ( false ) )
+  }
+
+  public setActiveTab ( tab: EventTab ): void {
+    this.activeTab.set ( tab )
   }
 
   public isDefault ( key: string ): boolean {
@@ -88,10 +137,6 @@ export class EventEditorComponent implements OnInit {
 
   public isSaving ( key: string ): boolean {
     return !!this.saving ( ) [ key ]
-  }
-
-  public toggleSection ( key: string ): void {
-    this.collapsed.update ( c => ( { ...c, [ key ]: !c [ key ] } ) )
   }
 
   public toggleCollapsed ( index: number ): void {
@@ -284,11 +329,16 @@ export class EventEditorComponent implements OnInit {
       } ),
       fields: this.getSliderFields ( )
     } ] )
+    this.activeSlideIndex.set ( this.sliderForms ( ).length - 1 )
   }
 
   public removeSliderHero ( index: number ): void {
     this.dirtyManual.update ( s => ( { ...s, slider: true } ) )
     this.sliderForms.update ( forms => forms.filter ( ( _, i ) => i !== index ) )
+    const len = this.sliderForms ( ).length
+    if ( this.activeSlideIndex ( ) >= len ) {
+      this.activeSlideIndex.set ( Math.max ( 0, len - 1 ) )
+    }
   }
 
   public onSliderHeroChange ( _index: number, entry: SlideFormEntry, value: Record<string, unknown> ): void {
@@ -303,6 +353,41 @@ export class EventEditorComponent implements OnInit {
     this.sliderForms.set ( this.buildSliderForms ( DEFAULT_EVENTS_HEROES ) )
     this.defaultSections.update ( s => ( { ...s, slider: true } ) )
     this.dirtyManual.update ( s => ( { ...s, slider: true } ) )
+    this.activeSlideIndex.set ( 0 )
+  }
+
+  public getRegsForSelectedEvent ( ): Array<Record<string, unknown>> {
+    const eventId = this.selectedRegEventId ( )
+    return this.registrations ( ) [ eventId ] || [ ]
+  }
+
+  public onRegEventSelect ( eventId: string ): void {
+    this.selectedRegEventId.set ( eventId )
+    if ( eventId ) {
+      this.loadingRegs.set ( true )
+      this.loadRegistrations ( eventId ).finally ( ( ) => this.loadingRegs.set ( false ) )
+    }
+  }
+
+  public refreshSelectedRegistrations ( ): void {
+    const eventId = this.selectedRegEventId ( )
+    if ( eventId ) {
+      this.loadingRegs.set ( true )
+      // Force reload by removing cache entry first
+      this.registrations.update ( r => {
+        const cloned = { ...r }
+        delete cloned [ eventId ]
+        return cloned
+      } )
+      this.loadRegistrations ( eventId ).finally ( ( ) => this.loadingRegs.set ( false ) )
+    }
+  }
+
+  public getSelectedEventFieldLabel ( key: string | number | symbol ): string {
+    const eventId = this.selectedRegEventId ( )
+    const event = this.eventData ( ).events.find ( e => e.id === eventId )
+    if ( !event ) return key.toString ( )
+    return this.getFieldLabel ( event, key )
   }
 
   public async saveSlider ( ): Promise<void> {
@@ -353,7 +438,7 @@ export class EventEditorComponent implements OnInit {
     return [
       this.formlySvc.TextInput ( "title", { label: "Title", placeholder: "Enter slide title", required: true, maxLength: 100 } ),
       this.formlySvc.TextAreaInput ( "description", { label: "Text", placeholder: "Enter slide description", required: true, maxLength: 500, includeMaxDescription: true } ),
-      this.formlySvc.ImagePickerInput ( "url", { label: "Image", required: true } )
+      this.formlySvc.ImagePickerInput ( "url", { label: "Background Media", required: true, attributes: { accept: "image/*,video/*" } } )
     ]
   }
 
@@ -376,4 +461,3 @@ export class EventEditorComponent implements OnInit {
     }
   }
 }
-

@@ -17,25 +17,25 @@
 
     <ul class="hidden sm:flex gap-1">
       <li>
-        <a class="nav-link" (click)="goTo('')" [class.active]="url() === ''">
+        <a class="nav-link" (click)="goTo('/')" [class.active]="url() === '/'">
           <app-icon icon="home" />
           Home
         </a>
       </li>
       <li>
-        <a class="nav-link" (click)="goTo('events')" [class.active]="url() === '/events'">
+        <a class="nav-link" (click)="goTo('/events')" [class.active]="url() === '/events'">
           <app-icon icon="calendar" />
           Events
         </a>
       </li>
       <li>
-        <a class="nav-link" (click)="goTo('gallery')" [class.active]="url() === '/gallery'">
+        <a class="nav-link" (click)="goTo('/gallery')" [class.active]="url() === '/gallery'">
           <app-icon icon="image" />
           Gallery
         </a>
       </li>
       <li>
-        <a class="nav-link" (click)="goTo('resources')" [class.active]="url() === '/resources'">
+        <a class="nav-link" (click)="goTo('/liturgy')" [class.active]="url() === '/liturgy'">
           <app-icon icon="hands-praying" />
           Liturgy
         </a>
@@ -50,8 +50,8 @@
         <ul class="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg py-1 z-50">
           <li>
             <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
-               [class.text-primary]="url() === ''"
-               (click)="goTo('')">
+               [class.text-primary]="url() === '/'"
+               (click)="goTo('/')">
               <app-icon icon="home" />
               Home
             </a>
@@ -59,7 +59,7 @@
           <li>
             <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
                [class.text-primary]="url() === '/events'"
-               (click)="goTo('events')">
+               (click)="goTo('/events')">
               <app-icon icon="calendar" />
               Events
             </a>
@@ -67,15 +67,15 @@
           <li>
             <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
                [class.text-primary]="url() === '/gallery'"
-               (click)="goTo('gallery')">
+               (click)="goTo('/gallery')">
               <app-icon icon="image" />
               Gallery
             </a>
           </li>
           <li>
             <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
-               [class.text-primary]="url() === '/resources'"
-               (click)="goTo('resources')">
+               [class.text-primary]="url() === '/liturgy'"
+               (click)="goTo('/liturgy')">
               <app-icon icon="hands-praying" />
               Liturgy
             </a>

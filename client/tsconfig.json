@@ -3,8 +3,14 @@
   "compileOnSave": false,
   "compilerOptions": {
     "paths": {
+      "*": [
+        "./*"
+      ],
       "@revive/*": [
         "./*"
+      ],
+      "@src/*": [
+        "./src/*"
       ],
       "@app/*": [
         "./src/app/*"
@@ -33,9 +39,9 @@
     "experimentalDecorators": true,
     "moduleResolution": "bundler",
     "importHelpers": true,
-    "target": "ES2022",
+    "target": "ESNext",
     "module": "ES2022",
-    "useDefineForClassFields": false
+    //"useDefineForClassFields": false
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

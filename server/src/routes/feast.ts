@@ -81,13 +81,13 @@ const cleanReadingHtml = ( html?: string ): string | undefined => {
   // Replace <br> tags with single new lines in case Universalis uses them mid-paragraph
   clean = clean.replace ( /<br\s*\/?>/gi, "\n" )
 
-  return clean.trim ()
+  return clean.trim ( )
 }
 
-const fetchReadings = async (): Promise<FeastDay["readings"]> => {
+const fetchReadings = async ( ): Promise<FeastDay["readings"]> => {
   try {
     const res = await fetch ( "https://universalis.com/Europe.Scotland/jsonpmass.js" )
-    const text = await res.text ()
+    const text = await res.text ( )
     const firstParen = text.indexOf ( "(" )
     const lastParen = text.lastIndexOf ( ")" )
     if ( firstParen !== -1 && lastParen > firstParen ) {
@@ -126,7 +126,7 @@ export const router: FastifyPluginAsync = async app => {
       const calendarHtml = await calendarRes.text ( )
 
       const { name, colour } = parseFeastFromHtml ( calendarHtml, dateKey )
-      const readings = await fetchReadings ()
+      const readings = await fetchReadings ( )
 
       const result: FeastDay = {
         name,

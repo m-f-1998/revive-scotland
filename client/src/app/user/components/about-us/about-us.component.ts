@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
-import { IconComponent } from "@revive/src/app/icon/icon.component"
-import { ApiService } from "@revive/src/app/services/api.service"
-import { SolidIcon } from "@revive/src/app/icon/icon.registry"
+import { IconComponent } from "@app/icon/icon.component"
+import { ApiService } from "@app/services/api.service"
+import { SolidIcon } from "@app/icon/icon.registry"
 
 interface AboutCard {
   icon: SolidIcon

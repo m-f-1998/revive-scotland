@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, WritableSignal, signal, input, InputSignal, OnInit, OnDestroy, inject } from "@angular/core"
-import { ApiService } from "@revive/src/app/services/api.service"
+import { ApiService } from "@app/services/api.service"
 
 type Slide = { title: string; content: string; image: string }
 

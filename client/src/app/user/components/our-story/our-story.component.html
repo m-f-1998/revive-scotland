@@ -1,28 +1,18 @@
 <div class="grid grid-cols-1 lg:grid-cols-2 border-b border-gray-200" id="our-story">
   <div class="half-page-banner lg:order-2">
-    <img
-      src="/api/img/gallery/kinloss/kinloss-8.jpg?w=640&f=webp"
-      srcset="
-        /api/img/gallery/kinloss/kinloss-8.jpg?w=320&f=webp 320w,
-        /api/img/gallery/kinloss/kinloss-8.jpg?w=640&f=webp 640w,
-        /api/img/gallery/kinloss/kinloss-8.jpg?w=1024&f=webp 1024w
-      "
-      sizes="(max-width: 600px) 100vw, 600px"
-      alt="Our Story Banner"
-      loading="lazy"
-      decoding="async"
-      class="w-full h-full object-contain block"
-    />
+    @if (ourStory().mediaUrl) {
+      <app-media-display [src]="ourStory().mediaUrl" alt="Our Story Banner" objectFit="contain" />
+    }
   </div>
 
   <div class="border-t border-gray-200 lg:border-t-0 lg:border-r lg:bg-gray-50 dark:lg:bg-slate-800 flex flex-col p-10 justify-center lg:order-1">
     <p class="text-serif text-primary mb-0">About Us</p>
     <h2 class="uppercase tracking-wider mb-4">Our Story</h2>
     <ul class="list-none p-0 space-y-3">
-      @let ourStory = screenWidth() > 992 ?
-        this.ourStory() :
-        this.ourStory().slice(0, readmore() ? this.ourStory().length : 2);
-      @for (story of ourStory; track $index) {
+      @let items = screenWidth() > 992 ?
+        ourStory().items :
+        ourStory().items.slice(0, readmore() ? ourStory().items.length : 2);
+      @for (story of items; track $index) {
         @if (story.bullet) {
           <li class="flex items-start gap-3">
             <app-icon icon="check-circle" class="text-primary mt-0.5 flex-shrink-0" />

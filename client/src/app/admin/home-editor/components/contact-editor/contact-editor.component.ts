@@ -1,18 +1,16 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
-import { AdminNavbarComponent } from "../navbar/navbar.component"
-import { AdminFooterComponent } from "../footer/footer.component"
-import { IconComponent } from "../../icon/icon.component"
+import { IconComponent } from "../../../../icon/icon.component"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
 import { FormGroup } from "@angular/forms"
-import { ApiService } from "../../services/api.service"
-import { AuthService } from "../../services/auth.service"
-import { FormlyService } from "../../services/formly.service"
+import { ApiService } from "../../../../services/api.service"
+import { AuthService } from "../../../../services/auth.service"
+import { FormlyService } from "../../../../services/formly.service"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { HttpHeaders } from "@angular/common/http"
 
 @Component ( {
-  selector: "app-admin-contact-editor",
-  imports: [ AdminNavbarComponent, AdminFooterComponent, IconComponent, FormlyForm ],
+  selector: "app-home-contact-editor",
+  imports: [ IconComponent, FormlyForm ],
   templateUrl: "./contact-editor.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
@@ -21,6 +19,7 @@ export class ContactEditorComponent implements OnInit {
   public form = new FormGroup ( { } )
   public model: Record<string, unknown> = { }
   public fields: FormlyFieldConfig [ ] = [ ]
+  public saving: WritableSignal<boolean> = signal ( false )
 
   private readonly apiSvc: ApiService = inject ( ApiService )
   private readonly authSvc: AuthService = inject ( AuthService )
@@ -62,7 +61,7 @@ export class ContactEditorComponent implements OnInit {
       return
     }
 
-    this.loading.set ( true )
+    this.saving.set ( true )
     try {
       await this.apiSvc.post ( "/api/admin/contact-details", this.model, new HttpHeaders ( {
         "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || ""}`
@@ -71,7 +70,7 @@ export class ContactEditorComponent implements OnInit {
     } catch {
       this.toastrSvc.error ( "Failed to save contact details." )
     } finally {
-      this.loading.set ( false )
+      this.saving.set ( false )
     }
   }
 }

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from "@angular/core"
 import { DialogRef } from "@angular/cdk/dialog"
-import { DatesService } from "@revive/src/app/services/dates.service"
+import { DatesService } from "@app/services/dates.service"
 
 @Component ( {
   selector: "app-terms",

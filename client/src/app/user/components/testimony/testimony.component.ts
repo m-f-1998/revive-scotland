@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
-import { ApiService } from "@revive/src/app/services/api.service"
+import { ApiService } from "@app/services/api.service"
 
 interface Testimony {
   name: string

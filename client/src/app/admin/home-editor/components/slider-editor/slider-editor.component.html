@@ -1,0 +1,84 @@
+<div class="card-header bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-700/80 px-5 py-4">
+  <h5 class="mb-0 font-semibold flex items-center gap-2 text-primary dark:text-white text-base">
+    <app-icon icon="image" /> Home Slider
+  </h5>
+</div>
+<div class="card-body p-5 flex-1 space-y-4">
+  @if (loading()) {
+    <div class="flex flex-col items-center justify-center gap-3 py-10 text-gray-500 dark:text-gray-400">
+      <app-icon icon="spinner" iconAnimation="spin" iconSize="2x" class="text-primary" />
+      <p class="text-sm font-medium">Loading...</p>
+    </div>
+  } @else {
+    <p class="text-gray-500 dark:text-gray-400 text-sm">Each slide shows a full-width background image with a title and text overlay at the top of the home page. Max of 3 slides.</p>
+
+    <div class="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-gray-100 dark:border-slate-700/50">
+      @for (sf of slidesForms(); track $index) {
+        <div class="flex items-stretch gap-0 border rounded-lg transition-all duration-200 overflow-hidden shadow-xs cursor-pointer"
+             [class.bg-primary]="activeSlideIndex() === $index"
+             [class.border-primary]="activeSlideIndex() === $index"
+             [class.shadow-primary/20]="activeSlideIndex() === $index"
+             [class.bg-gray-50]="activeSlideIndex() !== $index"
+             [class.dark:bg-slate-900]="activeSlideIndex() !== $index"
+             [class.border-gray-200]="activeSlideIndex() !== $index"
+             [class.dark:border-slate-700]="activeSlideIndex() !== $index"
+             [class.text-white]="activeSlideIndex() === $index"
+             [class.text-gray-600]="activeSlideIndex() !== $index"
+             [class.dark:text-gray-300]="activeSlideIndex() !== $index"
+             (click)="activeSlideIndex.set($index)">
+
+          <button type="button" class="px-3 py-2 text-xs font-semibold flex items-center gap-2 outline-none">
+            <app-icon icon="image" class="w-3.5 h-3.5" />
+            <span>Slide {{ $index + 1 }}</span>
+          </button>
+
+          <button type="button"
+            class="w-10 flex items-center justify-center outline-none transition-colors border-l"
+            [class.border-primary-600]="activeSlideIndex() === $index"
+            [class.border-gray-200]="activeSlideIndex() !== $index"
+            [class.dark:border-slate-700]="activeSlideIndex() !== $index"
+            [class.hover:bg-red-500]="activeSlideIndex() === $index"
+            [class.hover:text-white]="activeSlideIndex() === $index"
+            [class.hover:text-red-500]="activeSlideIndex() !== $index"
+            title="Remove slide"
+            (click)="removeSlide($index); $event.stopPropagation()">
+            <app-icon icon="trash" />
+          </button>
+        </div>
+      }
+
+      @if (slidesForms().length < 3) {
+        <button type="button"
+          class="px-3 py-2 text-xs font-semibold rounded-lg text-primary hover:bg-primary/5 dark:hover:bg-primary/10 border border-dashed border-primary/30 flex items-center gap-1.5 transition-all cursor-pointer"
+          (click)="addSlide()">
+          <app-icon icon="plus-circle" class="w-4 h-4" />
+          <span>Add Slide</span>
+        </button>
+      }
+    </div>
+
+    @if (slidesForms()[activeSlideIndex()]; as sf) {
+      <div class="border border-gray-100 dark:border-slate-700/50 rounded-xl p-5 bg-white dark:bg-slate-800 shadow-xs transition-all duration-300">
+        <formly-form [form]="sf.form" [model]="sf.model()" [fields]="sf.fields" (modelChange)="onSlideChange(activeSlideIndex(), sf, $event)" />
+      </div>
+    } @else {
+      <div class="text-center p-8 text-gray-400 dark:text-gray-500 border border-dashed border-gray-200 dark:border-slate-700 rounded-xl">
+        <app-icon icon="image" iconSize="2x" class="opacity-40 mb-2 block mx-auto" />
+        No slides configured. Click "Add Slide" above to create one.
+      </div>
+    }
+  }
+</div>
+<div class="card-footer flex justify-between items-center bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 px-5 py-4">
+  <button class="btn-outline-secondary btn-sm" (click)="restoreDefaults()" title="Reset slides to built-in defaults" [disabled]="loading()">
+    <app-icon icon="refresh" /> Restore Defaults
+  </button>
+  <button class="btn-primary" [disabled]="saving() || isSaveDisabled() || loading()" (click)="save()">
+    @if (saving()) {
+      <app-icon icon="spinner" iconAnimation="spin" />
+    } @else {
+      <app-icon icon="save" />
+    }
+    Save Changes
+  </button>
+</div>

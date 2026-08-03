@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
-import { ApiService } from "@revive/src/app/services/api.service"
+import { ApiService } from "@app/services/api.service"
+import { MediaDisplayComponent } from "../media-display/media-display.component"
 
 interface ReviveWeekendsContent {
   title: string
@@ -15,6 +16,7 @@ const FALLBACK: ReviveWeekendsContent = {
 
 @Component ( {
   selector: "app-revive-weekends",
+  imports: [ MediaDisplayComponent ],
   templateUrl: "./revive-weekends.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )

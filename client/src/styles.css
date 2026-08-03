@@ -499,3 +499,14 @@
     tr.folder-drop-target { background-color: rgba(96, 165, 250, 0.15); }
   }
 }
+
+/* Ensure toastrs appear in front of everything, including CDK modals */
+.toast-container,
+#toast-container {
+  position: fixed !important;
+  z-index: 999999 !important;
+}
+
+.cdk-overlay-container {
+  z-index: 1000 !important;
+}

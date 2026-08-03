@@ -25,20 +25,20 @@ export const router: FastifyPluginAsync = async app => {
     delete formData [ "recaptchaToken" ]
 
     // Because events are now individual documents, we query the specific event directly
-    const eventDoc = await getFirestore ().collection ( "events" ).doc ( eventId ).get ()
+    const eventDoc = await getFirestore ( ).collection ( "events" ).doc ( eventId ).get ( )
 
     if ( !eventDoc.exists ) {
       // Fallback check against legacy 'default' array just in case migrations are partial
-      const defaultDoc = await getFirestore ().collection ( "events" ).doc ( "default" ).get ()
+      const defaultDoc = await getFirestore ( ).collection ( "events" ).doc ( "default" ).get ( )
       const eventInArray = ( defaultDoc.data ( )?. [ "events" ] || [] ).find ( ( e: { id: string } ) => e.id === eventId )
       if ( !eventInArray ) {
         return rep.status ( 404 ).send ( { message: "Event not found." } )
       }
     }
 
-    const event = eventDoc.exists ? eventDoc.data () : ( await getFirestore ().collection ( "events" ).doc ( "default" ).get () ).data ()?.["events"]?.find ( ( e: { id: string } ) => e.id === eventId )
+    const event = eventDoc.exists ? eventDoc.data ( ) : ( await getFirestore ( ).collection ( "events" ).doc ( "default" ).get ( ) ).data ( )?.["events"]?.find ( ( e: { id: string } ) => e.id === eventId )
 
-    const registrationRef = getFirestore ().collection ( "event_registrations" ).doc ()
+    const registrationRef = getFirestore ( ).collection ( "event_registrations" ).doc ( )
 
     let stripeUrl: string | undefined
 
@@ -55,7 +55,7 @@ export const router: FastifyPluginAsync = async app => {
       eventTitle: event.title,
       formData,
       status: stripeUrl ? "pending_payment" : "completed",
-      createdAt: FieldValue.serverTimestamp ()
+      createdAt: FieldValue.serverTimestamp ( )
     } )
 
     return rep.send ( { 
@@ -65,16 +65,17 @@ export const router: FastifyPluginAsync = async app => {
   } )
 
   app.post ( "/stripe/webhook", async ( req, rep ) => {
-    const sig = req.headers["stripe-signature"] as string
+    const sig = req.headers [ "stripe-signature" ] as string
 
     if ( !sig ) {
       return rep.status ( 400 ).send ( "Missing Stripe signature" )
     }
 
     let event: Stripe.Event
+    const body = JSON.stringify ( req.body )
 
     try {
-      event = StripeService.constructWebhookEvent ( JSON.stringify ( req.body ), sig )
+      event = StripeService.constructWebhookEvent ( body, sig )
     } catch ( err ) {
       console.error ( "Webhook Error:", err )
       return rep.status ( 400 ).send ( `Webhook Error` )
@@ -83,7 +84,7 @@ export const router: FastifyPluginAsync = async app => {
     if ( event.type === "checkout.session.completed" ) {
       const session = event.data.object as Stripe.Checkout.Session
       if ( session.client_reference_id ) {
-        await getFirestore ().collection ( "event_registrations" ).doc ( session.client_reference_id ).update ( {
+        await getFirestore ( ).collection ( "event_registrations" ).doc ( session.client_reference_id ).update ( {
           status: "completed",
           paymentIntent: session.payment_intent
         } )

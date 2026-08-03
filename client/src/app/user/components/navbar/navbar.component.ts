@@ -1,7 +1,7 @@
 import { Location } from "@angular/common"
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
 import { NavigationEnd, Router } from "@angular/router"
-import { IconComponent } from "@revive/src/app/icon/icon.component"
+import { IconComponent } from "@app/icon/icon.component"
 
 @Component ( {
   selector: "app-navbar",

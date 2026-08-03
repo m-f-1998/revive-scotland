@@ -1,5 +1,6 @@
 import { FastifyPluginAsync } from "fastify"
 import { GoogleAnalyticsService } from "../../services/google-analytics.service.js"
+import { checkFirebaseAuth } from "./middleware/fileExplorer.js"
 
 const cacheDurationMs = 24 * 60 * 60 * 1000 // 1 day
 let lastCacheTime = 0
@@ -34,7 +35,7 @@ let cache: [
 ] | null = null
 
 export const router: FastifyPluginAsync = async app => {
-  app.get ( "/", async ( _req, rep ) => {
+  app.get ( "/", { preHandler: checkFirebaseAuth }, async ( _req, rep ) => {
     try {
       if ( cache && ( Date.now ( ) - lastCacheTime < cacheDurationMs ) ) {
         return rep.send ( {

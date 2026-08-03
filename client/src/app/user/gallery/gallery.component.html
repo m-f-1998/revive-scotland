@@ -9,7 +9,9 @@
             [class]="filter() === name ? 'btn-primary shadow-lg scale-105' : 'btn-outline-secondary'"
             (click)="setFilter(name)">
             {{ name | titlecase }}
-            @if (filter() === name) { <app-icon icon="check-circle" /> }
+            @if (filter() === name) {
+              <app-icon icon="check-circle" />
+            }
           </button>
         }
       } @else {

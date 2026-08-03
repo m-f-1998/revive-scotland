@@ -2,9 +2,9 @@ import { ChangeDetectionStrategy, Component, inject, input, OnInit } from "@angu
 import { AbstractControl, FormGroup } from "@angular/forms"
 import { DialogRef } from "@angular/cdk/dialog"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
-import { IconComponent } from "@revive/src/app/icon/icon.component"
-import { FileEntry } from "@revive/src/app/interfaces/fileExplorer.interface"
-import { FormlyService } from "@revive/src/app/services/formly.service"
+import { IconComponent } from "@app/icon/icon.component"
+import { FileEntry } from "@app/interfaces/fileExplorer.interface"
+import { FormlyService } from "@app/services/formly.service"
 
 @Component ( {
   selector: "app-admin-file-explorer-modal",

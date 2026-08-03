@@ -93,7 +93,7 @@ export const router: FastifyPluginAsync = async app => {
 
           const file = createReadStream ( inputPath, { start, end } )
 
-          // In Fastify, use .header() and return the stream directly
+          // In Fastify, use .header( ) and return the stream directly
           return rep
             .code ( 206 )
             .headers ( {

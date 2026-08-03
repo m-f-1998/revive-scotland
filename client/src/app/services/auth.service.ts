@@ -3,7 +3,7 @@ import { ApiService } from "./api.service"
 import { Router } from "@angular/router"
 import { FirebaseApp, initializeApp } from "firebase/app"
 import { Auth, getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut, User } from "firebase/auth"
-import { environment } from "@revive/src/environments/environment"
+import { environment } from "@src/environments/environment"
 import { HttpHeaders } from "@angular/common/http"
 
 @Service ( )

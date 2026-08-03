@@ -25,7 +25,6 @@ export class ReflectionsEditorComponent {
   public readonly save = output<void> ( )
 
   public expandedReflection: WritableSignal<number | null> = signal ( null )
-  public sectionCollapsed: WritableSignal<boolean> = signal ( false )
 
   public readonly categories = CATEGORIES
 
@@ -33,7 +32,6 @@ export class ReflectionsEditorComponent {
     const r = [ ...this.reflections, { id: generateId ( ), title: "", category: "our-lord" as const, youtubeId: "" } ]
     this.reflectionsChange.emit ( r )
     this.expandedReflection.set ( r.length - 1 )
-    this.sectionCollapsed.set ( false )
   }
 
   public removeReflection ( index: number ): void {

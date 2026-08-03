@@ -28,10 +28,10 @@ export const routes: Routes = [
     canActivate: [ authGuard ],
     children: [
       {
-        path: "resourcesEditor",
+        path: "liturgyEditor",
         loadComponent: ( ) =>
-          import ( "./admin/resources-editor/resources-editor.component" )
-            .then ( m => m.ResourcesEditorComponent )
+          import ( "./admin/liturgy-editor/liturgy-editor.component" )
+            .then ( m => m.LiturgyEditorComponent )
       },
       {
         path: "dashboard",
@@ -59,35 +59,17 @@ export const routes: Routes = [
             .then ( m => m.EventEditorComponent )
       },
       {
-        path: "contactEditor",
-        loadComponent: ( ) =>
-          import ( "./admin/contact-editor/contact-editor.component" )
-            .then ( m => m.ContactEditorComponent )
-      },
-      {
-        path: "storyEditor",
-        loadComponent: ( ) =>
-          import ( "./admin/story-editor/story-editor.component" )
-            .then ( m => m.StoryEditorComponent )
-      },
-      {
         path: "homeEditor",
         loadComponent: ( ) =>
           import ( "./admin/home-editor/home-editor.component" )
             .then ( m => m.HomeEditorComponent )
-      },
-      {
-        path: "testimonialsEditor",
-        loadComponent: ( ) =>
-          import ( "./admin/testimonials-editor/testimonials-editor.component" )
-            .then ( m => m.TestimonialsEditorComponent )
       }
     ]
   },
   {
-    path: "resources",
+    path: "liturgy",
     loadComponent: ( ) =>
-      import ( "./user/resources/resources.component" ).then ( m => m.ResourcesComponent )
+      import ( "./user/liturgy/liturgy.component" ).then ( m => m.LiturgyComponent )
   },
   {
     path: "donate/thank-you",

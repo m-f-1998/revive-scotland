@@ -26,7 +26,7 @@ interface CachedShare {
   expiresAt: number // timestamp in ms
 }
 
-const shareCache = new Map<string, CachedShare> ()
+const shareCache = new Map<string, CachedShare> ( )
 
 export const router: FastifyPluginAsync = async app => {
   if ( !isDevMode ( ) ) {

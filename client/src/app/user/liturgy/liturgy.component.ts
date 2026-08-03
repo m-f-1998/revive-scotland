@@ -4,7 +4,7 @@ import { FooterComponent } from "../components/footer/footer.component"
 import { SliderComponent } from "../components/slider/slider.component"
 import { IconComponent } from "../../icon/icon.component"
 import { DomSanitizer, SafeHtml } from "@angular/platform-browser"
-import { Prayer, CategoryLabel, TypeLabel, PrayerType, PrayerCategory } from "./resources.interface"
+import { Prayer, CategoryLabel, TypeLabel, PrayerType, PrayerCategory } from "./liturgy.interface"
 import { ResourcesStateService } from "../../services/resources-state.service"
 
 enum ContentType {
@@ -14,13 +14,13 @@ enum ContentType {
 }
 
 @Component ( {
-  selector: "app-resources",
+  selector: "app-liturgy",
   imports: [ NavbarComponent, FooterComponent, SliderComponent, IconComponent ],
-  templateUrl: "./resources.component.html",
-  styleUrl: "./resources.component.scss",
+  templateUrl: "./liturgy.component.html",
+  styleUrl: "./liturgy.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
-export class ResourcesComponent implements OnInit {
+export class LiturgyComponent implements OnInit {
   public readonly state = inject ( ResourcesStateService )
 
   public selectedPrayer: WritableSignal<Prayer | null> = signal ( null )

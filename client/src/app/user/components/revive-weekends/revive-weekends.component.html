@@ -1,7 +1,8 @@
 <div class="grid grid-cols-1 md:grid-cols-2 border-b border-gray-200" id="weekends">
   <div class="flex items-center justify-center p-4 min-h-[20rem]">
-    <video [src]="content().videoUrl" width="640" height="360" controls playsinline class="max-w-full rounded" style="max-height: 600px;" preload="metadata">
-    </video>
+    @if (content().videoUrl) {
+      <app-media-display [src]="content().videoUrl" alt="Revive Weekends Banner" objectFit="contain" />
+    }
   </div>
 
   <div class="border-t border-gray-200 md:border-t-0 md:border-r lg:bg-gray-50 dark:lg:bg-slate-800 flex flex-col p-10 justify-center md:text-right md:order-first">
