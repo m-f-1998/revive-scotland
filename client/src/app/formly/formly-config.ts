@@ -14,6 +14,7 @@ import { FormlyFieldInputComponent } from "./types/input.type"
 import { FormlyFieldSelectComponent } from "./types/select.type"
 import { FormlyFieldTextareaComponent } from "./types/textarea.type"
 import { FormlyFieldCheckboxComponent } from "./types/checkbox.type"
+import { StartBeforeEnd } from "./validators/StartBeforEnd.validator"
 
 @Service ( )
 export class FormlyConfig implements ConfigOption {
@@ -90,6 +91,7 @@ export class FormlyConfig implements ConfigOption {
   ]
 
   public validators = [
+    { name: "StartBeforeEnd", validation: StartBeforeEnd },
     { name: "ValidEmail", validation: ValidEmail },
     { name: "ValidPhoneNumber", validation: ValidPhoneNumber },
     { name: "ValidDate", validation: ValidDate },

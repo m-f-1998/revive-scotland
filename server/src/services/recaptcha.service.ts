@@ -1,9 +1,16 @@
+import { isDevMode } from "../routes/static.js"
+
 export class RecaptchaService {
   /**
    * Verifies the provided reCAPTCHA token against the Google Enterprise API.
    * Throws an error if validation fails or the score is too low.
    */
   public static async verifyToken ( token: string ): Promise<void> {
+    if ( isDevMode ( ) ) {
+      console.warn ( "reCAPTCHA verification bypassed in DEV_MODE" )
+      return
+    }
+
     const apiKey = process.env [ "RECAPTCHA_API_KEY" ] || ""
     const siteKey = process.env [ "RECAPTCHA_SITE" ] || ""
     const referer = process.env [ "PUBLIC_DOMAIN" ] || ""

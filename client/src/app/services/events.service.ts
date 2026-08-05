@@ -13,7 +13,7 @@ export interface ReviveEvent {
   endTime?: string
   endDate: Date
 
-  actionType: "webpage" | "contact"
+  actionType: "webpage" | "form"
   webpageUrl?: string
 
   contactFormFields?: FormlyFieldConfig [ ]
@@ -50,6 +50,10 @@ export class EventsService {
       const response = await this.apiSvc.get ( "/api/events" ) as { events: ReviveEvent [ ] }
       const currentTime = new Date ( )
       this.events = ( response.events || [ ] )
+        .map ( event => ( {
+          ...event,
+          actionType: event.actionType === "form" || ( event.actionType as string ) === "contact" ? "form" as const : "webpage" as const
+        } ) )
         .filter ( event => {
           const eventEndDate = new Date ( event.endDate )
           if ( !isNaN ( eventEndDate.getTime ( ) ) ) {

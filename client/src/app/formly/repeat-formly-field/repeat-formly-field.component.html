@@ -1,12 +1,17 @@
 <div [class.ring-2]="formControl.invalid && (formControl.touched || formControl.dirty)" [class.ring-red-500]="formControl.invalid && (formControl.touched || formControl.dirty)"
      class="card p-4 mb-4">
   <div class="flex items-center justify-between mb-3">
-    <h5 class="font-semibold m-0">
-      Form Fields
-      @if (props.required) {
-        <span class="text-red-500">*</span>
+    <div>
+      <h5 class="font-semibold m-0">
+        Form Fields
+        @if (props.required) {
+          <span class="text-red-500">*</span>
+        }
+      </h5>
+      @if (props.description) {
+        <p class="text-xs text-gray-500 mt-1 mb-0">{{ props.description }}</p>
       }
-    </h5>
+    </div>
     <button type="button" class="btn-primary btn-sm" (click)="addField()">
       <app-icon icon="plus" /> Add Field
     </button>

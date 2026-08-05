@@ -12,11 +12,11 @@ export interface Event {
   endTime?: string // format "HH:MM"
 
   // Action Fields
-  actionType: "webpage" | "contact" // Determines which fields are shown
+  actionType: "webpage" | "form" // Determines which fields are shown
   webpageUrl?: string // Only if actionType is 'webpage'
 
-  // Contact Form Fields
-  contactFormFields?: FormlyFieldConfig [ ] // The Formly fields array (for contact form)
+  // Registration Form Fields
+  contactFormFields?: FormlyFieldConfig [ ] // Formly fields for registration forms
 
   // Donation / Payment Fields
   donationRequired?: "none" | "optional" | "required"

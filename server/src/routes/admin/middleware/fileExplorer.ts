@@ -25,6 +25,24 @@ export const checkFirebaseAuth = async (
   try {
     const decodedToken = await getAuth ( ).verifyIdToken ( idToken )
 
+    // Admin Allowlist check
+    const allowedEmails = [
+      "admin@matthewfrankland.co.uk",
+      "lucamcq@googlemail.com",
+      "321.cmorgan@gmail.com"
+    ]
+
+    // Add logic to check environment variables if provided
+    const envAdmins = process.env["ADMIN_EMAILS"]
+      ? process.env["ADMIN_EMAILS"].split ( "," ).map ( e => e.trim ( ).toLowerCase ( ) )
+      : [ ]
+
+    const allAllowed = [ ...allowedEmails, ...envAdmins ]
+
+    if ( !decodedToken.email || !allAllowed.includes ( decodedToken.email.toLowerCase ( ) ) ) {
+      return reply.code ( 403 ).send ( "Forbidden: User is not an administrator." )
+    }
+
     request.user = decodedToken
   } catch ( error ) {
     request.log.error ( error )

@@ -1,4 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, isDevMode, OnInit, signal, WritableSignal } from "@angular/core"
+import { HttpErrorResponse } from "@angular/common/http"
+import { ActivatedRoute, Router } from "@angular/router"
+import { FormlyFieldConfig } from "@ngx-formly/core"
 import { FooterComponent } from "@components/footer/footer.component"
 import { DatesService } from "@services/dates.service"
 import { EventsService, ReviveEvent } from "@services/events.service"
@@ -11,6 +14,8 @@ import { InputDialogComponent } from "../../formly/input-dialog/input-dialog.com
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { ApiService } from "../../services/api.service"
 import { IconComponent } from "../../icon/icon.component"
+import { getDefaultRegistrationFields } from "./registration-form.defaults"
+import { SuccessModalComponent } from "./success-modal/success-modal.component"
 
 @Component ( {
   selector: "app-events",
@@ -41,6 +46,7 @@ export class EventsComponent implements OnInit {
 
   public readonly events: WritableSignal<Array<ReviveEvent>> = signal ( [ ] )
   public readonly loading: WritableSignal<boolean> = signal ( true )
+  public readonly resumePaymentUrl: WritableSignal<string | null> = signal ( null )
 
   public readonly eventsSvc: EventsService = inject ( EventsService )
   public readonly dateSvc: DatesService = inject ( DatesService )
@@ -48,9 +54,11 @@ export class EventsComponent implements OnInit {
   private readonly modalSvc: ModalService = inject ( ModalService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
   private readonly apiSvc: ApiService = inject ( ApiService )
+  private readonly route: ActivatedRoute = inject ( ActivatedRoute )
+  private readonly router: Router = inject ( Router )
 
   public ngOnInit ( ) {
-    this.getEvents ( )
+    this.getEvents ( ).then ( ( ) => this.checkQueryParameters ( ) )
   }
 
   public openPoster ( imageUrl: string ) {
@@ -62,14 +70,26 @@ export class EventsComponent implements OnInit {
   }
 
   public async openContactForm ( event: ReviveEvent ) {
+    const needsPayment = event.donationRequired === "required"
     const modalRef = this.modalSvc.open ( InputDialogComponent, {
       centered: true
     } )
     modalRef.setInput ( "title", `Register for ${event.title}` )
-    modalRef.setInput ( "body", `Please fill out the form below to register for "${event.title}".` )
-    modalRef.setInput ( "confirmText", event.donationRequired === "required" ? "Proceed to Payment" : "Submit" )
+    modalRef.setInput (
+      "body",
+      needsPayment
+        ? `Please fill out the form below. You'll be taken to Stripe to pay — your registration is only confirmed after payment succeeds.`
+        : `Please fill out the form below to register for "${event.title}".`
+    )
+    modalRef.setInput (
+      "confirmText",
+      needsPayment ? "Proceed to Payment" : "Submit"
+    )
     modalRef.setInput ( "recaptchaActive", true )
-    modalRef.setInput ( "fields", event.contactFormFields || [ ] )
+
+    const fields = this.buildRegistrationFields ( event )
+    modalRef.setInput ( "fields", fields )
+
     await modalRef.result.then ( async ( result: Record<string, unknown> ) => {
       if ( result ) {
         if ( !modalRef.componentInstance.captchaToken ) {
@@ -82,23 +102,145 @@ export class EventsComponent implements OnInit {
           const res = await this.apiSvc.post ( `/api/events/${event.id}/register`, {
             ...result,
             recaptchaToken: modalRef.componentInstance.captchaToken
-          } ) as { message: string; checkoutUrl?: string }
+          } ) as { message: string; checkoutUrl?: string; donateLaterUrl?: string; draftId?: string }
 
           if ( res.checkoutUrl ) {
+            if ( res.draftId ) {
+              sessionStorage.setItem ( "checkoutDraftId", res.draftId )
+              sessionStorage.setItem ( "checkoutUrl", res.checkoutUrl )
+              sessionStorage.setItem ( "checkoutEventTitle", event.title )
+            }
+            this.toastrSvc.info (
+              "Taking you to Stripe. Your registration is not saved until payment is completed.",
+              "Payment required",
+              { timeOut: 6000 }
+            )
+            await new Promise ( resolve => setTimeout ( resolve, 900 ) )
             window.location.href = res.checkoutUrl
           } else {
-            this.toastrSvc.success ( "Your registration has been submitted successfully.", "Thank You!" )
+            const successRef = this.modalSvc.open ( SuccessModalComponent, {
+              centered: true
+            } )
+            successRef.setInput ( "eventTitle", event.title )
           }
         } catch ( e ) {
           if ( isDevMode ( ) ) {
             console.error ( e )
           }
-          this.toastrSvc.error ( "An error occurred while submitting your registration. Please try again later.", "Error" )
+          const apiMessage = e instanceof HttpErrorResponse
+            ? ( typeof e.error === "string" ? e.error : e.error?.message )
+            : undefined
+          this.toastrSvc.error (
+            apiMessage || "An error occurred while submitting your registration. Please try again later.",
+            "Error"
+          )
         } finally {
           this.loading.set ( false )
         }
       }
     } ).catch ( ( ) => { } )
+  }
+
+  /**
+   * Ensure Name, Email, and Phone are always present on the public form.
+   * Events saved before defaults existed may only have custom fields.
+   */
+  private buildRegistrationFields ( event: ReviveEvent ): FormlyFieldConfig [ ] {
+    const existing = [ ...( event.contactFormFields || [ ] ) ]
+    const keys = new Set (
+      existing.map ( f => String ( f.key || "" ).toLowerCase ( ) )
+    )
+
+    const defaults = getDefaultRegistrationFields ( this.formlySvc )
+    const missing = defaults.filter ( field => !keys.has ( String ( field.key || "" ).toLowerCase ( ) ) )
+    const fields = [ ...missing, ...existing ]
+
+    if ( event.donationRequired === "optional" ) {
+      fields.push ( this.formlySvc.CheckboxInput ( "optInDonation", {
+        label: `Include an optional donation?`
+      }, {
+        className: "block mb-4"
+      } ) )
+      fields.push ( {
+        key: "customDonationAmount",
+        type: "input",
+        defaultValue: ( event.donationPrice || 0 ) / 100,
+        className: "block mb-4",
+        props: {
+          label: "Donation Amount (£)",
+          type: "number",
+          placeholder: ( ( event.donationPrice || 0 ) / 100 ).toFixed ( 2 ),
+          required: true,
+          min: 0.50,
+          step: 0.01
+        },
+        expressions: {
+          hide: "!model.optInDonation"
+        }
+      } )
+    }
+
+    return fields
+  }
+
+  private checkQueryParameters ( ): void {
+    this.route.queryParams.subscribe ( params => {
+      const status = params [ "registration" ]
+      const draftId = ( params [ "draftId" ] as string | undefined )
+        || sessionStorage.getItem ( "checkoutDraftId" )
+        || undefined
+
+      if ( status === "success" ) {
+        const title = sessionStorage.getItem ( "checkoutEventTitle" ) || ""
+        sessionStorage.removeItem ( "checkoutDraftId" )
+        sessionStorage.removeItem ( "checkoutUrl" )
+        sessionStorage.removeItem ( "checkoutEventTitle" )
+        
+        const successRef = this.modalSvc.open ( SuccessModalComponent, {
+          centered: true
+        } )
+        successRef.setInput ( "eventTitle", title )
+
+        this.clearQueryParams ( )
+      } else if ( status === "cancelled" ) {
+        const cachedUrl = sessionStorage.getItem ( "checkoutUrl" )
+        if ( cachedUrl ) {
+          this.resumePaymentUrl.set ( cachedUrl )
+        }
+        void this.sendPaymentPromptAfterCancel ( draftId )
+        sessionStorage.removeItem ( "checkoutDraftId" )
+        sessionStorage.removeItem ( "checkoutUrl" )
+        sessionStorage.removeItem ( "checkoutEventTitle" )
+        this.toastrSvc.warning (
+          "Registration failed to complete or was cancelled. Please try again or contact us if you need assistance.",
+          "Payment cancelled",
+          { timeOut: 14000 }
+        )
+        this.clearQueryParams ( )
+      }
+    } )
+  }
+
+  private async sendPaymentPromptAfterCancel ( draftId: string | undefined ): Promise<void> {
+    if ( !draftId ) return
+    try {
+      const res = await this.apiSvc.post ( `/api/events/checkout-draft/${draftId}/discard`, { } ) as { hostedInvoiceUrl?: string | null }
+      if ( res?.hostedInvoiceUrl ) {
+        this.resumePaymentUrl.set ( res.hostedInvoiceUrl )
+      }
+    } catch ( e ) {
+      if ( isDevMode ( ) ) {
+        console.warn ( "Failed to send payment-prompt email after cancel:", e )
+      }
+    }
+  }
+
+  private clearQueryParams ( ): void {
+    this.router.navigate ( [ ], {
+      relativeTo: this.route,
+      queryParams: { registration: null, eventId: null, draftId: null },
+      queryParamsHandling: "merge"
+    } )
   }
 
   private async getEvents ( ) {

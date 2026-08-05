@@ -12,6 +12,9 @@ import { AdminFooterComponent } from "../footer/footer.component"
 import { IconComponent } from "../../icon/icon.component"
 import { DatePipe, KeyValuePipe } from "@angular/common"
 import { getEventFields } from "./config/event-editor.config"
+import { addDays } from "date-fns"
+import { ModalService } from "../../services/modal.service"
+import { InputDialogComponent } from "../../formly/input-dialog/input-dialog.component"
 
 interface SlideFormEntry {
   form: FormGroup
@@ -80,6 +83,12 @@ export class EventEditorComponent implements OnInit {
   public regStatusFilter: WritableSignal<"all" | "completed" | "pending_payment"> = signal ( "all" )
   public regSearchQuery: WritableSignal<string> = signal ( "" )
   public loadingRegs: WritableSignal<boolean> = signal ( false )
+  public deletingRegIds: WritableSignal<Set<string>> = signal ( new Set ( ) )
+
+  public getSelectedEvent = computed ( ( ) => {
+    const eventId = this.selectedRegEventId ( )
+    return this.eventData ( ).events.find ( e => e.id === eventId )
+  } )
 
   public filteredRegistrations = computed ( ( ) => {
     const eventId = this.selectedRegEventId ( )
@@ -106,13 +115,54 @@ export class EventEditorComponent implements OnInit {
     } )
   } )
 
+  public expandedRegIds: Set<string> = new Set ( )
+
   private readonly apiSvc: ApiService = inject ( ApiService )
   private readonly formlySvc: FormlyService = inject ( FormlyService )
   private readonly authSvc: AuthService = inject ( AuthService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
+  private readonly modalSvc: ModalService = inject ( ModalService )
 
-  public get contactEvents ( ) {
-    return this.eventData ( ).events.filter ( e => e.actionType === "contact" )
+  public get formEvents ( ) {
+    return this.eventData ( ).events.filter ( e => e.actionType === "form" )
+  }
+
+  public getSummaryDetail ( formData: unknown, keys: string[] ): string {
+    if ( !formData || typeof formData !== "object" ) return "—"
+    const data = formData as Record<string, unknown>
+    for ( const key of keys ) {
+      for ( const dataKey of Object.keys ( data ) ) {
+        if ( dataKey.toLowerCase ( ) === key.toLowerCase ( ) && data [ dataKey ] ) {
+          return String ( data [ dataKey ] )
+        }
+      }
+    }
+    return "—"
+  }
+
+  public printRegistrations ( ): void {
+    window.print ( )
+  }
+
+  public toggleRegExpanded ( id: string ): void {
+    if ( this.expandedRegIds.has ( id ) ) {
+      this.expandedRegIds.delete ( id )
+    } else {
+      this.expandedRegIds.add ( id )
+    }
+  }
+
+  public isCoreRegField ( key: string | number | symbol ): boolean {
+    const k = String ( key ).toLowerCase ( )
+    return [ "name", "email", "phone", "tel", "firstname", "first name" ].includes ( k )
+      || k === "optindonation"
+      || k === "customdonationamount"
+  }
+
+  public parseFloat ( val: unknown ): number {
+    if ( val == null ) return 0
+    const parsed = parseFloat ( String ( val ) )
+    return isNaN ( parsed ) ? 0 : parsed
   }
 
   public ngOnInit ( ): void {
@@ -122,7 +172,22 @@ export class EventEditorComponent implements OnInit {
     ] ).finally ( ( ) => this.loading.set ( false ) )
   }
 
+  public onEventFormChange ( index: number, value: Record<string, unknown> ): void {
+    this.eventsModified.set ( true )
+    this.eventForm.update ( forms => {
+      const cloned = [ ...forms ]
+      if ( cloned [ index ] ) {
+        cloned [ index ] = {
+          ...cloned [ index ],
+          model: { ...value }
+        }
+      }
+      return cloned
+    } )
+  }
+
   public setActiveTab ( tab: EventTab ): void {
+    this.expandedRegIds.clear ( )
     this.activeTab.set ( tab )
   }
 
@@ -144,7 +209,7 @@ export class EventEditorComponent implements OnInit {
       // Deleting from collapsedIndices means EXPANDING the card
       this.collapsedIndices.delete ( index )
       const model = this.eventForm ( ) [ index ]?.model
-      if ( model && model [ "id" ] && model [ "actionType" ] === "contact" ) {
+      if ( model && model [ "id" ] && ( model [ "actionType" ] === "form" || model [ "actionType" ] === "contact" ) ) {
         this.loadRegistrations ( model [ "id" ] as string )
       }
     } else {
@@ -160,7 +225,7 @@ export class EventEditorComponent implements OnInit {
       description: "",
       location: "",
       startDate: new Date ( ),
-      endDate: new Date ( ),
+      endDate: addDays ( new Date ( ), 1 ),
       startTime: "",
       endTime: "",
       actionType: "webpage" as const
@@ -171,7 +236,7 @@ export class EventEditorComponent implements OnInit {
       {
         form: new FormGroup ( { } ),
         model: { ...defaultModel },
-        fields: getEventFields ( this.formlySvc )
+        fields: getEventFields ( this.formlySvc, defaultModel )
       }
     ] )
     this.eventData.set ( {
@@ -197,12 +262,12 @@ export class EventEditorComponent implements OnInit {
           endDate: ef.model [ "endDate" ] as Date,
           startTime: ef.model [ "startTime" ] as string,
           endTime: ef.model [ "endTime" ] as string,
-          actionType: ef.model [ "actionType" ] as "webpage" | "contact",
+          actionType: ( ef.model [ "actionType" ] === "form" || ef.model [ "actionType" ] === "contact" ? "form" : "webpage" ) as "webpage" | "form",
           webpageUrl: ef.model [ "webpageUrl" ] as string,
           contactFormFields: ef.model [ "contactFormFields" ] as FormlyFieldConfig [ ] || [ ],
           donationRequired: ef.model [ "donationRequired" ] as "required" | "none" | "optional" | undefined,
           donationDescription: ef.model [ "donationDescription" ] as string,
-          donationPrice: ef.model [ "donationPrice" ] as number,
+          donationPrice: ef.model [ "donationPrice" ] != null ? Math.round ( ( ef.model [ "donationPrice" ] as number ) * 100 ) : undefined,
           stripeProductId: ef.model [ "stripeProductId" ] as string,
           stripePriceId: ef.model [ "stripePriceId" ] as string
         }
@@ -234,12 +299,36 @@ export class EventEditorComponent implements OnInit {
     }
   }
 
-  public async removeEvent ( id: string ) {
-    this.loading.set ( true )
+  public async removeEvent ( index: number ) {
+    const forms = this.eventForm ( )
+    const model = forms [ index ]?.model
+    if ( !model ) return
+
+    const id = String ( model [ "id" ] || "" ).trim ( )
+
+    // Always remove locally first (covers unsaved / empty-id drafts)
+    this.eventForm.set ( forms.filter ( ( _, i ) => i !== index ) )
     this.eventData.update ( data => ( {
       ...data,
-      events: data.events.filter ( ( e: Event ) => e.id !== id )
+      events: data.events.filter ( ( _, i ) => i !== index )
     } ) )
+    this.eventsModified.set ( true )
+
+    // Re-map collapsed indices after removal
+    const nextCollapsed = new Set<number> ( )
+    for ( const collapsed of this.collapsedIndices ) {
+      if ( collapsed < index ) nextCollapsed.add ( collapsed )
+      else if ( collapsed > index ) nextCollapsed.add ( collapsed - 1 )
+    }
+    this.collapsedIndices.clear ( )
+    nextCollapsed.forEach ( i => this.collapsedIndices.add ( i ) )
+
+    if ( !id ) {
+      this.toastrSvc.success ( "Unsaved event discarded." )
+      return
+    }
+
+    this.loading.set ( true )
     try {
       await this.apiSvc.delete ( `/api/admin/events`, {
         id
@@ -248,7 +337,7 @@ export class EventEditorComponent implements OnInit {
       } ) )
       this.toastrSvc.success ( "Event removed successfully!" )
     } catch {
-      this.toastrSvc.error ( "Failed to remove event." )
+      this.toastrSvc.error ( "Failed to remove event from the server. It has been removed from this editor — save or refresh if needed." )
     } finally {
       this.loading.set ( false )
     }
@@ -277,9 +366,9 @@ export class EventEditorComponent implements OnInit {
     }
   }
 
-  public isEventFinished ( endDate: string | Date ): boolean {
+  public isEventFinished ( endDate: unknown ): boolean {
     if ( !endDate ) return false
-    const end = new Date ( endDate )
+    const end = new Date ( String ( endDate ) )
     return !isNaN ( end.getTime ( ) ) && end < new Date ( )
   }
 
@@ -362,6 +451,7 @@ export class EventEditorComponent implements OnInit {
   }
 
   public onRegEventSelect ( eventId: string ): void {
+    this.expandedRegIds.clear ( )
     this.selectedRegEventId.set ( eventId )
     if ( eventId ) {
       this.loadingRegs.set ( true )
@@ -388,6 +478,109 @@ export class EventEditorComponent implements OnInit {
     const event = this.eventData ( ).events.find ( e => e.id === eventId )
     if ( !event ) return key.toString ( )
     return this.getFieldLabel ( event, key )
+  }
+
+  public async generatePaymentLink ( reg: Record<string, unknown> ): Promise<void> {
+    const event = this.getSelectedEvent ()
+    if ( !event ) return
+
+    const modalRef = this.modalSvc.open ( InputDialogComponent, { centered: true } )
+    modalRef.setInput ( "title", "Generate Donation Link" )
+    modalRef.setInput ( "body", "Enter the custom donation amount for this user." )
+    modalRef.setInput ( "confirmText", "Generate Link" )
+    modalRef.setInput ( "fields", [
+      this.formlySvc.TextInput ( "amount", {
+        label: "Amount (£)",
+        type: "number",
+        placeholder: "e.g., 20.00",
+        required: true,
+        attributes: {
+          min: "0.50",
+          step: "0.01"
+        }
+      } )
+    ] )
+
+    try {
+      const result = await modalRef.result as { amount: string }
+      if ( !result.amount ) return
+
+      const amountPence = Math.round ( parseFloat ( result.amount ) * 100 )
+
+      this.toastrSvc.info ( "Generating Stripe Payment Link..." )
+      const token = await this.authSvc.currentUser ( )?.getIdToken ( ) || ""
+      const response = await this.apiSvc.post (
+        `/api/admin/events/registrations/${reg["id"]}/pay-link`,
+        { amountPence, eventId: event.id, eventTitle: event.title },
+        new HttpHeaders ( { "Authorization": `Bearer ${token}` } )
+      ) as { url: string }
+
+      if ( response.url ) {
+        await navigator.clipboard.writeText ( response.url )
+        this.toastrSvc.success ( "Payment Link generated and copied to clipboard!", "Success" )
+      }
+    } catch ( e ) {
+      if ( e ) { // Meaning it wasn't just a dismiss
+        this.toastrSvc.error ( "Failed to generate payment link." )
+        console.error ( e )
+      }
+    }
+  }
+
+  public async deleteRegistration ( reg: Record<string, unknown> ): Promise<void> {
+    const id = String ( reg [ "id" ] || "" )
+    if ( !id || this.deletingRegIds ( ).has ( id ) ) return
+
+    const hasPayment = !!reg [ "paymentIntent" ]
+    const name = this.getSummaryDetail ( reg [ "formData" ], [ "name", "Name", "firstName" ] )
+    const email = this.getSummaryDetail ( reg [ "formData" ], [ "email", "Email" ] )
+    const who = [ name !== "—" ? name : "", email !== "—" ? email : "" ].filter ( Boolean ).join ( " · " ) || "this registration"
+
+    const confirmed = window.confirm (
+      hasPayment
+        ? `Refund payment for ${who}?\n\nThe Stripe payment will be fully refunded and the registration removed.`
+        : `Delete ${who}?\n\nThis cannot be undone.`
+    )
+    if ( !confirmed ) return
+
+    this.deletingRegIds.update ( s => new Set ( s ).add ( id ) )
+    const eventId = this.selectedRegEventId ( )
+
+    try {
+      const res = await this.apiSvc.delete (
+        `/api/admin/events/registrations/${id}`,
+        { },
+        new HttpHeaders ( {
+          "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || "" }`
+        } )
+      ) as { message?: string; refunded?: boolean; invoiceVoided?: boolean }
+
+      this.registrations.update ( r => ( {
+        ...r,
+        [ eventId ]: ( r [ eventId ] || [ ] ).filter ( item => item [ "id" ] !== id )
+      } ) )
+
+      if ( res.refunded ) {
+        this.toastrSvc.success ( "Payment refunded and registration removed." )
+      } else if ( res.invoiceVoided ) {
+        this.toastrSvc.success ( "Open invoice voided and registration removed." )
+      } else {
+        this.toastrSvc.success ( "Registration deleted." )
+      }
+    } catch ( e ) {
+      console.error ( "Failed to delete registration:", e )
+      const msg = e && typeof e === "object" && "error" in e
+        ? ( ( e as { error?: { error?: string } | string } ).error )
+        : undefined
+      const text = typeof msg === "string" ? msg : ( msg && typeof msg === "object" ? msg.error : undefined )
+      this.toastrSvc.error ( text || "Failed to delete registration." )
+    } finally {
+      this.deletingRegIds.update ( s => {
+        const next = new Set ( s )
+        next.delete ( id )
+        return next
+      } )
+    }
   }
 
   public async saveSlider ( ): Promise<void> {
@@ -436,9 +629,26 @@ export class EventEditorComponent implements OnInit {
 
   private getSliderFields ( ): FormlyFieldConfig [ ] {
     return [
-      this.formlySvc.TextInput ( "title", { label: "Title", placeholder: "Enter slide title", required: true, maxLength: 100 } ),
-      this.formlySvc.TextAreaInput ( "description", { label: "Text", placeholder: "Enter slide description", required: true, maxLength: 500, includeMaxDescription: true } ),
-      this.formlySvc.ImagePickerInput ( "url", { label: "Background Media", required: true, attributes: { accept: "image/*,video/*" } } )
+      this.formlySvc.TextInput ( "title", {
+        label: "Title",
+        placeholder: "Enter slide title",
+        required: true,
+        maxLength: 100
+      } ),
+      this.formlySvc.TextAreaInput ( "description", {
+        label: "Text",
+        placeholder: "Enter slide description",
+        required: true,
+        maxLength: 500,
+        includeMaxDescription: true
+      } ),
+      this.formlySvc.ImagePickerInput ( "url", {
+        label: "Background Media",
+        required: true,
+        attributes: {
+          accept: "image/*,video/*"
+        }
+      } )
     ]
   }
 
@@ -450,10 +660,12 @@ export class EventEditorComponent implements OnInit {
         form: new FormGroup ( { } ),
         model: {
           ...event,
+          actionType: event.actionType === "form" || ( event.actionType as string ) === "contact" ? "form" : "webpage",
           startDate: event.startDate ? new Date ( event.startDate ) : null,
-          endDate: event.endDate ? new Date ( event.endDate ) : null
+          endDate: event.endDate ? new Date ( event.endDate ) : null,
+          donationPrice: event.donationPrice != null ? event.donationPrice / 100 : undefined
         },
-        fields: getEventFields ( this.formlySvc )
+        fields: getEventFields ( this.formlySvc, event as unknown as Record<string, unknown> )
       } ) ) )
       events.events.forEach ( ( _, i ) => this.collapsedIndices.add ( i ) )
     } catch ( error ) {

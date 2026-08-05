@@ -8,7 +8,9 @@ import { config } from "dotenv"
 config ( { path: resolve ( process.cwd ( ), ".env" ), quiet: true } )
 
 export const isDevMode = ( ): boolean => {
-  return process.env [ "DEV_MODE" ] === "true" || process.env [ "DEV_MODE" ] === "1"
+  return process.env [ "DEV_MODE" ] === "true" || 
+         process.env [ "DEV_MODE" ] === "1" || 
+         process.env [ "NODE_ENV" ] !== "production"
 }
 
 export const isPreProd = ( ): boolean => {

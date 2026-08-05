@@ -131,11 +131,11 @@
         </div>
       </div>
 
-      <!-- General Donations -->
+      <!-- Donations -->
       <div class="card shadow h-full mb-4 flex flex-col">
         <div class="card-header bg-green-600 text-white flex items-center justify-between">
           <h5 class="mb-0 font-semibold flex items-center gap-2">
-            <app-icon icon="credit-card" /> General Donations
+            <app-icon icon="credit-card" /> Donations & Event Payments
           </h5>
           <span class="text-sm opacity-80">Page {{ donationsPage() + 1 }}</span>
         </div>
@@ -144,6 +144,7 @@
             <thead>
               <tr>
                 <th>Date</th>
+                <th>Type</th>
                 <th>Donor Email</th>
                 <th>Donor Name</th>
                 <th class="text-right">Amount</th>
@@ -153,6 +154,19 @@
               @for (donation of paginatedDonations(); track donation['id']) {
                 <tr class="hover:bg-gray-50 dark:hover:bg-slate-800">
                   <td class="whitespace-nowrap">{{ donation['createdAt'] ? ($any(donation['createdAt']) | date:'medium') : 'Unknown' }}</td>
+                  <td>
+                    @if (donation['isEvent']) {
+                      <span class="badge bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                        <app-icon icon="ticket" class="mr-1" />
+                        {{ donation['eventName'] || 'Event' }}
+                      </span>
+                    } @else {
+                      <span class="badge bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300">
+                        <app-icon icon="heart" class="mr-1" />
+                        General
+                      </span>
+                    }
+                  </td>
                   <td>{{ $any(donation['customerDetails'])?.email || 'Anonymous' }}</td>
                   <td>{{ $any(donation['customerDetails'])?.name || 'Anonymous' }}</td>
                   <td class="text-right font-bold text-green-700 dark:text-green-400">
@@ -164,7 +178,7 @@
           </table>
         </div>
         @if (donations().length === 0) {
-          <div class="card-footer text-gray-500">No general donations found.</div>
+          <div class="card-footer text-gray-500">No donations found.</div>
         } @else {
           <div class="card-footer flex justify-between items-center bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700">
             <button class="btn-outline-secondary btn-sm" [disabled]="donationsPage() === 0" (click)="prevDonationsPage()">Previous</button>

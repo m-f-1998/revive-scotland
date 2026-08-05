@@ -22,10 +22,18 @@
       "problemMatcher": []
     },
     {
+      "label": "Run Stripe CLI Webhook (Stripe listen)",
+      "type": "shell",
+      "command": "stripe listen --forward-to http://localhost:3000/api/events/stripe/webhook",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
       "label": "Start Fullstack",
       "dependsOn": [
         "Run Server (npm run dev)",
-        "Run Angular Client (ng serve)"
+        "Run Angular Client (ng serve)",
+        "Run Stripe CLI Webhook (Stripe listen)"
       ]
     }
   ]

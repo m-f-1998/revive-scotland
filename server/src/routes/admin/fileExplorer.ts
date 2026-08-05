@@ -426,8 +426,6 @@ export const router: FastifyPluginAsync = async app => {
         storageUsed = userDoc.data ( )?. [ "storageUsed" ] || 0
       }
 
-      console.log ( `User ${req.user!.uid} has used ${storageUsed} bytes of storage.` )
-
       return rep.status ( 200 ).send ( {
         used: storageUsed,
         max: MAX_STORAGE_BYTES,

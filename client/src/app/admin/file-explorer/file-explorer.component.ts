@@ -335,7 +335,9 @@ export class FileExplorerComponent {
           modalRef.setInput ( "title", "Overwrite Confirmation" )
           modalRef.setInput ( "body", `File "<strong>${f.name}</strong>" already exists. Do you want to overwrite it?` )
           modalRef.setInput ( "fields", [
-            this.formlySvc.CheckboxInput ( "overwriteAll", { label: "Apply to all files", required: false } )
+            this.formlySvc.CheckboxInput ( "overwriteAll", {
+              label: "Apply to all files"
+            } )
           ] )
           modalRef.setInput ( "confirmText", "Overwrite" )
           modalRef.setInput ( "cancelText", "Skip" )

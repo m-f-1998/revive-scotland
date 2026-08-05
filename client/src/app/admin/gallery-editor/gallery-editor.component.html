@@ -9,6 +9,13 @@
           <app-icon icon="spinner" iconAnimation="spin" class="text-primary text-base" />
         }
       </h2>
+      <button
+        type="button"
+        class="btn-primary flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg shadow-sm cursor-pointer"
+        (click)="addAlbum()"
+      >
+        <app-icon icon="plus-circle" /> Create Album
+      </button>
     </div>
     <p class="text-gray-500 text-sm mb-4">Click an image to toggle its visibility on the public gallery. Use <strong>Add Image</strong> to link files from the Media Library.</p>
     <hr class="border-gray-200 mb-6">
@@ -28,20 +35,33 @@
       <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 items-start">
         @for (name of albumNames(); track name) {
           <div class="card shadow-sm overflow-hidden">
-            <button
-              type="button"
-              class="card-header flex items-center gap-2 w-full text-left cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
-              (click)="toggleCollapsed(name)"
-            >
-              <app-icon icon="folder-open" />
-              <span class="font-semibold">{{ name | titlecase }}</span>
-              <span class="ml-auto text-xs text-gray-400 dark:text-slate-500">
-                {{ allImagesForAlbum(name).length }} files
+            <div class="card-header flex items-center p-0 justify-between bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700">
+              <button
+                type="button"
+                class="flex items-center gap-2 flex-grow text-left cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors py-3 px-4 outline-none"
+                (click)="toggleCollapsed(name)"
+              >
+                <app-icon icon="folder-open" />
+                <span class="font-semibold">{{ name | titlecase }}</span>
+                <span class="ml-2 text-xs text-gray-400 dark:text-slate-500">
+                  ({{ allImagesForAlbum(name).length }} files)
+                </span>
+                @if (isCustomAlbum(name)) {
+                  <button
+                    type="button"
+                    class="text-red-500 hover:text-red-700 p-2 mr-3 rounded-lg cursor-pointer transition-all duration-200"
+                    title="Delete Album"
+                    (click)="deleteAlbum(name)"
+                  >
+                    <app-icon icon="trash" class="w-4 h-4" />
+                  </button>
+                }
+              </button>
+
+              <span class="inline-block transition-transform duration-200 ml-1 p-2" [class.rotate-180]="!collapsedAlbums()[name]">
+                <app-icon icon="chevron-down" class="text-gray-400" />
               </span>
-              <span class="inline-block transition-transform duration-200" [class.rotate-180]="!collapsedAlbums()[name]">
-                <app-icon icon="chevron-down" class="text-gray-400 ml-1" />
-              </span>
-            </button>
+            </div>
 
             <div [class.hidden]="collapsedAlbums()[name]">
               <div class="card-body p-3">

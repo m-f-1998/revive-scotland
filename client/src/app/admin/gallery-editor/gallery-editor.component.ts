@@ -51,6 +51,12 @@ export class GalleryEditorComponent implements OnInit {
   public isHidden ( img: string ): boolean {
     return this.hiddenImages ( ).has ( img )
   }
+  
+  public isCustomAlbum ( name: string ): boolean {
+    const data = this.albumData ( ) [ name ]
+    if ( !data ) return true
+    return data.static.length === 0
+  }
 
   public toggleCollapsed ( name: string ): void {
     this.collapsedAlbums.update ( prev => ( { ...prev, [ name ]: !prev [ name ] } ) )
@@ -103,6 +109,28 @@ export class GalleryEditorComponent implements OnInit {
     } catch {
       // Modal dismissed
     }
+  }
+
+  public async deleteAlbum ( name: string ): Promise<void> {
+    const confirmed = window.confirm ( `Are you sure you want to delete the entire album "${name}"?\n\nThis will un-link all additional images in this album. This cannot be undone.` )
+    if ( !confirmed ) return
+
+    this.albumNames.update ( names => names.filter ( n => n !== name ) )
+
+    this.albumData.update ( data => {
+      const cloned = { ...data }
+      delete cloned [ name ]
+      return cloned
+    } )
+
+    this.additionalImages.update ( additional => {
+      const cloned = { ...additional }
+      delete cloned [ name ]
+      return cloned
+    } )
+
+    await this.saveSettings ( )
+    this.toastrSvc.success ( "Album deleted successfully!" )
   }
 
   public async addFromMediaLibrary ( albumName: string ): Promise<void> {

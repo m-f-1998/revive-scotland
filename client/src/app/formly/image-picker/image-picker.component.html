@@ -2,7 +2,7 @@
   <input type="text" class="form-control" [value]="displayFilename()" name="url-{{this.id}}" placeholder="Name of Selected File" readonly>
 
   <div class="grid grid-cols-3 gap-3">
-    <button class="btn-secondary w-full border border-zinc-200 bg-white dark:bg-zinc-800 dark:border-zinc-700 items-center justify-center gap-2 font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors" type="button" (click)="quickUploadInput.click()" [disabled]="uploading()">
+    <button class="btn-secondary w-full border border-zinc-200 bg-zinc-800 border-zinc-700 items-center justify-center gap-2 font-semibold hover:bg-zinc-700 transition-colors" type="button" (click)="quickUploadInput.click()" [disabled]="uploading()">
       @if (uploading()) {
         <app-icon icon="spinner" class="animate-spin" />
         Uploading
@@ -13,12 +13,12 @@
     </button>
     <input type="file" #quickUploadInput class="hidden" accept="image/*,video/*" (change)="onQuickUpload($event)">
 
-    <button class="btn-secondary w-full border border-zinc-200 bg-white dark:bg-zinc-800 dark:border-zinc-700 items-center justify-center gap-2 font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors" type="button" (click)="openFileSelector()">
+    <button class="btn-secondary w-full border border-zinc-200 bg-zinc-800 border-zinc-700 items-center justify-center gap-2 font-semibold hover:bg-zinc-700 transition-colors" type="button" (click)="openFileSelector()">
       <app-icon icon="folder-open" />
       Select
     </button>
 
-    <button class="btn-secondary w-full border border-zinc-200 bg-white dark:bg-zinc-800 dark:border-zinc-700 items-center justify-center gap-2 font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors" type="button" [disabled]="!this.formControl.value" (click)="openPreview()">
+    <button class="btn-secondary w-full border border-zinc-200 bg-zinc-800 border-zinc-700 items-center justify-center gap-2 font-semibold hover:bg-zinc-700 transition-colors" type="button" [disabled]="!this.formControl.value" (click)="openPreview()">
       <app-icon icon="external-link-alt" />
       Preview
     </button>

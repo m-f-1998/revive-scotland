@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, WritableSignal } from "@angular/core"
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
 import { ModalService } from "@app/services/modal.service"
 import { FormlyFieldConfig } from "@ngx-formly/core"
 import { InputDialogComponent } from "../input-dialog/input-dialog.component"
@@ -15,7 +15,7 @@ import { IconComponent } from "../../icon/icon.component"
   templateUrl: "./repeat-formly-field.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
-export class RepeatFieldComponent extends FieldType {
+export class RepeatFieldComponent extends FieldType implements OnInit {
   public editingIndex: number | null = null
   public valuesInModel: WritableSignal<unknown[]> = signal ( [ ] )
 
@@ -53,6 +53,18 @@ export class RepeatFieldComponent extends FieldType {
 
   public constructor ( ) {
     super ( )
+  }
+
+  public ngOnInit ( ): void {
+    const current = this.formControl?.value
+    const defaults = this.field?.defaultValue
+    if ( ( !current || ( Array.isArray ( current ) && current.length === 0 ) )
+      && Array.isArray ( defaults ) && defaults.length > 0 ) {
+      this.formControl?.setValue ( [ ...defaults ] )
+      this.valuesInModel.set ( [ ...defaults ] )
+    } else if ( Array.isArray ( current ) ) {
+      this.valuesInModel.set ( [ ...current ] )
+    }
   }
 
   public addField (  ) {

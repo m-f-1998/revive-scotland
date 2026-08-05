@@ -1,7 +1,10 @@
 import { FastifyPluginAsync } from "fastify"
 import { getFirestore } from "../admin.js"
 import { checkFirebaseAuth } from "./middleware/fileExplorer.js"
+import { clearEventsCache } from "../events.js"
 import Stripe from "stripe"
+import { StripeService } from "../../services/stripe.service.js"
+import { isDevMode } from "../static.js"
 
 interface Event {
   id: string
@@ -14,7 +17,7 @@ interface Event {
   startTime?: string
   endTime?: string
 
-  actionType: "webpage" | "contact"
+  actionType: "webpage" | "form"
   webpageUrl?: string
 
   contactFormFields?: Record<string, object> [ ]
@@ -44,6 +47,21 @@ const filterActiveAndRecentEvents = ( events: Event [ ] ): Event [ ] => {
   } )
 }
 
+const getAbsoluteImageUrl = ( url: string | undefined ): string | undefined => {
+  if ( !url ) return undefined
+  if ( url.startsWith ( "http" ) ) return url
+  const host = "https://revivescotland.co.uk"
+  let resolved = url
+  if ( !url.startsWith ( "/" ) ) {
+    if ( !url.includes ( "." ) && url.length > 20 ) {
+      resolved = `/api/share/${url}`
+    } else {
+      resolved = `/api/img/${url}`
+    }
+  }
+  return `${host}${resolved}`
+}
+
 export const router: FastifyPluginAsync = async app => {
   /**
    * GET /api/admin/events
@@ -68,7 +86,10 @@ export const router: FastifyPluginAsync = async app => {
           events = legacyData.events
         }
       } else {
-        events = snapshot.docs.map ( doc => doc.data ( ) as Event )
+        events = snapshot.docs.map ( doc => {
+          const data = doc.data ( ) as Event
+          return { ...data, actionType: data.actionType === "form" || ( data.actionType as string ) === "contact" ? "form" : "webpage" }
+        } )
       }
 
       const eventsList = filterActiveAndRecentEvents ( events )
@@ -98,6 +119,8 @@ export const router: FastifyPluginAsync = async app => {
           eventTitle: data["eventTitle"],
           formData: data["formData"],
           status: data["status"],
+          paymentIntent: data["paymentIntent"] || null,
+          stripeInvoiceId: data["stripeInvoiceId"] || null,
           createdAt: data["createdAt"]?.toDate ?. ( )?.toISOString ( ) || null
         }
       } )
@@ -112,6 +135,140 @@ export const router: FastifyPluginAsync = async app => {
     } catch ( error ) {
       console.error ( "Error fetching registrations:", error )
       return rep.status ( 500 ).send ( "Failed to fetch registrations." )
+    }
+  } )
+
+  /**
+   * POST /api/admin/events/registrations/:id/pay-link
+   * Generates a reusable Stripe Payment Link for a custom donation amount.
+   */
+  app.post ( "/registrations/:id/pay-link", { preHandler: checkFirebaseAuth }, async ( req, rep ) => {
+    try {
+      const { id } = req.params as { id: string }
+      const { amountPence, eventId, eventTitle } = req.body as { amountPence: number; eventId: string; eventTitle: string }
+
+      if ( !id || !amountPence || !eventId ) {
+        return rep.status ( 400 ).send ( { error: "Missing required fields." } )
+      }
+
+      const stripe = StripeService.getStripeInstance()
+      if (!stripe) {
+        if (isDevMode()) {
+          return rep.status(200).send({ url: "https://sandbox.stripe.com/pay-link-simulated" })
+        }
+        return rep.status(500).send({ error: "Stripe is not configured." })
+      }
+
+      // We need a product to attach to the price. 
+      // If we don't have one on hand, create a generic "Optional Donation" product.
+      let productId: string
+      const search = await stripe.products.search({
+        query: `metadata['eventId']:'${eventId}' AND name~'Donation'`,
+        limit: 1
+      })
+
+      if (search.data.length > 0) {
+        productId = search.data[0].id
+      } else {
+        const product = await stripe.products.create({
+          name: `Donation: ${eventTitle || 'Event'}`,
+          metadata: { eventId }
+        })
+        productId = product.id
+      }
+
+      // Create an ad-hoc price
+      const price = await stripe.prices.create({
+        currency: 'gbp',
+        unit_amount: amountPence,
+        product: productId,
+      })
+
+      // Generate the reusable payment link
+      const paymentLink = await stripe.paymentLinks.create({
+        line_items: [
+          {
+            price: price.id,
+            quantity: 1,
+          },
+        ],
+        metadata: {
+          registrationId: id,
+          eventId
+        },
+        after_completion: {
+          type: "redirect",
+          redirect: {
+            url: `${process.env['HOST_URL'] || 'https://revivescotland.co.uk'}/events?registration=success`
+          }
+        }
+      })
+
+      return rep.status(200).send({ url: paymentLink.url })
+    } catch (error) {
+      console.error ( "Error generating custom payment link:", error )
+      return rep.status ( 500 ).send ( "Failed to generate payment link." )
+    }
+  } )
+
+  /**
+   * DELETE /api/admin/events/registrations/:id
+   * Deletes a registration and refunds any associated Stripe payment.
+   */
+  app.delete ( "/registrations/:id", { preHandler: checkFirebaseAuth }, async ( req, rep ) => {
+    try {
+      const { id } = req.params as { id: string }
+      if ( !id ) {
+        return rep.status ( 400 ).send ( { error: "Missing registration id" } )
+      }
+
+      const db = getFirestore ( )
+      const docRef = db.collection ( "event_registrations" ).doc ( id )
+      const doc = await docRef.get ( )
+
+      if ( !doc.exists ) {
+        return rep.status ( 404 ).send ( { error: "Registration not found" } )
+      }
+
+      const data = doc.data ( ) || { }
+      const paymentIntentId = data [ "paymentIntent" ] ? String ( data [ "paymentIntent" ] ) : ""
+      const stripeInvoiceId = data [ "stripeInvoiceId" ] ? String ( data [ "stripeInvoiceId" ] ) : ""
+
+      let refunded = false
+      let refundId: string | null = null
+      let invoiceVoided = false
+
+      if ( paymentIntentId ) {
+        try {
+          const result = await StripeService.refundPaymentIntent ( paymentIntentId )
+          if ( result ) {
+            refunded = true
+            refundId = result.refundId
+          } else if ( process.env [ "STRIPE_SECRET_KEY" ] ) {
+            return rep.status ( 500 ).send ( { error: "Stripe refund failed. Registration was not deleted." } )
+          }
+        } catch ( err ) {
+          console.error ( "Stripe refund error:", err )
+          return rep.status ( 500 ).send ( {
+            error: err instanceof Error ? err.message : "Stripe refund failed. Registration was not deleted."
+          } )
+        }
+      } else if ( stripeInvoiceId ) {
+        // Unpaid donate-later invoice — void so they can't pay after removal
+        invoiceVoided = await StripeService.voidInvoiceIfOpen ( stripeInvoiceId )
+      }
+
+      await docRef.delete ( )
+
+      return rep.status ( 200 ).send ( {
+        message: "Registration deleted.",
+        refunded,
+        refundId,
+        invoiceVoided
+      } )
+    } catch ( error ) {
+      console.error ( "Error deleting registration:", error )
+      return rep.status ( 500 ).send ( { error: "Failed to delete registration." } )
     }
   } )
 
@@ -149,7 +306,7 @@ export const router: FastifyPluginAsync = async app => {
           location: String ( event.location || "" ).substring ( 0, 200 ),
           startDate: event.startDate,
           endDate: event.endDate,
-          actionType: event.actionType === "contact" ? "contact" : "webpage"
+          actionType: event.actionType === "form" || ( event.actionType as string ) === "contact" ? "form" : "webpage"
         }
 
         if ( event.imageUrl ) model.imageUrl = String ( event.imageUrl ).trim ( )
@@ -161,9 +318,9 @@ export const router: FastifyPluginAsync = async app => {
         if ( event.stripeProductId ) model.stripeProductId = event.stripeProductId
         if ( event.stripePriceId ) model.stripePriceId = event.stripePriceId
 
-        if ( model.actionType === "contact" ) {
+        if ( model.actionType === "form" ) {
           if ( !Array.isArray ( event.contactFormFields ) || event.contactFormFields.length === 0 ) {
-            throw "Contact form events must have at least one contact form field."
+            throw "Registration form events must have at least one form field."
           }
           model.contactFormFields = Array.isArray ( event.contactFormFields ) ? event.contactFormFields : [ ]
         }
@@ -180,9 +337,11 @@ export const router: FastifyPluginAsync = async app => {
             throw "Stripe is not configured. Cannot create a donation-required event. Please add STRIPE_SECRET_KEY."
           }
           if ( model.donationPrice && !model.stripeProductId ) {
+            const stripeImages = getAbsoluteImageUrl ( model.imageUrl ) ? [ getAbsoluteImageUrl ( model.imageUrl ) as string ] : undefined
             const product = await stripe.products.create ( {
               name: model.title,
-              description: model.donationDescription || model.description
+              description: model.donationDescription || model.description,
+              images: stripeImages
             } )
             const price = await stripe.prices.create ( {
               product: product.id,
@@ -233,6 +392,7 @@ export const router: FastifyPluginAsync = async app => {
 
       eventsCache = { events: filterActiveAndRecentEvents ( sanitizedEvents ) }
       cacheTime = Date.now ( )
+      clearEventsCache ( )
 
       const shared_links = db.collection ( "shared_links" )
       const snapshot = await shared_links.where ( "type", "==", "hero_editor" ).get ( )
@@ -298,6 +458,7 @@ export const router: FastifyPluginAsync = async app => {
       if ( eventsCache ) {
         eventsCache.events = eventsCache.events.filter ( e => e.id !== id )
       }
+      clearEventsCache ( )
 
       return rep.status ( 200 ).send ( { message: `Event deleted successfully.` } )
     } catch ( error ) {

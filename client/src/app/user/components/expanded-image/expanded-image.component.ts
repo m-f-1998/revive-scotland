@@ -35,8 +35,8 @@ export class ExpandedImageComponent {
     return `/api/img/${url}?w=${w}&f=webp`
   }
 
-  public imgSrcset ( url: string ): string | null {
-    if ( url.startsWith ( "/" ) || url.startsWith ( "http" ) ) return null
+  public imgSrcset ( url: string ): string | undefined {
+    if ( url.startsWith ( "/" ) || url.startsWith ( "http" ) ) return undefined
     return `/api/img/${url}?w=320&f=webp 320w, /api/img/${url}?w=640&f=webp 640w, /api/img/${url}?w=1024&f=webp 1024w`
   }
 
