@@ -19,10 +19,10 @@
       <li>
         <a (click)="goTo('/')"
            class="px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors cursor-pointer text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100"
-           [class.bg-zinc-100]="url() === '/'"
-           [class.dark:bg-zinc-800]="url() === '/'"
-           [class.text-blue-600]="url() === '/'"
-           [class.dark:text-blue-400]="url() === '/'">
+           [class.bg-zinc-100]="url() === '/' || url() === ''"
+           [class.dark:bg-zinc-800]="url() === '/' || url() === ''"
+           [class.text-blue-600]="url() === '/' || url() === ''"
+           [class.dark:text-blue-400]="url() === '/' || url() === ''">
           <app-icon icon="home" /> Home
         </a>
       </li>
@@ -77,10 +77,10 @@
       <li>
         <a (click)="goTo('/')"
            class="block px-4 py-3 rounded-lg font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-           [class.text-blue-600]="url() === '/'"
-           [class.dark:text-blue-400]="url() === '/'"
-           [class.bg-blue-50]="url() === '/'"
-           [class.dark:bg-blue-900]="url() === '/'">
+           [class.text-blue-600]="url() === '/' || url() === ''"
+           [class.dark:text-blue-400]="url() === '/' || url() === ''"
+           [class.bg-blue-50]="url() === '/' || url() === ''"
+           [class.dark:bg-blue-900]="url() === '/' || url() === ''">
           <app-icon icon="home" /> Home
         </a>
       </li>

@@ -154,7 +154,7 @@ export class StripeService {
     }
 
     const existing = await stripe.refunds.list ( { payment_intent: paymentIntentId, limit: 10 } )
-    const alreadyRefunded = existing.data.some ( (r: Stripe.Refund) => r.status === "succeeded" || r.status === "pending" )
+    const alreadyRefunded = existing.data.some ( ( r: Stripe.Refund ) => r.status === "succeeded" || r.status === "pending" )
     if ( alreadyRefunded ) {
       return { refundId: existing.data [ 0 ]!.id }
     }
@@ -214,7 +214,7 @@ export class StripeService {
     }
   }
 
-  public static async createEventProductAndPrice ( title: string, pricePence: number ): Promise<{ productId: string, priceId: string } | undefined> {
+  public static async createEventProductAndPrice ( title: string, pricePence: number ): Promise<{ productId: string; priceId: string } | undefined> {
     const stripe = this.getStripeInstance ( )
     if ( !stripe ) return undefined
 

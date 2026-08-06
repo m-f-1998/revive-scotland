@@ -16,6 +16,7 @@ import { ApiService } from "../../services/api.service"
 import { IconComponent } from "../../icon/icon.component"
 import { getDefaultRegistrationFields } from "./registration-form.defaults"
 import { SuccessModalComponent } from "./success-modal/success-modal.component"
+import { ErrorModalComponent } from "./error-modal/error-modal.component"
 
 @Component ( {
   selector: "app-events",
@@ -130,10 +131,13 @@ export class EventsComponent implements OnInit {
           const apiMessage = e instanceof HttpErrorResponse
             ? ( typeof e.error === "string" ? e.error : e.error?.message )
             : undefined
-          this.toastrSvc.error (
-            apiMessage || "An error occurred while submitting your registration. Please try again later.",
-            "Error"
-          )
+            
+          const errorRef = this.modalSvc.open ( ErrorModalComponent, {
+            centered: true
+          } )
+          errorRef.setInput ( "title", "Registration Error" )
+          errorRef.setInput ( "message", apiMessage || "An error occurred while submitting your registration. Please try again later." )
+          errorRef.setInput ( "type", "error" )
         } finally {
           this.loading.set ( false )
         }
@@ -175,7 +179,7 @@ export class EventsComponent implements OnInit {
           step: 0.01
         },
         expressions: {
-          hide: "!model.optInDonation"
+          hide: ( formlyField: FormlyFieldConfig ) => !formlyField.model?.optInDonation
         }
       } )
     }
@@ -211,11 +215,14 @@ export class EventsComponent implements OnInit {
         sessionStorage.removeItem ( "checkoutDraftId" )
         sessionStorage.removeItem ( "checkoutUrl" )
         sessionStorage.removeItem ( "checkoutEventTitle" )
-        this.toastrSvc.warning (
-          "Registration failed to complete or was cancelled. Please try again or contact us if you need assistance.",
-          "Payment cancelled",
-          { timeOut: 14000 }
-        )
+        
+        const errorRef = this.modalSvc.open ( ErrorModalComponent, {
+          centered: true
+        } )
+        errorRef.setInput ( "title", "Payment Cancelled" )
+        errorRef.setInput ( "message", "Registration failed to complete or was cancelled. Please try again or contact us if you need assistance." )
+        errorRef.setInput ( "type", "warning" )
+        
         this.clearQueryParams ( )
       }
     } )

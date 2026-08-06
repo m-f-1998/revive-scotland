@@ -70,16 +70,30 @@ const parseFeastFromHtml = ( html: string, dateKey: string ): { name: string; co
 
 const cleanReadingHtml = ( html?: string ): string | undefined => {
   if ( !html ) return undefined
-  // Strip out all wrapper divs entirely and separate blocks with exactly two new lines.
-  // This produces clean, raw text blocks that play nicely with Angular/Tailwind Prose.
-  let clean = html
-    .replace ( /<div style="text-align:justify; text-indent:1em;">&#160;&#160;/g, "\n\n" )
-    .replace ( /<div style="text-indent: -2em; margin-left: 3em;">&#160;&#160;/g, "\n\n" )
-    .replace ( /<div style="text-align:justify;">/g, "" ) // First paragraph usually starts with this
-    .replace ( /<\/div>/g, "" )
 
-  // Replace <br> tags with single new lines in case Universalis uses them mid-paragraph
-  clean = clean.replace ( /<br\s*\/?>/gi, "\n" )
+  const clean = html
+    // 1. Remove float right blocks (they hold an empty <br> that breaks flow)
+    .replace ( /<div[^>]*style="[^"]*float:\s*right[^"]*"[^>]*>.*?<\/div>/gi, "" )
+    // 2. Psalms often use specific spans. Mark verses bold.
+    .replace ( /<span[^>]*class="psalm-verse"[^>]*>([\s\S]*?)<\/span>/gi, ( _match, p1 ) => {
+      // It might contain divs, strip them for the bold text
+      return `\n\n<strong>${p1.replace ( /<div[^>]*>/gi, "" ).replace ( /<\/div>/gi, "" )}</strong>\n\n`
+    } )
+    // 3. Stanza breaks via margin-top
+    .replace ( /<div[^>]*style="[^"]*margin-top:[^"]*"[^>]*>/gi, "\n\n" )
+    // 4. Stanza lines via text-indent
+    .replace ( /<div[^>]*style="[^"]*text-indent:[^"]*"[^>]*>/gi, "\n" )
+    // 5. Stanza groups in psalms
+    .replace ( /<div[^>]*class="psalm-stanza"[^>]*>/gi, "\n\n" )
+    // 6. Generic divs usually mean block level elements (paragraphs / new lines)
+    .replace ( /<div[^>]*>/gi, "\n" )
+    .replace ( /<\/div>/gi, "" )
+    // 7. BRs
+    .replace ( /<br\s*\/?>/gi, "\n\n" )
+    // 8. Clean entities
+    .replace ( /&nbsp;|&#160;/gi, " " )
+    // 9. Consolidate new lines
+    .replace ( /\n{3,}/g, "\n\n" )
 
   return clean.trim ( )
 }

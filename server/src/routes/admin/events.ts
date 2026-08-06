@@ -151,41 +151,41 @@ export const router: FastifyPluginAsync = async app => {
         return rep.status ( 400 ).send ( { error: "Missing required fields." } )
       }
 
-      const stripe = StripeService.getStripeInstance()
-      if (!stripe) {
-        if (isDevMode()) {
-          return rep.status(200).send({ url: "https://sandbox.stripe.com/pay-link-simulated" })
+      const stripe = StripeService.getStripeInstance ()
+      if ( !stripe ) {
+        if ( isDevMode () ) {
+          return rep.status ( 200 ).send ( { url: "https://sandbox.stripe.com/pay-link-simulated" } )
         }
-        return rep.status(500).send({ error: "Stripe is not configured." })
+        return rep.status ( 500 ).send ( { error: "Stripe is not configured." } )
       }
 
       // We need a product to attach to the price. 
       // If we don't have one on hand, create a generic "Optional Donation" product.
       let productId: string
-      const search = await stripe.products.search({
+      const search = await stripe.products.search ( {
         query: `metadata['eventId']:'${eventId}' AND name~'Donation'`,
         limit: 1
-      })
+      } )
 
-      if (search.data.length > 0) {
+      if ( search.data.length > 0 ) {
         productId = search.data[0].id
       } else {
-        const product = await stripe.products.create({
-          name: `Donation: ${eventTitle || 'Event'}`,
+        const product = await stripe.products.create ( {
+          name: `Donation: ${eventTitle || "Event"}`,
           metadata: { eventId }
-        })
+        } )
         productId = product.id
       }
 
       // Create an ad-hoc price
-      const price = await stripe.prices.create({
-        currency: 'gbp',
+      const price = await stripe.prices.create ( {
+        currency: "gbp",
         unit_amount: amountPence,
         product: productId,
-      })
+      } )
 
       // Generate the reusable payment link
-      const paymentLink = await stripe.paymentLinks.create({
+      const paymentLink = await stripe.paymentLinks.create ( {
         line_items: [
           {
             price: price.id,
@@ -199,13 +199,13 @@ export const router: FastifyPluginAsync = async app => {
         after_completion: {
           type: "redirect",
           redirect: {
-            url: `${process.env['HOST_URL'] || 'https://revivescotland.co.uk'}/events?registration=success`
+            url: `${process.env["HOST_URL"] || "https://revivescotland.co.uk"}/events?registration=success`
           }
         }
-      })
+      } )
 
-      return rep.status(200).send({ url: paymentLink.url })
-    } catch (error) {
+      return rep.status ( 200 ).send ( { url: paymentLink.url } )
+    } catch ( error ) {
       console.error ( "Error generating custom payment link:", error )
       return rep.status ( 500 ).send ( "Failed to generate payment link." )
     }

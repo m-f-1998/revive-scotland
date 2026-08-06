@@ -66,17 +66,27 @@
             <h4 class="font-bold text-2xl mb-3 text-zinc-900 dark:text-zinc-50">{{event.title}}</h4>
 
             <div class="space-y-3 mb-6">
-              <div class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-300">
-                <app-icon icon="calendar" class="mt-0.5 text-blue-500" />
-                <span>{{dateSvc.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime)}}</span>
+              <div class="flex items-center gap-3 text-sm text-zinc-600 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+                  <app-icon icon="calendar" />
+                </div>
+                <span class="font-medium">{{dateSvc.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime)}}</span>
               </div>
 
-              <div class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-300">
-                <app-icon icon="map-marker" class="mt-0.5 text-red-500" />
-                <a [href]="getGoogleMapsUrl(event.location)" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">
-                  {{ event.location }}
-                </a>
-              </div>
+              <a [href]="getGoogleMapsUrl(event.location)" target="_blank" rel="noopener noreferrer" 
+                 class="group flex items-center gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 hover:border-blue-200 dark:hover:border-blue-800 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all text-left">
+                <div class="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <app-icon icon="map-marker" />
+                </div>
+                <div class="flex-1">
+                  <span class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
+                    {{ event.location }}
+                  </span>
+                  <span class="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider mt-0.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    View Map <app-icon icon="arrow-up-right-from-square" class="text-[10px]" />
+                  </span>
+                </div>
+              </a>
             </div>
 
             <p class="text-base text-zinc-600 dark:text-zinc-400 line-clamp-6 mb-6 flex-grow whitespace-pre-wrap">{{event.description}}</p>

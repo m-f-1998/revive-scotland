@@ -163,7 +163,7 @@ export const getEventFields = ( formlySvc: FormlyService, eventModel?: Record<st
             }
           }, {
             expressions: {
-              hide: "model.donationRequired === 'none' || !model.donationRequired",
+              hide: ( config: FormlyFieldConfig ) => config.model.donationRequired === "none" || !config.model.donationRequired,
               "props.required": ( config: FormlyFieldConfig ) => config.model?.donationRequired !== "none" && !!config.model?.donationRequired
             }
           } )
@@ -177,7 +177,7 @@ export const getEventFields = ( formlySvc: FormlyService, eventModel?: Record<st
       maxLength: 500
     }, {
       expressions: {
-        hide: "model.donationRequired === 'none' || !model.donationRequired || model.actionType !== 'form'"
+        hide: ( config: FormlyFieldConfig ) => config.model.donationRequired === "none" || !config.model.donationRequired || config.model.actionType !== "form"
       }
     } )
   ]
