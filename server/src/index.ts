@@ -119,9 +119,15 @@ await app.register ( helmet, {
         "www.googletagmanager.com",
         ( req: IncomingMessage ) => req.cspNonce ? `'nonce-${req.cspNonce}'` : "",
       ],
+      // Nonce covers Angular-injected <style> tags (via CSP_NONCE).
       styleSrc: [
         "'self'",
-        "'unsafe-inline'"
+        ( req: IncomingMessage ) => req.cspNonce ? `'nonce-${req.cspNonce}'` : "",
+      ],
+      // Required for Angular CDK overlay / toastr positioning (element.style.*).
+      // Nonces do not apply to style attributes.
+      styleSrcAttr: [
+        "'unsafe-inline'",
       ],
       scriptSrcElem: [
         "'self'",

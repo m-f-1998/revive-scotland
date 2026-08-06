@@ -10,6 +10,28 @@ declare module "fastify" {
   }
 }
 
+/** Admin emails from env only — SUPERADMIN_EMAIL, ADMIN_EMAIL, ADMIN_EMAILS (comma-separated). */
+export const getAdminEmails = ( ): string [ ] => {
+  const emails: string [ ] = [ ]
+  const single = [ process.env [ "SUPERADMIN_EMAIL" ], process.env [ "ADMIN_EMAIL" ] ]
+  for ( const e of single ) {
+    if ( e?.trim ( ) ) emails.push ( e.trim ( ).toLowerCase ( ) )
+  }
+  const list = process.env [ "ADMIN_EMAILS" ]
+  if ( list ) {
+    for ( const e of list.split ( "," ) ) {
+      const trimmed = e.trim ( ).toLowerCase ( )
+      if ( trimmed ) emails.push ( trimmed )
+    }
+  }
+  return [ ...new Set ( emails ) ]
+}
+
+export const isEmailAdmin = ( email: string | undefined | null ): boolean => {
+  if ( !email ) return false
+  return getAdminEmails ( ).includes ( email.toLowerCase ( ) )
+}
+
 export const checkFirebaseAuth = async (
   request: FastifyRequest,
   reply: FastifyReply
@@ -25,21 +47,11 @@ export const checkFirebaseAuth = async (
   try {
     const decodedToken = await getAuth ( ).verifyIdToken ( idToken )
 
-    // Admin Allowlist check
-    const allowedEmails = [
-      "admin@matthewfrankland.co.uk",
-      "lucamcq@googlemail.com",
-      "321.cmorgan@gmail.com"
-    ]
+    if ( !decodedToken.email_verified ) {
+      return reply.code ( 403 ).send ( "Forbidden: Email not verified." )
+    }
 
-    // Add logic to check environment variables if provided
-    const envAdmins = process.env["ADMIN_EMAILS"]
-      ? process.env["ADMIN_EMAILS"].split ( "," ).map ( e => e.trim ( ).toLowerCase ( ) )
-      : [ ]
-
-    const allAllowed = [ ...allowedEmails, ...envAdmins ]
-
-    if ( !decodedToken.email || !allAllowed.includes ( decodedToken.email.toLowerCase ( ) ) ) {
+    if ( !isEmailAdmin ( decodedToken.email ) ) {
       return reply.code ( 403 ).send ( "Forbidden: User is not an administrator." )
     }
 

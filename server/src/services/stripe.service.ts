@@ -190,8 +190,10 @@ export class StripeService {
     const stripe = this.getStripeInstance ( )
     const endpointSecret = process.env [ "STRIPE_WEBHOOK_SECRET" ]
 
+    // Only skip verification in explicit DEV_MODE with no real webhook secret.
+    // Never fail-open when a secret is configured.
     if ( isDevMode ( ) && ( !endpointSecret || endpointSecret === "mock" ) ) {
-      console.warn ( "reCAPTCHA / Stripe Webhook signature verification bypassed in DEV_MODE" )
+      console.warn ( "Stripe webhook signature verification bypassed in DEV_MODE (no webhook secret)" )
       return JSON.parse ( rawBody.toString ( ) ) as Stripe.Event
     }
 
@@ -199,19 +201,11 @@ export class StripeService {
       throw new Error ( "Stripe is not configured." )
     }
 
-    try {
-      return stripe.webhooks.constructEvent (
-        rawBody,
-        signature,
-        endpointSecret
-      )
-    } catch ( err ) {
-      if ( isDevMode ( ) ) {
-        console.warn ( "Webhook signature verification failed, but bypassing in DEV_MODE: ", err )
-        return JSON.parse ( rawBody.toString ( ) ) as Stripe.Event
-      }
-      throw err
-    }
+    return stripe.webhooks.constructEvent (
+      rawBody,
+      signature,
+      endpointSecret
+    )
   }
 
   public static async createEventProductAndPrice ( title: string, pricePence: number ): Promise<{ productId: string; priceId: string } | undefined> {

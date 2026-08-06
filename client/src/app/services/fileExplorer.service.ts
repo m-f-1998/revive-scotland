@@ -119,9 +119,9 @@ export class FileExplorerService {
       }
 
       // 3. Confirm the upload and update quota
-      await this.apiSvc.post ( `${this.baseRoute}/upload-complete`, { 
-        key: fullKey, 
-        fileSize: file.size 
+      await this.apiSvc.post ( `${this.baseRoute}/upload-complete`, {
+        key: fullKey,
+        fileSize: file.size
       }, await this.getAuthHeaders ( ) )
 
     } catch ( err ) {

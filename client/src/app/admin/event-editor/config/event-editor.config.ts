@@ -127,7 +127,7 @@ export const getEventFields = ( formlySvc: FormlyService, eventModel?: Record<st
       defaultValue: getDefaultRegistrationFields ( formlySvc ),
       props: {
         addText: "Add Field",
-        description: "Starts with Full Name, Email, and Phone. Add or edit fields as needed."
+        description: "Starts with Full Name, Email, and Phone. Add extra fields as needed."
       },
       expressions: {
         "props.required": ( formlyField: FormlyFieldConfig ) => formlyField.model?.actionType === "form",

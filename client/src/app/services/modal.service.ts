@@ -60,7 +60,7 @@ export class ModalService {
   public open<T, R = unknown> ( component: ComponentType<T>, options: ModalOptions = { } ): ModalRef<T, R> {
     const panelClasses = options.lightbox
       ? [ "lightbox-panel" ]
-      : [ "modal-panel", ...( options.size && options.size !== "md" ? [ `modal-${options.size}` ] : [] ) ]
+      : [ "modal-panel", ...( options.size && options.size !== "md" ? [ `modal-${options.size}` ] : [ ] ) ]
     const backdropClass = options.lightbox ? "lightbox-backdrop" : "modal-backdrop"
 
     const config: DialogConfig<unknown, import ( "@angular/cdk/dialog" ).DialogRef<R, T>> = {

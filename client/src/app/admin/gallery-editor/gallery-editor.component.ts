@@ -51,7 +51,7 @@ export class GalleryEditorComponent implements OnInit {
   public isHidden ( img: string ): boolean {
     return this.hiddenImages ( ).has ( img )
   }
-  
+
   public isCustomAlbum ( name: string ): boolean {
     const data = this.albumData ( ) [ name ]
     if ( !data ) return true
@@ -74,8 +74,8 @@ export class GalleryEditorComponent implements OnInit {
     modalRef.setInput ( "title", "Create New Album" )
     modalRef.setInput ( "body", "Enter a name for the new album. (Use lowercase, no spaces)" )
     modalRef.setInput ( "fields", [
-      this.formlySvc.TextInput ( "albumName", { 
-        label: "Album Name", 
+      this.formlySvc.TextInput ( "albumName", {
+        label: "Album Name",
         required: true,
         attributes: { pattern: "^[a-z0-9-]+$" },
         placeholder: "e.g., edinburgh-2024"
@@ -87,19 +87,19 @@ export class GalleryEditorComponent implements OnInit {
       const result = await modalRef.result as { albumName: string }
       const newName = result.albumName
 
-      if ( this.albumNames ().includes ( newName ) ) {
+      if ( this.albumNames ( ).includes ( newName ) ) {
         this.toastrSvc.error ( "An album with this name already exists." )
         return
       }
 
       this.albumNames.update ( names => [ ...names, newName ] )
 
-      const currentData = { ...this.albumData () }
-      currentData [ newName ] = { static: [], additional: [] }
+      const currentData = { ...this.albumData ( ) }
+      currentData [ newName ] = { static: [ ], additional: [ ] }
       this.albumData.set ( currentData )
 
-      const currentAdditional = { ...this.additionalImages () }
-      currentAdditional [ newName ] = []
+      const currentAdditional = { ...this.additionalImages ( ) }
+      currentAdditional [ newName ] = [ ]
       this.additionalImages.set ( currentAdditional )
 
       this.collapsedAlbums.update ( c => ( { ...c, [ newName ]: false } ) )

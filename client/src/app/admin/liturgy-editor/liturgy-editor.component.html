@@ -45,16 +45,16 @@
           <div class="card bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col transition-all duration-300">
             @switch (activeTab()) {
               @case ('prayers') {
-                <app-prayers-editor 
-                  [prayers]="prayers()" 
+                <app-prayers-editor
+                  [prayers]="prayers()"
                   [saving]="savingPrayers()"
                   (prayersChange)="onPrayersChange($event)"
                   (save)="savePrayers()">
                 </app-prayers-editor>
               }
               @case ('reflections') {
-                <app-reflections-editor 
-                  [reflections]="reflections()" 
+                <app-reflections-editor
+                  [reflections]="reflections()"
                   [saving]="savingReflections()"
                   (reflectionsChange)="onReflectionsChange($event)"
                   (save)="saveReflections()">

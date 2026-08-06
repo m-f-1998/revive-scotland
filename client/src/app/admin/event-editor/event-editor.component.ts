@@ -481,7 +481,7 @@ export class EventEditorComponent implements OnInit {
   }
 
   public async generatePaymentLink ( reg: Record<string, unknown> ): Promise<void> {
-    const event = this.getSelectedEvent ()
+    const event = this.getSelectedEvent ( )
     if ( !event ) return
 
     const modalRef = this.modalSvc.open ( InputDialogComponent, { centered: true } )

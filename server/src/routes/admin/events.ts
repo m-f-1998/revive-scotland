@@ -76,7 +76,7 @@ export const router: FastifyPluginAsync = async app => {
       const eventsCollection = getFirestore ( ).collection ( "events" )
       const snapshot = await eventsCollection.get ( )
 
-      let events: Event[] = []
+      let events: Event[] = [ ]
 
       // Fallback logic for legacy `default` document migration
       const legacyDoc = snapshot.docs.find ( doc => doc.id === "default" )
@@ -151,15 +151,15 @@ export const router: FastifyPluginAsync = async app => {
         return rep.status ( 400 ).send ( { error: "Missing required fields." } )
       }
 
-      const stripe = StripeService.getStripeInstance ()
+      const stripe = StripeService.getStripeInstance ( )
       if ( !stripe ) {
-        if ( isDevMode () ) {
+        if ( isDevMode ( ) ) {
           return rep.status ( 200 ).send ( { url: "https://sandbox.stripe.com/pay-link-simulated" } )
         }
         return rep.status ( 500 ).send ( { error: "Stripe is not configured." } )
       }
 
-      // We need a product to attach to the price. 
+      // We need a product to attach to the price.
       // If we don't have one on hand, create a generic "Optional Donation" product.
       let productId: string
       const search = await stripe.products.search ( {
@@ -452,7 +452,7 @@ export const router: FastifyPluginAsync = async app => {
       // Deactivate Stripe Product if it exists
       if ( eventData.stripeProductId && process.env [ "STRIPE_SECRET_KEY" ] ) {
         const stripe = new Stripe ( process.env [ "STRIPE_SECRET_KEY" ] )
-        await stripe.products.update ( eventData.stripeProductId, { active: false } ).catch ( () => null )
+        await stripe.products.update ( eventData.stripeProductId, { active: false } ).catch ( ( ) => null )
       }
 
       if ( eventsCache ) {

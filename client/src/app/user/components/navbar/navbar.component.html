@@ -14,7 +14,6 @@
       />
     </a>
 
-    <!-- Desktop Navigation -->
     <ul class="hidden sm:flex items-center gap-2 lg:gap-4 m-0 p-0 list-none">
       <li>
         <a (click)="goTo('/')"
@@ -58,7 +57,6 @@
       </li>
     </ul>
 
-    <!-- Mobile Menu Toggle -->
     <button class="sm:hidden p-2 -mr-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
             type="button"
             (click)="toggleMenu()"
@@ -67,7 +65,6 @@
     </button>
   </div>
 
-  <!-- Mobile Dropdown -->
   <div class="sm:hidden transition-all duration-300 overflow-hidden"
        [class.h-0]="isMenuCollapsed()"
        [class.h-auto]="!isMenuCollapsed()"

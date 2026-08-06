@@ -46,7 +46,6 @@
               class="w-full object-cover h-64 bg-zinc-100 dark:bg-zinc-900"
             />
 
-            <!-- Donation Badge Overlay -->
             @if ((event.donationRequired === 'required' || event.donationRequired === 'optional') && event.donationPrice) {
               <div class="absolute top-4 right-4 flex flex-col items-end gap-1">
                 <span class="bg-blue-600/90 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm flex items-center gap-1.5">
@@ -73,7 +72,7 @@
                 <span class="font-medium">{{dateSvc.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime)}}</span>
               </div>
 
-              <a [href]="getGoogleMapsUrl(event.location)" target="_blank" rel="noopener noreferrer" 
+              <a [href]="getGoogleMapsUrl(event.location)" target="_blank" rel="noopener noreferrer"
                  class="group flex items-center gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 hover:border-blue-200 dark:hover:border-blue-800 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all text-left">
                 <div class="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
                   <app-icon icon="map-marker" />

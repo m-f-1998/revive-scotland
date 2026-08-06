@@ -1,5 +1,9 @@
 @if (isVideo()) {
-  <video [src]="src()" width="640" height="360" controls playsinline class="w-full h-full block rounded" [style.object-fit]="objectFit()" preload="metadata"></video>
+  <video [src]="src()" width="640" height="360" controls playsinline
+    class="w-full h-full block rounded"
+    [class.object-contain]="objectFit() === 'contain'"
+    [class.object-cover]="objectFit() !== 'contain'"
+    preload="metadata"></video>
 } @else {
   <img [src]="'/api/img/' + src() + '?w=640&f=webp'"
     [srcset]="
@@ -12,6 +16,7 @@
     loading="lazy"
     decoding="async"
     class="w-full h-full block"
-    [style.object-fit]="objectFit()"
+    [class.object-contain]="objectFit() === 'contain'"
+    [class.object-cover]="objectFit() !== 'contain'"
   />
 }

@@ -82,10 +82,19 @@ export class RepeatFieldComponent extends FieldType implements OnInit {
     } )
   }
 
+  /** Full Name, Email, and Phone defaults cannot be edited or removed. */
+  public isLockedField ( field: FormlyFieldConfig | null | undefined ): boolean {
+    const key = String ( field?.key ?? "" ).toLowerCase ( )
+    return key === "name" || key === "email" || key === "phone"
+  }
+
   public edit ( index: number ) {
     const fieldToEdit = this.formControl?.value?. [ index ]
     if ( !fieldToEdit ) {
       this.toastrSvc.error ( "Field to edit not found." )
+      return
+    }
+    if ( this.isLockedField ( fieldToEdit ) ) {
       return
     }
     const modalRef = this.modalSvc.open ( InputDialogComponent, {
@@ -107,6 +116,10 @@ export class RepeatFieldComponent extends FieldType implements OnInit {
   }
 
   public removeField ( index: number ) {
+    const field = this.formControl?.value?. [ index ] as FormlyFieldConfig | undefined
+    if ( this.isLockedField ( field ) ) {
+      return
+    }
     const newValue = ( this.formControl?.value || [ ] ).filter ( ( _: unknown, i: number ) => i !== index )
     this.formControl?.setValue ( newValue )
     this.valuesInModel.set ( newValue )

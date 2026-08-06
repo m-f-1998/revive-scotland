@@ -107,13 +107,13 @@ export class ImagePickerComponent extends FieldType implements OnInit {
 
     const accept = this.props.attributes?. [ "accept" ] as string
     if ( accept ) {
-      const acceptedTypes = accept.split ( "," ).map ( t => t.trim ().toLowerCase () )
-      const fileType = file.type.toLowerCase ()
+      const acceptedTypes = accept.split ( "," ).map ( t => t.trim ( ).toLowerCase ( ) )
+      const fileType = file.type.toLowerCase ( )
       const isAccepted = acceptedTypes.some ( type => {
         if ( type.endsWith ( "/*" ) ) {
           return fileType.startsWith ( type.replace ( "/*", "" ) )
         }
-        return fileType === type || file.name.toLowerCase ().endsWith ( type )
+        return fileType === type || file.name.toLowerCase ( ).endsWith ( type )
       } )
 
       if ( !isAccepted ) {
@@ -131,7 +131,7 @@ export class ImagePickerComponent extends FieldType implements OnInit {
       const headers = new HttpHeaders ( { "Authorization": `Bearer ${token}` } )
 
       const safeName = file.name.replace ( /[^a-zA-Z0-9.-]/g, "_" )
-      const fullKey = `users/${user?.uid}/uploads/${Date.now ()}-${safeName}`
+      const fullKey = `users/${user?.uid}/uploads/${Date.now ( )}-${safeName}`
 
       // 1. Get upload URL
       const response = await this.apiSvc.post ( "/api/admin/file-explorer/upload-url", {

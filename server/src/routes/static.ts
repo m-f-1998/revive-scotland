@@ -7,10 +7,9 @@ import { config } from "dotenv"
 
 config ( { path: resolve ( process.cwd ( ), ".env" ), quiet: true } )
 
+/** Opt-in only — unset / any other value means production-safe behaviour. */
 export const isDevMode = ( ): boolean => {
-  return process.env [ "DEV_MODE" ] === "true" || 
-         process.env [ "DEV_MODE" ] === "1" || 
-         process.env [ "NODE_ENV" ] !== "production"
+  return process.env [ "DEV_MODE" ] === "true" || process.env [ "DEV_MODE" ] === "1"
 }
 
 export const isPreProd = ( ): boolean => {
@@ -98,7 +97,7 @@ export const router: FastifyPluginAsync = async app => {
     if ( gaId ) {
       scripts.push ( `<script nonce="${nonce}" async src="https://www.googletagmanager.com/gtag/js?id=${gaId}"></script>
       <script nonce="${nonce}">
-        window.dataLayer = window.dataLayer || [];
+        window.dataLayer = window.dataLayer || [ ];
         function gtag( ){dataLayer.push(arguments);}
         gtag('js', new Date( ));
         gtag('config', '${gaId}');

@@ -1,4 +1,6 @@
+import { createHash, randomBytes, timingSafeEqual } from "crypto"
 import { FastifyPluginAsync } from "fastify"
+import rateLimit from "@fastify/rate-limit"
 import { getFirestore } from "./admin.js"
 import Stripe from "stripe"
 import { FieldValue } from "firebase-admin/firestore"
@@ -42,7 +44,23 @@ interface CheckoutDraft {
   existingRegistrationId?: string
   stripeInvoiceId?: string
   donateLaterUrl?: string | null
+  /** SHA-256 hex of the cancel token returned to the client */
+  cancelTokenHash?: string
   createdAt: unknown
+}
+
+const hashCancelToken = ( token: string ): string =>
+  createHash ( "sha256" ).update ( token ).digest ( "hex" )
+
+const tokensMatch = ( provided: string, storedHash: string ): boolean => {
+  const a = Buffer.from ( hashCancelToken ( provided ), "utf8" )
+  const b = Buffer.from ( storedHash, "utf8" )
+  return a.length === b.length && timingSafeEqual ( a, b )
+}
+
+const newCancelToken = ( ): { token: string; hash: string } => {
+  const token = randomBytes ( 32 ).toString ( "base64url" )
+  return { token, hash: hashCancelToken ( token ) }
 }
 
 let eventsCache: Event [ ] | null = null
@@ -100,7 +118,7 @@ const loadEvent = async ( eventId: string ): Promise<Event | undefined> => {
     return eventDoc.data ( ) as Event
   }
   const defaultDoc = await db.collection ( "events" ).doc ( "default" ).get ( )
-  return ( defaultDoc.data ( )?. [ "events" ] || [] ).find ( ( e: { id: string } ) => e.id === eventId )
+  return ( defaultDoc.data ( )?. [ "events" ] || [ ] ).find ( ( e: { id: string } ) => e.id === eventId )
 }
 
 /**
@@ -218,6 +236,11 @@ const finalizePaidRegistration = async (
 }
 
 export const router: FastifyPluginAsync = async app => {
+  await app.register ( rateLimit, {
+    max: isDevMode ( ) ? 200 : 30,
+    timeWindow: "1 minute"
+  } )
+
   app.addContentTypeParser ( "application/json", { parseAs: "string" }, ( req, body, done ) => {
     try {
       const parsed = JSON.parse ( body as string )
@@ -239,7 +262,7 @@ export const router: FastifyPluginAsync = async app => {
       const db = getFirestore ( )
       const snapshot = await db.collection ( "events" ).get ( )
 
-      let events: Event[] = []
+      let events: Event[] = [ ]
 
       const legacyDoc = snapshot.docs.find ( doc => doc.id === "default" )
       if ( legacyDoc && legacyDoc.exists ) {
@@ -290,13 +313,33 @@ export const router: FastifyPluginAsync = async app => {
   } )
 
   /** Cancelled Checkout: email a Stripe pay-link invoice; keep draft until paid. */
-  app.post ( "/checkout-draft/:draftId/discard", async ( req, rep ) => {
+  app.post ( "/checkout-draft/:draftId/discard", {
+    config: {
+      rateLimit: {
+        max: 5,
+        timeWindow: "1 minute"
+      }
+    }
+  }, async ( req, rep ) => {
     const { draftId } = req.params as { draftId: string }
-    if ( !draftId ) {
-      return rep.status ( 400 ).send ( { message: "Missing draft id." } )
+    const { cancelToken } = ( req.body || { } ) as { cancelToken?: string }
+
+    if ( !draftId || !cancelToken ) {
+      return rep.status ( 400 ).send ( { message: "Missing draft id or cancel token." } )
     }
 
     try {
+      const draftRef = getFirestore ( ).collection ( "event_checkout_drafts" ).doc ( draftId )
+      const draftSnap = await draftRef.get ( )
+      if ( !draftSnap.exists ) {
+        return rep.status ( 404 ).send ( { message: "Draft not found." } )
+      }
+
+      const draft = draftSnap.data ( ) as CheckoutDraft
+      if ( !draft.cancelTokenHash || !tokensMatch ( cancelToken, draft.cancelTokenHash ) ) {
+        return rep.status ( 403 ).send ( { message: "Invalid cancel token." } )
+      }
+
       const result = await sendPaymentPromptForDraft ( draftId )
       return rep.send ( {
         message: result.emailed
@@ -356,6 +399,7 @@ export const router: FastifyPluginAsync = async app => {
             : event.donationPrice
 
           const draftRef = getFirestore ( ).collection ( "event_checkout_drafts" ).doc ( )
+          const { token: cancelToken, hash: cancelTokenHash } = newCancelToken ( )
           await draftRef.set ( {
             eventId,
             eventTitle: event.title,
@@ -368,6 +412,7 @@ export const router: FastifyPluginAsync = async app => {
             name,
             amountPence: customAmountInPence,
             existingRegistrationId: existingReg.id,
+            cancelTokenHash,
             createdAt: FieldValue.serverTimestamp ( )
           } )
 
@@ -384,7 +429,8 @@ export const router: FastifyPluginAsync = async app => {
             return rep.send ( {
               message: "Redirecting you to complete your optional donation.",
               checkoutUrl: stripeUrl,
-              draftId: draftRef.id
+              draftId: draftRef.id,
+              cancelToken
             } )
           }
           await draftRef.delete ( )
@@ -421,6 +467,7 @@ export const router: FastifyPluginAsync = async app => {
       const amountPence = ( isOptionalAndOptedIn && customDonationAmount != null )
         ? Math.round ( customDonationAmount * 100 )
         : event.donationPrice
+      const { token: cancelToken, hash: cancelTokenHash } = newCancelToken ( )
 
       await draftRef.set ( {
         eventId,
@@ -429,6 +476,7 @@ export const router: FastifyPluginAsync = async app => {
         email,
         name,
         amountPence,
+        cancelTokenHash,
         createdAt: FieldValue.serverTimestamp ( )
       } )
 
@@ -459,7 +507,8 @@ export const router: FastifyPluginAsync = async app => {
         return rep.send ( {
           message: "Redirecting to payment. Registration is only saved after payment succeeds.",
           checkoutUrl: stripeUrl,
-          draftId: draftRef.id
+          draftId: draftRef.id,
+          cancelToken
         } )
       } catch ( err ) {
         console.error ( "Stripe Session Creation Error:", err )

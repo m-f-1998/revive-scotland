@@ -1,4 +1,5 @@
 import { FastifyPluginAsync } from "fastify"
+import sanitizeHtml from "sanitize-html"
 
 interface FeastDay {
   name: string
@@ -68,6 +69,18 @@ const parseFeastFromHtml = ( html: string, dateKey: string ): { name: string; co
   return { name, colour }
 }
 
+const READING_SANITIZE: sanitizeHtml.IOptions = {
+  allowedTags: [ "p", "br", "strong", "em", "b", "i", "span", "sup", "sub" ],
+  allowedAttributes: {
+    span: [ "class" ],
+  },
+  allowedClasses: {
+    span: [ "psalm-verse", "psalm-stanza" ],
+  },
+  // Drop inline styles / event handlers from Universalis HTML
+  allowedStyles: { },
+}
+
 const cleanReadingHtml = ( html?: string ): string | undefined => {
   if ( !html ) return undefined
 
@@ -95,7 +108,7 @@ const cleanReadingHtml = ( html?: string ): string | undefined => {
     // 9. Consolidate new lines
     .replace ( /\n{3,}/g, "\n\n" )
 
-  return clean.trim ( )
+  return sanitizeHtml ( clean.trim ( ), READING_SANITIZE )
 }
 
 const fetchReadings = async ( ): Promise<FeastDay["readings"]> => {
@@ -109,16 +122,16 @@ const fetchReadings = async ( ): Promise<FeastDay["readings"]> => {
       const data = JSON.parse ( jsonStr )
       return {
         firstReading: cleanReadingHtml ( data.Mass_R1?.text ),
-        firstReadingSource: data.Mass_R1?.source,
-        psalm: data.Mass_Ps?.text, // Leave psalm alone for exact indentation
-        psalmSource: data.Mass_Ps?.source,
+        firstReadingSource: cleanReadingHtml ( data.Mass_R1?.source ),
+        psalm: cleanReadingHtml ( data.Mass_Ps?.text ),
+        psalmSource: cleanReadingHtml ( data.Mass_Ps?.source ),
         secondReading: cleanReadingHtml ( data.Mass_R2?.text ),
-        secondReadingSource: data.Mass_R2?.source,
-        gospelAcclamation: data.Mass_GA?.text, // Leave acclamation alone
-        gospelAcclamationSource: data.Mass_GA?.source,
+        secondReadingSource: cleanReadingHtml ( data.Mass_R2?.source ),
+        gospelAcclamation: cleanReadingHtml ( data.Mass_GA?.text ),
+        gospelAcclamationSource: cleanReadingHtml ( data.Mass_GA?.source ),
         gospel: cleanReadingHtml ( data.Mass_G?.text ),
-        gospelSource: data.Mass_G?.source,
-        copyright: data.copyright?.text
+        gospelSource: cleanReadingHtml ( data.Mass_G?.source ),
+        copyright: cleanReadingHtml ( data.copyright?.text )
       }
     }
   } catch ( error ) {

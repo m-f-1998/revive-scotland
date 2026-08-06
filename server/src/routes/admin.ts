@@ -14,6 +14,7 @@ import { getAuth as getFirebaseAuth, Auth } from "firebase-admin/auth"
 import { getFirestore as getFirebaseFirestore, Firestore, FieldValue, Timestamp } from "firebase-admin/firestore"
 // import admin, { ServiceAccount } from "firebase-admin"
 import { isDevMode, isPreProd } from "./static.js"
+import { isEmailAdmin } from "./admin/middleware/fileExplorer.js"
 import rateLimit from "@fastify/rate-limit"
 import { FastifyPluginAsync } from "fastify"
 import { config } from "dotenv"
@@ -29,7 +30,6 @@ if ( isPreProd ( ) || isDevMode ( ) ) {
 config ( { path: resolve ( process.cwd ( ), ".env" ), quiet: true } )
 
 const SUPERADMIN_EMAIL = process.env [ "SUPERADMIN_EMAIL" ]
-const ADMIN_EMAIL = process.env [ "ADMIN_EMAIL" ]
 
 initializeApp ( {
   credential: cert ( serviceAccount )
@@ -172,7 +172,7 @@ export const router: FastifyPluginAsync = async app => {
       let role = user.customClaims?. [ "role" ] || "viewer"
 
       if ( SUPERADMIN_EMAIL && user.email === SUPERADMIN_EMAIL ) role = "superadmin"
-      else if ( ADMIN_EMAIL && user.email === ADMIN_EMAIL && role !== "superadmin" ) role = "admin"
+      else if ( isEmailAdmin ( user.email ) && role !== "superadmin" ) role = "admin"
 
       if ( !user.customClaims?. [ "role" ] || user.customClaims [ "role" ] !== role ) {
         await getAuth ( ).setCustomUserClaims ( uid, { role } )
@@ -222,7 +222,9 @@ export const router: FastifyPluginAsync = async app => {
       const user = await getAuth ( ).getUser ( uid )
 
       const role = user.customClaims?. [ "role" ] || "viewer"
-      const isAdmin = role === "admin" || role === "superadmin"
+      const roleAdmin = role === "admin" || role === "superadmin"
+      const allowlisted = isEmailAdmin ( decodedToken.email )
+      const isAdmin = !!decodedToken.email_verified && allowlisted && roleAdmin
 
       return res.status ( 200 ).send ( { uid, isAdmin } )
     } catch ( error ) {

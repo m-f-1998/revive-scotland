@@ -37,10 +37,6 @@ export class LiturgyComponent implements OnInit {
     }
   ]
 
-  public readonly feastNeutralAccent = computed ( ( ) =>
-    this.darkMode ( ) ? "#F9FAFB" : "#111827"
-  )
-
   public readonly safeReadings = computed ( ( ) => {
     const r = this.state.feast ( )?.readings
     if ( !r ) return null
@@ -61,11 +57,6 @@ export class LiturgyComponent implements OnInit {
 
   private readonly sanitizer = inject ( DomSanitizer )
 
-  // Reactive dark mode signal — updates when OS preference changes
-  private readonly darkMode: WritableSignal<boolean> = signal (
-    window.matchMedia ( "(prefers-color-scheme: dark)" ).matches
-  )
-
   public get contentType ( ): typeof ContentType {
     return ContentType
   }
@@ -79,31 +70,28 @@ export class LiturgyComponent implements OnInit {
   }
 
   public ngOnInit ( ): void {
-    const mq = window.matchMedia ( "(prefers-color-scheme: dark)" )
-    mq.addEventListener ( "change", e => this.darkMode.set ( e.matches ) )
-
     this.state.loadInitialData ( )
   }
 
   public openPrayer ( prayer: Prayer ): void {
     this.selectedPrayer.set ( prayer )
     this.showLatin.set ( false )
-    document.body.style.overflow = "hidden"
+    document.body.classList.add ( "overflow-hidden" )
   }
 
   public openReading ( title: string, content: SafeHtml ): void {
     this.selectedReading.set ( { title, content } )
-    document.body.style.overflow = "hidden"
+    document.body.classList.add ( "overflow-hidden" )
   }
 
   public closeReading ( ): void {
     this.selectedReading.set ( null )
-    document.body.style.overflow = ""
+    document.body.classList.remove ( "overflow-hidden" )
   }
 
   public closePrayer ( ): void {
     this.selectedPrayer.set ( null )
-    document.body.style.overflow = ""
+    document.body.classList.remove ( "overflow-hidden" )
   }
 
   public formatCategory ( value: PrayerCategory ): string {

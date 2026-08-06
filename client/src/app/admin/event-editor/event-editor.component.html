@@ -214,7 +214,6 @@
                 </div>
 
                 <div class="card-body p-5 space-y-6">
-                  <!-- Control Panel -->
                   <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-100 dark:border-slate-700/50">
                     <div>
                       <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Select Event</label>
@@ -242,7 +241,7 @@
                     <div>
                       <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Search Details</label>
                       <div class="relative">
-                        <input type="text" 
+                        <input type="text"
                                class="w-full border border-gray-300 dark:border-slate-600 rounded pl-9 pr-3 py-2 text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
                                placeholder="Search name, email, details..."
                                [ngModel]="regSearchQuery()"
@@ -254,7 +253,6 @@
                     </div>
                   </div>
 
-                  <!-- Table / Results -->
                   @if (!selectedRegEventId()) {
                     <div class="text-center p-8 text-gray-400 dark:text-gray-500 border border-dashed border-gray-200 dark:border-slate-700 rounded-xl">
                       <app-icon icon="users" iconSize="2x" class="opacity-40 mb-2 block mx-auto" />
@@ -297,7 +295,7 @@
                                     {{ $any(reg['createdAt']) | date:'medium' }}
                                   </td>
                                   <td class="px-4 py-4 whitespace-nowrap">
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full" 
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full"
                                       [class.bg-green-100]="reg['status'] === 'completed'"
                                       [class.text-green-800]="reg['status'] === 'completed'"
                                       [class.dark:bg-green-900/30]="reg['status'] === 'completed'"
@@ -306,8 +304,8 @@
                                       [class.text-amber-800]="reg['status'] === 'pending_payment'"
                                       [class.dark:bg-amber-900/30]="reg['status'] === 'pending_payment'"
                                       [class.dark:text-amber-300]="reg['status'] === 'pending_payment'">
-                                      <span class="w-1.5 h-1.5 rounded-full" 
-                                            [class.bg-green-600]="reg['status'] === 'completed'" 
+                                      <span class="w-1.5 h-1.5 rounded-full"
+                                            [class.bg-green-600]="reg['status'] === 'completed'"
                                             [class.bg-amber-500]="reg['status'] === 'pending_payment'"></span>
                                       {{ reg['status'] === 'completed' ? 'Completed' : 'Pending' }}
                                     </span>
@@ -383,7 +381,7 @@
                                           Delete
                                         }
                                       </button>
-                                      
+
                                       @if (getSelectedEvent()?.donationRequired === 'optional' && !reg['paymentIntent'] && reg['status'] === 'completed') {
                                         <button
                                           type="button"

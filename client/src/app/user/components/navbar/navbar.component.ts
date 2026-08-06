@@ -12,7 +12,7 @@ import { IconComponent } from "@app/icon/icon.component"
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     "(document:click)": "onDocumentClick($event)",
-    "(window:scroll)": "onWindowScroll()"
+    "(window:scroll)": "onWindowScroll( )"
   }
 } )
 export class NavbarComponent implements OnInit {

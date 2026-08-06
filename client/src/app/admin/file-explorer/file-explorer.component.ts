@@ -37,7 +37,7 @@ export class FileExplorerComponent {
 
   public loading: WritableSignal<boolean> = signal ( false )
   public currentPath: WritableSignal<string> = signal ( "" ) // Relative path: '' or 'documents/images/'
-  public fileList: WritableSignal<FileEntry[]> = signal<FileEntry[]> ( [] )
+  public fileList: WritableSignal<FileEntry[]> = signal<FileEntry[]> ( [ ] )
   public quota: WritableSignal<Quota> = signal<Quota> ( { used: 0, max: 1073741824, remaining: 0 } ) // Default 1GB max
 
   public dataSource: WritableSignal<"s3" | "static"> = signal ( "s3" )
@@ -61,7 +61,7 @@ export class FileExplorerComponent {
     effect ( ( ) => {
       if ( this.authSvc.currentUser ( ) ) {
         this.listPath ( this.currentPath ( ) )
-        if ( this.dataSource () === "s3" ) this.fetchQuota ( )
+        if ( this.dataSource ( ) === "s3" ) this.fetchQuota ( )
       }
     } )
   }
@@ -92,7 +92,7 @@ export class FileExplorerComponent {
         return
       }
 
-      if ( this.dataSource () === "static" ) {
+      if ( this.dataSource ( ) === "static" ) {
         this.activeModal.close ( {
           url: fileEntry.key, // it's already a relative path like 'gallery/skye/skye-1.jpg'
           filename: fileEntry.name || "file"
@@ -145,7 +145,7 @@ export class FileExplorerComponent {
     const path = relativePath || "/"
 
     try {
-      if ( this.dataSource () === "static" ) {
+      if ( this.dataSource ( ) === "static" ) {
         const response = await this.apiSvc.get ( `${this.baseRoute}/static-list`, { path }, new HttpHeaders ( {
           "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || "" }`
         } ) )
@@ -201,7 +201,7 @@ export class FileExplorerComponent {
   }
 
   public async viewFile ( key: string ) {
-    if ( this.dataSource () === "static" ) {
+    if ( this.dataSource ( ) === "static" ) {
       window.open ( `/api/img/${key}`, "_blank" )
       return
     }
@@ -430,7 +430,7 @@ export class FileExplorerComponent {
           this.toastrSvc.error ( "Failed to delete resource" )
         }
       } else if ( type === "rename" ) {
-        let newName: string = result?.rename 
+        let newName: string = result?.rename
         if ( !newName ) {
           this.toastrSvc.error ( "Invalid name" )
           this.loading.set ( false )
@@ -468,18 +468,18 @@ export class FileExplorerComponent {
   }
 
   public onDragStart ( event: DragEvent, file: FileEntry ) {
-    if ( this.dataSource () === "static" ) return
+    if ( this.dataSource ( ) === "static" ) return
     this.draggedFile = file
     event.dataTransfer?.setData ( "text/plain", file.key )
   }
 
   public onDragOver ( event: DragEvent ) {
-    if ( this.dataSource () === "static" ) return
+    if ( this.dataSource ( ) === "static" ) return
     event.preventDefault ( ) // allow drop
   }
 
   public async upAFolder ( event: DragEvent ) {
-    if ( this.dataSource () === "static" ) return
+    if ( this.dataSource ( ) === "static" ) return
     event.preventDefault ( )
 
     if ( !this.draggedFile ) return
@@ -539,7 +539,7 @@ export class FileExplorerComponent {
   }
 
   public async onDrop ( event: DragEvent, targetFolder: FileEntry ) {
-    if ( this.dataSource () === "static" ) return
+    if ( this.dataSource ( ) === "static" ) return
     event.preventDefault ( )
 
     if ( !this.draggedFile || !targetFolder.isFolder ) return

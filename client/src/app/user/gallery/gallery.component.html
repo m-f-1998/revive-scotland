@@ -25,7 +25,7 @@
       }
     </div>
 
-    <div class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
+    <div class="grid gap-4 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
       @for (item of filtered(); track item.url) {
         <div class="rounded-xl overflow-hidden cursor-pointer transition-transform duration-200 hover:-translate-y-1.5 hover:shadow-2xl border border-white/5"
              (click)="openItem($index)">

@@ -103,13 +103,16 @@ export class EventsComponent implements OnInit {
           const res = await this.apiSvc.post ( `/api/events/${event.id}/register`, {
             ...result,
             recaptchaToken: modalRef.componentInstance.captchaToken
-          } ) as { message: string; checkoutUrl?: string; donateLaterUrl?: string; draftId?: string }
+          } ) as { message: string; checkoutUrl?: string; donateLaterUrl?: string; draftId?: string; cancelToken?: string }
 
           if ( res.checkoutUrl ) {
             if ( res.draftId ) {
               sessionStorage.setItem ( "checkoutDraftId", res.draftId )
               sessionStorage.setItem ( "checkoutUrl", res.checkoutUrl )
               sessionStorage.setItem ( "checkoutEventTitle", event.title )
+              if ( res.cancelToken ) {
+                sessionStorage.setItem ( "checkoutCancelToken", res.cancelToken )
+              }
             }
             this.toastrSvc.info (
               "Taking you to Stripe. Your registration is not saved until payment is completed.",
@@ -131,7 +134,7 @@ export class EventsComponent implements OnInit {
           const apiMessage = e instanceof HttpErrorResponse
             ? ( typeof e.error === "string" ? e.error : e.error?.message )
             : undefined
-            
+
           const errorRef = this.modalSvc.open ( ErrorModalComponent, {
             centered: true
           } )
@@ -197,6 +200,7 @@ export class EventsComponent implements OnInit {
       if ( status === "success" ) {
         const title = sessionStorage.getItem ( "checkoutEventTitle" ) || ""
         sessionStorage.removeItem ( "checkoutDraftId" )
+        sessionStorage.removeItem ( "checkoutCancelToken" )
         sessionStorage.removeItem ( "checkoutUrl" )
         sessionStorage.removeItem ( "checkoutEventTitle" )
 
@@ -213,6 +217,7 @@ export class EventsComponent implements OnInit {
         }
         void this.sendPaymentPromptAfterCancel ( draftId )
         sessionStorage.removeItem ( "checkoutDraftId" )
+        sessionStorage.removeItem ( "checkoutCancelToken" )
         sessionStorage.removeItem ( "checkoutUrl" )
         sessionStorage.removeItem ( "checkoutEventTitle" )
 
@@ -229,9 +234,10 @@ export class EventsComponent implements OnInit {
   }
 
   private async sendPaymentPromptAfterCancel ( draftId: string | undefined ): Promise<void> {
-    if ( !draftId ) return
+    const cancelToken = sessionStorage.getItem ( "checkoutCancelToken" ) || undefined
+    if ( !draftId || !cancelToken ) return
     try {
-      const res = await this.apiSvc.post ( `/api/events/checkout-draft/${draftId}/discard`, { } ) as { hostedInvoiceUrl?: string | null }
+      const res = await this.apiSvc.post ( `/api/events/checkout-draft/${draftId}/discard`, { cancelToken } ) as { hostedInvoiceUrl?: string | null }
       if ( res?.hostedInvoiceUrl ) {
         this.resumePaymentUrl.set ( res.hostedInvoiceUrl )
       }

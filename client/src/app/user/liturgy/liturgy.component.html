@@ -11,8 +11,8 @@
     </section>
   } @else {
     <section
-      [style.border-left]="'6px solid ' + (state.isNeutralVestment() ? feastNeutralAccent() : state.feastColourHex())"
-      class="border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+      class="feast-banner border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+      [attr.data-colour]="state.feast()!.colour">
       <div class="max-w-screen-xl mx-auto px-4 py-10">
         <div class="flex items-center gap-3 mb-2">
           <p class="text-serif text-primary mb-0">Today's Mass</p>
@@ -21,12 +21,11 @@
         <div class="flex flex-wrap items-center gap-3 mb-6">
           <p class="text-sm text-muted mb-0">{{ state.feast()!.date }}</p>
           <span
-            class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold border-2"
-            [style.border-color]="state.isNeutralVestment() ? feastNeutralAccent() : state.feastColourHex()"
-            [style.color]="state.isNeutralVestment() ? feastNeutralAccent() : state.feastColourHex()"
+            class="feast-chip inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold border-2"
+            [attr.data-colour]="state.feast()!.colour"
           >
-            <span class="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ring-1 ring-gray-400"
-                  [style.background-color]="state.feastColourHex()"></span>
+            <span class="feast-dot inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ring-1 ring-gray-400"
+                  [attr.data-colour]="state.feast()!.colour"></span>
             {{ state.feast()!.colour }}
           </span>
         </div>
@@ -294,8 +293,7 @@
 
     @if (selectedPrayer()) {
       <div
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        style="background-color: rgba(0,0,0,0.65);"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65"
         (click)="closePrayer()"
       >
         <div

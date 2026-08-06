@@ -13,6 +13,14 @@ const PUBLIC_DOMAIN = process.env [ "PUBLIC_DOMAIN" ] || "https://revivescotland
 const MAX_STORAGE_GB = 5
 const MAX_STORAGE_BYTES = MAX_STORAGE_GB * 1024 * 1024 * 1024
 
+const ALLOWED_UPLOAD_MIME_TYPES = new Set ( [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "video/mp4",
+] )
+
 const STATIC_ASSETS_DIR = join ( process.cwd ( ), "../", "assets", "img" )
 
 export const router: FastifyPluginAsync = async app => {
@@ -47,7 +55,7 @@ export const router: FastifyPluginAsync = async app => {
       const data = await S3Service.listObjects ( prefix )
 
       // Folders (CommonPrefixes)
-      const folders = ( data.CommonPrefixes || [] ).map ( p => ( {
+      const folders = ( data.CommonPrefixes || [ ] ).map ( p => ( {
         name: p.Prefix?.replace ( prefix, "" ).replace ( "/", "" ),
         key: p.Prefix,
         isFolder: true,
@@ -153,28 +161,38 @@ export const router: FastifyPluginAsync = async app => {
       return rep.status ( 400 ).send ( "Missing key, contentType, or fileSize." )
     }
 
+    if ( !ALLOWED_UPLOAD_MIME_TYPES.has ( contentType ) ) {
+      return rep.status ( 400 ).send ( "Unsupported content type." )
+    }
+
+    const size = Number ( fileSize )
+    if ( !Number.isFinite ( size ) || size <= 0 ) {
+      return rep.status ( 400 ).send ( "Invalid fileSize." )
+    }
+
+    const userRef = getFirestore ( ).collection ( "users" ).doc ( req.user!.uid )
+
     try {
-      const userRef = getFirestore ( ).collection ( "users" ).doc ( req.user!.uid )
       const userDoc = await userRef.get ( )
+      const storageUsed = userDoc.exists ? ( userDoc.data ( )?. [ "storageUsed" ] || 0 ) : 0
 
-      let storageUsed = 0
-      if ( userDoc.exists ) {
-        storageUsed = userDoc.data ( )?. [ "storageUsed" ] || 0
-      }
-
-      const projectedUsage = storageUsed + Number ( fileSize || 0 )
-      if ( projectedUsage > MAX_STORAGE_BYTES ) {
+      if ( storageUsed + size > MAX_STORAGE_BYTES ) {
         return rep.status ( 403 ).send ( "Upload would exceed your storage quota." )
       }
+
+      // Reserve quota up-front so skipping upload-complete cannot bypass the limit
+      await userRef.set ( { storageUsed: incrementValue ( size ) }, { merge: true } )
     } catch {
-      // If quota check fails, block the upload for safety
       return rep.status ( 500 ).send ( "Failed to verify storage quota." )
     }
 
     try {
-      const uploadUrl = await S3Service.generateUploadUrl ( key, contentType, fileSize )
+      const uploadUrl = await S3Service.generateUploadUrl ( key, contentType, size )
       return rep.status ( 200 ).send ( { uploadUrl } )
     } catch ( error ) {
+      try {
+        await userRef.set ( { storageUsed: incrementValue ( -size ) }, { merge: true } )
+      } catch { /* best-effort rollback */ }
       console.error ( "Error generating upload URL:", error )
       return rep.status ( 500 ).send ( "Failed to generate URL." )
     }
@@ -460,12 +478,17 @@ export const router: FastifyPluginAsync = async app => {
 
     try {
       const actualSize = await S3Service.getObjectSize ( key )
+      const claimed = typeof fileSize === "number" && fileSize > 0 ? fileSize : actualSize
 
-      if ( typeof fileSize === "number" && fileSize > 0 && Math.abs ( actualSize - fileSize ) > 1024 ) {
+      if ( Math.abs ( actualSize - claimed ) > 1024 ) {
         return rep.status ( 400 ).send ( "File size mismatch." )
       }
 
-      await userRef.set ( { storageUsed: incrementValue ( actualSize ) }, { merge: true } )
+      // Quota was reserved at upload-url time; correct to actual object size
+      const delta = actualSize - claimed
+      if ( delta !== 0 ) {
+        await userRef.set ( { storageUsed: incrementValue ( delta ) }, { merge: true } )
+      }
 
       return rep.status ( 200 ).send ( { message: "Quota updated." } )
     } catch ( error ) {

@@ -29,8 +29,8 @@ const DEFAULT_STORY_MODEL: StoryModel = {
 export class StoryEditorComponent implements OnInit {
   public form = new FormGroup ( { } )
   public model: WritableSignal<StoryModel> = signal ( DEFAULT_STORY_MODEL )
-  public fields: FormlyFieldConfig[] = []
-  
+  public fields: FormlyFieldConfig[] = [ ]
+
   public activeIndex: WritableSignal<number | null> = signal ( null )
 
   public saving: WritableSignal<boolean> = signal ( false )

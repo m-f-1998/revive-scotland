@@ -14,7 +14,7 @@
 
 <div [class]="!isSelectionMode ? 'min-h-screen p-4 md:p-10' : 'p-4 bg-zinc-50/50 dark:bg-zinc-900/50'">
   <div class="max-w-screen-xl mx-auto">
-    
+
     @if (!isSelectionMode) {
       <div class="mb-6 p-4 shadow-sm rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-4 border-blue-500 gap-4 bg-white dark:bg-zinc-800">
         <h1 class="text-2xl font-bold flex items-center gap-2 m-0 text-zinc-800 dark:text-zinc-100">
@@ -28,25 +28,20 @@
               <p class="text-sm font-mono text-zinc-500 dark:text-zinc-400 mb-1 m-0">
                 Storage Used: <span class="font-semibold text-zinc-800 dark:text-zinc-200">{{ fileExplorerSvc.formatBytes(quota().used) }}</span> / {{ fileExplorerSvc.formatBytes(quota().max) }}
               </p>
-              <div class="w-full sm:w-64 bg-zinc-200 dark:bg-zinc-700 rounded-full h-2 overflow-hidden">
-                <div
-                  class="bg-blue-500 h-2 rounded-full transition-all duration-500"
-                  role="progressbar"
-                  [style.width]="(quota().used / quota().max * 100) + '%'"
-                ></div>
-              </div>
+              <progress
+                class="w-full sm:w-64 h-2 accent-blue-500"
+                [value]="quota().used"
+                [max]="quota().max"
+              ></progress>
             </div>
           }
         }
       </div>
     }
 
-    <!-- Top Toolbar: Toggle and Actions -->
     <div class="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-      
-      <!-- Source Toggle -->
       <div class="flex bg-zinc-200/70 dark:bg-zinc-800/70 p-1 rounded-lg">
-        <button 
+        <button
           class="px-4 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-2"
           [class.bg-white]="dataSource() === 's3'"
           [class.dark:bg-zinc-700]="dataSource() === 's3'"
@@ -61,7 +56,7 @@
           <app-icon icon="cloud" />
           My Uploads
         </button>
-        <button 
+        <button
           class="px-4 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-2"
           [class.bg-white]="dataSource() === 'static'"
           [class.dark:bg-zinc-700]="dataSource() === 'static'"
@@ -78,7 +73,6 @@
         </button>
       </div>
 
-      <!-- Actions -->
       <div class="flex flex-wrap gap-2 justify-end w-full md:w-auto">
         @if (dataSource() === 's3') {
           <input type="file" #fileInput (change)="onFileSelected($event);" multiple class="hidden">
@@ -111,7 +105,6 @@
       </div>
     </div>
 
-    <!-- Breadcrumbs -->
     <nav aria-label="breadcrumb" class="mb-4">
       <ol class="flex items-center gap-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-4 py-2 shadow-sm m-0 list-none">
         @for (crumb of breadcrumbs(); track crumb.path; let isLast = $last) {
@@ -129,15 +122,14 @@
       </ol>
     </nav>
 
-    <!-- File List -->
     <div class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-sm overflow-hidden relative min-h-[300px]">
       @if (loading()) {
         <div class="absolute inset-0 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-[1px] flex flex-col items-center justify-center z-10 text-blue-500">
           <app-icon icon="circle-notch" class="animate-spin text-4xl mb-3" />
           <p class="font-medium text-zinc-600 dark:text-zinc-300 m-0">Loading items...</p>
         </div>
-      } 
-      
+      }
+
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
@@ -152,7 +144,7 @@
           </thead>
           <tbody>
             @if (currentPath() !== '') {
-              <tr class="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700/30 transition-colors cursor-pointer" 
+              <tr class="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700/30 transition-colors cursor-pointer"
                   (dragover)="onDragOver($event)" (drop)="upAFolder($event)">
                 <td class="py-3 px-4">
                   <a (click)="goUp()" class="text-blue-600 dark:text-blue-400 font-medium flex items-center gap-3">

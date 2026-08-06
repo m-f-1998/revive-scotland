@@ -61,14 +61,14 @@ export class ResourcesStateService {
     this.loading.set ( true )
     try {
       const [ prayerData, reflectionData, feastData ] = await Promise.all ( [
-        this.apiSvc.get ( "/api/admin/prayers" ).catch ( ( ) => ( { prayers: [] } ) ),
-        this.apiSvc.get ( "/api/admin/reflections" ).catch ( ( ) => ( { reflections: [] } ) ),
+        this.apiSvc.get ( "/api/admin/prayers" ).catch ( ( ) => ( { prayers: [ ] } ) ),
+        this.apiSvc.get ( "/api/admin/reflections" ).catch ( ( ) => ( { reflections: [ ] } ) ),
         this.apiSvc.get ( "/api/feast" ).catch ( ( ) => null )
       ] )
 
       const pd = prayerData as { prayers?: Prayer[] }
       const rd = reflectionData as { reflections?: Reflection[] }
-      
+
       if ( pd.prayers?.length ) this.prayers.set ( pd.prayers )
       if ( rd.reflections?.length ) this.reflections.set ( rd.reflections )
       if ( feastData ) this.feast.set ( feastData as FeastDay )

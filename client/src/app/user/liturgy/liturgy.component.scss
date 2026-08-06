@@ -1,1 +1,62 @@
-/* Resources page — minimal custom styles; majority handled by Tailwind */
+/* Liturgical colour accents via data-colour — avoids style="" / [style.*] (CSP style-src-attr 'none') */
+.feast-banner {
+  border-left-width: 6px;
+  border-left-style: solid;
+  border-left-color: var(--feast-accent, #16a34a);
+}
+
+.feast-chip {
+  border-color: var(--feast-accent, #16a34a);
+  color: var(--feast-accent, #16a34a);
+}
+
+.feast-dot {
+  background-color: var(--feast-dot, var(--feast-accent, #16a34a));
+}
+
+:host {
+  [data-colour="White"] {
+    --feast-accent: #111827;
+    --feast-dot: #ffffff;
+  }
+
+  [data-colour="Black"] {
+    --feast-accent: #111827;
+    --feast-dot: #000000;
+  }
+
+  [data-colour="Purple"],
+  [data-colour="Violet"] {
+    --feast-accent: #7c3aed;
+    --feast-dot: #7c3aed;
+  }
+
+  [data-colour="Red"] {
+    --feast-accent: #dc2626;
+    --feast-dot: #dc2626;
+  }
+
+  [data-colour="Green"] {
+    --feast-accent: #16a34a;
+    --feast-dot: #16a34a;
+  }
+
+  [data-colour="Rose"] {
+    --feast-accent: #ec4899;
+    --feast-dot: #ec4899;
+  }
+
+  [data-colour="Gold"] {
+    --feast-accent: #b8962e;
+    --feast-dot: #b8962e;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :host {
+    [data-colour="White"],
+    [data-colour="Black"] {
+      --feast-accent: #f9fafb;
+    }
+  }
+}

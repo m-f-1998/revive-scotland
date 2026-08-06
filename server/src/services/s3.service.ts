@@ -39,7 +39,7 @@ export class S3Service {
   }
 
   public static async listAllKeysUnderPrefix ( prefix: string ) {
-    const keys: { key: string; size: number }[] = []
+    const keys: { key: string; size: number }[] = [ ]
     let isTruncated = true
     let continuationToken: string | undefined = undefined
 

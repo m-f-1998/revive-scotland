@@ -80,7 +80,7 @@ export const router: FastifyPluginAsync = async app => {
         const additionalImages = settings.additionalImages [ name ] ?? [ ]
         const all = [ ...staticImages, ...additionalImages ]
         const visible = all.filter ( img => !hiddenSet.has ( img ) )
-        
+
         // Return the album even if it's empty, so it displays correctly on the frontend
         result [ name ] = visible
       }

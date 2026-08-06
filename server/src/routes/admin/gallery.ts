@@ -56,7 +56,7 @@ export const router: FastifyPluginAsync = async app => {
         const data = doc.data ( )
         if ( data && data [ "key" ] ) {
           // Attempt to delete from S3
-          await S3Service.deleteObject ( data [ "key" ] ).catch ( () => null )
+          await S3Service.deleteObject ( data [ "key" ] ).catch ( ( ) => null )
         }
         await doc.ref.delete ( )
       }

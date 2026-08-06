@@ -36,6 +36,10 @@ export const router: FastifyPluginAsync = async app => {
     const { section } = req.params as { section: string }
     const body = req.body as Record<string, unknown>
 
+    if ( !ALLOWED_SECTIONS.has ( section ) ) {
+      return rep.status ( 404 ).send ( "Not found." )
+    }
+
     if ( !body || typeof body !== "object" ) {
       return rep.status ( 400 ).send ( "Invalid request body." )
     }
