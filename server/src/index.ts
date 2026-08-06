@@ -116,7 +116,8 @@ await app.register ( helmet, {
       ],
       scriptSrc: [
         "'self'",
-        "www.googletagmanager.com"
+        "www.googletagmanager.com",
+        ( req: IncomingMessage ) => req.cspNonce ? `'nonce-${req.cspNonce}'` : "",
       ],
       styleSrc: [
         "'self'",
