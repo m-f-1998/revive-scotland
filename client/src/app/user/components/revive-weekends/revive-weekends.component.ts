@@ -26,7 +26,7 @@ export class ReviveWeekendsComponent implements OnInit {
   private readonly apiSvc: ApiService = inject ( ApiService )
 
   public ngOnInit ( ): void {
-    this.apiSvc.get ( "/api/admin/site-content/revive-weekends" ).then ( data => {
+    this.apiSvc.get ( "/api/content/site-content/revive-weekends" ).then ( data => {
       const res = data as Partial<ReviveWeekendsContent>
       if ( res.title ) this.content.set ( { ...FALLBACK, ...res } )
     } ).catch ( ( ) => { /* keep fallback */ } )

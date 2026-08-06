@@ -23,48 +23,43 @@ Images are published to:
 
 ## 🔧 Required Environment Variables
 
-The backend server requires the following environment variables to function properly:
+Boot fails in production if required vars are missing. `DEV_MODE=true` is **opt-in only** and must never be set when `NODE_ENV=production`.
 
-| Variable                   | Description                                                        |
-|----------------------------|--------------------------------------------------------------------|
-| `RECAPTCHA_SITE`                | Google reCAPTCHA site key for client-side verification             |
-| `RECAPTCHA_API_KEY`             | Google reCAPTCHA API key for server-side requests                  |
-| `PUBLIC_DOMAIN`                 | Public domain for the application (e.g., `http://localhost:3000`)  |
-| `R2_ACCESS_KEY_ID`              | Cloudflare R2 access key ID for file uploads                       |
-| `R2_SECRET_ACCESS_KEY`          | Cloudflare R2 secret access key for file uploads                   |
-| `R2_ACCOUNT_ID`                 | Cloudflare R2 account ID                                           |
-| `R2_BUCKET_NAME`                | Cloudflare R2 bucket name                                          |
-| `FIREBASE_API_KEY`              | Firebase API key                                                   |
-| `FIREBASE_AUTH_DOMAIN`          | Firebase authentication domain                                     |
-| `FIREBASE_PROJECT_ID`           | Firebase project ID                                                |
-| `FIREBASE_STORAGE_BUCKET`       | Firebase storage bucket                                            |
-| `FIREBASE_MESSAGING_SENDER_ID`  | Firebase messaging sender ID                                       |
-| `FIREBASE_APP_ID`               | Firebase app ID                                                    |
-| `FIREBASE_MEASUREMENT_ID`       | Firebase measurement ID                                            |
-| `FIREBASE_CLIENT_EMAIL`         | Firebase client email for admin SDK                                |
-| `STRIPE_SECRET_KEY`             | Secret Key for Stripe Privileged Access                            |
-| `STRIPE_WEBHOOK_SECRET`         | Webhook signing secret for Checkout / Invoice events               |
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `RECAPTCHA_SITE` / `RECAPTCHA_API_KEY` | Yes | reCAPTCHA Enterprise |
+| `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET_NAME` | Yes | Cloudflare R2 |
+| `SUPERADMIN_EMAIL` | Yes | Primary admin (also used for Firebase custom claims) |
+| `ADMIN_EMAIL` / `ADMIN_EMAILS` | Recommended | Extra admin allowlist (comma-separated for `ADMIN_EMAILS`) |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` or `GOOGLE_APPLICATION_CREDENTIALS` | Prod | Firebase Admin credentials (do **not** bake JSON into Docker images) |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Payments | Stripe; webhook secret required outside DEV_MODE |
+| `PUBLIC_DOMAIN` | Recommended | Public origin for share/Stripe URLs |
+| `CORS_ORIGINS` | Recommended | Comma-separated allowed origins |
+| `TRUST_PROXY` | Behind CDN | Hop count (`1`) or CIDR list; defaults to `1` in production |
+| `DEV_MODE` | Local only | `true`/`1` enables local bypasses (reCAPTCHA/webhook mock) |
+| `PRE_PROD` | Staging | Use dev Firebase project locally |
+| `CF_BEACON_TOKEN` / `GA_TRACKING_ID` | Optional | Analytics injection |
 
 ## 📁 Example `.env` (for local dev)
 
 ```env
+DEV_MODE=true
 RECAPTCHA_SITE=
 RECAPTCHA_API_KEY=
-PUBLIC_DOMAIN=
+PUBLIC_DOMAIN=http://localhost:3000
+CORS_ORIGINS=http://localhost:4200,http://localhost:3000
 
 R2_ACCESS_KEY_ID=
 R2_SECRET_ACCESS_KEY=
 R2_ACCOUNT_ID=
 R2_BUCKET_NAME=
 
-FIREBASE_API_KEY=
-FIREBASE_AUTH_DOMAIN=
-FIREBASE_PROJECT_ID=
-FIREBASE_STORAGE_BUCKET=
-FIREBASE_MESSAGING_SENDER_ID=
-FIREBASE_APP_ID=
-FIREBASE_MEASUREMENT_ID=
-FIREBASE_CLIENT_EMAIL=
+SUPERADMIN_EMAIL=you@example.com
+ADMIN_EMAILS=
+
+# Prefer a mounted file or JSON env in deployed environments:
+# GOOGLE_APPLICATION_CREDENTIALS=/secrets/firebase.json
+# FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
 
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=

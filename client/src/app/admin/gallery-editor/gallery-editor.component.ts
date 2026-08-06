@@ -147,7 +147,7 @@ export class GalleryEditorComponent implements OnInit {
 
   public async addFromMediaLibrary ( albumName: string ): Promise<void> {
     const ref = this.modalSvc.open ( FileExplorerComponent, { size: "xl", centered: true } )
-    ref.componentInstance.isSelectionMode = true
+    ref.componentInstance.isSelectionMode.set ( true )
 
     try {
       const result = await ref.result as { url: string; filename: string } | string

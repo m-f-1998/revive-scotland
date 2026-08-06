@@ -1,25 +1,10 @@
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3"
+import { GetObjectCommand } from "@aws-sdk/client-s3"
 import { FastifyPluginAsync } from "fastify"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import rateLimit from "@fastify/rate-limit"
 import { isDevMode } from "./static.js"
 import { getFirestore } from "./admin.js"
-
-// Duplicate env setup or import from a shared config file
-const R2_ACCOUNT_ID = process.env [ "R2_ACCOUNT_ID" ]
-const R2_ACCESS_KEY_ID = process.env [ "R2_ACCESS_KEY_ID" ]
-const R2_SECRET_ACCESS_KEY = process.env [ "R2_SECRET_ACCESS_KEY" ]
-const R2_BUCKET_NAME = process.env [ "R2_BUCKET_NAME" ]
-const R2_ENDPOINT = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
-
-const s3Client = new S3Client ( {
-  region: "auto",
-  endpoint: R2_ENDPOINT,
-  credentials: {
-    accessKeyId: R2_ACCESS_KEY_ID!,
-    secretAccessKey: R2_SECRET_ACCESS_KEY!,
-  }
-} )
+import { s3Client, R2_BUCKET_NAME } from "../services/s3.service.js"
 
 interface CachedShare {
   data?: FirebaseFirestore.DocumentData
@@ -78,15 +63,12 @@ export const router: FastifyPluginAsync = async app => {
 
       const command = new GetObjectCommand ( {
         Bucket: R2_BUCKET_NAME,
-        Key: data?. [ "key" ],
+        Key: data [ "key" ]
       } )
 
-      shareCache.set ( id, { data, expiresAt: Date.now ( ) + 60 * 1000 } ) // 1 min cache
+      shareCache.set ( id, { data, expiresAt: Date.now ( ) + 60 * 1000 } )
 
-      const signedUrl = await getSignedUrl ( s3Client, command, {
-        expiresIn: 60 * 5 // 5 minutes
-      } )
-
+      const signedUrl = await getSignedUrl ( s3Client, command, { expiresIn: 60 * 5 } )
       return rep.redirect ( signedUrl )
     } catch ( error ) {
       console.error ( "Public Share Error:", error )

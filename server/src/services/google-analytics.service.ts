@@ -1,14 +1,52 @@
+import { readFileSync } from "fs"
+import { resolve } from "path"
 import { BetaAnalyticsDataClient } from "@google-analytics/data"
-import serviceAccount from "../revive-scotland-firebase.json" with { type: "json" }
+import { ServiceAccount } from "firebase-admin/app"
+import { config } from "dotenv"
+import { loadFirebaseServiceAccount } from "./firebase-credentials.js"
+
+config ( { path: resolve ( process.cwd ( ), ".env" ), quiet: true } )
+
+/**
+ * GA Data API access is granted to the *production* Firebase SA (property 477989791),
+ * not the Auth project used for DEV_MODE / PRE_PROD. Prefer an explicit GA secret,
+ * then the prod JSON file, then the general Firebase credentials loader.
+ */
+const loadAnalyticsCredentials = ( ): ServiceAccount & { project_id?: string } => {
+  const inline = process.env [ "GA_SERVICE_ACCOUNT_JSON" ]
+  if ( inline?.trim ( ) ) {
+    return JSON.parse ( inline ) as ServiceAccount & { project_id?: string }
+  }
+
+  const gaPath = process.env [ "GA_GOOGLE_APPLICATION_CREDENTIALS" ]
+  if ( gaPath?.trim ( ) ) {
+    return JSON.parse ( readFileSync ( gaPath, "utf8" ) ) as ServiceAccount & { project_id?: string }
+  }
+
+  const prodFile = resolve ( process.cwd ( ), "src/revive-scotland-firebase.json" )
+  try {
+    return JSON.parse ( readFileSync ( prodFile, "utf8" ) ) as ServiceAccount & { project_id?: string }
+  } catch {
+    // Last resort (e.g. container with only FIREBASE_SERVICE_ACCOUNT_JSON that also has GA access)
+    return loadFirebaseServiceAccount ( ) as ServiceAccount & { project_id?: string }
+  }
+}
 
 export class GoogleAnalyticsService {
-  private static readonly analyticsDataClient = new BetaAnalyticsDataClient ( {
-    credentials: serviceAccount,
-    projectId: serviceAccount.project_id
-  } )
-
+  private static client: BetaAnalyticsDataClient | null = null
   private static readonly projectID = "477989791"
   private static readonly dateRanges = [ { startDate: "90daysAgo", endDate: "today" } ]
+
+  private static get analyticsDataClient ( ): BetaAnalyticsDataClient {
+    if ( !this.client ) {
+      const serviceAccount = loadAnalyticsCredentials ( )
+      this.client = new BetaAnalyticsDataClient ( {
+        credentials: serviceAccount,
+        projectId: serviceAccount.project_id
+      } )
+    }
+    return this.client
+  }
 
   public static async fetchOverviewMetrics ( ) {
     const [ response ] = await this.analyticsDataClient.runReport ( {

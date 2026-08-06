@@ -1,4 +1,3 @@
-import { createHash, randomBytes, timingSafeEqual } from "crypto"
 import { FastifyPluginAsync } from "fastify"
 import rateLimit from "@fastify/rate-limit"
 import { getFirestore } from "./admin.js"
@@ -7,6 +6,7 @@ import { FieldValue } from "firebase-admin/firestore"
 import { RecaptchaService } from "../services/recaptcha.service.js"
 import { StripeService } from "../services/stripe.service.js"
 import { isDevMode } from "./static.js"
+import { newCancelToken, tokensMatch } from "../utils/cancel-token.js"
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -49,20 +49,6 @@ interface CheckoutDraft {
   createdAt: unknown
 }
 
-const hashCancelToken = ( token: string ): string =>
-  createHash ( "sha256" ).update ( token ).digest ( "hex" )
-
-const tokensMatch = ( provided: string, storedHash: string ): boolean => {
-  const a = Buffer.from ( hashCancelToken ( provided ), "utf8" )
-  const b = Buffer.from ( storedHash, "utf8" )
-  return a.length === b.length && timingSafeEqual ( a, b )
-}
-
-const newCancelToken = ( ): { token: string; hash: string } => {
-  const token = randomBytes ( 32 ).toString ( "base64url" )
-  return { token, hash: hashCancelToken ( token ) }
-}
-
 let eventsCache: Event [ ] | null = null
 let cacheTime = 0
 const TTL = 60000
@@ -98,7 +84,18 @@ const resolveImageUrl = ( url: string | undefined ): string | undefined => {
 
 const findExistingRegistrationByEmail = async ( eventId: string, email: string ) => {
   if ( !email ) return undefined
-  const snapshot = await getFirestore ( ).collection ( "event_registrations" )
+  const db = getFirestore ( )
+
+  // Prefer denormalized email field (indexed query)
+  const byEmail = await db.collection ( "event_registrations" )
+    .where ( "eventId", "==", eventId )
+    .where ( "email", "==", email )
+    .limit ( 1 )
+    .get ( )
+  if ( !byEmail.empty ) return byEmail.docs [ 0 ]
+
+  // Fallback for legacy rows without denormalized email
+  const snapshot = await db.collection ( "event_registrations" )
     .where ( "eventId", "==", eventId )
     .get ( )
 
@@ -109,6 +106,16 @@ const findExistingRegistrationByEmail = async ( eventId: string, email: string )
       .trim ( )
     return regEmail === email
   } )
+}
+
+const MIN_DONATION_PENCE = 50
+const MAX_DONATION_PENCE = 500_000
+
+const parseDonationPence = ( pounds: unknown ): number | undefined => {
+  if ( pounds == null || pounds === "" ) return undefined
+  const pence = Math.round ( Number ( pounds ) * 100 )
+  if ( !Number.isFinite ( pence ) ) return NaN as unknown as number
+  return pence
 }
 
 const loadEvent = async ( eventId: string ): Promise<Event | undefined> => {
@@ -210,6 +217,7 @@ const finalizePaidRegistration = async (
         eventId: draft.eventId,
         eventTitle: draft.eventTitle,
         formData: draft.formData,
+        email: draft.email || null,
         status: "completed",
         paymentIntent,
         createdAt: FieldValue.serverTimestamp ( ),
@@ -312,6 +320,28 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 
+  /** Poll whether a checkout draft has been finalized into a paid registration. */
+  app.get ( "/checkout-draft/:draftId/status", async ( req, rep ) => {
+    const { draftId } = req.params as { draftId: string }
+    if ( !draftId ) {
+      return rep.status ( 400 ).send ( { message: "Missing draft id." } )
+    }
+
+    const db = getFirestore ( )
+    const draftSnap = await db.collection ( "event_checkout_drafts" ).doc ( draftId ).get ( )
+    if ( draftSnap.exists ) {
+      return rep.send ( { status: "pending" } )
+    }
+
+    const regSnap = await db.collection ( "event_registrations" ).doc ( draftId ).get ( )
+    if ( regSnap.exists && regSnap.data ( )?. [ "status" ] === "completed" ) {
+      return rep.send ( { status: "paid" } )
+    }
+
+    // Draft may have merged into an existing registration
+    return rep.send ( { status: "paid" } )
+  } )
+
   /** Cancelled Checkout: email a Stripe pay-link invoice; keep draft until paid. */
   app.post ( "/checkout-draft/:draftId/discard", {
     config: {
@@ -371,9 +401,15 @@ export const router: FastifyPluginAsync = async app => {
       return rep.status ( 500 ).send ( { message: "reCAPTCHA verification error." } )
     }
 
-    const customDonationAmount = formData?. [ "customDonationAmount" ] != null
-      ? Number ( formData [ "customDonationAmount" ] )
-      : undefined
+    const customDonationPence = parseDonationPence ( formData?. [ "customDonationAmount" ] )
+    if ( customDonationPence !== undefined ) {
+      if ( !Number.isFinite ( customDonationPence )
+        || customDonationPence < MIN_DONATION_PENCE
+        || customDonationPence > MAX_DONATION_PENCE ) {
+        return rep.status ( 400 ).send ( { message: "Donation amount must be between £0.50 and £5,000." } )
+      }
+    }
+    const customDonationAmount = customDonationPence != null ? customDonationPence / 100 : undefined
 
     const email = String ( formData [ "email" ] || formData [ "Email" ] || "" ).toLowerCase ( ).trim ( )
     const name = String (
@@ -394,9 +430,7 @@ export const router: FastifyPluginAsync = async app => {
         // Optional: already registered free, now choosing to donate
         if ( regData [ "status" ] === "completed" && !alreadyDonated && optInDonation
           && event.donationRequired === "optional" && event.stripePriceId ) {
-          const customAmountInPence = customDonationAmount != null
-            ? Math.round ( customDonationAmount * 100 )
-            : event.donationPrice
+          const customAmountInPence = customDonationPence ?? event.donationPrice
 
           const draftRef = getFirestore ( ).collection ( "event_checkout_drafts" ).doc ( )
           const { token: cancelToken, hash: cancelTokenHash } = newCancelToken ( )
@@ -448,7 +482,6 @@ export const router: FastifyPluginAsync = async app => {
 
     const isRequired = event.donationRequired === "required"
     const isOptionalAndOptedIn = event.donationRequired === "optional" && optInDonation
-    const isOptionalWithoutDonation = event.donationRequired === "optional" && !optInDonation
     const requiresPayment = isRequired || isOptionalAndOptedIn
 
     const cleanedFormData: Record<string, unknown> = {
@@ -464,8 +497,8 @@ export const router: FastifyPluginAsync = async app => {
       }
 
       const draftRef = getFirestore ( ).collection ( "event_checkout_drafts" ).doc ( )
-      const amountPence = ( isOptionalAndOptedIn && customDonationAmount != null )
-        ? Math.round ( customDonationAmount * 100 )
+      const amountPence = ( isOptionalAndOptedIn && customDonationPence != null )
+        ? customDonationPence
         : event.donationPrice
       const { token: cancelToken, hash: cancelTokenHash } = newCancelToken ( )
 
@@ -481,8 +514,8 @@ export const router: FastifyPluginAsync = async app => {
       } )
 
       try {
-        const customAmountInPence = ( isOptionalAndOptedIn && customDonationAmount != null )
-          ? Math.round ( customDonationAmount * 100 )
+        const customAmountInPence = ( isOptionalAndOptedIn && customDonationPence != null )
+          ? customDonationPence
           : undefined
 
         const stripeUrl = await StripeService.createEventCheckoutSession (
@@ -517,42 +550,21 @@ export const router: FastifyPluginAsync = async app => {
       }
     }
 
-    // Free registration (no donation / optional without opt-in)
+    // Free registration (no donation / optional without opt-in) — never auto-email invoices
     const registrationRef = getFirestore ( ).collection ( "event_registrations" ).doc ( )
     const registrationPayload: Record<string, unknown> = {
       eventId,
       eventTitle: event.title,
       formData: cleanedFormData,
+      email: email || null,
       status: "completed",
       createdAt: FieldValue.serverTimestamp ( )
-    }
-
-    if ( isOptionalWithoutDonation && email && event.donationPrice ) {
-      try {
-        const invoice = await StripeService.createAndSendDonationInvoice ( {
-          email,
-          name,
-          amountPence: event.donationPrice,
-          eventId,
-          eventTitle: event.title,
-          registrationId: registrationRef.id,
-          description: event.donationDescription || `Optional donation for ${event.title}`,
-          footer: `Your registration for ${event.title} is confirmed. This optional donation link is only if you'd like to support us later — you can ignore it if you prefer.`
-        } )
-        if ( invoice ) {
-          registrationPayload [ "stripeInvoiceId" ] = invoice.invoiceId
-          registrationPayload [ "donateLaterUrl" ] = invoice.hostedInvoiceUrl
-        }
-      } catch ( err ) {
-        console.error ( "Failed to send optional donate-later invoice via Stripe:", err )
-      }
     }
 
     await registrationRef.set ( registrationPayload )
 
     return rep.send ( {
-      message: "Registration recorded.",
-      donateLaterUrl: registrationPayload [ "donateLaterUrl" ] as string | undefined
+      message: "Registration recorded."
     } )
   } )
 

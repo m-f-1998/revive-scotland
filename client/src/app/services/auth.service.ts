@@ -6,6 +6,8 @@ import { Auth, getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup,
 import { environment } from "@src/environments/environment"
 import { HttpHeaders } from "@angular/common/http"
 
+type ProfileResponse = { uid: string; role: string; profilePhoto: string | null }
+
 @Service ( )
 export class AuthService {
   private auth!: Auth
@@ -17,6 +19,9 @@ export class AuthService {
   private profilePhoto$: WritableSignal<string | null> = signal ( null )
   private provider = new GoogleAuthProvider ( )
   private loading$: WritableSignal<boolean> = signal ( true )
+  /** When true, onAuthStateChanged skips /verify — login() owns session creation. */
+  private loginInProgress = false
+  private sessionSync: Promise<void> = Promise.resolve ( )
 
   public get currentUser ( ) {
     return this.currentUser$.asReadonly ( )
@@ -30,17 +35,37 @@ export class AuthService {
     return this.loading$.asReadonly ( )
   }
 
+  /** Resolves once Firebase auth state (and any background session sync) has settled. */
+  public whenReady ( ): Promise<void> {
+    if ( !this.loading$ ( ) ) return Promise.resolve ( )
+    return new Promise ( resolve => {
+      const start = Date.now ( )
+      const tick = ( ) => {
+        if ( !this.loading$ ( ) || Date.now ( ) - start > 8000 ) {
+          resolve ( )
+          return
+        }
+        requestAnimationFrame ( tick )
+      }
+      tick ( )
+    } )
+  }
+
   public async login ( ) {
+    this.loginInProgress = true
+    this.loading$.set ( true )
     try {
       const userCredential = await signInWithPopup ( this.auth, this.provider )
-      const token = await userCredential.user.getIdToken ( )
-      const headers = new HttpHeaders ( { "Authorization": `Bearer ${token}` } )
-      await this.apiSvc.get ( "/api/admin/newSession", { }, headers )
+      await this.establishSession ( userCredential.user )
+      this.currentUser$.set ( userCredential.user )
       return userCredential.user
     } catch {
       await this.logout ( )
       this.router.navigate ( [ "/" ] )
       throw new Error ( "Login failed" )
+    } finally {
+      this.loginInProgress = false
+      this.loading$.set ( false )
     }
   }
 
@@ -75,7 +100,7 @@ export class AuthService {
         {
           provide: FIREBASE_AUTH,
           useFactory: ( app: FirebaseApp ) => getAuth ( app ),
-          deps: [ FIREBASE_APP ] // ensures messaging is created from the app instance
+          deps: [ FIREBASE_APP ]
         }
       ],
       parent: this.injector
@@ -86,22 +111,66 @@ export class AuthService {
     onAuthStateChanged ( this.auth, async user => {
       this.currentUser$.set ( user )
 
-      if ( user ) {
+      if ( user && !this.loginInProgress ) {
+        this.sessionSync = this.syncServerSession ( user )
         try {
-          const token = await user.getIdToken ( )
-          const headers = new HttpHeaders ( { "Authorization": `Bearer ${token}` } )
-          const res = await this.apiSvc.get ( "/api/admin/verify", { }, headers ) as { uid: string; role: string; profilePhoto: string | null }
-          if ( res.profilePhoto ) {
-            this.profilePhoto$.set ( res.profilePhoto )
-          }
-        } catch ( err ) {
-          console.warn ( "Could not fetch extended profile data from backend. Using local Firebase session.", err )
+          await this.sessionSync
+        } catch {
+          // Page-restore sync failed — user can still sign in again via login()
         }
-      } else {
+      } else if ( !user ) {
         this.profilePhoto$.set ( null )
+        this.sessionSync = Promise.resolve ( )
       }
 
-      this.loading$.set ( false )
+      if ( !this.loginInProgress ) {
+        this.loading$.set ( false )
+      }
     } )
+  }
+
+  private async authHeaders ( user: User, forceRefresh = false ): Promise<HttpHeaders> {
+    const token = await user.getIdToken ( forceRefresh )
+    return new HttpHeaders ( { "Authorization": `Bearer ${token}` } )
+  }
+
+  private isSessionFailure ( err: unknown ): boolean {
+    const status = ( err as { status?: number } | null )?.status
+    return status === 401 || status === 404
+  }
+
+  /** Create/refresh server session, then load profile. */
+  private async establishSession ( user: User ): Promise<void> {
+    await this.apiSvc.get ( "/api/admin/newSession", { }, await this.authHeaders ( user ) )
+    const res = await this.apiSvc.get (
+      "/api/admin/verify",
+      { },
+      await this.authHeaders ( user, true )
+    ) as ProfileResponse
+    if ( res.profilePhoto ) {
+      this.profilePhoto$.set ( res.profilePhoto )
+    }
+  }
+
+  /**
+   * For persisted Firebase sessions (page reload): verify, or create a session if expired.
+   */
+  private async syncServerSession ( user: User ): Promise<void> {
+    try {
+      const res = await this.apiSvc.get (
+        "/api/admin/verify",
+        { },
+        await this.authHeaders ( user )
+      ) as ProfileResponse
+      if ( res.profilePhoto ) {
+        this.profilePhoto$.set ( res.profilePhoto )
+      }
+    } catch ( err ) {
+      if ( !this.isSessionFailure ( err ) ) {
+        console.warn ( "Could not sync server session.", err )
+        throw err
+      }
+      await this.establishSession ( user )
+    }
   }
 }

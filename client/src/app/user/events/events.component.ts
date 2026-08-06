@@ -199,16 +199,11 @@ export class EventsComponent implements OnInit {
 
       if ( status === "success" ) {
         const title = sessionStorage.getItem ( "checkoutEventTitle" ) || ""
+        void this.showRegistrationSuccess ( draftId, title )
         sessionStorage.removeItem ( "checkoutDraftId" )
         sessionStorage.removeItem ( "checkoutCancelToken" )
         sessionStorage.removeItem ( "checkoutUrl" )
         sessionStorage.removeItem ( "checkoutEventTitle" )
-
-        const successRef = this.modalSvc.open ( SuccessModalComponent, {
-          centered: true
-        } )
-        successRef.setInput ( "eventTitle", title )
-
         this.clearQueryParams ( )
       } else if ( status === "cancelled" ) {
         const cachedUrl = sessionStorage.getItem ( "checkoutUrl" )
@@ -231,6 +226,26 @@ export class EventsComponent implements OnInit {
         this.clearQueryParams ( )
       }
     } )
+  }
+
+  private async showRegistrationSuccess ( draftId: string | undefined, title: string ): Promise<void> {
+    if ( draftId ) {
+      try {
+        const res = await this.apiSvc.get ( `/api/events/checkout-draft/${draftId}/status` ) as { status?: string }
+        if ( res?.status === "pending" ) {
+          const warnRef = this.modalSvc.open ( ErrorModalComponent, { centered: true } )
+          warnRef.setInput ( "title", "Payment Processing" )
+          warnRef.setInput ( "message", "Your payment is still being confirmed. You'll receive confirmation shortly — if not, contact us with your receipt." )
+          warnRef.setInput ( "type", "warning" )
+          return
+        }
+      } catch {
+        // Fall through to success if status check fails (webhook may already have completed)
+      }
+    }
+
+    const successRef = this.modalSvc.open ( SuccessModalComponent, { centered: true } )
+    successRef.setInput ( "eventTitle", title )
   }
 
   private async sendPaymentPromptAfterCancel ( draftId: string | undefined ): Promise<void> {

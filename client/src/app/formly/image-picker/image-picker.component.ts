@@ -74,7 +74,7 @@ export class ImagePickerComponent extends FieldType implements OnInit {
   public openFileSelector ( ): void {
     const modalRef = this.modalSvc.open ( FileExplorerComponent, { size: "lg", centered: true } )
 
-    modalRef.componentInstance.isSelectionMode = true
+    modalRef.componentInstance.isSelectionMode.set ( true )
 
     modalRef.result.then ( ( result: { url: string; filename: string } | string | undefined ) => {
       if ( result ) {

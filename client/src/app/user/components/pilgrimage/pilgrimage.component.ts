@@ -25,7 +25,7 @@ export class PilgrimageComponent implements OnInit {
   private readonly apiSvc: ApiService = inject ( ApiService )
 
   public ngOnInit ( ): void {
-    this.apiSvc.get ( "/api/admin/site-content/pilgrimage" ).then ( data => {
+    this.apiSvc.get ( "/api/content/site-content/pilgrimage" ).then ( data => {
       const res = data as Partial<PilgrimageContent>
       if ( res.heading ) this.content.set ( { ...FALLBACK, ...res } )
     } ).catch ( ( ) => { /* keep fallback */ } )

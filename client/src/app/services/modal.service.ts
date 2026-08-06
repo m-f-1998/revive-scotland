@@ -3,8 +3,8 @@ import { Dialog, DialogConfig } from "@angular/cdk/dialog"
 import { ComponentType } from "@angular/cdk/portal"
 
 export class ModalRef<T = unknown, R = unknown> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public readonly componentInstance: any
+  public readonly componentInstance: T
+  // Call sites annotate callback params; keep Promise loosely typed for DX
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public readonly result: Promise<any>
 

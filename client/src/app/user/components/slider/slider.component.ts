@@ -56,7 +56,7 @@ export class SliderComponent implements OnInit, OnDestroy {
 
   private async fetchSlides ( ): Promise<Slide[]> {
     try {
-      const slides = await this.apiSvc.get ( `/api/admin/hero-editor/${this.pageid ( )}` ) as { heroes: {
+      const slides = await this.apiSvc.get ( `/api/content/hero-editor/${this.pageid ( )}` ) as { heroes: {
         id: string
         title: string
         description: string

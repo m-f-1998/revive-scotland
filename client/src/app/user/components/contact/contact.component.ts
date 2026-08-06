@@ -27,7 +27,7 @@ export class ContactComponent implements OnInit {
   private readonly apiSvc: ApiService = inject ( ApiService )
 
   public ngOnInit ( ): void {
-    this.apiSvc.get ( "/api/admin/contact-details" ).then ( data => {
+    this.apiSvc.get ( "/api/content/contact-details" ).then ( data => {
       this.details.set ( data as ContactDetails )
     } ).catch ( ( ) => { /* keep fallback */ } )
   }

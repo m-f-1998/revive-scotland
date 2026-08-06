@@ -10,16 +10,7 @@ export const authGuard: CanActivateFn = async ( ) => {
   const apiSvc = inject ( ApiService )
   const router = inject ( Router )
 
-  if ( authService.loading ( ) ) {
-    let attempts = 0
-    const maxAttempts = 50
-    const interval = 100
-
-    while ( authService.loading ( ) && attempts < maxAttempts ) {
-      await new Promise ( resolve => setTimeout ( resolve, interval ) )
-      attempts++
-    }
-  }
+  await authService.whenReady ( )
 
   const user = authService.currentUser ( )
   if ( !user ) {

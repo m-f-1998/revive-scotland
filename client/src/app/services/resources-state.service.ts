@@ -61,8 +61,8 @@ export class ResourcesStateService {
     this.loading.set ( true )
     try {
       const [ prayerData, reflectionData, feastData ] = await Promise.all ( [
-        this.apiSvc.get ( "/api/admin/prayers" ).catch ( ( ) => ( { prayers: [ ] } ) ),
-        this.apiSvc.get ( "/api/admin/reflections" ).catch ( ( ) => ( { reflections: [ ] } ) ),
+        this.apiSvc.get ( "/api/content/prayers" ).catch ( ( ) => ( { prayers: [ ] } ) ),
+        this.apiSvc.get ( "/api/content/reflections" ).catch ( ( ) => ( { reflections: [ ] } ) ),
         this.apiSvc.get ( "/api/feast" ).catch ( ( ) => null )
       ] )
 

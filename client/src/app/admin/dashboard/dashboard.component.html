@@ -31,13 +31,17 @@
             <h5 class="mb-0 font-semibold">Daily Traffic Trends</h5>
           </div>
           <div class="card-body flex-1 relative min-h-[400px]">
-            <canvas baseChart
-              [type]="'line'"
-              [datasets]="trendChartData.datasets"
-              [labels]="trendChartData.labels"
-              [options]="trendChartOptions"
-              [legend]="true">
-            </canvas>
+            @if (trendChartData.datasets.length) {
+              <canvas baseChart
+                [type]="'line'"
+                [datasets]="trendChartData.datasets"
+                [labels]="trendChartData.labels"
+                [options]="trendChartOptions"
+                [legend]="true">
+              </canvas>
+            } @else {
+              <p class="text-sm text-gray-400 text-center m-0 absolute inset-0 flex items-center justify-center">No trend data available.</p>
+            }
           </div>
         </div>
 
@@ -46,13 +50,17 @@
             <h5 class="mb-0 font-semibold">Sessions by Device Category</h5>
           </div>
           <div class="card-body flex-1 flex justify-center items-center relative min-h-[400px]">
-            <canvas baseChart
-              [type]="'doughnut'"
-              [datasets]="deviceChartData.datasets"
-              [labels]="deviceChartData.labels"
-              [options]="deviceChartOptions"
-              [legend]="true">
-            </canvas>
+            @if (deviceChartData.datasets.length) {
+              <canvas baseChart
+                [type]="'doughnut'"
+                [datasets]="deviceChartData.datasets"
+                [labels]="deviceChartData.labels"
+                [options]="deviceChartOptions"
+                [legend]="true">
+              </canvas>
+            } @else {
+              <p class="text-sm text-gray-400 text-center m-0">No device data available.</p>
+            }
           </div>
         </div>
       </div>

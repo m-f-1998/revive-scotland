@@ -39,7 +39,7 @@ export class AboutUsComponent implements OnInit {
   private readonly apiSvc: ApiService = inject ( ApiService )
 
   public ngOnInit ( ): void {
-    this.apiSvc.get ( "/api/admin/site-content/about-us" ).then ( data => {
+    this.apiSvc.get ( "/api/content/site-content/about-us" ).then ( data => {
       const res = data as { cards?: AboutCard [ ] }
       if ( res.cards?.length ) this.cards.set ( res.cards )
     } ).catch ( ( ) => { /* keep fallback */ } )

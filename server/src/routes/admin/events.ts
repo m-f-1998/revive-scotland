@@ -1,10 +1,14 @@
 import { FastifyPluginAsync } from "fastify"
+import { WriteBatch } from "firebase-admin/firestore"
 import { getFirestore } from "../admin.js"
 import { checkFirebaseAuth } from "./middleware/fileExplorer.js"
 import { clearEventsCache } from "../events.js"
 import Stripe from "stripe"
 import { StripeService } from "../../services/stripe.service.js"
 import { isDevMode } from "../static.js"
+
+const PUBLIC_DOMAIN = process.env [ "PUBLIC_DOMAIN" ] || "https://revivescotland.co.uk"
+const FIRESTORE_BATCH_LIMIT = 400
 
 interface Event {
   id: string
@@ -34,23 +38,9 @@ let cacheTime = 0
 
 const TTL = 60000
 
-const filterActiveAndRecentEvents = ( events: Event [ ] ): Event [ ] => {
-  const threeWeeksAgo = new Date ( )
-  threeWeeksAgo.setDate ( threeWeeksAgo.getDate ( ) - 21 )
-
-  return events.filter ( event => {
-    const eventEndDate = new Date ( event.endDate )
-    if ( !isNaN ( eventEndDate.getTime ( ) ) ) {
-      return eventEndDate >= threeWeeksAgo
-    }
-    return true
-  } )
-}
-
 const getAbsoluteImageUrl = ( url: string | undefined ): string | undefined => {
   if ( !url ) return undefined
   if ( url.startsWith ( "http" ) ) return url
-  const host = "https://revivescotland.co.uk"
   let resolved = url
   if ( !url.startsWith ( "/" ) ) {
     if ( !url.includes ( "." ) && url.length > 20 ) {
@@ -59,7 +49,18 @@ const getAbsoluteImageUrl = ( url: string | undefined ): string | undefined => {
       resolved = `/api/img/${url}`
     }
   }
-  return `${host}${resolved}`
+  return `${PUBLIC_DOMAIN}${resolved}`
+}
+
+const runBatchedWrites = async ( ops: ( ( batch: WriteBatch ) => void ) [ ] ): Promise<void> => {
+  const db = getFirestore ( )
+  for ( let i = 0; i < ops.length; i += FIRESTORE_BATCH_LIMIT ) {
+    const batch = db.batch ( )
+    for ( const op of ops.slice ( i, i + FIRESTORE_BATCH_LIMIT ) ) {
+      op ( batch )
+    }
+    await batch.commit ( )
+  }
 }
 
 export const router: FastifyPluginAsync = async app => {
@@ -92,9 +93,8 @@ export const router: FastifyPluginAsync = async app => {
         } )
       }
 
-      const eventsList = filterActiveAndRecentEvents ( events )
-
-      eventsCache = { events: eventsList }
+      // Admin must see ALL events — filtering here caused save to delete aged events
+      eventsCache = { events }
       cacheTime = Date.now ( )
 
       return rep.status ( 200 ).send ( eventsCache )
@@ -320,13 +320,13 @@ export const router: FastifyPluginAsync = async app => {
 
         if ( model.actionType === "form" ) {
           if ( !Array.isArray ( event.contactFormFields ) || event.contactFormFields.length === 0 ) {
-            throw "Registration form events must have at least one form field."
+            throw new Error ( "Registration form events must have at least one form field." )
           }
           model.contactFormFields = Array.isArray ( event.contactFormFields ) ? event.contactFormFields : [ ]
         }
         if ( model.actionType === "webpage" ) {
           if ( !event.webpageUrl ) {
-            throw "Webpage events must have a webpage URL."
+            throw new Error ( "Webpage events must have a webpage URL." )
           }
           model.webpageUrl = String ( event.webpageUrl ).trim ( )
         }
@@ -334,7 +334,7 @@ export const router: FastifyPluginAsync = async app => {
         // Stripe Product Creation
         if ( model.donationRequired && model.donationRequired !== "none" ) {
           if ( !stripe ) {
-            throw "Stripe is not configured. Cannot create a donation-required event. Please add STRIPE_SECRET_KEY."
+            throw new Error ( "Stripe is not configured. Cannot create a donation-required event. Please add STRIPE_SECRET_KEY." )
           }
           if ( model.donationPrice && !model.stripeProductId ) {
             const stripeImages = getAbsoluteImageUrl ( model.imageUrl ) ? [ getAbsoluteImageUrl ( model.imageUrl ) as string ] : undefined
@@ -357,40 +357,34 @@ export const router: FastifyPluginAsync = async app => {
       }
     } catch ( error ) {
       console.error ( "Error processing events data:", error )
-      return rep.status ( 400 ).send ( typeof error === "string" ? error : "Error processing events data." )
+      return rep.status ( 400 ).send ( error instanceof Error ? error.message : "Error processing events data." )
     }
 
     try {
       const db = getFirestore ( )
       const eventsCollection = db.collection ( "events" )
 
-      const batch = db.batch ( )
-
-      // Handle legacy default doc if it exists
-      const defaultDoc = await eventsCollection.doc ( "default" ).get ( )
-      if ( defaultDoc.exists ) {
-        batch.delete ( defaultDoc.ref )
-      }
-
-      // Read current events to find ones to delete
       const currentSnap = await eventsCollection.get ( )
       const currentIds = currentSnap.docs.filter ( d => d.id !== "default" ).map ( d => d.id )
       const incomingIds = sanitizedEvents.map ( e => e.id )
-
-      // Delete events that were removed
       const idsToDelete = currentIds.filter ( id => !incomingIds.includes ( id ) )
+
+      const ops: ( ( batch: WriteBatch ) => void ) [ ] = [ ]
+
+      const defaultDoc = currentSnap.docs.find ( d => d.id === "default" )
+      if ( defaultDoc ) {
+        ops.push ( batch => batch.delete ( eventsCollection.doc ( "default" ) ) )
+      }
       for ( const id of idsToDelete ) {
-        batch.delete ( eventsCollection.doc ( id ) )
+        ops.push ( batch => batch.delete ( eventsCollection.doc ( id ) ) )
       }
-
-      // Set new/updated events
       for ( const event of sanitizedEvents ) {
-        batch.set ( eventsCollection.doc ( event.id ), event )
+        ops.push ( batch => batch.set ( eventsCollection.doc ( event.id ), event ) )
       }
 
-      await batch.commit ( )
+      await runBatchedWrites ( ops )
 
-      eventsCache = { events: filterActiveAndRecentEvents ( sanitizedEvents ) }
+      eventsCache = { events: sanitizedEvents }
       cacheTime = Date.now ( )
       clearEventsCache ( )
 
@@ -443,11 +437,11 @@ export const router: FastifyPluginAsync = async app => {
       const registrationsRef = db.collection ( "event_registrations" )
       const regsSnapshot = await registrationsRef.where ( "eventId", "==", id ).get ( )
 
-      const batch = db.batch ( )
-      batch.delete ( docRef )
-      regsSnapshot.docs.forEach ( d => batch.delete ( d.ref ) )
-
-      await batch.commit ( )
+      const deleteOps: ( ( batch: WriteBatch ) => void ) [ ] = [
+        batch => batch.delete ( docRef ),
+        ...regsSnapshot.docs.map ( d => ( batch: WriteBatch ) => batch.delete ( d.ref ) )
+      ]
+      await runBatchedWrites ( deleteOps )
 
       // Deactivate Stripe Product if it exists
       if ( eventData.stripeProductId && process.env [ "STRIPE_SECRET_KEY" ] ) {

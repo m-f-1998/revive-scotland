@@ -29,6 +29,15 @@ export const router: FastifyPluginAsync = async app => {
   app.addHook ( "preHandler", addUserPath )
   app.addHook ( "preHandler", validateS3Key )
 
+  let cleanupTimer: ReturnType<typeof setInterval> | undefined
+  app.addHook ( "onReady", async ( ) => {
+    await cleanupSharedLinks ( )
+    cleanupTimer = setInterval ( ( ) => { void cleanupSharedLinks ( ) }, 60 * 60 * 1000 )
+  } )
+  app.addHook ( "onClose", async ( ) => {
+    if ( cleanupTimer ) clearInterval ( cleanupTimer )
+  } )
+
   /**
    * 1. NAVIGATE FOLDER STRUCTURE
    * Lists files and folders for a given path.
@@ -173,16 +182,20 @@ export const router: FastifyPluginAsync = async app => {
     const userRef = getFirestore ( ).collection ( "users" ).doc ( req.user!.uid )
 
     try {
-      const userDoc = await userRef.get ( )
-      const storageUsed = userDoc.exists ? ( userDoc.data ( )?. [ "storageUsed" ] || 0 ) : 0
+      await getFirestore ( ).runTransaction ( async tx => {
+        const userDoc = await tx.get ( userRef )
+        const storageUsed = userDoc.exists ? ( userDoc.data ( )?. [ "storageUsed" ] || 0 ) : 0
 
-      if ( storageUsed + size > MAX_STORAGE_BYTES ) {
+        if ( storageUsed + size > MAX_STORAGE_BYTES ) {
+          throw new Error ( "QUOTA_EXCEEDED" )
+        }
+
+        tx.set ( userRef, { storageUsed: incrementValue ( size ) }, { merge: true } )
+      } )
+    } catch ( err ) {
+      if ( err instanceof Error && err.message === "QUOTA_EXCEEDED" ) {
         return rep.status ( 403 ).send ( "Upload would exceed your storage quota." )
       }
-
-      // Reserve quota up-front so skipping upload-complete cannot bypass the limit
-      await userRef.set ( { storageUsed: incrementValue ( size ) }, { merge: true } )
-    } catch {
       return rep.status ( 500 ).send ( "Failed to verify storage quota." )
     }
 
@@ -539,20 +552,18 @@ export const cleanupSharedLinks = async ( ) => {
       .where ( "expiresAt", "<=", now )
       .get ( )
 
-    const batch = db.batch ( )
-    snapshot.forEach ( doc => {
-      batch.delete ( doc.ref )
-    } )
-
-    await batch.commit ( )
-    console.log ( `Cleaned up ${snapshot.size} expired shared links.` )
+    const docs = snapshot.docs
+    for ( let i = 0; i < docs.length; i += 400 ) {
+      const batch = db.batch ( )
+      for ( const doc of docs.slice ( i, i + 400 ) ) {
+        batch.delete ( doc.ref )
+      }
+      await batch.commit ( )
+    }
+    if ( docs.length > 0 ) {
+      console.log ( `Cleaned up ${docs.length} expired shared links.` )
+    }
   } catch ( error ) {
     console.error ( "Error cleaning up shared links:", error )
   }
 }
-
-// Schedule cleanup every hour
-setInterval ( cleanupSharedLinks, 60 * 60 * 1000 ) // Every hour
-
-// Initial cleanup on startup
-cleanupSharedLinks ( )

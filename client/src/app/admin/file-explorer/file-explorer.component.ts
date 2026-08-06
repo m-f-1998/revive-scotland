@@ -44,7 +44,7 @@ export class FileExplorerComponent {
 
   public breadcrumbs = computed ( ( ) => this.fileExplorerSvc.formatPathToBreadcrumbs ( this.currentPath ( ) ) )
 
-  public isSelectionMode: boolean = false
+  public isSelectionMode = signal ( false )
   public readonly allowedMimeTypes: string [ ] = [ "image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4" ]
   public uploadDropdownOpen: WritableSignal<boolean> = signal ( false )
 
@@ -86,7 +86,7 @@ export class FileExplorerComponent {
       return
     }
 
-    if ( this.isSelectionMode ) {
+    if ( this.isSelectionMode () ) {
       if ( !fileEntry.contentType || !this.allowedMimeTypes.includes ( fileEntry.contentType ) ) {
         this.toastrSvc.error ( "Only images and videos can be selected." )
         return
@@ -201,7 +201,7 @@ export class FileExplorerComponent {
   }
 
   public onRowActivate ( file: FileEntry ): void {
-    if ( this.isSelectionMode ) {
+    if ( this.isSelectionMode () ) {
       void this.selectFile ( file )
       return
     }
@@ -396,7 +396,8 @@ export class FileExplorerComponent {
     modalRef.setInput ( "userS3Path", this.userS3Path )
     modalRef.setInput ( "currentPath", this.currentPath ( ) )
 
-    modalRef.result.then ( async result => {
+    modalRef.result.then ( async raw => {
+      const result = raw as { folderName?: string; rename?: string }
       // Result is the model
       this.loading.set ( true )
       if ( type === "createFolder" ) {
@@ -445,7 +446,7 @@ export class FileExplorerComponent {
           this.toastrSvc.error ( "Failed to delete resource" )
         }
       } else if ( type === "rename" ) {
-        let newName: string = result?.rename
+        let newName: string = result?.rename || ""
         if ( !newName ) {
           this.toastrSvc.error ( "Invalid name" )
           this.loading.set ( false )

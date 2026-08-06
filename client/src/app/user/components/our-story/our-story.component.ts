@@ -52,10 +52,10 @@ export class OurStoryComponent implements OnInit, OnDestroy {
   private readonly apiSvc: ApiService = inject ( ApiService )
 
   public ngOnInit ( ): void {
-    window.addEventListener ( "resize", this.onResize.bind ( this ) )
-    this.onResize ( )
+    window.addEventListener ( "resize", this.onResizeHandler )
+    this.onResizeHandler ( )
 
-    this.apiSvc.get ( "/api/admin/our-story" ).then ( data => {
+    this.apiSvc.get ( "/api/content/our-story" ).then ( data => {
       const res = data as Partial<StoryModel>
       if ( res.items?.length ) {
         this.ourStory.set ( {
@@ -67,15 +67,15 @@ export class OurStoryComponent implements OnInit, OnDestroy {
   }
 
   public ngOnDestroy ( ): void {
-    window.removeEventListener ( "resize", this.onResize.bind ( this ) )
-  }
-
-  public onResize ( ): void {
-    this.readmore.set ( false )
-    this.screenWidth.set ( window.innerWidth )
+    window.removeEventListener ( "resize", this.onResizeHandler )
   }
 
   public toggleReadMore ( ): void {
     this.readmore.set ( !this.readmore ( ) )
+  }
+
+  private readonly onResizeHandler = ( ): void => {
+    this.readmore.set ( false )
+    this.screenWidth.set ( window.innerWidth )
   }
 }

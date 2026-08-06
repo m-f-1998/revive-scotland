@@ -9,30 +9,24 @@ import { router as siteContentRouter } from "./admin/siteContent.js"
 import { router as prayersRouter } from "./admin/prayers.js"
 import { router as reflectionsRouter } from "./admin/reflections.js"
 
-import { initializeApp, cert, ServiceAccount } from "firebase-admin/app"
+import { initializeApp, cert } from "firebase-admin/app"
 import { getAuth as getFirebaseAuth, Auth } from "firebase-admin/auth"
 import { getFirestore as getFirebaseFirestore, Firestore, FieldValue, Timestamp } from "firebase-admin/firestore"
-// import admin, { ServiceAccount } from "firebase-admin"
-import { isDevMode, isPreProd } from "./static.js"
+import { isDevMode } from "./static.js"
 import { isEmailAdmin } from "./admin/middleware/fileExplorer.js"
+import { loadFirebaseServiceAccount } from "../services/firebase-credentials.js"
+import { router as donationsRouter } from "./admin/donations.js"
 import rateLimit from "@fastify/rate-limit"
 import { FastifyPluginAsync } from "fastify"
 import { config } from "dotenv"
 import { resolve } from "path"
-
-let serviceAccount: ServiceAccount
-if ( isPreProd ( ) || isDevMode ( ) ) {
-  serviceAccount = ( await import ( "../revive-scotland-firebase-dev.json", { with: { type: "json" } } ) ).default as ServiceAccount
-} else {
-  serviceAccount = ( await import ( "../revive-scotland-firebase.json", { with: { type: "json" } } ) ).default as ServiceAccount
-}
 
 config ( { path: resolve ( process.cwd ( ), ".env" ), quiet: true } )
 
 const SUPERADMIN_EMAIL = process.env [ "SUPERADMIN_EMAIL" ]
 
 initializeApp ( {
-  credential: cert ( serviceAccount )
+  credential: cert ( loadFirebaseServiceAccount ( ) )
 } )
 
 export const getAuth = ( ): Auth => {
@@ -56,23 +50,24 @@ const isFirebaseAuthError = ( error: unknown ): boolean => {
 }
 
 export const router: FastifyPluginAsync = async app => {
-  app.register ( analyticsRouter, { prefix: "/analytics" } )
-  app.register ( fileExplorerRouter, { prefix: "/file-explorer" } )
-  app.register ( galleryAdminRouter, { prefix: "/gallery" } )
-  app.register ( heroEditorRouter, { prefix: "/hero-editor" } )
-  app.register ( eventsRouter, { prefix: "/events" } )
-  app.register ( contactDetailsRouter, { prefix: "/contact-details" } )
-  app.register ( ourStoryRouter, { prefix: "/our-story" } )
-  app.register ( siteContentRouter, { prefix: "/site-content" } )
-  app.register ( prayersRouter, { prefix: "/prayers" } )
-  app.register ( reflectionsRouter, { prefix: "/reflections" } )
-
   if ( !isDevMode ( ) ) {
     await app.register ( rateLimit, {
       max: 300,
       timeWindow: "15 minute"
     } )
   }
+
+  await app.register ( analyticsRouter, { prefix: "/analytics" } )
+  await app.register ( fileExplorerRouter, { prefix: "/file-explorer" } )
+  await app.register ( galleryAdminRouter, { prefix: "/gallery" } )
+  await app.register ( heroEditorRouter, { prefix: "/hero-editor" } )
+  await app.register ( eventsRouter, { prefix: "/events" } )
+  await app.register ( contactDetailsRouter, { prefix: "/contact-details" } )
+  await app.register ( ourStoryRouter, { prefix: "/our-story" } )
+  await app.register ( siteContentRouter, { prefix: "/site-content" } )
+  await app.register ( prayersRouter, { prefix: "/prayers" } )
+  await app.register ( reflectionsRouter, { prefix: "/reflections" } )
+  await app.register ( donationsRouter, { prefix: "/donations" } )
 
   app.get ( "/logout", async ( req, res ) => {
     const authHeader = req.headers.authorization
@@ -92,9 +87,10 @@ export const router: FastifyPluginAsync = async app => {
       await getAuth ( ).revokeRefreshTokens ( uid )
 
       const firestore = getFirestore ( ).collection ( "users" ).doc ( uid )
-      await firestore.update ( {
-        sessionExpiry: FieldValue.delete ( )
-      } )
+      // Expire session immediately — /verify rejects missing or past sessionExpiry
+      await firestore.set ( {
+        sessionExpiry: Timestamp.fromDate ( new Date ( 0 ) )
+      }, { merge: true } )
 
       return res.status ( 200 ).send ( { message: "User logged out successfully" } )
     } catch ( error ) {
@@ -117,7 +113,7 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     try {
-      const decodedToken = await getAuth ( ).verifyIdToken ( verifyToken )
+      const decodedToken = await getAuth ( ).verifyIdToken ( verifyToken, true )
       const uid = decodedToken.uid
 
       const firestore = getFirestore ( ).collection ( "users" ).doc ( uid )
@@ -128,23 +124,20 @@ export const router: FastifyPluginAsync = async app => {
       }
 
       const data = doc.data ( )
-      const sessionExpiry: Timestamp = data?. [ "sessionExpiry" ]
+      const sessionExpiry = data?. [ "sessionExpiry" ] as Timestamp | undefined
+      const expiryDate = sessionExpiry && typeof sessionExpiry.toDate === "function"
+        ? sessionExpiry.toDate ( )
+        : null
 
-      const user = {
-        uid,
-        role: data?. [ "role" ] || "viewer",
-        profilePhoto: data?. [ "profilePhoto" ] || null
-      }
-
-      if ( !sessionExpiry ) {
-        return res.status ( 200 ).send ( user )
-      }
-
-      if ( sessionExpiry.toDate ( ) < new Date ( ) ) {
+      if ( !expiryDate || expiryDate < new Date ( ) ) {
         return res.status ( 401 ).send ( { error: "Session has expired" } )
       }
 
-      return res.status ( 200 ).send ( user )
+      return res.status ( 200 ).send ( {
+        uid,
+        role: data?. [ "role" ] || "viewer",
+        profilePhoto: data?. [ "profilePhoto" ] || null
+      } )
     } catch ( error ) {
       if ( isFirebaseAuthError ( error ) ) {
         return res.status ( 401 ).send ( { error: "Unauthorized" } )
@@ -165,7 +158,11 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     try {
-      const decodedToken = await getAuth ( ).verifyIdToken ( newSessionToken )
+      const decodedToken = await getAuth ( ).verifyIdToken ( newSessionToken, true )
+      if ( !decodedToken.email_verified ) {
+        return res.status ( 403 ).send ( { error: "Email not verified" } )
+      }
+
       const uid = decodedToken.uid
       const user = await getAuth ( ).getUser ( uid )
 
@@ -173,6 +170,7 @@ export const router: FastifyPluginAsync = async app => {
 
       if ( SUPERADMIN_EMAIL && user.email === SUPERADMIN_EMAIL ) role = "superadmin"
       else if ( isEmailAdmin ( user.email ) && role !== "superadmin" ) role = "admin"
+      else if ( !isEmailAdmin ( user.email ) ) role = "viewer"
 
       if ( !user.customClaims?. [ "role" ] || user.customClaims [ "role" ] !== role ) {
         await getAuth ( ).setCustomUserClaims ( uid, { role } )
@@ -180,9 +178,15 @@ export const router: FastifyPluginAsync = async app => {
 
       const firestore = getFirestore ( ).collection ( "users" ).doc ( uid )
 
-      const doc = await firestore.get ( )
+      // Persist session first so /verify cannot race a slow profile-photo fetch
+      await firestore.set ( {
+        lastLogin: FieldValue.serverTimestamp ( ),
+        sessionExpiry: Timestamp.fromDate ( new Date ( Date.now ( ) + 7 * 24 * 60 * 60 * 1000 ) ),
+        role
+      }, { merge: true } )
 
-      const needsCaching = !doc.exists || !( doc.data ( )?. [ "profilePhoto" ] || null )
+      const doc = await firestore.get ( )
+      const needsCaching = !( doc.data ( )?. [ "profilePhoto" ] || null )
       if ( needsCaching && user.photoURL ) {
         const base64Photo = await cacheProfileImage ( user.photoURL )
         if ( base64Photo ) {
@@ -190,14 +194,9 @@ export const router: FastifyPluginAsync = async app => {
         }
       }
 
-      await firestore.set ( {
-        lastLogin: FieldValue.serverTimestamp ( ),
-        sessionExpiry: Timestamp.fromDate ( new Date ( Date.now ( ) + 7 * 24 * 60 * 60 * 1000 ) ),
-        role
-      }, { merge: true } )
-
       return res.status ( 200 ).send ( { uid: user.uid, role } )
     } catch ( error ) {
+      console.error ( "Error creating session:", error )
       if ( isFirebaseAuthError ( error ) ) {
         return res.status ( 401 ).send ( { error: "Unauthorized" } )
       }
@@ -217,7 +216,7 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     try {
-      const decodedToken = await getAuth ( ).verifyIdToken ( isAdminToken )
+      const decodedToken = await getAuth ( ).verifyIdToken ( isAdminToken, true )
       const uid = decodedToken.uid
       const user = await getAuth ( ).getUser ( uid )
 

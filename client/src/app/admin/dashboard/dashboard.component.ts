@@ -32,7 +32,13 @@ export class DashboardComponent implements OnInit {
   public dashboardData: WritableSignal<DashboardData | null> = signal ( null )
   public donations: WritableSignal<Array<Record<string, unknown>>> = signal ( [ ] )
 
-  public overview!: OverviewMetrics
+  public overview: OverviewMetrics = {
+    activeUsers: 0,
+    sessions: 0,
+    avgSessionDuration: 0,
+    engagementRate: "0%",
+    conversions: 0
+  }
 
   // --- Pagination State ---
   public readonly pageSize = 10
@@ -73,9 +79,8 @@ export class DashboardComponent implements OnInit {
     return ( this.donationsPage ( ) + 1 ) * this.pageSize < this.donations ( ).length
   } )
 
-  // --- Chart Properties ---
-  // 1. Line Chart (Trend Data)
-  public trendChartData!: ChartData<"line">
+  // --- Chart Properties (initialized so template never reads .datasets on undefined) ---
+  public trendChartData: ChartData<"line"> = { labels: [ ], datasets: [ ] }
   public trendChartOptions: ChartOptions<"line"> = {
     responsive: true,
     maintainAspectRatio: false,
@@ -91,8 +96,7 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  // 2. Doughnut Chart (Device Data)
-  public deviceChartData!: ChartData<"doughnut", number[], string>
+  public deviceChartData: ChartData<"doughnut", number[], string> = { labels: [ ], datasets: [ ] }
   public deviceChartOptions: ChartOptions<"doughnut"> = {
     responsive: true,
     maintainAspectRatio: false,

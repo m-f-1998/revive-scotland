@@ -37,8 +37,11 @@ export const onFilesDeleted = async ( deletedKeys: string [ ] ): Promise<void> =
 
   const shareUrlPaths: string [ ] = [ ]
 
-  for ( const key of deletedKeys ) {
-    const snapshot = await db.collection ( "shared_links" ).where ( "key", "==", key ).get ( )
+  // Firestore `in` queries support up to 10 values
+  for ( let i = 0; i < deletedKeys.length; i += 10 ) {
+    const chunk = deletedKeys.slice ( i, i + 10 )
+    if ( chunk.length === 0 ) continue
+    const snapshot = await db.collection ( "shared_links" ).where ( "key", "in", chunk ).get ( )
     snapshot.forEach ( doc => {
       shareUrlPaths.push ( `/api/share/${doc.id}` )
     } )

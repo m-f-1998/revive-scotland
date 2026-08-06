@@ -19,7 +19,7 @@ import { router as eventsRouter } from "./routes/events.js"
 
 import { router as galleryRouter } from "./routes/gallery.js"
 import { router as feastRouter } from "./routes/feast.js"
-import { router as donationsRouter } from "./routes/admin/donations.js"
+import { router as contentRouter } from "./routes/content.js"
 
 import { randomBytes } from "crypto"
 
@@ -209,15 +209,15 @@ export const logResponse = ( req: FastifyRequest, reply: FastifyReply, isProxy =
   logger.info ( body )
 }
 
-app.register ( imagesRouter, { prefix: "/api/img" } )
-app.register ( galleryRouter, { prefix: "/api/gallery" } )
-app.register ( adminRouter, { prefix: "/api/admin" } )
-app.register ( donationsRouter, { prefix: "/api/admin/donations" } )
-app.register ( shareRouter, { prefix: "/api/share" } )
-app.register ( shareRouter, { prefix: "/api/public/s" } )
-app.register ( eventsRouter, { prefix: "/api/events" } )
-app.register ( feastRouter, { prefix: "/api/feast" } )
-app.register ( staticRouter, { prefix: "/" } )
+await app.register ( imagesRouter, { prefix: "/api/img" } )
+await app.register ( galleryRouter, { prefix: "/api/gallery" } )
+await app.register ( contentRouter, { prefix: "/api/content" } )
+await app.register ( adminRouter, { prefix: "/api/admin" } )
+await app.register ( shareRouter, { prefix: "/api/share" } )
+await app.register ( shareRouter, { prefix: "/api/public/s" } )
+await app.register ( eventsRouter, { prefix: "/api/events" } )
+await app.register ( feastRouter, { prefix: "/api/feast" } )
+await app.register ( staticRouter, { prefix: "/" } )
 
 console.log ( "Server is starting..." )
 

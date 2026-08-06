@@ -19,7 +19,9 @@ export class StripeService {
     productId?: string,
     customerEmail?: string
   ): Promise<string | undefined> {
-    const host = isDevMode ( ) ? "http://localhost:4200" : "https://revivescotland.co.uk"
+    const host = isDevMode ( )
+      ? "http://localhost:4200"
+      : ( process.env [ "PUBLIC_DOMAIN" ] || "https://revivescotland.co.uk" )
     const stripe = this.getStripeInstance ( )
 
     if ( !stripe ) {
@@ -57,7 +59,7 @@ export class StripeService {
         transfer_group: eventId,
         receipt_email: customerEmail || undefined
       },
-      success_url: `${host}/events?registration=success&eventId=${encodeURIComponent ( eventId )}`,
+      success_url: `${host}/events?registration=success&eventId=${encodeURIComponent ( eventId )}&draftId=${encodeURIComponent ( draftId )}`,
       cancel_url: `${host}/events?registration=cancelled&eventId=${encodeURIComponent ( eventId )}&draftId=${encodeURIComponent ( draftId )}`,
       client_reference_id: draftId,
       metadata: {

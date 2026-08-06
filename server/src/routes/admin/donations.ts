@@ -11,13 +11,22 @@ export const router: FastifyPluginAsync = async app => {
 
       const stripe = new Stripe ( process.env [ "STRIPE_SECRET_KEY" ] )
 
-      // Fetch successful checkout sessions, expanding line items to get event names if applicable
-      const sessions = await stripe.checkout.sessions.list ( {
-        limit: 100,
-        expand: [ "data.line_items" ]
-      } )
+      const sessions: Stripe.Checkout.Session [ ] = [ ]
+      let startingAfter: string | undefined
 
-      const donations = sessions.data
+      // Paginate through Checkout sessions (Stripe max page size 100)
+      for ( let page = 0; page < 20; page++ ) {
+        const batch = await stripe.checkout.sessions.list ( {
+          limit: 100,
+          expand: [ "data.line_items" ],
+          ...( startingAfter ? { starting_after: startingAfter } : { } )
+        } )
+        sessions.push ( ...batch.data )
+        if ( !batch.has_more || batch.data.length === 0 ) break
+        startingAfter = batch.data [ batch.data.length - 1 ]!.id
+      }
+
+      const donations = sessions
         .filter ( session => session.payment_status === "paid" )
         .map ( session => {
           const isEvent = !!session.client_reference_id
@@ -43,4 +52,3 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 }
-

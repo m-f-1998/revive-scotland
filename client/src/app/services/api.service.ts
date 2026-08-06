@@ -5,6 +5,10 @@ import { parse } from "date-fns"
 @Service ( )
 export class ApiService {
   private static readonly datePattern = /^\d{4}-\d{2}-\d{2}|^\d{2}\/\d{2}\/\d{4}/
+  private static readonly dateFieldKeys = new Set ( [
+    "startDate", "endDate", "createdAt", "donatedAt", "lastModified",
+    "sessionExpiry", "expiresAt", "paymentPromptSentAt", "date"
+  ] )
 
   private readonly httpClient: HttpClient = inject ( HttpClient )
 
@@ -90,6 +94,7 @@ export class ApiService {
       } )
     } )
   }
+  /** Recurse into objects/arrays; only coerce well-known date field names. */
   private parseObj<T>( obj: T ): T {
     if ( obj && typeof obj === "object" ) {
       const res = obj as Record<string, unknown>
@@ -97,20 +102,14 @@ export class ApiService {
       for ( const key of Object.keys ( res ) ) {
         const value = res [ key ]
 
-        if ( value ) {
-          if ( Array.isArray ( value ) ) {
-            res [ key ] = value.map ( x => this.parseObj ( x ) )
-          } else if ( typeof value === "object" ) {
-            res [ key ] = this.parseObj ( value )
-          } else if ( typeof value === "string" && this.isNumber ( value ) ) {
-            res [ key ] = Number ( value )
-          } else if ( typeof value === "string" && this.isBool ( value ) ) {
-            res [ key ] = Boolean ( value )
-          }
+        if ( value == null ) continue
 
-          if ( typeof res [ key ]  === "string" ) {
-            res [ key ] = this.checkDate ( res [ key ] )
-          }
+        if ( Array.isArray ( value ) ) {
+          res [ key ] = value.map ( x => this.parseObj ( x ) )
+        } else if ( typeof value === "object" ) {
+          res [ key ] = this.parseObj ( value )
+        } else if ( typeof value === "string" && ApiService.dateFieldKeys.has ( key ) ) {
+          res [ key ] = this.checkDate ( value )
         }
       }
     }
@@ -118,19 +117,7 @@ export class ApiService {
     return obj
   }
 
-  private isBool = ( value: string ): boolean => {
-    return String ( value ).toUpperCase ( ) === "TRUE" || String ( value ).toUpperCase ( ) === "FALSE"
-  }
-
-  private isNumber = ( value: string ): boolean => {
-    if ( value != null ) {
-      return ( String ( value ).length == 1 || !String ( value ).startsWith ( "0" ) ) && !isNaN ( Number ( value ) ) && String ( value ) != ""
-    }
-    return false
-  }
-
   private checkDate = ( value: string ): Date | string  => {
-    // Quick pre-filter: skip strings that can't possibly be dates
     if ( value.length < 8 || value.length > 35 || !ApiService.datePattern.test ( value ) ) {
       return value
     }

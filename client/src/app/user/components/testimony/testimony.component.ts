@@ -34,7 +34,7 @@ export class TestimonyComponent implements OnInit {
 
   public ngOnInit ( ): void {
     this.pickRandom ( )
-    this.apiSvc.get ( "/api/admin/site-content/testimonials" ).then ( data => {
+    this.apiSvc.get ( "/api/content/site-content/testimonials" ).then ( data => {
       const res = data as { items?: Testimony [ ] }
       if ( res.items?.length ) {
         this.allTestimonies.set ( res.items )

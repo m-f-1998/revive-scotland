@@ -10,7 +10,8 @@
     "dev": "npm run prestart && npx --yes nodemon -e ts --exec \"tsc && node ./dist/index.js\"",
     "lint": "npx --yes eslint",
     "lint:fix": "npx --yes eslint --fix",
-    "tsc-verify": "npx --yes tsc --noEmit"
+    "tsc-verify": "npx --yes tsc --noEmit",
+    "test": "tsc && node --test dist/utils/*.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1105.0",

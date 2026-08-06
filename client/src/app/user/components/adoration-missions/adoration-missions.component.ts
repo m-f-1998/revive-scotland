@@ -26,7 +26,7 @@ export class AdorationMissionsComponent implements OnInit {
   private readonly apiSvc: ApiService = inject ( ApiService )
 
   public ngOnInit ( ): void {
-    this.apiSvc.get ( "/api/admin/site-content/adoration" ).then ( data => {
+    this.apiSvc.get ( "/api/content/site-content/adoration" ).then ( data => {
       const res = data as Partial<AdorationContent>
       if ( res.title ) this.content.set ( { ...FALLBACK, ...res } )
     } ).catch ( ( ) => { /* keep fallback */ } )
