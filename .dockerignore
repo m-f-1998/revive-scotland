@@ -2,8 +2,6 @@
 **/.git
 **/.env
 **/.env.*
-**/revive-scotland-firebase*.json
-server/src/revive-scotland-firebase*.json
 server/dist/**/*.json
 **/*.md
 client/.angular
