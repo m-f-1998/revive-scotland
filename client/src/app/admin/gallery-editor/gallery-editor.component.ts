@@ -112,8 +112,20 @@ export class GalleryEditorComponent implements OnInit {
   }
 
   public async deleteAlbum ( name: string ): Promise<void> {
-    const confirmed = window.confirm ( `Are you sure you want to delete the entire album "${name}"?\n\nThis will un-link all additional images in this album. This cannot be undone.` )
-    if ( !confirmed ) return
+    const modalRef = this.modalSvc.open ( InputDialogComponent, { centered: true } )
+    modalRef.setInput ( "title", "Delete Album" )
+    modalRef.setInput (
+      "body",
+      `Delete “${name}” and unlink its images from the gallery? This cannot be undone.`
+    )
+    modalRef.setInput ( "fields", [ ] )
+    modalRef.setInput ( "confirmText", "Delete Album" )
+
+    try {
+      await modalRef.result
+    } catch {
+      return
+    }
 
     this.albumNames.update ( names => names.filter ( n => n !== name ) )
 

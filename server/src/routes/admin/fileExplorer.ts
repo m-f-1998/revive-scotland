@@ -520,7 +520,8 @@ export const router: FastifyPluginAsync = async app => {
         type: "admin_view"
       } )
 
-      const viewUrl = `${PUBLIC_DOMAIN}/api/share/${shareId}`
+      // Relative so preview works on the current host (dev/prod), not a hardcoded domain
+      const viewUrl = `/api/share/${shareId}`
       return rep.status ( 200 ).send ( { viewUrl } )
     } catch ( error ) {
       console.error ( "Error generating view URL:", error )

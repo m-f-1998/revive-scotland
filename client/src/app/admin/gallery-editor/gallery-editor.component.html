@@ -35,32 +35,33 @@
       <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 items-start">
         @for (name of albumNames(); track name) {
           <div class="card shadow-sm overflow-hidden">
-            <div class="card-header flex items-center p-0 justify-between bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700">
+            <div class="card-header flex items-center gap-1 p-0 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700">
               <button
                 type="button"
-                class="flex items-center gap-2 flex-grow text-left cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors py-3 px-4 outline-none"
+                class="flex items-center gap-2 flex-grow min-w-0 text-left cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors py-3 px-4 outline-none"
                 (click)="toggleCollapsed(name)"
               >
-                <app-icon icon="folder-open" />
-                <span class="font-semibold">{{ name | titlecase }}</span>
-                <span class="ml-2 text-xs text-gray-400 dark:text-slate-500">
-                  ({{ allImagesForAlbum(name).length }} files)
+                <app-icon icon="folder-open" class="flex-shrink-0" />
+                <span class="font-semibold truncate">{{ name | titlecase }}</span>
+                <span class="ml-1 text-xs text-gray-400 dark:text-slate-500 flex-shrink-0">
+                  ({{ allImagesForAlbum(name).length }})
                 </span>
-                @if (isCustomAlbum(name)) {
-                  <button
-                    type="button"
-                    class="text-red-500 hover:text-red-700 p-2 mr-3 rounded-lg cursor-pointer transition-all duration-200"
-                    title="Delete Album"
-                    (click)="deleteAlbum(name)"
-                  >
-                    <app-icon icon="trash" class="w-4 h-4" />
-                  </button>
-                }
+                <span class="inline-block transition-transform duration-200 ml-auto flex-shrink-0" [class.rotate-180]="!collapsedAlbums()[name]">
+                  <app-icon icon="chevron-down" class="text-gray-400" />
+                </span>
               </button>
 
-              <span class="inline-block transition-transform duration-200 ml-1 p-2" [class.rotate-180]="!collapsedAlbums()[name]">
-                <app-icon icon="chevron-down" class="text-gray-400" />
-              </span>
+              @if (isCustomAlbum(name)) {
+                <button
+                  type="button"
+                  class="btn-danger flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 mr-3 rounded-lg flex-shrink-0"
+                  title="Delete this album"
+                  (click)="deleteAlbum(name); $event.stopPropagation()"
+                >
+                  <app-icon icon="trash-can" />
+                  Delete
+                </button>
+              }
             </div>
 
             <div [class.hidden]="collapsedAlbums()[name]">
@@ -103,11 +104,12 @@
                           @if (isAdditional(name, img)) {
                             <button
                               type="button"
-                              class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow cursor-pointer"
-                              title="Remove linked image"
-                              (click)="removeAdditional(name, img)"
+                              class="absolute top-1.5 right-1.5 z-10 flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white text-[11px] font-semibold pl-1.5 pr-2 py-1 rounded-md opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shadow-md cursor-pointer"
+                              title="Remove linked image from album"
+                              (click)="removeAdditional(name, img); $event.stopPropagation()"
                             >
-                              <app-icon icon="xmark" />
+                              <app-icon icon="trash-can" />
+                              Remove
                             </button>
                           }
                         </div>

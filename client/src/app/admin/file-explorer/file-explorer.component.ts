@@ -200,9 +200,21 @@ export class FileExplorerComponent {
     this.listPath ( newPath )
   }
 
+  public onRowActivate ( file: FileEntry ): void {
+    if ( this.isSelectionMode ) {
+      void this.selectFile ( file )
+      return
+    }
+    if ( file.isFolder ) {
+      this.navigateTo ( file.name )
+      return
+    }
+    void this.viewFile ( file.key )
+  }
+
   public async viewFile ( key: string ) {
     if ( this.dataSource ( ) === "static" ) {
-      window.open ( `/api/img/${key}`, "_blank" )
+      window.open ( `/api/img/${key}`, "_blank", "noopener,noreferrer" )
       return
     }
 
@@ -212,7 +224,10 @@ export class FileExplorerComponent {
         "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || "" }`
       } ) )
       const data = response as { viewUrl: string }
-      window.open ( data.viewUrl, "_blank" )
+      const viewUrl = data.viewUrl.startsWith ( "http" )
+        ? new URL ( data.viewUrl ).pathname
+        : data.viewUrl
+      window.open ( viewUrl, "_blank", "noopener,noreferrer" )
       this.loading.set ( false )
     } catch ( err ) {
       if ( isDevMode ( ) ) {
