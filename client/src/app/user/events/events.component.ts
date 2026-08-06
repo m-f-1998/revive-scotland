@@ -199,7 +199,7 @@ export class EventsComponent implements OnInit {
         sessionStorage.removeItem ( "checkoutDraftId" )
         sessionStorage.removeItem ( "checkoutUrl" )
         sessionStorage.removeItem ( "checkoutEventTitle" )
-        
+
         const successRef = this.modalSvc.open ( SuccessModalComponent, {
           centered: true
         } )
@@ -215,14 +215,14 @@ export class EventsComponent implements OnInit {
         sessionStorage.removeItem ( "checkoutDraftId" )
         sessionStorage.removeItem ( "checkoutUrl" )
         sessionStorage.removeItem ( "checkoutEventTitle" )
-        
+
         const errorRef = this.modalSvc.open ( ErrorModalComponent, {
           centered: true
         } )
         errorRef.setInput ( "title", "Payment Cancelled" )
         errorRef.setInput ( "message", "Registration failed to complete or was cancelled. Please try again or contact us if you need assistance." )
         errorRef.setInput ( "type", "warning" )
-        
+
         this.clearQueryParams ( )
       }
     } )

@@ -96,6 +96,13 @@ app.addHook ( "onRequest", async ( req, _reply ) => {
   req.startTime = Date.now ( )
 } )
 
+// Must run before helmet so the CSP nonce is available when the header is built
+app.addHook ( "onRequest", async request => {
+  const nonce = randomBytes ( 16 ).toString ( "base64" )
+  request.cspNonce = nonce
+  ;( request.raw as IncomingMessage ).cspNonce = nonce
+} )
+
 // Add hook to flag slow requests
 app.addHook ( "onResponse", async ( req, reply ) => {
   await logResponse ( req, reply )
@@ -194,12 +201,6 @@ export const logResponse = ( req: FastifyRequest, reply: FastifyReply, isProxy =
 
   logger.info ( body )
 }
-
-app.addHook ( "onRequest", async request => {
-  const nonce = randomBytes ( 16 ).toString ( "base64" )
-  request.cspNonce = nonce
-  ;( request.raw as IncomingMessage ).cspNonce = nonce
-} )
 
 app.register ( imagesRouter, { prefix: "/api/img" } )
 app.register ( galleryRouter, { prefix: "/api/gallery" } )

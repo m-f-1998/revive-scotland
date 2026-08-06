@@ -89,19 +89,31 @@ export const router: FastifyPluginAsync = async app => {
   const injectGoogleTagManager = ( html: string, nonce: string ): string => {
     const cfToken = process.env [ "CF_BEACON_TOKEN" ] ?? ""
     const gaId = process.env [ "GA_TRACKING_ID" ] ?? ""
+    const scripts: string [ ] = [ ]
 
-    const gtmScript = `<script nonce="${nonce}" async src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "${cfToken}"}'></script>
-      <script nonce="${nonce}" async src="https://www.googletagmanager.com/gtag/js?id=${gaId}"></script>
+    if ( cfToken ) {
+      scripts.push ( `<script nonce="${nonce}" async src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "${cfToken}"}'></script>` )
+    }
+
+    if ( gaId ) {
+      scripts.push ( `<script nonce="${nonce}" async src="https://www.googletagmanager.com/gtag/js?id=${gaId}"></script>
       <script nonce="${nonce}">
         window.dataLayer = window.dataLayer || [];
         function gtag( ){dataLayer.push(arguments);}
         gtag('js', new Date( ));
         gtag('config', '${gaId}');
-      </script>`
+      </script>` )
+    }
 
-    const bodyIndex = html.indexOf ( "<body>" )
-    if ( bodyIndex !== -1 ) {
-      return html.slice ( 0, bodyIndex ) + gtmScript + html.slice ( bodyIndex )
+    if ( scripts.length === 0 ) {
+      return html
+    }
+
+    const gtmScript = scripts.join ( "\n      " )
+    const bodyOpen = html.indexOf ( "<body>" )
+    if ( bodyOpen !== -1 ) {
+      const insertAt = bodyOpen + "<body>".length
+      return html.slice ( 0, insertAt ) + gtmScript + html.slice ( insertAt )
     }
     return html + gtmScript
   }
