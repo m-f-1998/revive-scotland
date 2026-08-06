@@ -7,29 +7,47 @@ import { loadFirebaseServiceAccount } from "./firebase-credentials.js"
 
 config ( { path: resolve ( process.cwd ( ), ".env" ), quiet: true } )
 
+type SaJson = ServiceAccount & { project_id?: string }
+
+const readSaFile = ( path: string ): SaJson | null => {
+  try {
+    return JSON.parse ( readFileSync ( path, "utf8" ) ) as SaJson
+  } catch {
+    return null
+  }
+}
+
 /**
  * GA Data API access is granted to the *production* Firebase SA (property 477989791),
- * not the Auth project used for DEV_MODE / PRE_PROD. Prefer an explicit GA secret,
- * then the prod JSON file, then the general Firebase credentials loader.
+ * not the Auth project used for DEV_MODE / PRE_PROD.
+ *
+ * Priority: GA_SERVICE_ACCOUNT_JSON → GA_GOOGLE_APPLICATION_CREDENTIALS →
+ * prod JSON (Docker: ./revive-scotland-firebase.json, local: ./src/...) →
+ * last resort Auth credentials (only works if that SA also has GA access).
  */
-const loadAnalyticsCredentials = ( ): ServiceAccount & { project_id?: string } => {
+const loadAnalyticsCredentials = ( ): SaJson => {
   const inline = process.env [ "GA_SERVICE_ACCOUNT_JSON" ]
   if ( inline?.trim ( ) ) {
-    return JSON.parse ( inline ) as ServiceAccount & { project_id?: string }
+    return JSON.parse ( inline ) as SaJson
   }
 
   const gaPath = process.env [ "GA_GOOGLE_APPLICATION_CREDENTIALS" ]
   if ( gaPath?.trim ( ) ) {
-    return JSON.parse ( readFileSync ( gaPath, "utf8" ) ) as ServiceAccount & { project_id?: string }
+    const fromEnv = readSaFile ( gaPath )
+    if ( fromEnv ) return fromEnv
   }
 
-  const prodFile = resolve ( process.cwd ( ), "src/revive-scotland-firebase.json" )
-  try {
-    return JSON.parse ( readFileSync ( prodFile, "utf8" ) ) as ServiceAccount & { project_id?: string }
-  } catch {
-    // Last resort (e.g. container with only FIREBASE_SERVICE_ACCOUNT_JSON that also has GA access)
-    return loadFirebaseServiceAccount ( ) as ServiceAccount & { project_id?: string }
+  // Docker copies JSON next to dist (cwd=/node/server); local/dev keeps it under src/
+  for ( const rel of [ "revive-scotland-firebase.json", "src/revive-scotland-firebase.json" ] ) {
+    const fromFile = readSaFile ( resolve ( process.cwd ( ), rel ) )
+    if ( fromFile ) return fromFile
   }
+
+  console.warn (
+    "GA: production service account JSON not found; falling back to Auth credentials. "
+    + "On PRE_PROD this usually fails — set GA_GOOGLE_APPLICATION_CREDENTIALS to the prod SA file."
+  )
+  return loadFirebaseServiceAccount ( ) as SaJson
 }
 
 export class GoogleAnalyticsService {

@@ -18,18 +18,26 @@ export const loadFirebaseServiceAccount = ( ): ServiceAccount => {
     return JSON.parse ( readFileSync ( credPath, "utf8" ) ) as ServiceAccount
   }
 
-  // Local/dev fallback only — files must stay gitignored and out of Docker images
+  // Local/dev + Docker layout (JSON next to cwd in images, under src/ for local)
   if ( isDevMode ( ) || isPreProd ( ) ) {
-    const file = resolve ( process.cwd ( ), "src/revive-scotland-firebase-dev.json" )
-    return JSON.parse ( readFileSync ( file, "utf8" ) ) as ServiceAccount
+    for ( const rel of [ "revive-scotland-firebase-dev.json", "src/revive-scotland-firebase-dev.json" ] ) {
+      try {
+        return JSON.parse ( readFileSync ( resolve ( process.cwd ( ), rel ), "utf8" ) ) as ServiceAccount
+      } catch {
+        // try next
+      }
+    }
   }
 
-  const prodFile = resolve ( process.cwd ( ), "src/revive-scotland-firebase.json" )
-  try {
-    return JSON.parse ( readFileSync ( prodFile, "utf8" ) ) as ServiceAccount
-  } catch {
-    throw new Error (
-      "Firebase credentials not configured. Set FIREBASE_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS."
-    )
+  for ( const rel of [ "revive-scotland-firebase.json", "src/revive-scotland-firebase.json" ] ) {
+    try {
+      return JSON.parse ( readFileSync ( resolve ( process.cwd ( ), rel ), "utf8" ) ) as ServiceAccount
+    } catch {
+      // try next
+    }
   }
+
+  throw new Error (
+    "Firebase credentials not configured. Set FIREBASE_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS."
+  )
 }
