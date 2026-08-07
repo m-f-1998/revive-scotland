@@ -11,9 +11,10 @@ import { AboutEditorComponent } from "./components/about-editor/about-editor.com
 import { TestimonialsEditorComponent } from "./components/testimonials-editor/testimonials-editor.component"
 import { StoryEditorComponent } from "./components/story-editor/story-editor.component"
 import { ContactEditorComponent } from "./components/contact-editor/contact-editor.component"
+import { DonateEditorComponent } from "./components/donate-editor/donate-editor.component"
 import { BrandIcon, SolidIcon } from "src/app/icon/icon.registry"
 
-type EditorTab = "slider" | "about" | "testimonials" | "story" | "adoration" | "pilgrimage" | "weekends" | "contact"
+type EditorTab = "slider" | "about" | "testimonials" | "story" | "adoration" | "pilgrimage" | "weekends" | "contact" | "donate"
 const Editor: Array<{ id: EditorTab; label: string; icon: BrandIcon | SolidIcon }> = [
   { id: "slider", label: "Home Slider", icon: "image" },
   { id: "about", label: "About", icon: "info-circle" },
@@ -22,6 +23,7 @@ const Editor: Array<{ id: EditorTab; label: string; icon: BrandIcon | SolidIcon 
   { id: "adoration", label: "Adoration", icon: "praying-hands" },
   { id: "pilgrimage", label: "Pilgrimage", icon: "map-marker" },
   { id: "weekends", label: "Revive Weekends", icon: "calendar-days" },
+  { id: "donate", label: "Donations", icon: "heart" },
   { id: "contact", label: "Contact Details", icon: "address-card" }
 ]
 
@@ -38,7 +40,8 @@ const Editor: Array<{ id: EditorTab; label: string; icon: BrandIcon | SolidIcon 
     AboutEditorComponent,
     TestimonialsEditorComponent,
     StoryEditorComponent,
-    ContactEditorComponent
+    ContactEditorComponent,
+    DonateEditorComponent
   ],
   templateUrl: "./home-editor.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush

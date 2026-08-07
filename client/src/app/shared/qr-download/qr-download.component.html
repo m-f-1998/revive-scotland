@@ -1,0 +1,9 @@
+<div class="flex flex-col items-center gap-3">
+  <div #qrHost class="bg-white p-3 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-700">
+    <qr-code [value]="value()" size="160" errorCorrectionLevel="M" />
+  </div>
+  <button type="button" class="btn-outline-secondary btn-sm inline-flex items-center gap-2" (click)="download()">
+    <app-icon icon="download" />
+    Download QR
+  </button>
+</div>

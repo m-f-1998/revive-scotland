@@ -5,7 +5,7 @@
   </header>
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 justify-items-center lg:[&>*:last-child:nth-child(3n-1)]:col-start-2 lg:[&>*:last-child:nth-child(3n+1):not(:first-child)]:col-start-2">
     @for (card of cards(); track $index) {
-      <div class="group flex flex-col items-center p-8 rounded-2xl border border-transparent bg-white shadow-sm hover:shadow-lg hover:border-primary/20 hover:-translate-y-1 transition-all duration-300 ease-in-out w-full cursor-default">
+      <div class="group flex flex-col items-center p-8 rounded-2xl border border-transparent bg-white dark:bg-gray-800 shadow-sm hover:shadow-lg hover:border-primary/20 hover:-translate-y-1 transition-all duration-300 ease-in-out w-full cursor-default">
         <div class="text-primary mb-5 p-4 rounded-full bg-primary/10 group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300">
           <app-icon [icon]="card.icon" iconSize="3x" />
         </div>
