@@ -12,6 +12,40 @@
   } @else {
     <p class="text-gray-500 dark:text-gray-400 text-sm mb-4">Edit the phone number, email address and Instagram handle shown in the Contact section of the website.</p>
     <formly-form [form]="form" [model]="model" [fields]="fields" />
+
+    <div class="mt-8 pt-6 border-t border-gray-200 dark:border-slate-700">
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <h6 class="mb-0 font-semibold text-primary dark:text-white text-sm">Recent inquiries</h6>
+        <button type="button" class="btn-secondary btn-sm" (click)="loadInquiries()" [disabled]="inquiriesLoading()">
+          @if (inquiriesLoading()) {
+            <app-icon icon="spinner" iconAnimation="spin" />
+          } @else {
+            <app-icon icon="refresh" />
+          }
+          Refresh
+        </button>
+      </div>
+      @if (inquiriesLoading() && inquiries().length === 0) {
+        <p class="text-sm text-gray-500 dark:text-gray-400">Loading messages…</p>
+      } @else if (inquiries().length === 0) {
+        <p class="text-sm text-gray-500 dark:text-gray-400">No contact form messages yet.</p>
+      } @else {
+        <ul class="space-y-3 max-h-80 overflow-y-auto pr-1">
+          @for (item of inquiries(); track item.id) {
+            <li class="text-sm border border-gray-200 dark:border-slate-700 rounded-md p-3">
+              <div class="flex flex-wrap items-baseline justify-between gap-2 mb-1">
+                <span class="font-medium text-gray-900 dark:text-white">{{ item.name }}</span>
+                @if (item.createdAt) {
+                  <span class="text-xs text-gray-500 dark:text-gray-400">{{ item.createdAt | date: "medium" }}</span>
+                }
+              </div>
+              <a class="text-primary text-xs break-all" [href]="'mailto:' + item.email">{{ item.email }}</a>
+              <p class="mt-2 mb-0 text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">{{ item.message }}</p>
+            </li>
+          }
+        </ul>
+      }
+    </div>
   }
 </div>
 <div class="card-footer flex justify-end items-center bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 px-5 py-4">
@@ -24,4 +58,3 @@
     Save Changes
   </button>
 </div>
-

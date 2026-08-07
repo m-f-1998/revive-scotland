@@ -72,8 +72,9 @@ export class ContactComponent implements OnInit {
     ] )
 
     try {
-      const result = await modalRef.result as Record<string, unknown> | undefined
-      if ( !result ) return
+      const result = await modalRef.result as Record<string, unknown>
+      if ( !result || typeof result !== "object" ) return
+
       if ( !modalRef.componentInstance.captchaToken ) {
         this.toastrSvc.error ( "reCAPTCHA was not ready. Please try again." )
         return
@@ -86,7 +87,8 @@ export class ContactComponent implements OnInit {
       } )
       this.toastrSvc.success ( "Thanks — your message has been sent." )
     } catch ( e ) {
-      if ( !e ) return // dialog dismissed
+      // ModalRef rejects with "dismissed" when closed without confirming
+      if ( e === "dismissed" || e === undefined || e === null ) return
       const msg = e instanceof HttpErrorResponse
         ? ( typeof e.error === "object" && e.error?.message ? String ( e.error.message ) : undefined )
         : undefined

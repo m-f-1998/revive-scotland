@@ -511,14 +511,19 @@ export const router: FastifyPluginAsync = async app => {
       const incomingIds = sanitizedEvents.map ( e => e.id )
       const idsToDelete = currentIds.filter ( id => !incomingIds.includes ( id ) )
 
+      // Removals must go through DELETE /api/admin/events (refunds, voids, Checkout expiry).
+      // Never silently drop event docs from a bulk save — that skips the money path.
+      if ( idsToDelete.length > 0 ) {
+        return rep.status ( 400 ).send ( {
+          error: `Cannot remove events via save. Delete them individually first: ${idsToDelete.join ( ", " )}`
+        } )
+      }
+
       const ops: ( ( batch: WriteBatch ) => void ) [ ] = [ ]
 
       const defaultDoc = currentSnap.docs.find ( d => d.id === "default" )
       if ( defaultDoc ) {
         ops.push ( batch => batch.delete ( eventsCollection.doc ( "default" ) ) )
-      }
-      for ( const id of idsToDelete ) {
-        ops.push ( batch => batch.delete ( eventsCollection.doc ( id ) ) )
       }
       for ( const event of sanitizedEvents ) {
         ops.push ( batch => batch.set ( eventsCollection.doc ( event.id ), event ) )
@@ -608,9 +613,12 @@ export const router: FastifyPluginAsync = async app => {
       }
 
       for ( const draftDoc of draftsSnapshot.docs ) {
-        const invoiceId = draftDoc.data ( )?. [ "stripeInvoiceId" ]
-        if ( invoiceId ) {
-          await StripeService.voidInvoiceIfOpen ( String ( invoiceId ) )
+        const data = draftDoc.data ( ) || { }
+        if ( data [ "stripeInvoiceId" ] ) {
+          await StripeService.voidInvoiceIfOpen ( String ( data [ "stripeInvoiceId" ] ) )
+        }
+        if ( data [ "stripeCheckoutSessionId" ] ) {
+          await StripeService.expireCheckoutSession ( String ( data [ "stripeCheckoutSessionId" ] ) )
         }
       }
 

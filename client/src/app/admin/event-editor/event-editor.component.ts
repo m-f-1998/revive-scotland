@@ -457,7 +457,11 @@ export class EventEditorComponent implements OnInit {
     const event = this.getSelectedEvent ( )
     const headers = [ "Date", "Kind", "Status", "Name", "Email", "Phone", "Amount", "PaymentIntent", "Details" ]
     const escape = ( v: unknown ) => {
-      const s = v == null ? "" : String ( v )
+      let s = v == null ? "" : String ( v )
+      // Neutralise Excel/Sheets formula injection on open
+      if ( /^[=+\-@\t\r]/.test ( s ) ) {
+        s = `'${s}`
+      }
       return `"${s.replace ( /"/g, "\"\"" )}"`
     }
 

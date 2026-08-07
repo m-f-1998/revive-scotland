@@ -274,7 +274,8 @@ export class EventsComponent implements OnInit {
 
       if ( status === "success" ) {
         const title = sessionStorage.getItem ( "checkoutEventTitle" ) || ""
-        void this.showRegistrationSuccess ( draftId, title )
+        const cancelToken = sessionStorage.getItem ( "checkoutCancelToken" ) || undefined
+        void this.showRegistrationSuccess ( draftId, title, cancelToken )
         sessionStorage.removeItem ( "checkoutDraftId" )
         sessionStorage.removeItem ( "checkoutCancelToken" )
         sessionStorage.removeItem ( "checkoutUrl" )
@@ -303,15 +304,28 @@ export class EventsComponent implements OnInit {
     } )
   }
 
-  private async showRegistrationSuccess ( draftId: string | undefined, title: string ): Promise<void> {
-    if ( draftId ) {
+  private async showRegistrationSuccess (
+    draftId: string | undefined,
+    title: string,
+    cancelToken?: string
+  ): Promise<void> {
+    if ( draftId && cancelToken ) {
       try {
-        const res = await this.apiSvc.get ( `/api/events/checkout-draft/${draftId}/status` ) as { status?: string }
+        const res = await this.apiSvc.get ( `/api/events/checkout-draft/${draftId}/status`, {
+          cancelToken
+        } ) as { status?: string }
         if ( res?.status === "pending" ) {
           const warnRef = this.modalSvc.open ( ErrorModalComponent, { centered: true } )
           warnRef.setInput ( "title", "Payment Processing" )
           warnRef.setInput ( "message", "Your payment is still being confirmed. You'll receive confirmation shortly — if not, contact us with your receipt." )
           warnRef.setInput ( "type", "warning" )
+          return
+        }
+        if ( res?.status === "refunded" ) {
+          const errRef = this.modalSvc.open ( ErrorModalComponent, { centered: true } )
+          errRef.setInput ( "title", "Event Fully Booked" )
+          errRef.setInput ( "message", "Your payment was refunded because the event filled up before it completed. Contact us if you don't see the refund within a few days." )
+          errRef.setInput ( "type", "warning" )
           return
         }
         if ( res?.status === "not_found" ) {

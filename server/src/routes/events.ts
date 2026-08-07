@@ -66,7 +66,9 @@ interface CheckoutDraft {
   /** Set when payment is confirmed — kept so status polls remain accurate after merge */
   finalized?: boolean
   registrationId?: string
-  /** SHA-256 hex of the cancel token returned to the client */
+  /** Set when payment was refunded (e.g. event full at finalize) */
+  refundedReason?: string
+  /** SHA-256 hex of the cancel token returned to the client (kept after finalize for status polls) */
   cancelTokenHash?: string
   createdAt: unknown
 }
@@ -220,7 +222,26 @@ const markDraftFinalized = async (
     finalized: true,
     registrationId,
     checkoutUrl: null,
-    cancelTokenHash: FieldValue.delete ( ),
+    finalizedAt: FieldValue.serverTimestamp ( )
+  }, { merge: true } )
+}
+
+const refundAndCloseDraft = async (
+  draftRef: DocumentReference,
+  paymentIntent: string | null,
+  reason: string
+): Promise<void> => {
+  if ( paymentIntent ) {
+    try {
+      await StripeService.refundPaymentIntent ( paymentIntent )
+    } catch ( err ) {
+      console.error ( `Failed to refund ${paymentIntent} (${reason}):`, err )
+    }
+  }
+  await draftRef.set ( {
+    finalized: true,
+    refundedReason: reason,
+    checkoutUrl: null,
     finalizedAt: FieldValue.serverTimestamp ( )
   }, { merge: true } )
 }
@@ -323,6 +344,7 @@ const finalizePaidRegistration = async (
       return
     }
 
+    // Optional donate / existing seat — capacity already held
     if ( draft.existingRegistrationId ) {
       const regRef = db.collection ( "event_registrations" ).doc ( draft.existingRegistrationId )
       const regSnap = await regRef.get ( )
@@ -359,19 +381,73 @@ const finalizePaidRegistration = async (
         }
       )
       await markDraftFinalized ( draftRef, existing.id )
-    } else {
-      await db.collection ( "event_registrations" ).doc ( draftId ).set ( {
+      clearEventsCache ( )
+      void StaffNotifyService.notify ( {
+        type: "payment",
         eventId: draft.eventId,
         eventTitle: draft.eventTitle,
-        formData: draft.formData,
-        email: draft.email || null,
-        status: "completed",
-        paymentIntent,
-        createdAt: FieldValue.serverTimestamp ( ),
-        donatedAt: FieldValue.serverTimestamp ( )
-      }, { merge: true } )
-      await markDraftFinalized ( draftRef, draftId )
+        email: draft.email,
+        name: draft.name,
+        amountPence: draft.amountPence ?? null
+      } )
+      return
     }
+
+    // New paid seat — re-check capacity at finalize (closes TOCTOU vs register start)
+    const event = await loadEvent ( draft.eventId )
+    if ( event ) {
+      const capacity = await resolveCapacityGate ( event )
+      if ( !capacity.allow || capacity.asWaitlist ) {
+        console.warn ( `Refunding payment for draft ${draftId}: event full at finalize.` )
+        await refundAndCloseDraft ( draftRef, paymentIntent, "over_capacity" )
+        void StaffNotifyService.notify ( {
+          type: "payment",
+          eventId: draft.eventId,
+          eventTitle: draft.eventTitle,
+          email: draft.email,
+          name: draft.name,
+          amountPence: draft.amountPence ?? null,
+          message: "Auto-refunded: event was full when payment completed."
+        } )
+        return
+      }
+    }
+
+    const regRef = db.collection ( "event_registrations" ).doc ( draftId )
+    await regRef.set ( {
+      eventId: draft.eventId,
+      eventTitle: draft.eventTitle,
+      formData: draft.formData,
+      email: draft.email || null,
+      status: "completed",
+      attended: false,
+      paymentIntent,
+      createdAt: FieldValue.serverTimestamp ( ),
+      donatedAt: FieldValue.serverTimestamp ( )
+    }, { merge: true } )
+
+    // Post-write capacity heal if two payments raced past the check
+    if ( event?.maxAttendees && event.maxAttendees > 0 ) {
+      const seats = await countConfirmedSeats ( draft.eventId )
+      if ( seats > event.maxAttendees ) {
+        console.warn ( `Overbook heal: removing registration ${draftId} and refunding.` )
+        await regRef.delete ( )
+        await refundAndCloseDraft ( draftRef, paymentIntent, "over_capacity" )
+        void StaffNotifyService.notify ( {
+          type: "payment",
+          eventId: draft.eventId,
+          eventTitle: draft.eventTitle,
+          email: draft.email,
+          name: draft.name,
+          amountPence: draft.amountPence ?? null,
+          message: "Auto-refunded after overbook race at finalize."
+        } )
+        clearEventsCache ( )
+        return
+      }
+    }
+
+    await markDraftFinalized ( draftRef, draftId )
     clearEventsCache ( )
     void StaffNotifyService.notify ( {
       type: "payment",
@@ -395,7 +471,15 @@ const finalizePaidRegistration = async (
       { donatedAt: FieldValue.serverTimestamp ( ) }
     )
   } else {
-    console.warn ( `Checkout draft / registration ${draftId} was not found after payment.` )
+    // Orphan payment (event/draft deleted before webhook) — refund so money isn't stranded
+    console.warn ( `Checkout draft / registration ${draftId} was not found after payment; refunding.` )
+    if ( paymentIntent ) {
+      try {
+        await StripeService.refundPaymentIntent ( paymentIntent )
+      } catch ( err ) {
+        console.error ( `Failed to refund orphan payment ${paymentIntent}:`, err )
+      }
+    }
   }
 }
 
@@ -605,28 +689,32 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 
-  /** Poll whether a checkout draft has been finalized into a paid registration. */
+  /** Poll whether a checkout draft has been finalized into a paid registration. Requires cancelToken. */
   app.get ( "/checkout-draft/:draftId/status", async ( req, rep ) => {
     const { draftId } = req.params as { draftId: string }
-    if ( !draftId ) {
-      return rep.status ( 400 ).send ( { message: "Missing draft id." } )
+    const cancelToken = String ( ( req.query as { cancelToken?: string } ).cancelToken || "" )
+    if ( !draftId || !cancelToken ) {
+      return rep.status ( 400 ).send ( { message: "Missing draft id or cancel token." } )
     }
 
     const db = getFirestore ( )
     const draftSnap = await db.collection ( "event_checkout_drafts" ).doc ( draftId ).get ( )
-    if ( draftSnap.exists ) {
-      if ( draftSnap.data ( )?. [ "finalized" ] === true ) {
-        return rep.send ( { status: "paid" } )
-      }
-      return rep.send ( { status: "pending" } )
+    if ( !draftSnap.exists ) {
+      // Do not fall through to registration lookup — avoids email/draft enumeration
+      return rep.send ( { status: "not_found" } )
     }
 
-    const regSnap = await db.collection ( "event_registrations" ).doc ( draftId ).get ( )
-    if ( regSnap.exists && regSnap.data ( )?. [ "status" ] === "completed" ) {
+    const draft = draftSnap.data ( ) as CheckoutDraft
+    if ( !draft.cancelTokenHash || !tokensMatch ( cancelToken, draft.cancelTokenHash ) ) {
+      return rep.status ( 403 ).send ( { message: "Invalid cancel token." } )
+    }
+    if ( draft.refundedReason ) {
+      return rep.send ( { status: "refunded", reason: draft.refundedReason } )
+    }
+    if ( draft.finalized === true ) {
       return rep.send ( { status: "paid" } )
     }
-
-    return rep.send ( { status: "not_found" } )
+    return rep.send ( { status: "pending" } )
   } )
 
   /** Cancelled Checkout: email a Stripe pay-link invoice; keep draft until paid. */
@@ -829,6 +917,10 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     // Free registration (no donation / optional without opt-in) — never auto-email invoices
+    if ( !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test ( email ) ) {
+      return rep.status ( 400 ).send ( { message: "A valid email is required to register." } )
+    }
+
     if ( !capacity.allow ) {
       return rep.status ( 400 ).send ( { message: capacity.message || "This event is fully booked." } )
     }
@@ -839,7 +931,7 @@ export const router: FastifyPluginAsync = async app => {
       eventId,
       eventTitle: event.title,
       formData: cleanedFormData,
-      email: email || null,
+      email,
       status,
       attended: false,
       createdAt: FieldValue.serverTimestamp ( )
@@ -892,15 +984,17 @@ export const router: FastifyPluginAsync = async app => {
       const registrationId = invoice.metadata?. [ "registrationId" ]
       if ( registrationId ) {
         const paymentRef = ( invoice as Stripe.Invoice & { payment_intent?: string | Stripe.PaymentIntent | null } ).payment_intent
+        const paymentIntent = typeof paymentRef === "string" ? paymentRef : paymentRef?.id || null
         const db = getFirestore ( )
         const docRef = db.collection ( "event_registrations" ).doc ( registrationId )
         const docSnap = await docRef.get ( )
         if ( docSnap.exists ) {
-          await docRef.update ( {
-            status: "completed",
-            paymentIntent: typeof paymentRef === "string" ? paymentRef : paymentRef?.id || null,
-            donatedAt: FieldValue.serverTimestamp ( )
-          } )
+          await applyPaymentIntentSafely (
+            docRef,
+            docSnap.data ( )?. [ "paymentIntent" ],
+            paymentIntent,
+            { donatedAt: FieldValue.serverTimestamp ( ) }
+          )
         } else {
           await finalizePaidRegistration ( registrationId, paymentRef )
         }
