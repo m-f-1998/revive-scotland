@@ -13,6 +13,13 @@ import { OVERLAY_DEFAULT_CONFIG } from "@angular/cdk/overlay"
 
 const nonce = document.querySelector ( 'meta[name="csp-nonce"]' )?.getAttribute ( "content" )
 
+/** Deployed: from Portainer RECAPTCHA_SITE via index.html. Local ng-serve: environment fallback. */
+const recaptchaSiteKey = document
+  .querySelector ( 'meta[name="recaptcha-site-key"]' )
+  ?.getAttribute ( "content" )
+  ?.trim ( )
+  || environment.recaptcha.siteKey
+
 const appConfig: ApplicationConfig = {
   providers: [
     provideZonelessChangeDetection ( ),
@@ -48,7 +55,7 @@ const appConfig: ApplicationConfig = {
     } ),
     {
       provide: RECAPTCHA_V3_SITE_KEY,
-      useValue: environment.recaptcha.siteKey
+      useValue: recaptchaSiteKey
     }
   ]
 }

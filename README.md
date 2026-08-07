@@ -27,7 +27,8 @@ Boot fails in production if required vars are missing. `DEV_MODE=true` is **opt-
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `RECAPTCHA_SITE` / `RECAPTCHA_API_KEY` | Yes | reCAPTCHA Enterprise |
+| `RECAPTCHA_SITE` / `RECAPTCHA_API_KEY` | Yes | reCAPTCHA Enterprise. `RECAPTCHA_SITE` is injected into the SPA so browser + server match Portainer |
+| `RECAPTCHA_PROJECT_ID` | Optional | GCP project for assessments (default `revive-scotland`) |
 | `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET_NAME` | Yes | Cloudflare R2 |
 | `SUPERADMIN_EMAIL` | Yes | Primary admin (also used for Firebase custom claims) |
 | `ADMIN_EMAIL` / `ADMIN_EMAILS` | Recommended | Extra admin allowlist (comma-separated for `ADMIN_EMAILS`) |

@@ -81,8 +81,20 @@ export const router: FastifyPluginAsync = async app => {
       const metaTag = `<meta name="csp-nonce" content="${nonce}">`
       html = html.replace ( "</head>", `${metaTag}</head>` )
     }
+    html = injectRecaptchaSiteKey ( html )
     html = injectGoogleTagManager ( html, nonce )
     return html
+  }
+
+  /** Browser site key must match server RECAPTCHA_SITE (Portainer is source of truth). */
+  const injectRecaptchaSiteKey = ( html: string ): string => {
+    const siteKey = process.env [ "RECAPTCHA_SITE" ]?.trim ( ) || ""
+    if ( !siteKey ) return html
+    const safe = siteKey
+      .replace ( /&/g, "&amp;" )
+      .replace ( /"/g, "&quot;" )
+      .replace ( /</g, "&lt;" )
+    return html.replace ( "</head>", `<meta name="recaptcha-site-key" content="${safe}"></head>` )
   }
 
   const injectGoogleTagManager = ( html: string, nonce: string ): string => {
