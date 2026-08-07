@@ -10,7 +10,7 @@ import { DatesService } from "@app/services/dates.service"
 } )
 export class TermsComponent {
   public contact = "luca@revivescotland.co.uk"
-  public lastUpdated = new Date ( 2025, 1, 12 )
+  public lastUpdated = new Date ( 2026, 7, 7 )
 
   public readonly dateSvc: DatesService = inject ( DatesService )
   private readonly dialogRef: DialogRef = inject ( DialogRef )

@@ -20,7 +20,7 @@ export const routes: Routes = [
   },
   {
     path: "admin",
-    redirectTo: "/admin/login",
+    redirectTo: "/admin/dashboard",
     pathMatch: "full"
   },
   {

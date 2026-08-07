@@ -36,7 +36,7 @@ Boot fails in production if required vars are missing. `DEV_MODE=true` is **opt-
 | `PUBLIC_DOMAIN` | Recommended | Public origin for share/Stripe URLs |
 | `CORS_ORIGINS` | Recommended | Comma-separated allowed origins |
 | `TRUST_PROXY` | Behind CDN | Hop count (`1`) or CIDR list; defaults to `1` in production |
-| `DEV_MODE` | Local only | `true`/`1` enables local bypasses (reCAPTCHA/webhook mock) |
+| `DEV_MODE` | Local only | `true`/`1` enables local bypasses (reCAPTCHA/webhook mock). **Rejected at boot** if `NODE_ENV=production`. |
 | `PRE_PROD` | Staging | Use **dev** Firebase for Auth (`revive-scotland-firebase-dev.json`) |
 | `GA_SERVICE_ACCOUNT_JSON` / `GA_GOOGLE_APPLICATION_CREDENTIALS` | Pre-prod / optional | **Prod** SA for dashboard GA (property access is on prod, not the Auth project) |
 | `CF_BEACON_TOKEN` / `GA_TRACKING_ID` | Optional | Analytics injection |
@@ -82,7 +82,7 @@ Checkout sessions also set `receipt_email` from the registrant’s address when 
 
 | Scenario | What happens |
 |----------|----------------|
-| **Optional donation**, registrant does not pay now | Registration is saved as completed. Stripe emails an **invoice** with a pay link so they can donate later. |
+| **Optional donation**, registrant does not pay now | Registration is saved as completed with no payment. No invoice is emailed automatically. |
 | **Optional donation**, registrant opts in | Details are held in a temporary checkout draft only. Stripe Checkout runs; on success the registration is written. Cancel / abandon → Stripe emails an **invoice** pay link; registration is created when that invoice is paid. |
 | **Required donation** | Same as opted-in optional: no registration until payment succeeds. Cancel / abandon → Stripe emails a pay-link invoice. |
 | **Paid successfully** | Stripe payment receipt is the confirmation email. |
