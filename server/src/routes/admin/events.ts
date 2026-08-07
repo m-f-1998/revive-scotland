@@ -2,7 +2,7 @@ import { FastifyPluginAsync } from "fastify"
 import { FieldValue, WriteBatch } from "firebase-admin/firestore"
 import { getFirestore } from "../admin.js"
 import { checkFirebaseAuth } from "./middleware/fileExplorer.js"
-import { clearEventsCache } from "../events.js"
+import { clearEventsCache, checkoutDraftIdFor } from "../events.js"
 import { StripeService } from "../../services/stripe.service.js"
 import { isDevMode } from "../static.js"
 
@@ -13,6 +13,7 @@ interface Event {
   id: string
   title: string
   description: string
+  longDescription?: string
   location: string
   imageUrl?: string
   startDate: string
@@ -367,6 +368,19 @@ export const router: FastifyPluginAsync = async app => {
 
       await docRef.delete ( )
 
+      const eventId = String ( data [ "eventId" ] || "" )
+      const email = String (
+        data [ "email" ] || data [ "formData" ]?. [ "email" ] || data [ "formData" ]?. [ "Email" ] || ""
+      ).toLowerCase ( ).trim ( )
+
+      if ( eventId && email ) {
+        await db.collection ( "event_checkout_drafts" ).doc ( checkoutDraftIdFor ( eventId, email ) ).delete ( ).catch ( ( ) => null )
+      }
+      // Paid registrations share the same doc id as their checkout draft
+      await db.collection ( "event_checkout_drafts" ).doc ( id ).delete ( ).catch ( ( ) => null )
+
+      clearEventsCache ( )
+
       return rep.status ( 200 ).send ( {
         message: "Registration deleted.",
         refunded,
@@ -419,6 +433,10 @@ export const router: FastifyPluginAsync = async app => {
           startDate: event.startDate,
           endDate: event.endDate,
           actionType: event.actionType === "form" || ( event.actionType as string ) === "contact" ? "form" : "webpage"
+        }
+
+        if ( event.longDescription ) {
+          model.longDescription = String ( event.longDescription ).trim ( ).substring ( 0, 5000 )
         }
 
         if ( event.imageUrl ) model.imageUrl = String ( event.imageUrl ).trim ( )

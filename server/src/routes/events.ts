@@ -7,12 +7,37 @@ import { DocumentReference, FieldValue } from "firebase-admin/firestore"
 import { RecaptchaService } from "../services/recaptcha.service.js"
 import { StripeService } from "../services/stripe.service.js"
 import { StaffNotifyService } from "../services/staff-notify.service.js"
+import { EmailService } from "../services/email.service.js"
 import { isDevMode } from "./static.js"
 import { newCancelToken, tokensMatch } from "../utils/cancel-token.js"
 
 /** Stable draft id so concurrent paid registers for the same email reuse one draft. */
-const checkoutDraftIdFor = ( eventId: string, email: string ): string => {
+export const checkoutDraftIdFor = ( eventId: string, email: string ): string => {
   return createHash ( "sha256" ).update ( `event:${eventId}:email:${email}` ).digest ( "hex" ).slice ( 0, 40 )
+}
+
+const registrationIdForDraft = ( draft: CheckoutDraft, draftId: string ): string => {
+  return draft.registrationId || draft.existingRegistrationId || draftId
+}
+
+const isActiveCompletedRegistration = async ( registrationId: string ): Promise<boolean> => {
+  const snap = await getFirestore ( ).collection ( "event_registrations" ).doc ( registrationId ).get ( )
+  return snap.exists && snap.data ( )?. [ "status" ] === "completed"
+}
+
+/** Remove finalized drafts whose registration was deleted in admin. */
+const clearStaleFinalizedDraft = async (
+  draftRef: DocumentReference,
+  draft: CheckoutDraft,
+  draftId: string
+): Promise<boolean> => {
+  if ( !draft.finalized ) return false
+  const regId = registrationIdForDraft ( draft, draftId )
+  if ( await isActiveCompletedRegistration ( regId ) ) {
+    return false
+  }
+  await draftRef.delete ( )
+  return true
 }
 
 declare module "fastify" {
@@ -25,6 +50,7 @@ interface Event {
   id: string
   title: string
   description: string
+  longDescription?: string
   location: string
   imageUrl?: string
   startDate: string
@@ -70,6 +96,8 @@ interface CheckoutDraft {
   refundedReason?: string
   /** SHA-256 hex of the cancel token returned to the client (kept after finalize for status polls) */
   cancelTokenHash?: string
+  /** Optional opt-in: registration emails sent while checkout draft remains open for donation */
+  registrationEmailsSentAt?: unknown
   createdAt: unknown
 }
 
@@ -144,18 +172,20 @@ export const normalizeActionType = ( value: unknown ): "webpage" | "form" => {
   return value === "form" || value === "contact" ? "form" : "webpage"
 }
 
-export const filterActiveAndRecentEvents = ( events: Event [ ] ): Event [ ] => {
-  const threeWeeksAgo = new Date ( )
-  threeWeeksAgo.setDate ( threeWeeksAgo.getDate ( ) - 21 )
+export const filterUpcomingEvents = ( events: Event [ ] ): Event [ ] => {
+  const now = new Date ( )
 
   return events.filter ( event => {
     const eventEndDate = new Date ( event.endDate )
     if ( !isNaN ( eventEndDate.getTime ( ) ) ) {
-      return eventEndDate >= threeWeeksAgo
+      return eventEndDate >= now
     }
     return true
   } ).sort ( ( a, b ) => new Date ( a.startDate ).getTime ( ) - new Date ( b.startDate ).getTime ( ) )
 }
+
+/** @deprecated Use filterUpcomingEvents */
+export const filterActiveAndRecentEvents = filterUpcomingEvents
 
 const resolveImageUrl = ( url: string | undefined ): string | undefined => {
   if ( !url ) return undefined
@@ -210,30 +240,111 @@ const loadEvent = async ( eventId: string ): Promise<Event | undefined> => {
   return ( defaultDoc.data ( )?. [ "events" ] || [ ] ).find ( ( e: { id: string } ) => e.id === eventId )
 }
 
-/**
- * After Checkout is cancelled or expires, email a Stripe Invoice pay link.
- * Draft stays until the invoice is paid (then becomes a registration).
- */
-const markDraftFinalized = async (
-  draftRef: DocumentReference,
-  registrationId: string,
-  statusTokenHash?: string
-): Promise<void> => {
-  await draftRef.set ( {
-    finalized: true,
-    registrationId,
-    checkoutUrl: null,
-    finalizedAt: FieldValue.serverTimestamp ( )
-  }, { merge: true } )
-
-  // Copy access hash onto the registration so status polls still work if the draft is missing
-  if ( statusTokenHash ) {
-    await getFirestore ( ).collection ( "event_registrations" ).doc ( registrationId ).set ( {
-      statusTokenHash
-    }, { merge: true } )
+const formatEventDateForEmail = ( event: Event ): string => {
+  const start = new Date ( event.startDate )
+  const end = new Date ( event.endDate )
+  const dateFmt = new Intl.DateTimeFormat ( "en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" } )
+  let text = dateFmt.format ( start )
+  if ( event.startTime ) text += ` at ${event.startTime}`
+  if ( !isNaN ( end.getTime ( ) ) && end.toDateString ( ) !== start.toDateString ( ) ) {
+    text += ` – ${dateFmt.format ( end )}`
+    if ( event.endTime ) text += ` at ${event.endTime}`
+  } else if ( event.endTime ) {
+    text += ` – ${event.endTime}`
   }
+  return text
 }
 
+const sendRegistrationEmails = ( opts: {
+  event: Event
+  email: string
+  name?: string
+  status: "completed" | "waitlist"
+  amountPence?: number | null
+} ): void => {
+  void StaffNotifyService.notify ( {
+    type: "registration",
+    eventId: opts.event.id,
+    eventTitle: opts.event.title,
+    email: opts.email,
+    name: opts.name,
+    amountPence: opts.amountPence ?? null,
+    status: opts.status,
+    eventDate: formatEventDateForEmail ( opts.event ),
+    eventLocation: opts.event.location,
+    donationRequired: opts.event.donationRequired
+  } )
+  void EmailService.sendRegistrantConfirmation ( {
+    to: opts.email,
+    name: opts.name,
+    eventTitle: opts.event.title,
+    eventDate: formatEventDateForEmail ( opts.event ),
+    eventLocation: opts.event.location,
+    status: opts.status
+  } )
+}
+
+/** Optional donation: confirm the registrant immediately, keep the draft open for payment. */
+const ensureOptionalRegistrationFromDraft = async (
+  draftRef: DocumentReference,
+  draft: CheckoutDraft,
+  event: Event
+): Promise<CheckoutDraft> => {
+  if ( draft.existingRegistrationId ) return draft
+
+  const existing = await findExistingRegistrationByEmail ( draft.eventId, draft.email )
+  if ( existing ) {
+    await draftRef.update ( { existingRegistrationId: existing.id } )
+    return { ...draft, existingRegistrationId: existing.id }
+  }
+
+  const capacity = await resolveCapacityGate ( event )
+  if ( !capacity.allow || capacity.asWaitlist ) return draft
+
+  const regRef = getFirestore ( ).collection ( "event_registrations" ).doc ( )
+  const regRefId = regRef.id
+
+  const claimed = await getFirestore ( ).runTransaction ( async tx => {
+    const snap = await tx.get ( draftRef )
+    if ( !snap.exists ) return false
+    const current = snap.data ( ) as CheckoutDraft
+    if ( current.existingRegistrationId || current.registrationEmailsSentAt ) return false
+    tx.update ( draftRef, {
+      existingRegistrationId: regRefId,
+      registrationEmailsSentAt: FieldValue.serverTimestamp ( )
+    } )
+    return true
+  } )
+
+  if ( !claimed ) {
+    const refreshed = ( await draftRef.get ( ) ).data ( ) as CheckoutDraft | undefined
+    return refreshed || draft
+  }
+
+  await regRef.set ( {
+    eventId: draft.eventId,
+    eventTitle: draft.eventTitle || event.title,
+    formData: draft.formData,
+    email: draft.email,
+    status: "completed",
+    attended: false,
+    createdAt: FieldValue.serverTimestamp ( )
+  } )
+  clearEventsCache ( )
+  sendRegistrationEmails ( {
+    event,
+    email: draft.email,
+    name: draft.name,
+    status: "completed"
+  } )
+
+  return { ...draft, existingRegistrationId: regRefId }
+}
+
+/**
+ * After Checkout is cancelled or expires, email a Stripe Invoice pay link.
+ * Optional donations: registration is confirmed first; draft stays open until donation is paid.
+ */
 const refundAndCloseDraft = async (
   draftRef: DocumentReference,
   paymentIntent: string | null,
@@ -254,7 +365,164 @@ const refundAndCloseDraft = async (
   }, { merge: true } )
 }
 
-const sendPaymentPromptForDraft = async ( draftId: string ): Promise<{ emailed: boolean; hostedInvoiceUrl?: string | null }> => {
+/** Atomically claim a draft so concurrent webhooks cannot double-finalize. */
+const claimDraftForFinalize = async (
+  draftRef: DocumentReference,
+  registrationId: string
+): Promise<CheckoutDraft | null> => {
+  return getFirestore ( ).runTransaction ( async tx => {
+    const snap = await tx.get ( draftRef )
+    if ( !snap.exists ) return null
+    const draft = snap.data ( ) as CheckoutDraft
+    if ( draft.finalized ) return null
+    tx.update ( draftRef, {
+      finalized: true,
+      registrationId,
+      checkoutUrl: null,
+      finalizedAt: FieldValue.serverTimestamp ( )
+    } )
+    return draft
+  } )
+}
+
+const copyStatusTokenToRegistration = async (
+  registrationId: string,
+  statusTokenHash?: string
+): Promise<void> => {
+  if ( !statusTokenHash ) return
+  await getFirestore ( ).collection ( "event_registrations" ).doc ( registrationId ).set ( {
+    statusTokenHash
+  }, { merge: true } )
+}
+
+const registrantNameFromFormData = ( formData: Record<string, unknown> | undefined ): string | undefined => {
+  if ( !formData ) return undefined
+  const name = String (
+    formData [ "name" ] || formData [ "Name" ] || formData [ "firstName" ] || formData [ "First Name" ] || ""
+  ).trim ( )
+  return name || undefined
+}
+
+const sendPaymentReceivedNotifications = async ( opts: {
+  eventId: string
+  eventTitle: string
+  email?: string | null
+  name?: string
+  amountPence?: number | null
+  eventDate?: string
+  eventLocation?: string
+  donationRequired?: "none" | "optional" | "required"
+} ): Promise<void> => {
+  const email = String ( opts.email || "" ).trim ( )
+  if ( !email ) return
+
+  void StaffNotifyService.notify ( {
+    type: "payment_received",
+    eventId: opts.eventId,
+    eventTitle: opts.eventTitle,
+    email,
+    name: opts.name,
+    amountPence: opts.amountPence ?? null,
+    eventDate: opts.eventDate,
+    eventLocation: opts.eventLocation,
+    donationRequired: opts.donationRequired
+  } )
+
+  void EmailService.sendRegistrantPaymentReceived ( {
+    to: email,
+    name: opts.name,
+    eventTitle: opts.eventTitle,
+    eventDate: opts.eventDate,
+    eventLocation: opts.eventLocation,
+    amountPence: opts.amountPence ?? null
+  } )
+}
+
+const sendPaymentReceivedNotificationsForRegistration = async ( opts: {
+  regData: Record<string, unknown>
+  amountPence?: number | null
+} ): Promise<void> => {
+  const email = String ( opts.regData [ "email" ] || "" ).trim ( )
+  if ( !email ) return
+
+  const eventId = String ( opts.regData [ "eventId" ] || "" )
+  const event = eventId ? await loadEvent ( eventId ) : null
+  const eventTitle = String ( opts.regData [ "eventTitle" ] || event?.title || "the event" )
+  const formData = opts.regData [ "formData" ] as Record<string, unknown> | undefined
+
+  await sendPaymentReceivedNotifications ( {
+    eventId: eventId || "unknown",
+    eventTitle,
+    email,
+    name: registrantNameFromFormData ( formData ),
+    amountPence: opts.amountPence ?? null,
+    eventDate: event ? formatEventDateForEmail ( event ) : undefined,
+    eventLocation: event?.location,
+    donationRequired: event?.donationRequired
+  } )
+}
+
+const trySendPaidRegistrationEmails = async (
+  draftRef: DocumentReference,
+  opts: Parameters<typeof sendRegistrationEmails> [ 0 ]
+): Promise<void> => {
+  const shouldSend = await getFirestore ( ).runTransaction ( async tx => {
+    const snap = await tx.get ( draftRef )
+    if ( !snap.exists ) return false
+    if ( snap.data ( )?. [ "emailsSentAt" ] ) return false
+    tx.update ( draftRef, { emailsSentAt: FieldValue.serverTimestamp ( ) } )
+    return true
+  } )
+  if ( shouldSend ) {
+    sendRegistrationEmails ( opts )
+  }
+}
+
+const trySendStaffRegistrationNotify = async (
+  draftRef: DocumentReference,
+  payload: Parameters<typeof StaffNotifyService.notify> [ 0 ]
+): Promise<void> => {
+  const shouldSend = await getFirestore ( ).runTransaction ( async tx => {
+    const snap = await tx.get ( draftRef )
+    if ( !snap.exists ) return false
+    if ( snap.data ( )?. [ "emailsSentAt" ] ) return false
+    tx.update ( draftRef, { emailsSentAt: FieldValue.serverTimestamp ( ) } )
+    return true
+  } )
+  if ( shouldSend ) {
+    void StaffNotifyService.notify ( payload )
+  }
+}
+
+const trySendDonationFollowUpEmails = async (
+  draftRef: DocumentReference,
+  opts: {
+    eventId: string
+    eventTitle: string
+    email?: string | null
+    name?: string
+    amountPence?: number | null
+    eventDate?: string
+    eventLocation?: string
+    donationRequired?: "none" | "optional" | "required"
+  }
+): Promise<void> => {
+  const shouldSend = await getFirestore ( ).runTransaction ( async tx => {
+    const snap = await tx.get ( draftRef )
+    if ( !snap.exists ) return false
+    if ( snap.data ( )?. [ "emailsSentAt" ] ) return false
+    tx.update ( draftRef, { emailsSentAt: FieldValue.serverTimestamp ( ) } )
+    return true
+  } )
+  if ( shouldSend ) {
+    await sendPaymentReceivedNotifications ( opts )
+  }
+}
+
+const sendPaymentPromptForDraft = async (
+  draftId: string,
+  opts?: { cancelToken?: string }
+): Promise<{ emailed: boolean; hostedInvoiceUrl?: string | null; cancelToken?: string }> => {
   const db = getFirestore ( )
   const draftRef = db.collection ( "event_checkout_drafts" ).doc ( draftId )
   const draftSnap = await draftRef.get ( )
@@ -262,12 +530,9 @@ const sendPaymentPromptForDraft = async ( draftId: string ): Promise<{ emailed: 
     return { emailed: false }
   }
 
-  const draft = draftSnap.data ( ) as CheckoutDraft
+  let draft = draftSnap.data ( ) as CheckoutDraft
   if ( draft.finalized ) {
     return { emailed: false }
-  }
-  if ( draft.stripeInvoiceId ) {
-    return { emailed: true, hostedInvoiceUrl: draft.donateLaterUrl }
   }
 
   const event = await loadEvent ( draft.eventId )
@@ -275,6 +540,68 @@ const sendPaymentPromptForDraft = async ( draftId: string ): Promise<{ emailed: 
     ? Math.round ( Number ( draft.formData [ "customDonationAmount" ] ) * 100 )
     : undefined
   const amountPence = draft.amountPence || customFromForm || event?.donationPrice
+
+  if ( event?.donationRequired === "optional" && draft.email ) {
+    draft = await ensureOptionalRegistrationFromDraft ( draftRef, draft, event )
+  }
+
+  const voidDraftInvoiceIfOpen = async ( ): Promise<void> => {
+    if ( !draft.stripeInvoiceId ) return
+    await StripeService.voidInvoiceIfOpen ( draft.stripeInvoiceId )
+    await draftRef.update ( {
+      stripeInvoiceId: FieldValue.delete ( ),
+      donateLaterUrl: FieldValue.delete ( )
+    } )
+  }
+
+  // After cancel: void any open invoice, expire Checkout, and issue a fresh session.
+  if ( opts?.cancelToken && event?.stripePriceId && draft.email && amountPence && amountPence >= 50 ) {
+    if ( !draft.cancelTokenHash || !tokensMatch ( opts.cancelToken, draft.cancelTokenHash ) ) {
+      return { emailed: false }
+    }
+
+    await voidDraftInvoiceIfOpen ( )
+
+    if ( draft.stripeCheckoutSessionId ) {
+      await StripeService.expireCheckoutSession ( draft.stripeCheckoutSessionId )
+    }
+
+    const { token: rotatedCancelToken, hash: rotatedCancelTokenHash } = newCancelToken ( )
+    const session = await StripeService.createEventCheckoutSession (
+      draft.eventId,
+      event.stripePriceId,
+      draftId,
+      customFromForm ?? amountPence,
+      event.stripeProductId,
+      draft.email,
+      rotatedCancelToken
+    )
+
+    if ( session ) {
+      await draftRef.update ( {
+        cancelTokenHash: rotatedCancelTokenHash,
+        checkoutUrl: session.url,
+        stripeCheckoutSessionId: session.sessionId,
+        stripeInvoiceId: FieldValue.delete ( ),
+        donateLaterUrl: FieldValue.delete ( )
+      } )
+      return {
+        emailed: true,
+        hostedInvoiceUrl: session.url,
+        cancelToken: rotatedCancelToken
+      }
+    }
+
+    // Cancelled checkout — do not fall back to an old invoice or create a new one.
+    return { emailed: false }
+  }
+
+  if ( draft.checkoutUrl ) {
+    return { emailed: true, hostedInvoiceUrl: draft.checkoutUrl }
+  }
+  if ( draft.stripeInvoiceId ) {
+    return { emailed: true, hostedInvoiceUrl: draft.donateLaterUrl }
+  }
 
   if ( !draft.email || !amountPence || amountPence < 50 ) {
     console.warn ( `Cannot email payment prompt for draft ${draftId}: missing email or amount.` )
@@ -288,8 +615,10 @@ const sendPaymentPromptForDraft = async ( draftId: string ): Promise<{ emailed: 
     eventId: draft.eventId,
     eventTitle: draft.eventTitle || event?.title || "Event",
     registrationId: draftId,
-    description: event?.donationDescription || `Complete your registration for ${draft.eventTitle || event?.title || "the event"}`,
-    footer: `You started registering for ${draft.eventTitle || "this event"} but didn't finish payment. Use this Stripe invoice link to complete it. Your place is only confirmed after payment.`,
+    description: event?.donationDescription || `Optional donation — ${draft.eventTitle || event?.title || "the event"}`,
+    footer: draft.existingRegistrationId || event?.donationRequired === "optional"
+      ? `You're registered for ${draft.eventTitle || "this event"}. Use this Stripe link to complete your optional donation when you're ready.`
+      : `You started registering for ${draft.eventTitle || "this event"} but didn't finish payment. Use this Stripe invoice link to complete it. Your place is only confirmed after payment.`,
     daysUntilDue: 3
   } )
 
@@ -311,7 +640,7 @@ const applyPaymentIntentSafely = async (
   existingPaymentIntent: unknown,
   paymentIntent: string | null,
   extra: Record<string, unknown>
-): Promise<void> => {
+): Promise<{ newlyPaid: boolean }> => {
   const prior = existingPaymentIntent ? String ( existingPaymentIntent ) : ""
   if ( prior && paymentIntent && prior !== paymentIntent ) {
     console.warn (
@@ -326,7 +655,11 @@ const applyPaymentIntentSafely = async (
       status: "completed",
       ...extra
     } )
-    return
+    return { newlyPaid: false }
+  }
+
+  if ( prior ) {
+    return { newlyPaid: false }
   }
 
   await regRef.update ( {
@@ -334,6 +667,7 @@ const applyPaymentIntentSafely = async (
     ...( paymentIntent ? { paymentIntent } : { } ),
     ...extra
   } )
+  return { newlyPaid: !!paymentIntent }
 }
 
 const finalizePaidRegistration = async (
@@ -346,9 +680,10 @@ const finalizePaidRegistration = async (
   const paymentIntent = typeof paymentRef === "string" ? paymentRef : paymentRef?.id || null
 
   if ( draftSnap.exists ) {
-    const draft = draftSnap.data ( ) as CheckoutDraft
-
-    if ( draft.finalized ) {
+    const draftBeforeClaim = draftSnap.data ( ) as CheckoutDraft
+    const targetRegistrationId = draftBeforeClaim.existingRegistrationId || draftId
+    const draft = await claimDraftForFinalize ( draftRef, targetRegistrationId )
+    if ( !draft ) {
       return
     }
 
@@ -365,14 +700,17 @@ const finalizePaidRegistration = async (
           formData: draft.formData
         }
       )
-      await markDraftFinalized ( draftRef, draft.existingRegistrationId, draft.cancelTokenHash )
-      void StaffNotifyService.notify ( {
-        type: "payment",
+      await copyStatusTokenToRegistration ( draft.existingRegistrationId, draft.cancelTokenHash )
+      const event = await loadEvent ( draft.eventId )
+      await trySendDonationFollowUpEmails ( draftRef, {
         eventId: draft.eventId,
-        eventTitle: draft.eventTitle,
+        eventTitle: draft.eventTitle || event?.title || "the event",
         email: draft.email,
         name: draft.name,
-        amountPence: draft.amountPence ?? null
+        amountPence: draft.amountPence ?? null,
+        eventDate: event ? formatEventDateForEmail ( event ) : undefined,
+        eventLocation: event?.location,
+        donationRequired: event?.donationRequired || "optional"
       } )
       return
     }
@@ -388,15 +726,18 @@ const finalizePaidRegistration = async (
           formData: draft.formData
         }
       )
-      await markDraftFinalized ( draftRef, existing.id, draft.cancelTokenHash )
+      await copyStatusTokenToRegistration ( existing.id, draft.cancelTokenHash )
       clearEventsCache ( )
-      void StaffNotifyService.notify ( {
-        type: "payment",
+      const event = await loadEvent ( draft.eventId )
+      await trySendDonationFollowUpEmails ( draftRef, {
         eventId: draft.eventId,
-        eventTitle: draft.eventTitle,
+        eventTitle: draft.eventTitle || event?.title || "the event",
         email: draft.email,
         name: draft.name,
-        amountPence: draft.amountPence ?? null
+        amountPence: draft.amountPence ?? null,
+        eventDate: event ? formatEventDateForEmail ( event ) : undefined,
+        eventLocation: event?.location,
+        donationRequired: event?.donationRequired || "optional"
       } )
       return
     }
@@ -409,13 +750,17 @@ const finalizePaidRegistration = async (
         console.warn ( `Refunding payment for draft ${draftId}: event full at finalize.` )
         await refundAndCloseDraft ( draftRef, paymentIntent, "over_capacity" )
         void StaffNotifyService.notify ( {
-          type: "payment",
+          type: "registration",
           eventId: draft.eventId,
           eventTitle: draft.eventTitle,
           email: draft.email,
           name: draft.name,
           amountPence: draft.amountPence ?? null,
-          message: "Auto-refunded: event was full when payment completed."
+          status: "completed",
+          donationRequired: event.donationRequired,
+          message: "Auto-refunded: event was full when payment completed.",
+          eventDate: formatEventDateForEmail ( event ),
+          eventLocation: event.location
         } )
         return
       }
@@ -443,29 +788,43 @@ const finalizePaidRegistration = async (
         await regRef.delete ( )
         await refundAndCloseDraft ( draftRef, paymentIntent, "over_capacity" )
         void StaffNotifyService.notify ( {
-          type: "payment",
+          type: "registration",
           eventId: draft.eventId,
           eventTitle: draft.eventTitle,
           email: draft.email,
           name: draft.name,
           amountPence: draft.amountPence ?? null,
-          message: "Auto-refunded after overbook race at finalize."
+          status: "completed",
+          donationRequired: event.donationRequired,
+          message: "Auto-refunded after overbook race at finalize.",
+          eventDate: formatEventDateForEmail ( event ),
+          eventLocation: event.location
         } )
         clearEventsCache ( )
         return
       }
     }
 
-    await markDraftFinalized ( draftRef, draftId, draft.cancelTokenHash )
     clearEventsCache ( )
-    void StaffNotifyService.notify ( {
-      type: "payment",
-      eventId: draft.eventId,
-      eventTitle: draft.eventTitle,
-      email: draft.email,
-      name: draft.name,
-      amountPence: draft.amountPence ?? null
-    } )
+    if ( event && draft.email ) {
+      await trySendPaidRegistrationEmails ( draftRef, {
+        event,
+        email: draft.email,
+        name: draft.name,
+        status: "completed",
+        amountPence: draft.amountPence ?? null
+      } )
+    } else {
+      await trySendStaffRegistrationNotify ( draftRef, {
+        type: "registration",
+        eventId: draft.eventId,
+        eventTitle: draft.eventTitle,
+        email: draft.email,
+        name: draft.name,
+        amountPence: draft.amountPence ?? null,
+        status: "completed"
+      } )
+    }
     return
   }
 
@@ -473,21 +832,29 @@ const finalizePaidRegistration = async (
   const legacyRef = db.collection ( "event_registrations" ).doc ( draftId )
   const legacySnap = await legacyRef.get ( )
   if ( legacySnap.exists ) {
-    await applyPaymentIntentSafely (
+    const legacyData = legacySnap.data ( ) as Record<string, unknown>
+    const { newlyPaid } = await applyPaymentIntentSafely (
       legacyRef,
-      legacySnap.data ( )?. [ "paymentIntent" ],
+      legacyData [ "paymentIntent" ],
       paymentIntent,
       { donatedAt: FieldValue.serverTimestamp ( ) }
     )
+    if ( newlyPaid ) {
+      await sendPaymentReceivedNotificationsForRegistration ( {
+        regData: legacyData,
+        amountPence: typeof legacyData [ "amountPence" ] === "number" ? legacyData [ "amountPence" ] as number : null
+      } )
+    }
   } else {
     // Draft missing at webhook time — do not auto-refund (races caused false orphans).
     // Alert staff; payment can be reconciled or refunded manually in Stripe.
     console.warn ( `Checkout draft / registration ${draftId} was not found after payment. PI=${paymentIntent}` )
     void StaffNotifyService.notify ( {
-      type: "payment",
+      type: "registration",
       eventId: "unknown",
       eventTitle: "Orphan Stripe payment",
       amountPence: null,
+      status: "completed",
       message: `Draft ${draftId} not found after payment. PaymentIntent=${paymentIntent || "unknown"}. Check Stripe and refund manually if needed.`
     } )
   }
@@ -519,11 +886,18 @@ const startOrResumeCheckout = async ( opts: {
   if ( existingSnap.exists ) {
     const existing = existingSnap.data ( ) as CheckoutDraft
     if ( existing.finalized ) {
-      return { ok: false, reason: "already_paid" }
-    }
-    // Always mint a fresh Checkout Session so success_url embeds a matching cancelToken
-    if ( existing.stripeCheckoutSessionId ) {
-      await StripeService.expireCheckoutSession ( existing.stripeCheckoutSessionId )
+      await clearStaleFinalizedDraft ( draftRef, existing, draftRef.id )
+      const recheck = await draftRef.get ( )
+      if ( recheck.exists && ( recheck.data ( ) as CheckoutDraft ).finalized ) {
+        return { ok: false, reason: "already_paid" }
+      }
+    } else {
+      if ( existing.stripeInvoiceId ) {
+        await StripeService.voidInvoiceIfOpen ( existing.stripeInvoiceId )
+      }
+      if ( existing.stripeCheckoutSessionId ) {
+        await StripeService.expireCheckoutSession ( existing.stripeCheckoutSessionId )
+      }
     }
   }
 
@@ -618,7 +992,7 @@ export const router: FastifyPluginAsync = async app => {
         events = snapshot.docs.map ( doc => doc.data ( ) as Event )
       }
 
-      const activeEvents = filterActiveAndRecentEvents ( events ).map ( e => ( {
+      const activeEvents = filterUpcomingEvents ( events ).map ( e => ( {
         ...e,
         actionType: normalizeActionType ( e.actionType ),
         imageUrl: resolveImageUrl ( e.imageUrl )
@@ -655,7 +1029,6 @@ export const router: FastifyPluginAsync = async app => {
           return !isNaN ( end.getTime ( ) ) && end < now
         } )
         .sort ( ( a, b ) => new Date ( b.endDate ).getTime ( ) - new Date ( a.endDate ).getTime ( ) )
-        .slice ( 0, 60 )
         .map ( e => ( {
           ...e,
           actionType: normalizeActionType ( e.actionType ),
@@ -678,7 +1051,8 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     const db = getFirestore ( )
-    const draftSnap = await db.collection ( "event_checkout_drafts" ).doc ( draftId ).get ( )
+    const draftRef = db.collection ( "event_checkout_drafts" ).doc ( draftId )
+    const draftSnap = await draftRef.get ( )
     if ( draftSnap.exists ) {
       const draft = draftSnap.data ( ) as CheckoutDraft
       if ( !draft.cancelTokenHash || !tokensMatch ( cancelToken, draft.cancelTokenHash ) ) {
@@ -688,7 +1062,12 @@ export const router: FastifyPluginAsync = async app => {
         return rep.send ( { status: "refunded", reason: draft.refundedReason } )
       }
       if ( draft.finalized === true ) {
-        return rep.send ( { status: "paid" } )
+        const regId = registrationIdForDraft ( draft, draftId )
+        if ( await isActiveCompletedRegistration ( regId ) ) {
+          return rep.send ( { status: "paid" } )
+        }
+        await draftRef.delete ( )
+        return rep.send ( { status: "not_found" } )
       }
       return rep.send ( { status: "pending" } )
     }
@@ -763,13 +1142,15 @@ export const router: FastifyPluginAsync = async app => {
         return rep.status ( 403 ).send ( { message: "Invalid cancel token." } )
       }
 
-      const result = await sendPaymentPromptForDraft ( draftId )
+      const result = await sendPaymentPromptForDraft ( draftId, { cancelToken } )
       return rep.send ( {
         message: result.emailed
-          ? "Payment prompt emailed via Stripe."
-          : "Checkout cancelled. No payment email could be sent.",
+          ? "You're registered. A payment link is ready whenever you'd like to complete your optional donation."
+          : "Checkout cancelled. You're still registered for the event.",
         emailed: result.emailed,
-        hostedInvoiceUrl: result.hostedInvoiceUrl
+        hostedInvoiceUrl: result.hostedInvoiceUrl,
+        checkoutUrl: result.hostedInvoiceUrl,
+        cancelToken: result.cancelToken
       } )
     } catch ( error ) {
       console.error ( "Error sending payment prompt for checkout draft:", error )
@@ -869,7 +1250,6 @@ export const router: FastifyPluginAsync = async app => {
 
     const isRequired = event.donationRequired === "required"
     const isOptionalAndOptedIn = event.donationRequired === "optional" && optInDonation
-    const requiresPayment = isRequired || isOptionalAndOptedIn
 
     const cleanedFormData: Record<string, unknown> = {
       ...formData,
@@ -877,8 +1257,82 @@ export const router: FastifyPluginAsync = async app => {
       ...( customDonationAmount != null ? { customDonationAmount } : { } )
     }
 
-    // Payment required: hold details in a checkout draft only — no registration until Stripe pays
-    if ( requiresPayment ) {
+    // Optional opt-in: register immediately, then redirect to Stripe for the donation.
+    if ( isOptionalAndOptedIn ) {
+      if ( !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test ( email ) ) {
+        return rep.status ( 400 ).send ( { message: "A valid email is required to register." } )
+      }
+
+      if ( !capacity.allow || capacity.asWaitlist ) {
+        return rep.status ( 400 ).send ( {
+          message: capacity.asWaitlist
+            ? "This event is full. Register without a donation to join the waitlist, or contact us."
+            : ( capacity.message || "This event is fully booked." )
+        } )
+      }
+
+      const registrationRef = getFirestore ( ).collection ( "event_registrations" ).doc ( )
+      await registrationRef.set ( {
+        eventId,
+        eventTitle: event.title,
+        formData: cleanedFormData,
+        email,
+        status: "completed",
+        attended: false,
+        createdAt: FieldValue.serverTimestamp ( )
+      } )
+      clearEventsCache ( )
+
+      sendRegistrationEmails ( {
+        event,
+        email,
+        name,
+        status: "completed"
+      } )
+
+      const amountPence = customDonationPence != null ? customDonationPence : event.donationPrice
+      const customAmountInPence = customDonationPence != null ? customDonationPence : undefined
+
+      try {
+        const checkout = await startOrResumeCheckout ( {
+          eventId,
+          event,
+          email,
+          name,
+          formData: cleanedFormData,
+          amountPence,
+          customAmountInPence,
+          existingRegistrationId: registrationRef.id
+        } )
+
+        if ( !checkout.ok ) {
+          if ( checkout.reason === "already_paid" ) {
+            return rep.status ( 400 ).send ( { message: "You are already successfully registered for this event." } )
+          }
+          return rep.send ( {
+            message: "You're registered. We couldn't start the donation checkout — try again later or contact us.",
+            status: "completed"
+          } )
+        }
+
+        return rep.send ( {
+          message: "You're registered. Redirecting to complete your optional donation.",
+          checkoutUrl: checkout.checkoutUrl,
+          draftId: checkout.draftId,
+          cancelToken: checkout.cancelToken,
+          status: "completed"
+        } )
+      } catch ( err ) {
+        console.error ( "Stripe Session Creation Error:", err )
+        return rep.send ( {
+          message: "You're registered, but we couldn't start the donation checkout. Please contact us if you'd like to donate.",
+          status: "completed"
+        } )
+      }
+    }
+
+    // Required donation: hold details in a checkout draft only — no registration until Stripe pays
+    if ( isRequired ) {
       if ( !email ) {
         return rep.status ( 400 ).send ( { message: "Email is required to complete payment." } )
       }
@@ -887,19 +1341,13 @@ export const router: FastifyPluginAsync = async app => {
       if ( !capacity.allow || capacity.asWaitlist ) {
         return rep.status ( 400 ).send ( {
           message: capacity.asWaitlist
-            ? ( event.donationRequired === "required"
-              ? "This event is fully booked."
-              : "This event is full. Register without a donation to join the waitlist, or contact us." )
+            ? "This event is fully booked."
             : ( capacity.message || "This event is fully booked." )
         } )
       }
 
-      const amountPence = ( isOptionalAndOptedIn && customDonationPence != null )
-        ? customDonationPence
-        : event.donationPrice
-      const customAmountInPence = ( isOptionalAndOptedIn && customDonationPence != null )
-        ? customDonationPence
-        : undefined
+      const amountPence = customDonationPence != null ? customDonationPence : event.donationPrice
+      const customAmountInPence = customDonationPence != null ? customDonationPence : undefined
 
       try {
         const checkout = await startOrResumeCheckout ( {
@@ -955,12 +1403,11 @@ export const router: FastifyPluginAsync = async app => {
     await registrationRef.set ( registrationPayload )
     clearEventsCache ( )
 
-    void StaffNotifyService.notify ( {
-      type: "registration",
-      eventId,
-      eventTitle: event.title,
-      email: email || null,
-      name
+    sendRegistrationEmails ( {
+      event,
+      email,
+      name,
+      status: status as "completed" | "waitlist"
     } )
 
     return rep.send ( {
@@ -994,7 +1441,7 @@ export const router: FastifyPluginAsync = async app => {
       }
     }
 
-    if ( event.type === "invoice.paid" || event.type === "invoice.payment_succeeded" ) {
+    if ( event.type === "invoice.paid" ) {
       const invoice = event.data.object as Stripe.Invoice
       const registrationId = invoice.metadata?. [ "registrationId" ]
       if ( registrationId ) {
@@ -1004,12 +1451,20 @@ export const router: FastifyPluginAsync = async app => {
         const docRef = db.collection ( "event_registrations" ).doc ( registrationId )
         const docSnap = await docRef.get ( )
         if ( docSnap.exists ) {
-          await applyPaymentIntentSafely (
+          const regData = docSnap.data ( ) as Record<string, unknown>
+          const hadPayment = !!regData [ "paymentIntent" ]
+          const { newlyPaid } = await applyPaymentIntentSafely (
             docRef,
-            docSnap.data ( )?. [ "paymentIntent" ],
+            regData [ "paymentIntent" ],
             paymentIntent,
             { donatedAt: FieldValue.serverTimestamp ( ) }
           )
+          if ( newlyPaid && !hadPayment ) {
+            await sendPaymentReceivedNotificationsForRegistration ( {
+              regData,
+              amountPence: invoice.amount_paid ?? null
+            } )
+          }
         } else {
           await finalizePaidRegistration ( registrationId, paymentRef )
         }
