@@ -33,7 +33,8 @@ Boot fails in production if required vars are missing. `DEV_MODE=true` is **opt-
 | `ADMIN_EMAIL` / `ADMIN_EMAILS` | Recommended | Extra admin allowlist (comma-separated for `ADMIN_EMAILS`) |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` or `GOOGLE_APPLICATION_CREDENTIALS` | Prod | Firebase Admin credentials (do **not** bake JSON into Docker images) |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Payments | Stripe; webhook secret required outside DEV_MODE |
-| `STAFF_NOTIFY_WEBHOOK` | Optional | HTTPS URL (Slack/Discord/etc.) that receives JSON POSTs on registrations, payments, and contact-form inquiries |
+| `STAFF_NOTIFY_WEBHOOK` | Optional | HTTPS URL (Slack/Discord/Zapier) for staff alerts; payload includes `to` = `SUPERADMIN_EMAIL` or `luca@revivescotland.co.uk` |
+| `RESEND_API_KEY` / `EMAIL_FROM` | Optional | Send real staff emails (contact form, registrations, payments) via [Resend](https://resend.com) to `SUPERADMIN_EMAIL` (fallback `luca@revivescotland.co.uk`) |
 | `PUBLIC_DOMAIN` | Recommended | Public origin for share/Stripe URLs |
 | `CORS_ORIGINS` | Recommended | Comma-separated allowed origins |
 | `TRUST_PROXY` | Behind CDN | Hop count (`1`) or CIDR list; defaults to `1` in production |

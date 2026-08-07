@@ -4,6 +4,7 @@ import { FieldValue } from "firebase-admin/firestore"
 import { getFirestore } from "./admin.js"
 import { RecaptchaService } from "../services/recaptcha.service.js"
 import { StaffNotifyService } from "../services/staff-notify.service.js"
+import { getStaffInboxEmail } from "../utils/staff-inbox.js"
 import { isDevMode } from "./static.js"
 import { checkFirebaseAuth } from "./admin/middleware/fileExplorer.js"
 
@@ -54,6 +55,7 @@ export const router: FastifyPluginAsync = async app => {
       email,
       message,
       status: "new",
+      notifyTo: getStaffInboxEmail ( ),
       createdAt: FieldValue.serverTimestamp ( )
     }
 

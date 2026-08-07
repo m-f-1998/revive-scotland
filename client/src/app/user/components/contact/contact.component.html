@@ -17,33 +17,30 @@
     <header class="mb-6">
       <p class="text-serif mb-0 text-primary">Contact Us</p>
       <h2 class="uppercase tracking-wider mb-2">Reach Out</h2>
-      <p class="text-muted text-sm">Questions about events, pilgrimages, or getting involved? Send a message or use the details below.</p>
+      <p class="text-muted text-sm">If you have any questions, we would love to hear from you.</p>
     </header>
 
-    <div class="mb-8 p-5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/80 dark:bg-zinc-900/40">
-      @if (sent()) {
-        <p class="text-sm text-green-700 dark:text-green-300 font-medium mb-3">
-          Message received — we'll get back to you by email when we can. There is no automatic reply.
-        </p>
-        <button type="button" class="btn-outline-primary btn-sm" (click)="sent.set(false)">Send another message</button>
-      } @else {
-        <form [formGroup]="form" (ngSubmit)="submitInquiry()" class="space-y-3">
-          <formly-form [form]="form" [fields]="fields" [model]="model" (modelChange)="model = $event" />
-          <button type="submit" class="btn-primary w-full justify-center" [disabled]="sending() || form.invalid">
-            @if (sending()) {
-              <app-icon icon="spinner" iconAnimation="spin" />
-              Sending…
-            } @else {
-              <app-icon icon="envelope" />
-              Send message
-            }
-          </button>
-          <p class="text-[11px] text-zinc-500 mt-2">Protected by reCAPTCHA. We won't publish your details.</p>
-        </form>
-      }
-    </div>
+    <div class="grid gap-4">
+      <button
+        type="button"
+        class="group flex items-center gap-4 p-4 rounded-xl bg-primary/5 dark:bg-primary/10 border border-primary/20 hover:border-primary/40 hover:bg-primary/10 transition-all text-left w-full"
+        (click)="openMessageForm()"
+        [disabled]="sending()">
+        <div class="w-10 h-10 rounded-full bg-primary/15 text-primary flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+          @if (sending()) {
+            <app-icon icon="spinner" iconAnimation="spin" />
+          } @else {
+            <app-icon icon="envelope" />
+          }
+        </div>
+        <div class="flex-1">
+          <span class="block text-sm text-zinc-500 font-semibold uppercase tracking-wider mb-0.5">Message</span>
+          <span class="block font-medium text-zinc-800 dark:text-zinc-200">
+            Send a quick message
+          </span>
+        </div>
+      </button>
 
-    <div class="grid gap-4 mt-2">
       <a class="group flex items-center gap-4 p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 hover:border-blue-200 dark:hover:border-blue-800 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all text-left" [href]="'tel:' + details().phone">
         <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
           <app-icon icon="phone" />
