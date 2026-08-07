@@ -33,8 +33,8 @@ Boot fails in production if required vars are missing. `DEV_MODE=true` is **opt-
 | `ADMIN_EMAIL` / `ADMIN_EMAILS` | Recommended | Extra admin allowlist (comma-separated for `ADMIN_EMAILS`) |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` or `GOOGLE_APPLICATION_CREDENTIALS` | Prod | Firebase Admin credentials (do **not** bake JSON into Docker images) |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Payments | Stripe; webhook secret required outside DEV_MODE |
-| `STAFF_NOTIFY_WEBHOOK` | Optional | HTTPS URL (Slack/Discord/Zapier) for staff alerts; payload includes `to` = `SUPERADMIN_EMAIL` or `luca@revivescotland.co.uk` |
-| `RESEND_API_KEY` / `EMAIL_FROM` | Optional | Send real staff emails (contact form, registrations, payments) via [Resend](https://resend.com) to `SUPERADMIN_EMAIL` (fallback `luca@revivescotland.co.uk`) |
+| `RESEND_API_KEY` | Recommended | [Resend](https://resend.com) API key for staff alerts and registrant confirmation emails (free tier: 3,000/month) |
+| `EMAIL_FROM` | With Resend | Sender address, e.g. `Revive Scotland <hello@revivescotland.co.uk>` — verify your domain in Resend for production |
 | `PUBLIC_DOMAIN` | Recommended | Public origin for share/Stripe URLs |
 | `CORS_ORIGINS` | Recommended | Comma-separated allowed origins |
 | `TRUST_PROXY` | Behind CDN | Hop count (`1`) or CIDR list; defaults to `1` in production |
@@ -66,11 +66,43 @@ ADMIN_EMAILS=
 
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
+
+# Email notifications via Resend (https://resend.com — free tier)
+RESEND_API_KEY=
+EMAIL_FROM=Revive Scotland <onboarding@resend.dev>
 ```
 
-## ✉️ Stripe customer emails (no SMTP)
+## ✉️ Email notifications (Resend)
 
-Payment and donation emails are sent by **Stripe**, not by this app. There is no SMTP configuration.
+Staff alerts and registrant confirmation emails are sent via **[Resend](https://resend.com)** (free tier). There is no Slack/Discord webhook and no SMTP configuration.
+
+### Staff inbox routing
+
+Staff notification emails (contact form, new registrations) are routed by environment — **not** by `SUPERADMIN_EMAIL`:
+
+| Environment | Inbox |
+|-------------|-------|
+| Production | `luca@revivescotland.co.uk` |
+| Dev (`DEV_MODE=true`), pre-prod (`PRE_PROD=true`), or `PUBLIC_DOMAIN` containing `dev.revivescotland.co.uk` | `admin@matthewfrankland.co.uk` |
+
+`SUPERADMIN_EMAIL` is always `admin@matthewfrankland.co.uk` and is used only for Firebase admin authentication, not for notification delivery.
+
+### Setup
+
+1. Create a free [Resend](https://resend.com) account and generate an API key → set `RESEND_API_KEY`.
+2. For local testing, use the default `EMAIL_FROM=Revive Scotland <onboarding@resend.dev>`.
+3. For production, verify `revivescotland.co.uk` in Resend (DNS records) and set e.g. `EMAIL_FROM=Revive Scotland <hello@revivescotland.co.uk>`.
+4. Keep `SUPERADMIN_EMAIL=admin@matthewfrankland.co.uk` for Firebase admin auth (all environments). Notification routing is automatic by environment.
+
+### What gets emailed
+
+| Event | Staff email | Registrant email |
+|-------|-------------|------------------|
+| Contact form submitted | Branded HTML alert | — |
+| New registration (free, waitlist, or paid) | Single **New Registration** alert — payment details included only when money was taken | Confirmation with event details |
+| Optional donation completed later | **Payment received** alert with amount | **Payment received** follow-up with event details and amount |
+
+## ✉️ Stripe payment receipts
 
 ### Enable payment receipts (confirmation after paying)
 
@@ -84,10 +116,11 @@ Checkout sessions also set `receipt_email` from the registrant’s address when 
 
 | Scenario | What happens |
 |----------|----------------|
-| **Optional donation**, registrant does not pay now | Registration is saved as completed with no payment. No invoice is emailed automatically. |
-| **Optional donation**, registrant opts in | Details are held in a temporary checkout draft only. Stripe Checkout runs; on success the registration is written. Cancel / abandon → Stripe emails an **invoice** pay link; registration is created when that invoice is paid. |
-| **Required donation** | Same as opted-in optional: no registration until payment succeeds. Cancel / abandon → Stripe emails a pay-link invoice. |
-| **Paid successfully** | Stripe payment receipt is the confirmation email. |
+| **Optional donation**, registrant does not pay now | Registration saved; app sends staff + registrant confirmation emails. |
+| **Optional donation**, registrant opts in | Registration is saved immediately (staff + registrant confirmation emails), then Stripe Checkout runs for the donation. Cancel / abandon → registration stays confirmed; a resume pay link is offered and **payment received** is emailed when they pay later. |
+| **Required donation** | Same as opted-in optional: no registration until payment succeeds. |
+| **Optional donation**, registrant opts in then cancels / pays later | Registration already confirmed; on payment the app sends a **payment received** alert to staff and a matching follow-up to the registrant. |
+| **Paid successfully** (first-time registration) | App sends staff **New Registration** alert (with payment amount) + registrant confirmation; Stripe also sends a payment receipt. |
 
 Abandoned Checkout: the draft is kept and Stripe emails an invoice pay link. When the invoice is paid, the registration is created. Ensure Customer emails / unpaid invoice reminders are enabled in the Stripe Dashboard.
 
