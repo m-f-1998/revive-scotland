@@ -1,4 +1,4 @@
-import { isDevMode, isPreProd } from "../routes/static.js"
+import { isDevMode } from "../routes/static.js"
 
 type AssessmentResponse = {
   tokenProperties?: {
@@ -9,10 +9,30 @@ type AssessmentResponse = {
   }
   riskAnalysis?: {
     score?: number
+    reasons?: string [ ]
+    extendedVerdictReasons?: string [ ]
   }
   error?: {
     message?: string
   }
+}
+
+/** Human-readable notes for ClassificationReason values from the assessment. */
+const REASON_DESCRIPTIONS: Record<string, string> = {
+  CLASSIFICATION_REASON_UNSPECIFIED: "No specific risk classification was provided.",
+  AUTOMATION: "Interactions matched automated / bot-like behaviour.",
+  UNEXPECTED_ENVIRONMENT: "The event originated from an unexpected or illegitimate environment.",
+  TOO_MUCH_TRAFFIC: "Traffic volume from this source is higher than normal.",
+  UNEXPECTED_USAGE_PATTERNS: "Usage patterns differed significantly from expected site behaviour.",
+  LOW_CONFIDENCE_SCORE: "Too little traffic on this site/key so far for a high-confidence score (common on new or low-traffic hosts like pre-prod)."
+}
+
+const describeReasons = ( reasons: string [ ] | undefined ): string [ ] => {
+  if ( !reasons?.length ) return [ ]
+  return reasons.map ( reason => {
+    const detail = REASON_DESCRIPTIONS [ reason ]
+    return detail ? `${reason}: ${detail}` : reason
+  } )
 }
 
 const resolveMinScore = ( ): number => {
@@ -21,8 +41,7 @@ const resolveMinScore = ( ): number => {
     const parsed = Number ( raw )
     if ( Number.isFinite ( parsed ) && parsed >= 0 && parsed <= 1 ) return parsed
   }
-  // Staging / privacy browsers often land ~0.3–0.5; keep prod stricter.
-  return isPreProd ( ) ? 0.3 : 0.5
+  return 0.5
 }
 
 export class RecaptchaService {
@@ -77,6 +96,10 @@ export class RecaptchaService {
 
     const valid = !!data.tokenProperties?.valid
     const score = data.riskAnalysis?.score ?? 0
+    const reasons = data.riskAnalysis?.reasons || [ ]
+    const reasonDescriptions = describeReasons ( reasons )
+    const extendedVerdictReasons = data.riskAnalysis?.extendedVerdictReasons || [ ]
+
     if ( !valid || score < minScore ) {
       console.warn (
         "reCAPTCHA validation failed:",
@@ -87,6 +110,9 @@ export class RecaptchaService {
           invalidReason: data.tokenProperties?.invalidReason,
           hostname: data.tokenProperties?.hostname,
           action: data.tokenProperties?.action,
+          reasons,
+          reasonDescriptions,
+          extendedVerdictReasons,
           projectId,
           siteKeyPrefix: `${siteKey.slice ( 0, 10 )}…`
         }
