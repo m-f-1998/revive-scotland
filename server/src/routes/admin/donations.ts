@@ -1,15 +1,15 @@
 import { FastifyPluginAsync } from "fastify"
 import { checkFirebaseAuth } from "./middleware/fileExplorer.js"
 import Stripe from "stripe"
+import { StripeService } from "../../services/stripe.service.js"
 
 export const router: FastifyPluginAsync = async app => {
   app.get ( "/", { preHandler: checkFirebaseAuth }, async ( _req, rep ) => {
     try {
-      if ( !process.env [ "STRIPE_SECRET_KEY" ] ) {
+      const stripe = StripeService.getStripeInstance ( )
+      if ( !stripe ) {
         return rep.status ( 500 ).send ( "Stripe secret key not configured." )
       }
-
-      const stripe = new Stripe ( process.env [ "STRIPE_SECRET_KEY" ] )
 
       const sessions: Stripe.Checkout.Session [ ] = [ ]
       let startingAfter: string | undefined

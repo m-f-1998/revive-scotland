@@ -1,5 +1,6 @@
 import { DecodedIdToken } from "firebase-admin/auth"
-import { getAuth } from "../../../routes/admin.js"
+import { Timestamp } from "firebase-admin/firestore"
+import { getAuth, getFirestore } from "../../../routes/admin.js"
 import { FastifyReply, FastifyRequest } from "fastify"
 
 declare module "fastify" {
@@ -8,6 +9,15 @@ declare module "fastify" {
       s3Path?: string
     }
   }
+}
+
+/** Reject path traversal and normalize S3 object keys. */
+export const normalizeS3Key = ( key: string ): string | null => {
+  if ( !key || typeof key !== "string" ) return null
+  if ( key.includes ( "\\" ) || key.startsWith ( "/" ) ) return null
+  const parts = key.split ( "/" ).filter ( p => p.length > 0 && p !== "." )
+  if ( parts.length === 0 || parts.some ( p => p === ".." ) ) return null
+  return parts.join ( "/" )
 }
 
 /** Admin emails from env only — SUPERADMIN_EMAIL, ADMIN_EMAIL, ADMIN_EMAILS (comma-separated). */
@@ -45,7 +55,8 @@ export const checkFirebaseAuth = async (
   const idToken = authHeader.split ( "Bearer " ) [ 1 ]
 
   try {
-    const decodedToken = await getAuth ( ).verifyIdToken ( idToken )
+    // checkRevoked: true so /logout (revokeRefreshTokens) takes effect immediately
+    const decodedToken = await getAuth ( ).verifyIdToken ( idToken, true )
 
     if ( !decodedToken.email_verified ) {
       return reply.code ( 403 ).send ( "Forbidden: Email not verified." )
@@ -53,6 +64,16 @@ export const checkFirebaseAuth = async (
 
     if ( !isEmailAdmin ( decodedToken.email ) ) {
       return reply.code ( 403 ).send ( "Forbidden: User is not an administrator." )
+    }
+
+    const sessionDoc = await getFirestore ( ).collection ( "users" ).doc ( decodedToken.uid ).get ( )
+    const sessionExpiry = sessionDoc.data ( )?. [ "sessionExpiry" ] as Timestamp | undefined
+    const expiryDate = sessionExpiry && typeof sessionExpiry.toDate === "function"
+      ? sessionExpiry.toDate ( )
+      : null
+
+    if ( !expiryDate || expiryDate < new Date ( ) ) {
+      return reply.code ( 401 ).send ( "Unauthorized: Session has expired." )
     }
 
     request.user = decodedToken
@@ -85,23 +106,29 @@ export const validateS3Key = async (
 
   const body = request.body as { key?: string; oldKey?: string; newKey?: string } | undefined
   const query = request.query as { key?: string; path?: string } | undefined
+  const relativePath = query?.path
+  const prefix = request.user.s3Path
 
-  const { key: bodyKey, oldKey, newKey } = body ?? {}
-  const { key: queryKey, path: relativePath } = query ?? {}
+  const owned = ( raw: string | undefined ): string | undefined | null => {
+    if ( raw == null || raw === "" ) return undefined
+    const normalized = normalizeS3Key ( raw )
+    if ( !normalized || !normalized.startsWith ( prefix ) ) return null
+    return normalized
+  }
 
-  const key = bodyKey || queryKey
+  const nBodyKey = owned ( body?.key )
+  const nQueryKey = owned ( query?.key )
+  const nOldKey = owned ( body?.oldKey )
+  const nNewKey = owned ( body?.newKey )
 
-  if ( key && !key.startsWith ( request.user.s3Path ) ) {
+  if ( nBodyKey === null || nQueryKey === null || nOldKey === null || nNewKey === null ) {
     return reply.code ( 403 ).send ( "Forbidden: Access denied to this resource." )
   }
 
-  if ( oldKey && !oldKey.startsWith ( request.user.s3Path ) ) {
-    return reply.code ( 403 ).send ( "Forbidden: Access denied to source resource." )
-  }
-
-  if ( newKey && !newKey.startsWith ( request.user.s3Path ) ) {
-    return reply.code ( 403 ).send ( "Forbidden: Access denied to target resource." )
-  }
+  if ( body && nBodyKey !== undefined ) body.key = nBodyKey
+  if ( query && nQueryKey !== undefined ) query.key = nQueryKey
+  if ( body && nOldKey !== undefined ) body.oldKey = nOldKey
+  if ( body && nNewKey !== undefined ) body.newKey = nNewKey
 
   if (
     relativePath &&

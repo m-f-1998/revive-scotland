@@ -29,19 +29,28 @@ const REQUIRED_ENV_VARS = [
   "SUPERADMIN_EMAIL"
 ]
 
+if ( process.env [ "NODE_ENV" ] === "production" && isDevMode ( ) ) {
+  console.error ( "CRITICAL: DEV_MODE must not be enabled when NODE_ENV=production." )
+  process.exit ( 1 )
+}
+
 const missingVars = REQUIRED_ENV_VARS.filter ( v => !process.env [ v ] )
 if ( missingVars.length > 0 ) {
   console.error ( `Missing required environment variables: ${missingVars.join ( ", " )}` )
   if ( !isDevMode ( ) ) process.exit ( 1 )
 }
 
+const trustProxyEnv = process.env [ "TRUST_PROXY" ]?.trim ( )
 const app = Fastify ( {
   logger: false,
   // logger: {
   //   level: isDevMode ( ) ? "debug" : "warn",
   //   redact: { paths: [ "req.headers.authorization", "req.headers.cookie" ], censor: "[REDACTED]" }
   // },
-  trustProxy: "loopback",
+  // Default loopback; set TRUST_PROXY=1 (or a hop count / CIDR list) behind CDN/reverse proxy
+  trustProxy: trustProxyEnv && trustProxyEnv.length > 0
+    ? ( /^\d+$/.test ( trustProxyEnv ) ? Number ( trustProxyEnv ) : trustProxyEnv )
+    : "loopback",
   // http2: true
 } )
 
@@ -175,7 +184,7 @@ await app.register ( helmet, {
       ],
     }
   },
-  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  crossOriginOpenerPolicy: false,
   frameguard: { action: "deny" },
   hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }
 } )
