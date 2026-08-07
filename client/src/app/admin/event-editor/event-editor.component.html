@@ -176,7 +176,7 @@
                             <app-icon icon="circle-exclamation" class="text-amber-500 mt-0.5" />
                             <div>
                               <h4 class="text-amber-800 dark:text-amber-200 text-sm font-bold">Event Finished</h4>
-                              <p class="text-amber-700 dark:text-amber-300/80 text-xs mt-1">This event has already ended and is now read-only. Finished events are automatically deleted from the system 21 days after their end date.</p>
+                              <p class="text-amber-700 dark:text-amber-300/80 text-xs mt-1">This event has already ended and is now read-only. Finished events are hidden from the public site 21 days after their end date (they remain here until you delete them).</p>
                             </div>
                           </div>
                         }
@@ -232,9 +232,10 @@
                       <select class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
                               [ngModel]="regStatusFilter()"
                               (ngModelChange)="regStatusFilter.set($event)">
-                        <option value="all">All Registrations</option>
-                        <option value="completed">Completed (Paid)</option>
-                        <option value="pending_payment">Pending Payment</option>
+                        <option value="all">All</option>
+                        <option value="completed">Completed / Paid</option>
+                        <option value="awaiting_payment">Awaiting payment (drafts)</option>
+                        <option value="unpaid_optional">Registered (no payment yet)</option>
                       </select>
                     </div>
 
@@ -270,11 +271,16 @@
                       } @else if (filteredRegistrations().length === 0) {
                         <p class="text-sm text-gray-500 italic text-center py-6">No registrations match your search or filter criteria.</p>
                       } @else {
-                        <div class="flex justify-between items-center mb-2">
-                          <span class="text-xs text-gray-500 font-medium">Showing {{ filteredRegistrations().length }} of {{ getRegsForSelectedEvent().length }} registrations</span>
-                          <button class="btn-outline-primary btn-sm flex items-center gap-1.5 py-1 px-2.5 text-xs font-semibold rounded-lg" (click)="refreshSelectedRegistrations()">
-                            <app-icon icon="refresh" /> Refresh
-                          </button>
+                        <div class="flex justify-between items-center mb-2 gap-2 flex-wrap">
+                          <span class="text-xs text-gray-500 font-medium">Showing {{ filteredRegistrations().length }} of {{ getRegsForSelectedEvent().length }}</span>
+                          <div class="flex items-center gap-2">
+                            <button type="button" class="btn-outline-secondary btn-sm flex items-center gap-1.5 py-1 px-2.5 text-xs font-semibold rounded-lg" (click)="exportRegistrationsCsv()">
+                              <app-icon icon="download" /> CSV
+                            </button>
+                            <button type="button" class="btn-outline-primary btn-sm flex items-center gap-1.5 py-1 px-2.5 text-xs font-semibold rounded-lg" (click)="refreshSelectedRegistrations()">
+                              <app-icon icon="refresh" /> Refresh
+                            </button>
+                          </div>
                         </div>
 
                         <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-700 shadow-xs bg-white dark:bg-slate-900">
@@ -296,26 +302,26 @@
                                   </td>
                                   <td class="px-4 py-4 whitespace-nowrap">
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full"
-                                      [class.bg-green-100]="reg['status'] === 'completed'"
-                                      [class.text-green-800]="reg['status'] === 'completed'"
-                                      [class.dark:bg-green-900/30]="reg['status'] === 'completed'"
-                                      [class.dark:text-green-300]="reg['status'] === 'completed'"
-                                      [class.bg-amber-100]="reg['status'] === 'pending_payment'"
-                                      [class.text-amber-800]="reg['status'] === 'pending_payment'"
-                                      [class.dark:bg-amber-900/30]="reg['status'] === 'pending_payment'"
-                                      [class.dark:text-amber-300]="reg['status'] === 'pending_payment'">
+                                      [class.bg-green-100]="!isAwaitingPayment(reg) && reg['status'] === 'completed'"
+                                      [class.text-green-800]="!isAwaitingPayment(reg) && reg['status'] === 'completed'"
+                                      [class.dark:bg-green-900/30]="!isAwaitingPayment(reg) && reg['status'] === 'completed'"
+                                      [class.dark:text-green-300]="!isAwaitingPayment(reg) && reg['status'] === 'completed'"
+                                      [class.bg-amber-100]="isAwaitingPayment(reg)"
+                                      [class.text-amber-800]="isAwaitingPayment(reg)"
+                                      [class.dark:bg-amber-900/30]="isAwaitingPayment(reg)"
+                                      [class.dark:text-amber-300]="isAwaitingPayment(reg)">
                                       <span class="w-1.5 h-1.5 rounded-full"
-                                            [class.bg-green-600]="reg['status'] === 'completed'"
-                                            [class.bg-amber-500]="reg['status'] === 'pending_payment'"></span>
-                                      {{ reg['status'] === 'completed' ? 'Completed' : 'Pending' }}
+                                            [class.bg-green-600]="!isAwaitingPayment(reg) && reg['status'] === 'completed'"
+                                            [class.bg-amber-500]="isAwaitingPayment(reg)"></span>
+                                      {{ regStatusLabel(reg) }}
                                     </span>
                                   </td>
                                   <td class="px-4 py-4 text-xs">
-                                    <div class="font-semibold text-gray-900 dark:text-gray-100 truncate" [title]="getSummaryDetail(reg['formData'], ['name', 'Name', 'firstName', 'First Name'])">
-                                      {{ getSummaryDetail(reg['formData'], ['name', 'Name', 'firstName', 'First Name']) }}
+                                    <div class="font-semibold text-gray-900 dark:text-gray-100 truncate" [title]="reg['name'] || getSummaryDetail(reg['formData'], ['name', 'Name', 'firstName', 'First Name'])">
+                                      {{ reg['name'] || getSummaryDetail(reg['formData'], ['name', 'Name', 'firstName', 'First Name']) }}
                                     </div>
-                                    <div class="text-gray-500 dark:text-gray-400 truncate mt-0.5" [title]="getSummaryDetail(reg['formData'], ['email', 'Email'])">
-                                      {{ getSummaryDetail(reg['formData'], ['email', 'Email']) }}
+                                    <div class="text-gray-500 dark:text-gray-400 truncate mt-0.5" [title]="reg['email'] || getSummaryDetail(reg['formData'], ['email', 'Email'])">
+                                      {{ reg['email'] || getSummaryDetail(reg['formData'], ['email', 'Email']) }}
                                     </div>
                                     @if (getSummaryDetail(reg['formData'], ['phone', 'Phone', 'tel']) !== '—') {
                                       <div class="text-gray-500 dark:text-gray-400 truncate mt-0.5">
@@ -338,14 +344,17 @@
                                     @if (getSelectedEvent()?.donationRequired === 'required'
                                       || (getSelectedEvent()?.donationRequired === 'optional' && $any(reg['formData'])['optInDonation'])
                                       || reg['paymentIntent']
-                                      || reg['stripeInvoiceId']) {
+                                      || reg['stripeInvoiceId']
+                                      || reg['amountPence'] != null) {
                                       <div class="pt-2 border-t border-dashed border-gray-100 dark:border-slate-800 space-y-1">
                                         <div class="flex justify-between gap-3">
                                           <span class="text-gray-400 font-medium">
                                             {{ reg['paymentIntent'] ? 'Paid' : 'Amount' }}
                                           </span>
                                           <span class="font-semibold text-gray-800 dark:text-gray-200" [class.text-amber-600]="!reg['paymentIntent']">
-                                            @if (getSelectedEvent()?.donationRequired === 'optional') {
+                                            @if (reg['amountPence'] != null) {
+                                              £{{ (parseFloat(reg['amountPence']) / 100).toFixed(2) }}
+                                            } @else if (getSelectedEvent()?.donationRequired === 'optional') {
                                               £{{ ($any(reg['formData'])['customDonationAmount'] != null ? parseFloat($any(reg['formData'])['customDonationAmount']) : (getSelectedEvent()?.donationPrice || 0) / 100).toFixed(2) }}
                                             } @else {
                                               £{{ ((getSelectedEvent()?.donationPrice || 0) / 100).toFixed(2) }}
@@ -360,6 +369,13 @@
                                             {{ reg['paymentIntent'] }}
                                           </a>
                                         }
+                                        @if (isAwaitingPayment(reg) && (reg['donateLaterUrl'] || reg['checkoutUrl'])) {
+                                          <a [href]="$any(reg['donateLaterUrl'] || reg['checkoutUrl'])"
+                                             target="_blank"
+                                             class="block text-[10px] text-blue-600 dark:text-blue-400 hover:underline truncate">
+                                            Open pay link
+                                          </a>
+                                        }
                                       </div>
                                     }
                                   </td>
@@ -370,7 +386,7 @@
                                         class="btn-danger btn-sm inline-flex items-center justify-center gap-1.5 py-1.5 px-3 w-24 text-xs font-semibold rounded-lg"
                                         [disabled]="deletingRegIds().has($any(reg['id']))"
                                         (click)="deleteRegistration(reg)"
-                                        [title]="reg['paymentIntent'] ? 'Refund payment and remove registration' : 'Delete registration'">
+                                        [title]="isAwaitingPayment(reg) ? 'Remove unpaid checkout draft' : (reg['paymentIntent'] ? 'Refund payment and remove registration' : 'Delete registration')">
                                         @if (deletingRegIds().has($any(reg['id']))) {
                                           <app-icon icon="spinner" iconAnimation="spin" />
                                         } @else if (reg['paymentIntent']) {
@@ -382,7 +398,7 @@
                                         }
                                       </button>
 
-                                      @if (getSelectedEvent()?.donationRequired === 'optional' && !reg['paymentIntent'] && reg['status'] === 'completed') {
+                                      @if (!isAwaitingPayment(reg) && getSelectedEvent()?.donationRequired === 'optional' && !reg['paymentIntent'] && reg['status'] === 'completed') {
                                         <button
                                           type="button"
                                           class="btn-outline-primary btn-sm inline-flex items-center justify-center gap-1.5 py-1.5 px-3 w-24 text-xs font-semibold rounded-lg"

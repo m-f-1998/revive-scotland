@@ -80,7 +80,7 @@ export class EventEditorComponent implements OnInit {
   // Registrations state
   public registrations: WritableSignal<Record<string, Array<Record<string, unknown>>>> = signal ( { } )
   public selectedRegEventId: WritableSignal<string> = signal ( "" )
-  public regStatusFilter: WritableSignal<"all" | "completed" | "pending_payment"> = signal ( "all" )
+  public regStatusFilter: WritableSignal<"all" | "completed" | "awaiting_payment" | "unpaid_optional"> = signal ( "all" )
   public regSearchQuery: WritableSignal<string> = signal ( "" )
   public loadingRegs: WritableSignal<boolean> = signal ( false )
   public deletingRegIds: WritableSignal<Set<string>> = signal ( new Set ( ) )
@@ -97,18 +97,26 @@ export class EventEditorComponent implements OnInit {
     const query = this.regSearchQuery ( ).toLowerCase ( ).trim ( )
 
     return regs.filter ( reg => {
-      // 1. Status Filter
-      if ( status !== "all" && reg [ "status" ] !== status ) {
-        return false
+      if ( status === "completed" ) {
+        if ( reg [ "kind" ] === "draft" || reg [ "status" ] !== "completed" ) return false
+      } else if ( status === "awaiting_payment" ) {
+        if ( reg [ "kind" ] !== "draft" && reg [ "status" ] !== "awaiting_payment" ) return false
+      } else if ( status === "unpaid_optional" ) {
+        if ( reg [ "kind" ] === "draft" || reg [ "status" ] !== "completed" || reg [ "paymentIntent" ] ) return false
       }
 
-      // 2. Search Filter
       if ( query ) {
         const formData = ( reg [ "formData" ] || { } ) as Record<string, unknown>
         const stringifiedValues = Object.values ( formData ).map ( v => String ( v ).toLowerCase ( ) ).join ( " " )
+        const email = String ( reg [ "email" ] || "" ).toLowerCase ( )
+        const name = String ( reg [ "name" ] || "" ).toLowerCase ( )
         const creationDate = String ( reg [ "createdAt" ] || "" ).toLowerCase ( )
         const regStatus = String ( reg [ "status" ] || "" ).toLowerCase ( )
-        return stringifiedValues.includes ( query ) || creationDate.includes ( query ) || regStatus.includes ( query )
+        return stringifiedValues.includes ( query )
+          || email.includes ( query )
+          || name.includes ( query )
+          || creationDate.includes ( query )
+          || regStatus.includes ( query )
       }
 
       return true
@@ -389,11 +397,78 @@ export class EventEditorComponent implements OnInit {
     if ( !endDate ) return ""
     const end = new Date ( endDate )
     if ( isNaN ( end.getTime ( ) ) ) return ""
-    const removalDate = new Date ( end.getTime ( ) + 21 * 24 * 60 * 60 * 1000 )
-    const diffTime = removalDate.getTime ( ) - Date.now ( )
+    const hideDate = new Date ( end.getTime ( ) + 21 * 24 * 60 * 60 * 1000 )
+    const diffTime = hideDate.getTime ( ) - Date.now ( )
     const diffDays = Math.ceil ( diffTime / ( 1000 * 60 * 60 * 24 ) )
-    if ( diffDays <= 0 ) return "Deleting soon..."
-    return `Finished - Deletes in ${diffDays} ${diffDays === 1 ? "day" : "days"}`
+    if ( diffDays <= 0 ) return "Hidden from public site"
+    return `Finished — hidden from public in ${diffDays} ${diffDays === 1 ? "day" : "days"}`
+  }
+
+  public regStatusLabel ( reg: Record<string, unknown> ): string {
+    if ( reg [ "kind" ] === "draft" || reg [ "status" ] === "awaiting_payment" ) return "Awaiting payment"
+    if ( reg [ "status" ] === "completed" && !reg [ "paymentIntent" ] ) return "Registered"
+    if ( reg [ "status" ] === "completed" ) return "Paid"
+    return String ( reg [ "status" ] || "—" )
+  }
+
+  public isAwaitingPayment ( reg: Record<string, unknown> ): boolean {
+    return reg [ "kind" ] === "draft" || reg [ "status" ] === "awaiting_payment"
+  }
+
+  public exportRegistrationsCsv ( ): void {
+    const rows = this.filteredRegistrations ( )
+    if ( !rows.length ) {
+      this.toastrSvc.info ( "Nothing to export for the current filter." )
+      return
+    }
+
+    const event = this.getSelectedEvent ( )
+    const headers = [ "Date", "Kind", "Status", "Name", "Email", "Phone", "Amount", "PaymentIntent", "Details" ]
+    const escape = ( v: unknown ) => {
+      const s = v == null ? "" : String ( v )
+      return `"${s.replace ( /"/g, "\"\"" )}"`
+    }
+
+    const lines = [ headers.join ( "," ) ]
+    for ( const reg of rows ) {
+      const formData = ( reg [ "formData" ] || { } ) as Record<string, unknown>
+      const name = reg [ "name" ]
+        || this.getSummaryDetail ( formData, [ "name", "Name", "firstName", "First Name" ] )
+      const email = reg [ "email" ]
+        || this.getSummaryDetail ( formData, [ "email", "Email" ] )
+      const phone = this.getSummaryDetail ( formData, [ "phone", "Phone", "tel" ] )
+      const amountPence = reg [ "amountPence" ] != null
+        ? Number ( reg [ "amountPence" ] )
+        : ( event?.donationPrice ?? "" )
+      const amount = typeof amountPence === "number" && Number.isFinite ( amountPence )
+        ? ( amountPence / 100 ).toFixed ( 2 )
+        : ""
+      const details = Object.entries ( formData )
+        .filter ( ( [ k ] ) => !this.isCoreRegField ( k ) )
+        .map ( ( [ k, v ] ) => `${this.getSelectedEventFieldLabel ( k )}=${v}` )
+        .join ( "; " )
+
+      lines.push ( [
+        escape ( reg [ "createdAt" ] ),
+        escape ( reg [ "kind" ] === "draft" ? "draft" : "registration" ),
+        escape ( this.regStatusLabel ( reg ) ),
+        escape ( name === "—" ? "" : name ),
+        escape ( email === "—" ? "" : email ),
+        escape ( phone === "—" ? "" : phone ),
+        escape ( amount ),
+        escape ( reg [ "paymentIntent" ] || "" ),
+        escape ( details )
+      ].join ( "," ) )
+    }
+
+    const blob = new Blob ( [ lines.join ( "\n" ) ], { type: "text/csv;charset=utf-8" } )
+    const url = URL.createObjectURL ( blob )
+    const a = document.createElement ( "a" )
+    a.href = url
+    a.download = `registrations-${this.selectedRegEventId ( ) || "event"}-${new Date ( ).toISOString ( ).slice ( 0, 10 )}.csv`
+    a.click ( )
+    URL.revokeObjectURL ( url )
+    this.toastrSvc.success ( "CSV exported." )
   }
 
   public getFieldLabel ( event: Event, key: string | number | symbol ): string {
@@ -544,15 +619,21 @@ export class EventEditorComponent implements OnInit {
     const id = String ( reg [ "id" ] || "" )
     if ( !id || this.deletingRegIds ( ).has ( id ) ) return
 
+    const isDraft = reg [ "kind" ] === "draft"
     const hasPayment = !!reg [ "paymentIntent" ]
-    const name = this.getSummaryDetail ( reg [ "formData" ], [ "name", "Name", "firstName" ] )
-    const email = this.getSummaryDetail ( reg [ "formData" ], [ "email", "Email" ] )
-    const who = [ name !== "—" ? name : "", email !== "—" ? email : "" ].filter ( Boolean ).join ( " · " ) || "this registration"
+    const name = String ( reg [ "name" ] || "" )
+      || this.getSummaryDetail ( reg [ "formData" ], [ "name", "Name", "firstName" ] )
+    const email = String ( reg [ "email" ] || "" )
+      || this.getSummaryDetail ( reg [ "formData" ], [ "email", "Email" ] )
+    const who = [ name && name !== "—" ? name : "", email && email !== "—" ? email : "" ]
+      .filter ( Boolean ).join ( " · " ) || ( isDraft ? "this checkout draft" : "this registration" )
 
     const confirmed = window.confirm (
-      hasPayment
-        ? `Refund payment for ${who}?\n\nThe Stripe payment will be fully refunded and the registration removed.`
-        : `Delete ${who}?\n\nThis cannot be undone.`
+      isDraft
+        ? `Remove unpaid checkout for ${who}?\n\nAny open Stripe invoice or Checkout session will be voided/expired.`
+        : hasPayment
+          ? `Refund payment for ${who}?\n\nThe Stripe payment will be fully refunded and the registration removed.`
+          : `Delete ${who}?\n\nThis cannot be undone.`
     )
     if ( !confirmed ) return
 
@@ -560,8 +641,11 @@ export class EventEditorComponent implements OnInit {
     const eventId = this.selectedRegEventId ( )
 
     try {
+      const path = isDraft
+        ? `/api/admin/events/checkout-drafts/${id}`
+        : `/api/admin/events/registrations/${id}`
       const res = await this.apiSvc.delete (
-        `/api/admin/events/registrations/${id}`,
+        path,
         { },
         new HttpHeaders ( {
           "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || "" }`
@@ -573,7 +657,9 @@ export class EventEditorComponent implements OnInit {
         [ eventId ]: ( r [ eventId ] || [ ] ).filter ( item => item [ "id" ] !== id )
       } ) )
 
-      if ( res.refunded ) {
+      if ( isDraft ) {
+        this.toastrSvc.success ( "Checkout draft removed." )
+      } else if ( res.refunded ) {
         this.toastrSvc.success ( "Payment refunded and registration removed." )
       } else if ( res.invoiceVoided ) {
         this.toastrSvc.success ( "Open invoice voided and registration removed." )

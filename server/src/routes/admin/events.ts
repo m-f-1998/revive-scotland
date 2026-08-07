@@ -106,34 +106,102 @@ export const router: FastifyPluginAsync = async app => {
   app.get ( "/registrations", { preHandler: checkFirebaseAuth }, async ( req, rep ) => {
     try {
       const { eventId } = req.query as { eventId: string }
+      if ( !eventId ) {
+        return rep.status ( 400 ).send ( { error: "Missing eventId" } )
+      }
 
-      const registrationsRef = getFirestore ( ).collection ( "event_registrations" )
-      const snapshot = await registrationsRef.where ( "eventId", "==", eventId ).get ( )
+      const db = getFirestore ( )
+      const [ regsSnapshot, draftsSnapshot ] = await Promise.all ( [
+        db.collection ( "event_registrations" ).where ( "eventId", "==", eventId ).get ( ),
+        db.collection ( "event_checkout_drafts" ).where ( "eventId", "==", eventId ).get ( )
+      ] )
 
-      const registrations = snapshot.docs.map ( doc => {
+      const registrations = regsSnapshot.docs.map ( doc => {
         const data = doc.data ( )
         return {
           id: doc.id,
-          eventId: data["eventId"],
-          eventTitle: data["eventTitle"],
-          formData: data["formData"],
-          status: data["status"],
-          paymentIntent: data["paymentIntent"] || null,
-          stripeInvoiceId: data["stripeInvoiceId"] || null,
-          createdAt: data["createdAt"]?.toDate ?. ( )?.toISOString ( ) || null
+          kind: "registration" as const,
+          eventId: data [ "eventId" ],
+          eventTitle: data [ "eventTitle" ],
+          formData: data [ "formData" ],
+          email: data [ "email" ] || null,
+          status: data [ "status" ],
+          paymentIntent: data [ "paymentIntent" ] || null,
+          stripeInvoiceId: data [ "stripeInvoiceId" ] || null,
+          createdAt: data [ "createdAt" ]?.toDate ?. ( )?.toISOString ( ) || null
         }
       } )
 
-      registrations.sort ( ( a, b ) => {
+      const drafts = draftsSnapshot.docs
+        .filter ( doc => doc.data ( )?. [ "finalized" ] !== true )
+        .map ( doc => {
+          const data = doc.data ( )
+          return {
+            id: doc.id,
+            kind: "draft" as const,
+            eventId: data [ "eventId" ],
+            eventTitle: data [ "eventTitle" ],
+            formData: data [ "formData" ] || { },
+            email: data [ "email" ] || null,
+            name: data [ "name" ] || null,
+            status: "awaiting_payment",
+            amountPence: data [ "amountPence" ] ?? null,
+            checkoutUrl: data [ "checkoutUrl" ] || null,
+            donateLaterUrl: data [ "donateLaterUrl" ] || null,
+            stripeInvoiceId: data [ "stripeInvoiceId" ] || null,
+            paymentIntent: null,
+            createdAt: data [ "createdAt" ]?.toDate ?. ( )?.toISOString ( ) || null
+          }
+        } )
+
+      const combined = [ ...registrations, ...drafts ]
+      combined.sort ( ( a, b ) => {
         const timeA = a.createdAt ? new Date ( a.createdAt ).getTime ( ) : 0
         const timeB = b.createdAt ? new Date ( b.createdAt ).getTime ( ) : 0
         return timeB - timeA
       } )
 
-      return rep.status ( 200 ).send ( { registrations } )
+      return rep.status ( 200 ).send ( { registrations: combined } )
     } catch ( error ) {
       console.error ( "Error fetching registrations:", error )
       return rep.status ( 500 ).send ( "Failed to fetch registrations." )
+    }
+  } )
+
+  /**
+   * DELETE /api/admin/events/checkout-drafts/:id
+   * Voids any open invoice, expires Checkout, and removes an unpaid draft.
+   */
+  app.delete ( "/checkout-drafts/:id", { preHandler: checkFirebaseAuth }, async ( req, rep ) => {
+    try {
+      const { id } = req.params as { id: string }
+      if ( !id ) {
+        return rep.status ( 400 ).send ( { error: "Missing draft id" } )
+      }
+
+      const draftRef = getFirestore ( ).collection ( "event_checkout_drafts" ).doc ( id )
+      const draftSnap = await draftRef.get ( )
+      if ( !draftSnap.exists ) {
+        return rep.status ( 404 ).send ( { error: "Draft not found" } )
+      }
+
+      const data = draftSnap.data ( ) || { }
+      if ( data [ "finalized" ] === true ) {
+        return rep.status ( 400 ).send ( { error: "Draft already finalized into a registration." } )
+      }
+
+      if ( data [ "stripeInvoiceId" ] ) {
+        await StripeService.voidInvoiceIfOpen ( String ( data [ "stripeInvoiceId" ] ) )
+      }
+      if ( data [ "stripeCheckoutSessionId" ] ) {
+        await StripeService.expireCheckoutSession ( String ( data [ "stripeCheckoutSessionId" ] ) )
+      }
+
+      await draftRef.delete ( )
+      return rep.status ( 200 ).send ( { message: "Checkout draft removed." } )
+    } catch ( error ) {
+      console.error ( "Error deleting checkout draft:", error )
+      return rep.status ( 500 ).send ( { error: "Failed to delete checkout draft." } )
     }
   } )
 
@@ -295,6 +363,14 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     const stripe = StripeService.getStripeInstance ( )
+    const db = getFirestore ( )
+    const eventsCollection = db.collection ( "events" )
+    const currentSnap = await eventsCollection.get ( )
+    const existingById = new Map (
+      currentSnap.docs
+        .filter ( d => d.id !== "default" )
+        .map ( d => [ d.id, d.data ( ) as Event ] )
+    )
 
     const sanitizedEvents: Event [ ] = [ ]
     try {
@@ -331,13 +407,21 @@ export const router: FastifyPluginAsync = async app => {
           model.webpageUrl = String ( event.webpageUrl ).trim ( )
         }
 
-        // Stripe Product Creation
+        // Stripe product + price create / update
         if ( model.donationRequired && model.donationRequired !== "none" ) {
           if ( !stripe ) {
             throw new Error ( "Stripe is not configured. Cannot create a donation-required event. Please add STRIPE_SECRET_KEY." )
           }
-          if ( model.donationPrice && !model.stripeProductId ) {
-            const stripeImages = getAbsoluteImageUrl ( model.imageUrl ) ? [ getAbsoluteImageUrl ( model.imageUrl ) as string ] : undefined
+          if ( !model.donationPrice || model.donationPrice < 50 ) {
+            throw new Error ( `Event "${model.title}" needs a donation price of at least £0.50.` )
+          }
+
+          const prior = existingById.get ( model.id )
+          const stripeImages = getAbsoluteImageUrl ( model.imageUrl )
+            ? [ getAbsoluteImageUrl ( model.imageUrl ) as string ]
+            : undefined
+
+          if ( !model.stripeProductId ) {
             const product = await stripe.products.create ( {
               name: model.title,
               description: model.donationDescription || model.description,
@@ -350,6 +434,28 @@ export const router: FastifyPluginAsync = async app => {
             } )
             model.stripeProductId = product.id
             model.stripePriceId = price.id
+          } else {
+            await stripe.products.update ( model.stripeProductId, {
+              name: model.title,
+              description: model.donationDescription || model.description,
+              ...( stripeImages ? { images: stripeImages } : { } )
+            } ).catch ( ( ) => null )
+
+            const priceChanged = !prior
+              || prior.donationPrice !== model.donationPrice
+              || !model.stripePriceId
+
+            if ( priceChanged ) {
+              const price = await stripe.prices.create ( {
+                product: model.stripeProductId,
+                unit_amount: model.donationPrice,
+                currency: "gbp",
+              } )
+              if ( model.stripePriceId ) {
+                await stripe.prices.update ( model.stripePriceId, { active: false } ).catch ( ( ) => null )
+              }
+              model.stripePriceId = price.id
+            }
           }
         }
 
@@ -361,11 +467,7 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     try {
-      const db = getFirestore ( )
-      const eventsCollection = db.collection ( "events" )
-
-      const currentSnap = await eventsCollection.get ( )
-      const currentIds = currentSnap.docs.filter ( d => d.id !== "default" ).map ( d => d.id )
+      const currentIds = [ ...existingById.keys ( ) ]
       const incomingIds = sanitizedEvents.map ( e => e.id )
       const idsToDelete = currentIds.filter ( id => !incomingIds.includes ( id ) )
 
