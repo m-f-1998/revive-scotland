@@ -1,13 +1,29 @@
-const FALLBACK_INBOX = "luca@revivescotland.co.uk"
+import { isDevMode, isPreProd } from "../routes/static.js"
+
+const PROD_INBOX = "luca@revivescotland.co.uk"
+const NON_PROD_INBOX = "admin@matthewfrankland.co.uk"
+
+const isPreProdDomain = ( ): boolean => {
+  const domain = ( process.env [ "PUBLIC_DOMAIN" ] || "" ).toLowerCase ( )
+  return domain.includes ( "dev.revivescotland.co.uk" )
+}
+
+export const isNonProdStaffRouting = ( ): boolean => {
+  return isDevMode ( ) || isPreProd ( ) || isPreProdDomain ( )
+}
 
 /**
  * Inbox for staff-facing notifications (contact form, registration alerts).
- * Prefers SUPERADMIN_EMAIL; falls back to the public Revive address.
+ * Separate from SUPERADMIN_EMAIL (Firebase admin auth — always admin@matthewfrankland.co.uk).
  */
-export const getStaffInboxEmail = ( ): string => {
-  const fromEnv = process.env [ "SUPERADMIN_EMAIL" ]?.trim ( ).toLowerCase ( )
-  if ( fromEnv && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test ( fromEnv ) ) {
-    return fromEnv
+export const getStaffInboxRecipients = ( ): string [ ] => {
+  if ( isNonProdStaffRouting ( ) ) {
+    return [ NON_PROD_INBOX ]
   }
-  return FALLBACK_INBOX
+  return [ PROD_INBOX ]
+}
+
+/** @deprecated Prefer getStaffInboxRecipients */
+export const getStaffInboxEmail = ( ): string => {
+  return getStaffInboxRecipients ( ) [ 0 ]!
 }

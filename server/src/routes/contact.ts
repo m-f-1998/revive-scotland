@@ -67,7 +67,7 @@ export const router: FastifyPluginAsync = async app => {
       eventTitle: "Website contact form",
       email,
       name,
-      message: message.slice ( 0, 500 )
+      message
     } )
 
     return rep.status ( 200 ).send ( { message: "Message sent.", id: ref.id } )
