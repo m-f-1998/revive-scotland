@@ -17,17 +17,19 @@ export class StripeService {
     draftId: string,
     customAmount?: number,
     productId?: string,
-    customerEmail?: string
+    customerEmail?: string,
+    cancelToken?: string
   ): Promise<{ url: string; sessionId: string } | undefined> {
     const host = isDevMode ( )
       ? "http://localhost:4200"
       : ( process.env [ "PUBLIC_DOMAIN" ] || "https://revivescotland.co.uk" )
     const stripe = this.getStripeInstance ( )
+    const tokenQs = cancelToken ? `&cancelToken=${encodeURIComponent ( cancelToken )}` : ""
 
     if ( !stripe ) {
       if ( isDevMode ( ) ) {
         console.warn ( "Stripe is not configured in DEV_MODE. Returning simulated sandbox success URL." )
-        const url = `${host}/events?registration=success&eventId=${encodeURIComponent ( eventId )}&draftId=${encodeURIComponent ( draftId )}`
+        const url = `${host}/events?registration=success&eventId=${encodeURIComponent ( eventId )}&draftId=${encodeURIComponent ( draftId )}${tokenQs}`
         return { url, sessionId: "dev_simulated" }
       }
       return undefined
@@ -58,10 +60,14 @@ export class StripeService {
       customer_creation: customerEmail ? "always" : undefined,
       payment_intent_data: {
         transfer_group: eventId,
-        receipt_email: customerEmail || undefined
+        receipt_email: customerEmail || undefined,
+        metadata: {
+          draftId,
+          eventId
+        }
       },
-      success_url: `${host}/events?registration=success&eventId=${encodeURIComponent ( eventId )}&draftId=${encodeURIComponent ( draftId )}`,
-      cancel_url: `${host}/events?registration=cancelled&eventId=${encodeURIComponent ( eventId )}&draftId=${encodeURIComponent ( draftId )}`,
+      success_url: `${host}/events?registration=success&eventId=${encodeURIComponent ( eventId )}&draftId=${encodeURIComponent ( draftId )}${tokenQs}`,
+      cancel_url: `${host}/events?registration=cancelled&eventId=${encodeURIComponent ( eventId )}&draftId=${encodeURIComponent ( draftId )}${tokenQs}`,
       client_reference_id: draftId,
       metadata: {
         draftId,

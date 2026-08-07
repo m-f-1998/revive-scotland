@@ -51,6 +51,8 @@ export interface ModalOptions {
   centered?: boolean
   backdrop?: "static" | boolean
   lightbox?: boolean
+  /** Self-styled dialogs (success/error cards) — no white panel chrome */
+  bare?: boolean
 }
 
 @Service ( )
@@ -60,7 +62,9 @@ export class ModalService {
   public open<T, R = unknown> ( component: ComponentType<T>, options: ModalOptions = { } ): ModalRef<T, R> {
     const panelClasses = options.lightbox
       ? [ "lightbox-panel" ]
-      : [ "modal-panel", ...( options.size && options.size !== "md" ? [ `modal-${options.size}` ] : [ ] ) ]
+      : options.bare
+        ? [ "modal-panel-bare" ]
+        : [ "modal-panel", ...( options.size && options.size !== "md" ? [ `modal-${options.size}` ] : [ ] ) ]
     const backdropClass = options.lightbox ? "lightbox-backdrop" : "modal-backdrop"
 
     const config: DialogConfig<unknown, import ( "@angular/cdk/dialog" ).DialogRef<R, T>> = {

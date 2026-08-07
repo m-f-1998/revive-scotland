@@ -216,7 +216,8 @@ const loadEvent = async ( eventId: string ): Promise<Event | undefined> => {
  */
 const markDraftFinalized = async (
   draftRef: DocumentReference,
-  registrationId: string
+  registrationId: string,
+  statusTokenHash?: string
 ): Promise<void> => {
   await draftRef.set ( {
     finalized: true,
@@ -224,6 +225,13 @@ const markDraftFinalized = async (
     checkoutUrl: null,
     finalizedAt: FieldValue.serverTimestamp ( )
   }, { merge: true } )
+
+  // Copy access hash onto the registration so status polls still work if the draft is missing
+  if ( statusTokenHash ) {
+    await getFirestore ( ).collection ( "event_registrations" ).doc ( registrationId ).set ( {
+      statusTokenHash
+    }, { merge: true } )
+  }
 }
 
 const refundAndCloseDraft = async (
@@ -357,7 +365,7 @@ const finalizePaidRegistration = async (
           formData: draft.formData
         }
       )
-      await markDraftFinalized ( draftRef, draft.existingRegistrationId )
+      await markDraftFinalized ( draftRef, draft.existingRegistrationId, draft.cancelTokenHash )
       void StaffNotifyService.notify ( {
         type: "payment",
         eventId: draft.eventId,
@@ -380,7 +388,7 @@ const finalizePaidRegistration = async (
           formData: draft.formData
         }
       )
-      await markDraftFinalized ( draftRef, existing.id )
+      await markDraftFinalized ( draftRef, existing.id, draft.cancelTokenHash )
       clearEventsCache ( )
       void StaffNotifyService.notify ( {
         type: "payment",
@@ -422,6 +430,7 @@ const finalizePaidRegistration = async (
       status: "completed",
       attended: false,
       paymentIntent,
+      ...( draft.cancelTokenHash ? { statusTokenHash: draft.cancelTokenHash } : { } ),
       createdAt: FieldValue.serverTimestamp ( ),
       donatedAt: FieldValue.serverTimestamp ( )
     }, { merge: true } )
@@ -447,7 +456,7 @@ const finalizePaidRegistration = async (
       }
     }
 
-    await markDraftFinalized ( draftRef, draftId )
+    await markDraftFinalized ( draftRef, draftId, draft.cancelTokenHash )
     clearEventsCache ( )
     void StaffNotifyService.notify ( {
       type: "payment",
@@ -471,15 +480,16 @@ const finalizePaidRegistration = async (
       { donatedAt: FieldValue.serverTimestamp ( ) }
     )
   } else {
-    // Orphan payment (event/draft deleted before webhook) — refund so money isn't stranded
-    console.warn ( `Checkout draft / registration ${draftId} was not found after payment; refunding.` )
-    if ( paymentIntent ) {
-      try {
-        await StripeService.refundPaymentIntent ( paymentIntent )
-      } catch ( err ) {
-        console.error ( `Failed to refund orphan payment ${paymentIntent}:`, err )
-      }
-    }
+    // Draft missing at webhook time — do not auto-refund (races caused false orphans).
+    // Alert staff; payment can be reconciled or refunded manually in Stripe.
+    console.warn ( `Checkout draft / registration ${draftId} was not found after payment. PI=${paymentIntent}` )
+    void StaffNotifyService.notify ( {
+      type: "payment",
+      eventId: "unknown",
+      eventTitle: "Orphan Stripe payment",
+      amountPence: null,
+      message: `Draft ${draftId} not found after payment. PaymentIntent=${paymentIntent || "unknown"}. Check Stripe and refund manually if needed.`
+    } )
   }
 }
 
@@ -511,20 +521,7 @@ const startOrResumeCheckout = async ( opts: {
     if ( existing.finalized ) {
       return { ok: false, reason: "already_paid" }
     }
-    if (
-      existing.checkoutUrl
-      && existing.amountPence === opts.amountPence
-      && ( existing.existingRegistrationId || null ) === ( opts.existingRegistrationId || null )
-    ) {
-      const { token: cancelToken, hash: cancelTokenHash } = newCancelToken ( )
-      await draftRef.update ( { cancelTokenHash } )
-      return {
-        ok: true,
-        checkoutUrl: existing.checkoutUrl,
-        draftId: draftRef.id,
-        cancelToken
-      }
-    }
+    // Always mint a fresh Checkout Session so success_url embeds a matching cancelToken
     if ( existing.stripeCheckoutSessionId ) {
       await StripeService.expireCheckoutSession ( existing.stripeCheckoutSessionId )
     }
@@ -552,11 +549,16 @@ const startOrResumeCheckout = async ( opts: {
     draftRef.id,
     opts.customAmountInPence,
     opts.event.stripeProductId,
-    opts.email
+    opts.email,
+    cancelToken
   )
 
   if ( !session ) {
-    await draftRef.delete ( )
+    // Keep the draft — deleting it breaks status polls / webhooks if a session was created
+    await draftRef.update ( {
+      checkoutUrl: null,
+      stripeCheckoutSessionId: null
+    } ).catch ( ( ) => null )
     return { ok: false, reason: "stripe_unavailable" }
   }
 
@@ -667,6 +669,47 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 
+  /** Poll whether a checkout draft has been finalized into a paid registration. Requires cancelToken. */
+  app.get ( "/checkout-draft/:draftId/status", async ( req, rep ) => {
+    const { draftId } = req.params as { draftId: string }
+    const cancelToken = String ( ( req.query as { cancelToken?: string } ).cancelToken || "" )
+    if ( !draftId || !cancelToken ) {
+      return rep.status ( 400 ).send ( { message: "Missing draft id or cancel token." } )
+    }
+
+    const db = getFirestore ( )
+    const draftSnap = await db.collection ( "event_checkout_drafts" ).doc ( draftId ).get ( )
+    if ( draftSnap.exists ) {
+      const draft = draftSnap.data ( ) as CheckoutDraft
+      if ( !draft.cancelTokenHash || !tokensMatch ( cancelToken, draft.cancelTokenHash ) ) {
+        return rep.status ( 403 ).send ( { message: "Invalid cancel token." } )
+      }
+      if ( draft.refundedReason ) {
+        return rep.send ( { status: "refunded", reason: draft.refundedReason } )
+      }
+      if ( draft.finalized === true ) {
+        return rep.send ( { status: "paid" } )
+      }
+      return rep.send ( { status: "pending" } )
+    }
+
+    // Draft missing (race / cleanup) — fall back to registration created with the same id
+    const regSnap = await db.collection ( "event_registrations" ).doc ( draftId ).get ( )
+    if ( regSnap.exists && regSnap.data ( )?. [ "status" ] === "completed" ) {
+      const hash = String ( regSnap.data ( )?. [ "statusTokenHash" ] || "" )
+      if ( hash && tokensMatch ( cancelToken, hash ) ) {
+        return rep.send ( { status: "paid" } )
+      }
+      // Legacy paid row without hash: webhook likely succeeded; avoid false "not_found"
+      if ( !hash ) {
+        return rep.send ( { status: "paid" } )
+      }
+      return rep.status ( 403 ).send ( { message: "Invalid cancel token." } )
+    }
+
+    return rep.send ( { status: "not_found" } )
+  } )
+
   app.get ( "/:id", async ( req, rep ) => {
     try {
       const { id } = req.params as { id: string }
@@ -687,34 +730,6 @@ export const router: FastifyPluginAsync = async app => {
       console.error ( "Error fetching specific event data:", error )
       return rep.status ( 500 ).send ( "Failed to fetch event." )
     }
-  } )
-
-  /** Poll whether a checkout draft has been finalized into a paid registration. Requires cancelToken. */
-  app.get ( "/checkout-draft/:draftId/status", async ( req, rep ) => {
-    const { draftId } = req.params as { draftId: string }
-    const cancelToken = String ( ( req.query as { cancelToken?: string } ).cancelToken || "" )
-    if ( !draftId || !cancelToken ) {
-      return rep.status ( 400 ).send ( { message: "Missing draft id or cancel token." } )
-    }
-
-    const db = getFirestore ( )
-    const draftSnap = await db.collection ( "event_checkout_drafts" ).doc ( draftId ).get ( )
-    if ( !draftSnap.exists ) {
-      // Do not fall through to registration lookup — avoids email/draft enumeration
-      return rep.send ( { status: "not_found" } )
-    }
-
-    const draft = draftSnap.data ( ) as CheckoutDraft
-    if ( !draft.cancelTokenHash || !tokensMatch ( cancelToken, draft.cancelTokenHash ) ) {
-      return rep.status ( 403 ).send ( { message: "Invalid cancel token." } )
-    }
-    if ( draft.refundedReason ) {
-      return rep.send ( { status: "refunded", reason: draft.refundedReason } )
-    }
-    if ( draft.finalized === true ) {
-      return rep.send ( { status: "paid" } )
-    }
-    return rep.send ( { status: "pending" } )
   } )
 
   /** Cancelled Checkout: email a Stripe pay-link invoice; keep draft until paid. */

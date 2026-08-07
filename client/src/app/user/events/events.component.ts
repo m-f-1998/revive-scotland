@@ -196,7 +196,8 @@ export class EventsComponent implements OnInit {
             window.location.href = res.checkoutUrl
           } else {
             const successRef = this.modalSvc.open ( SuccessModalComponent, {
-              centered: true
+              centered: true,
+              bare: true
             } )
             successRef.setInput ( "eventTitle", event.title )
             successRef.setInput ( "status", ( res as { status?: string } ).status === "waitlist" ? "waitlist" : "completed" )
@@ -211,7 +212,8 @@ export class EventsComponent implements OnInit {
             : undefined
 
           const errorRef = this.modalSvc.open ( ErrorModalComponent, {
-            centered: true
+            centered: true,
+            bare: true
           } )
           errorRef.setInput ( "title", "Registration Error" )
           errorRef.setInput ( "message", apiMessage || "An error occurred while submitting your registration. Please try again later." )
@@ -274,7 +276,9 @@ export class EventsComponent implements OnInit {
 
       if ( status === "success" ) {
         const title = sessionStorage.getItem ( "checkoutEventTitle" ) || ""
-        const cancelToken = sessionStorage.getItem ( "checkoutCancelToken" ) || undefined
+        const cancelToken = ( params [ "cancelToken" ] as string | undefined )
+          || sessionStorage.getItem ( "checkoutCancelToken" )
+          || undefined
         void this.showRegistrationSuccess ( draftId, title, cancelToken )
         sessionStorage.removeItem ( "checkoutDraftId" )
         sessionStorage.removeItem ( "checkoutCancelToken" )
@@ -286,14 +290,18 @@ export class EventsComponent implements OnInit {
         if ( cachedUrl ) {
           this.resumePaymentUrl.set ( cachedUrl )
         }
-        void this.sendPaymentPromptAfterCancel ( draftId )
+        const cancelToken = ( params [ "cancelToken" ] as string | undefined )
+          || sessionStorage.getItem ( "checkoutCancelToken" )
+          || undefined
+        void this.sendPaymentPromptAfterCancel ( draftId, cancelToken )
         sessionStorage.removeItem ( "checkoutDraftId" )
         sessionStorage.removeItem ( "checkoutCancelToken" )
         sessionStorage.removeItem ( "checkoutUrl" )
         sessionStorage.removeItem ( "checkoutEventTitle" )
 
         const errorRef = this.modalSvc.open ( ErrorModalComponent, {
-          centered: true
+          centered: true,
+          bare: true
         } )
         errorRef.setInput ( "title", "Payment Cancelled" )
         errorRef.setInput ( "message", "Registration failed to complete or was cancelled. Please try again or contact us if you need assistance." )
@@ -310,45 +318,65 @@ export class EventsComponent implements OnInit {
     cancelToken?: string
   ): Promise<void> {
     if ( draftId && cancelToken ) {
+      const status = await this.pollCheckoutStatus ( draftId, cancelToken )
+      if ( status === "pending" ) {
+        const warnRef = this.modalSvc.open ( ErrorModalComponent, { centered: true, bare: true } )
+        warnRef.setInput ( "title", "Payment Processing" )
+        warnRef.setInput ( "message", "Your payment is still being confirmed. You'll receive confirmation shortly — if not, contact us with your receipt." )
+        warnRef.setInput ( "type", "warning" )
+        return
+      }
+      if ( status === "refunded" ) {
+        const errRef = this.modalSvc.open ( ErrorModalComponent, { centered: true, bare: true } )
+        errRef.setInput ( "title", "Event Fully Booked" )
+        errRef.setInput ( "message", "Your payment was refunded because the event filled up before it completed. Contact us if you don't see the refund within a few days." )
+        errRef.setInput ( "type", "warning" )
+        return
+      }
+      if ( status === "not_found" ) {
+        // Stripe already redirected here with a draftId — don't scare the user.
+        // Webhook may still be catching up (especially in local test).
+        const warnRef = this.modalSvc.open ( ErrorModalComponent, { centered: true, bare: true } )
+        warnRef.setInput ( "title", "Payment Processing" )
+        warnRef.setInput ( "message", "Your payment was received and we're confirming your place. If you don't hear from us, contact us with your Stripe receipt." )
+        warnRef.setInput ( "type", "warning" )
+        return
+      }
+      if ( status !== "paid" ) {
+        return
+      }
+    }
+
+    const successRef = this.modalSvc.open ( SuccessModalComponent, { centered: true, bare: true } )
+    successRef.setInput ( "eventTitle", title )
+  }
+
+  /** Poll a few times so a slow webhook doesn't flash a false failure. */
+  private async pollCheckoutStatus (
+    draftId: string,
+    cancelToken: string
+  ): Promise<string | undefined> {
+    const delays = [ 0, 800, 1600, 2500 ]
+    let last: string | undefined
+    for ( const wait of delays ) {
+      if ( wait ) await new Promise ( r => setTimeout ( r, wait ) )
       try {
         const res = await this.apiSvc.get ( `/api/events/checkout-draft/${draftId}/status`, {
           cancelToken
         } ) as { status?: string }
-        if ( res?.status === "pending" ) {
-          const warnRef = this.modalSvc.open ( ErrorModalComponent, { centered: true } )
-          warnRef.setInput ( "title", "Payment Processing" )
-          warnRef.setInput ( "message", "Your payment is still being confirmed. You'll receive confirmation shortly — if not, contact us with your receipt." )
-          warnRef.setInput ( "type", "warning" )
-          return
-        }
-        if ( res?.status === "refunded" ) {
-          const errRef = this.modalSvc.open ( ErrorModalComponent, { centered: true } )
-          errRef.setInput ( "title", "Event Fully Booked" )
-          errRef.setInput ( "message", "Your payment was refunded because the event filled up before it completed. Contact us if you don't see the refund within a few days." )
-          errRef.setInput ( "type", "warning" )
-          return
-        }
-        if ( res?.status === "not_found" ) {
-          const errRef = this.modalSvc.open ( ErrorModalComponent, { centered: true } )
-          errRef.setInput ( "title", "Registration Not Found" )
-          errRef.setInput ( "message", "We couldn't confirm your registration yet. If you were charged, contact us with your Stripe receipt and we'll sort it out." )
-          errRef.setInput ( "type", "warning" )
-          return
-        }
-        if ( res?.status !== "paid" ) {
-          return
-        }
+        last = res?.status
+        if ( last === "paid" || last === "refunded" ) return last
       } catch {
-        // Fall through to success if status check fails (webhook may already have completed)
+        return undefined
       }
     }
-
-    const successRef = this.modalSvc.open ( SuccessModalComponent, { centered: true } )
-    successRef.setInput ( "eventTitle", title )
+    return last
   }
 
-  private async sendPaymentPromptAfterCancel ( draftId: string | undefined ): Promise<void> {
-    const cancelToken = sessionStorage.getItem ( "checkoutCancelToken" ) || undefined
+  private async sendPaymentPromptAfterCancel (
+    draftId: string | undefined,
+    cancelToken?: string
+  ): Promise<void> {
     if ( !draftId || !cancelToken ) return
     try {
       const res = await this.apiSvc.post ( `/api/events/checkout-draft/${draftId}/discard`, { cancelToken } ) as { hostedInvoiceUrl?: string | null }
@@ -365,7 +393,7 @@ export class EventsComponent implements OnInit {
   private clearQueryParams ( ): void {
     this.router.navigate ( [ ], {
       relativeTo: this.route,
-      queryParams: { registration: null, eventId: null, draftId: null },
+      queryParams: { registration: null, eventId: null, draftId: null, cancelToken: null },
       queryParamsHandling: "merge"
     } )
   }

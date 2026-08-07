@@ -264,6 +264,10 @@
   .modal-panel:not(.modal-lg):not(.modal-xl):not(.modal-sm) {
     @apply max-w-lg;
   }
+  /* For components that render their own card (success/error modals) */
+  .modal-panel-bare {
+    @apply w-full max-w-lg mx-4 my-8 max-h-[90vh] overflow-auto bg-transparent shadow-none;
+  }
 
   .modal-backdrop {
     @apply fixed inset-0 bg-black/50 z-50;
