@@ -53,6 +53,8 @@ export interface ModalOptions {
   lightbox?: boolean
   /** Self-styled dialogs (success/error cards) — no white panel chrome */
   bare?: boolean
+  /** Extra panel classes appended after the default modal-panel classes */
+  panelClass?: string | string [ ]
 }
 
 @Service ( )
@@ -60,11 +62,18 @@ export class ModalService {
   private readonly dialog = inject ( Dialog )
 
   public open<T, R = unknown> ( component: ComponentType<T>, options: ModalOptions = { } ): ModalRef<T, R> {
+    const extraPanelClasses = options.panelClass
+      ? ( Array.isArray ( options.panelClass ) ? options.panelClass : [ options.panelClass ] )
+      : [ ]
     const panelClasses = options.lightbox
       ? [ "lightbox-panel" ]
       : options.bare
         ? [ "modal-panel-bare" ]
-        : [ "modal-panel", ...( options.size && options.size !== "md" ? [ `modal-${options.size}` ] : [ ] ) ]
+        : [
+          "modal-panel",
+          ...( options.size && options.size !== "md" ? [ `modal-${options.size}` ] : [ ] ),
+          ...extraPanelClasses
+        ]
     const backdropClass = options.lightbox ? "lightbox-backdrop" : "modal-backdrop"
 
     const config: DialogConfig<unknown, import ( "@angular/cdk/dialog" ).DialogRef<R, T>> = {

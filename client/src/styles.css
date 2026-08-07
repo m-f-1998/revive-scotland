@@ -261,7 +261,10 @@
   .modal-panel.modal-sm {
     @apply max-w-sm;
   }
-  .modal-panel:not(.modal-lg):not(.modal-xl):not(.modal-sm) {
+  .modal-panel.modal-event-details {
+    @apply max-w-xl w-[min(100%,36rem)] max-h-[min(80vh,680px)] h-auto my-8 overflow-hidden p-0;
+  }
+  .modal-panel:not(.modal-lg):not(.modal-xl):not(.modal-sm):not(.modal-event-details) {
     @apply max-w-lg;
   }
   /* For components that render their own card (success/error modals) */

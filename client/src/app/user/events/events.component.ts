@@ -17,6 +17,9 @@ import { IconComponent } from "../../icon/icon.component"
 import { getDefaultRegistrationFields } from "./registration-form.defaults"
 import { SuccessModalComponent } from "./success-modal/success-modal.component"
 import { ErrorModalComponent } from "./error-modal/error-modal.component"
+import { EventDetailsModalComponent } from "./event-details-modal/event-details-modal.component"
+import { downloadEventIcs, getGoogleMapsUrl } from "./event-download.utils"
+import { pickRandomQuote, EvangelisationQuote } from "./evangelisation-quotes"
 
 @Component ( {
   selector: "app-events",
@@ -51,6 +54,8 @@ export class EventsComponent implements OnInit {
   public readonly loading: WritableSignal<boolean> = signal ( true )
   public readonly loadingArchive: WritableSignal<boolean> = signal ( false )
   public readonly resumePaymentUrl: WritableSignal<string | null> = signal ( null )
+  public readonly quote: WritableSignal<EvangelisationQuote> = signal ( pickRandomQuote ( ) )
+  public readonly highlightedEventId: WritableSignal<string | null> = signal ( null )
 
   public readonly eventsSvc: EventsService = inject ( EventsService )
   public readonly dateSvc: DatesService = inject ( DatesService )
@@ -62,60 +67,31 @@ export class EventsComponent implements OnInit {
   private readonly router: Router = inject ( Router )
 
   public ngOnInit ( ) {
-    this.getEvents ( ).then ( ( ) => this.checkQueryParameters ( ) )
+    this.quote.set ( pickRandomQuote ( ) )
+    this.getEvents ( true ).then ( ( ) => {
+      void this.reconcileStoredCheckoutState ( )
+      this.checkQueryParameters ( )
+    } )
   }
 
-  public openPoster ( imageUrl: string ) {
-    window.open ( imageUrl, "_blank" )
+  public openEventDetails ( event: ReviveEvent ): void {
+    const modalRef = this.modalSvc.open ( EventDetailsModalComponent, {
+      centered: true,
+      panelClass: "modal-event-details"
+    } )
+    modalRef.setInput ( "event", event )
+  }
+
+  public isHighlighted ( eventId: string ): boolean {
+    return this.highlightedEventId ( ) === eventId
   }
 
   public getGoogleMapsUrl ( location: string ): string {
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent ( location )}`
+    return getGoogleMapsUrl ( location )
   }
 
   public downloadIcs ( event: ReviveEvent ): void {
-    const pad = ( n: number ) => String ( n ).padStart ( 2, "0" )
-    const toUtcStamp = ( d: Date ) =>
-      `${d.getUTCFullYear ( )}${pad ( d.getUTCMonth ( ) + 1 )}${pad ( d.getUTCDate ( ) )}T${pad ( d.getUTCHours ( ) )}${pad ( d.getUTCMinutes ( ) )}00Z`
-
-    const start = new Date ( event.startDate )
-    const end = new Date ( event.endDate )
-    if ( event.startTime ) {
-      const [ h, m ] = event.startTime.split ( ":" ).map ( Number )
-      start.setHours ( h || 0, m || 0, 0, 0 )
-    }
-    if ( event.endTime ) {
-      const [ h, m ] = event.endTime.split ( ":" ).map ( Number )
-      end.setHours ( h || 0, m || 0, 0, 0 )
-    } else if ( end.getTime ( ) <= start.getTime ( ) ) {
-      end.setTime ( start.getTime ( ) + 2 * 60 * 60 * 1000 )
-    }
-
-    const escape = ( s: string ) => s.replace ( /\\/g, "\\\\" ).replace ( /;/g, "\\;" ).replace ( /,/g, "\\," ).replace ( /\n/g, "\\n" )
-    const ics = [
-      "BEGIN:VCALENDAR",
-      "VERSION:2.0",
-      "PRODID:-//Revive Scotland//Events//EN",
-      "CALSCALE:GREGORIAN",
-      "BEGIN:VEVENT",
-      `UID:${event.id}@revivescotland.co.uk`,
-      `DTSTAMP:${toUtcStamp ( new Date ( ) )}`,
-      `DTSTART:${toUtcStamp ( start )}`,
-      `DTEND:${toUtcStamp ( end )}`,
-      `SUMMARY:${escape ( event.title )}`,
-      `DESCRIPTION:${escape ( event.description || "" )}`,
-      `LOCATION:${escape ( event.location || "" )}`,
-      "END:VEVENT",
-      "END:VCALENDAR"
-    ].join ( "\r\n" )
-
-    const blob = new Blob ( [ ics ], { type: "text/calendar;charset=utf-8" } )
-    const url = URL.createObjectURL ( blob )
-    const a = document.createElement ( "a" )
-    a.href = url
-    a.download = `${event.title.replace ( /[^\w]+/g, "-" ).toLowerCase ( ) || "event"}.ics`
-    a.click ( )
-    URL.revokeObjectURL ( url )
+    downloadEventIcs ( event )
   }
 
   public async toggleArchive ( ): Promise<void> {
@@ -136,24 +112,27 @@ export class EventsComponent implements OnInit {
   }
 
   public async openContactForm ( event: ReviveEvent ) {
-    if ( event.isFull && !event.waitlistOpen && event.donationRequired === "required" ) {
+    await this.getEvents ( true )
+    const current = this.events ( ).find ( e => e.id === event.id ) || event
+
+    if ( current.isFull && !current.waitlistOpen && current.donationRequired === "required" ) {
       this.toastrSvc.error ( "This event is fully booked." )
       return
     }
 
-    const needsPayment = event.donationRequired === "required"
-    const waitlistOnly = !!event.isFull && !!event.waitlistOpen
+    const needsPayment = current.donationRequired === "required"
+    const waitlistOnly = !!current.isFull && !!current.waitlistOpen
     const modalRef = this.modalSvc.open ( InputDialogComponent, {
       centered: true
     } )
-    modalRef.setInput ( "title", waitlistOnly ? `Join waitlist — ${event.title}` : `Register for ${event.title}` )
+    modalRef.setInput ( "title", waitlistOnly ? `Join waitlist — ${current.title}` : `Register for ${current.title}` )
     modalRef.setInput (
       "body",
       waitlistOnly
-        ? `This event is full. You can join the waitlist for "${event.title}". We'll contact you if a place opens.`
+        ? `This event is full. You can join the waitlist for "${current.title}". We'll contact you if a place opens.`
         : needsPayment
           ? `Please fill out the form below. You'll be taken to Stripe to pay — your registration is only confirmed after payment succeeds.`
-          : `Please fill out the form below to register for "${event.title}". You won't receive a separate confirmation email.`
+          : `Please fill out the form below to register for "${current.title}". You'll receive a confirmation email shortly after submitting.`
     )
     modalRef.setInput (
       "confirmText",
@@ -161,7 +140,7 @@ export class EventsComponent implements OnInit {
     )
     modalRef.setInput ( "recaptchaActive", true )
 
-    const fields = this.buildRegistrationFields ( event )
+    const fields = this.buildRegistrationFields ( current )
     modalRef.setInput ( "fields", fields )
 
     await modalRef.result.then ( async ( result: Record<string, unknown> ) => {
@@ -173,7 +152,7 @@ export class EventsComponent implements OnInit {
 
         this.loading.set ( true )
         try {
-          const res = await this.apiSvc.post ( `/api/events/${event.id}/register`, {
+          const res = await this.apiSvc.post ( `/api/events/${current.id}/register`, {
             ...result,
             recaptchaToken: modalRef.componentInstance.captchaToken
           } ) as { message: string; checkoutUrl?: string; donateLaterUrl?: string; draftId?: string; cancelToken?: string }
@@ -182,7 +161,7 @@ export class EventsComponent implements OnInit {
             if ( res.draftId ) {
               sessionStorage.setItem ( "checkoutDraftId", res.draftId )
               sessionStorage.setItem ( "checkoutUrl", res.checkoutUrl )
-              sessionStorage.setItem ( "checkoutEventTitle", event.title )
+              sessionStorage.setItem ( "checkoutEventTitle", current.title )
               if ( res.cancelToken ) {
                 sessionStorage.setItem ( "checkoutCancelToken", res.cancelToken )
               }
@@ -199,7 +178,7 @@ export class EventsComponent implements OnInit {
               centered: true,
               bare: true
             } )
-            successRef.setInput ( "eventTitle", event.title )
+            successRef.setInput ( "eventTitle", current.title )
             successRef.setInput ( "status", ( res as { status?: string } ).status === "waitlist" ? "waitlist" : "completed" )
             void this.getEvents ( true )
           }
@@ -223,6 +202,19 @@ export class EventsComponent implements OnInit {
         }
       }
     } ).catch ( ( ) => { } )
+  }
+
+  private focusEventFromQuery ( eventId: string ): void {
+    this.highlightedEventId.set ( eventId )
+
+    const scrollToEvent = ( ): void => {
+      document.getElementById ( `event-${eventId}` )?.scrollIntoView ( { behavior: "smooth", block: "center" } )
+    }
+
+    requestAnimationFrame ( ( ) => {
+      scrollToEvent ( )
+      window.setTimeout ( scrollToEvent, 400 )
+    } )
   }
 
   /**
@@ -269,53 +261,61 @@ export class EventsComponent implements OnInit {
 
   private checkQueryParameters ( ): void {
     this.route.queryParams.subscribe ( params => {
-      const status = params [ "registration" ]
+      const status = params [ "registration" ] as string | undefined
+      const eventId = params [ "eventId" ] as string | undefined
       const draftId = ( params [ "draftId" ] as string | undefined )
         || sessionStorage.getItem ( "checkoutDraftId" )
         || undefined
 
       if ( status === "success" ) {
-        const title = sessionStorage.getItem ( "checkoutEventTitle" ) || ""
+        const title = sessionStorage.getItem ( "checkoutEventTitle" )
+          || this.events ( ).find ( e => e.id === eventId )?.title
+          || ""
         const cancelToken = ( params [ "cancelToken" ] as string | undefined )
           || sessionStorage.getItem ( "checkoutCancelToken" )
           || undefined
-        void this.showRegistrationSuccess ( draftId, title, cancelToken )
-        sessionStorage.removeItem ( "checkoutDraftId" )
-        sessionStorage.removeItem ( "checkoutCancelToken" )
-        sessionStorage.removeItem ( "checkoutUrl" )
-        sessionStorage.removeItem ( "checkoutEventTitle" )
+        void this.showRegistrationSuccess ( draftId, title, cancelToken, eventId )
+        this.clearStoredCheckoutState ( )
         this.clearQueryParams ( )
-      } else if ( status === "cancelled" ) {
-        const cachedUrl = sessionStorage.getItem ( "checkoutUrl" )
-        if ( cachedUrl ) {
-          this.resumePaymentUrl.set ( cachedUrl )
-        }
+        return
+      }
+
+      if ( status === "cancelled" ) {
         const cancelToken = ( params [ "cancelToken" ] as string | undefined )
           || sessionStorage.getItem ( "checkoutCancelToken" )
           || undefined
-        void this.sendPaymentPromptAfterCancel ( draftId, cancelToken )
-        sessionStorage.removeItem ( "checkoutDraftId" )
-        sessionStorage.removeItem ( "checkoutCancelToken" )
-        sessionStorage.removeItem ( "checkoutUrl" )
-        sessionStorage.removeItem ( "checkoutEventTitle" )
+        void this.handlePaymentCancelled ( draftId, cancelToken )
+        return
+      }
 
-        const errorRef = this.modalSvc.open ( ErrorModalComponent, {
-          centered: true,
-          bare: true
-        } )
-        errorRef.setInput ( "title", "Payment Cancelled" )
-        errorRef.setInput ( "message", "Registration failed to complete or was cancelled. Please try again or contact us if you need assistance." )
-        errorRef.setInput ( "type", "warning" )
-
-        this.clearQueryParams ( )
+      if ( eventId && this.events ( ).some ( e => e.id === eventId ) ) {
+        this.focusEventFromQuery ( eventId )
       }
     } )
+  }
+
+  private async handlePaymentCancelled (
+    draftId: string | undefined,
+    cancelToken: string | undefined
+  ): Promise<void> {
+    await this.sendPaymentPromptAfterCancel ( draftId, cancelToken )
+
+    const errorRef = this.modalSvc.open ( ErrorModalComponent, {
+      centered: true,
+      bare: true
+    } )
+    errorRef.setInput ( "title", "Payment Cancelled" )
+    errorRef.setInput ( "message", "Your optional donation wasn't completed, but your registration is still confirmed. Use the resume payment link above when you're ready, or contact us if you need help." )
+    errorRef.setInput ( "type", "warning" )
+
+    this.clearQueryParams ( )
   }
 
   private async showRegistrationSuccess (
     draftId: string | undefined,
     title: string,
-    cancelToken?: string
+    cancelToken?: string,
+    eventId?: string
   ): Promise<void> {
     if ( draftId && cancelToken ) {
       const status = await this.pollCheckoutStatus ( draftId, cancelToken )
@@ -334,8 +334,6 @@ export class EventsComponent implements OnInit {
         return
       }
       if ( status === "not_found" ) {
-        // Stripe already redirected here with a draftId — don't scare the user.
-        // Webhook may still be catching up (especially in local test).
         const warnRef = this.modalSvc.open ( ErrorModalComponent, { centered: true, bare: true } )
         warnRef.setInput ( "title", "Payment Processing" )
         warnRef.setInput ( "message", "Your payment was received and we're confirming your place. If you don't hear from us, contact us with your Stripe receipt." )
@@ -347,8 +345,14 @@ export class EventsComponent implements OnInit {
       }
     }
 
+    await this.getEvents ( true )
+
+    const resolvedTitle = title
+      || this.events ( ).find ( e => e.id === eventId )?.title
+      || ""
+
     const successRef = this.modalSvc.open ( SuccessModalComponent, { centered: true, bare: true } )
-    successRef.setInput ( "eventTitle", title )
+    successRef.setInput ( "eventTitle", resolvedTitle )
   }
 
   /** Poll a few times so a slow webhook doesn't flash a false failure. */
@@ -373,19 +377,60 @@ export class EventsComponent implements OnInit {
     return last
   }
 
+  private clearStoredCheckoutState ( ): void {
+    sessionStorage.removeItem ( "checkoutDraftId" )
+    sessionStorage.removeItem ( "checkoutCancelToken" )
+    sessionStorage.removeItem ( "checkoutUrl" )
+    sessionStorage.removeItem ( "checkoutEventTitle" )
+    this.resumePaymentUrl.set ( null )
+  }
+
+  private async reconcileStoredCheckoutState ( ): Promise<void> {
+    const draftId = sessionStorage.getItem ( "checkoutDraftId" )
+    const cancelToken = sessionStorage.getItem ( "checkoutCancelToken" )
+    const cachedUrl = sessionStorage.getItem ( "checkoutUrl" )
+
+    if ( cachedUrl && !this.resumePaymentUrl ( ) ) {
+      this.resumePaymentUrl.set ( cachedUrl )
+    }
+
+    if ( !draftId || !cancelToken ) return
+
+    try {
+      const res = await this.apiSvc.get ( `/api/events/checkout-draft/${draftId}/status`, {
+        cancelToken
+      } ) as { status?: string }
+      if ( res.status === "not_found" || res.status === "refunded" ) {
+        this.clearStoredCheckoutState ( )
+      }
+    } catch {
+      // Leave banner in place if status cannot be checked
+    }
+  }
+
   private async sendPaymentPromptAfterCancel (
     draftId: string | undefined,
     cancelToken?: string
   ): Promise<void> {
     if ( !draftId || !cancelToken ) return
     try {
-      const res = await this.apiSvc.post ( `/api/events/checkout-draft/${draftId}/discard`, { cancelToken } ) as { hostedInvoiceUrl?: string | null }
-      if ( res?.hostedInvoiceUrl ) {
-        this.resumePaymentUrl.set ( res.hostedInvoiceUrl )
+      const res = await this.apiSvc.post ( `/api/events/checkout-draft/${draftId}/discard`, { cancelToken } ) as {
+        hostedInvoiceUrl?: string | null
+        checkoutUrl?: string | null
+        cancelToken?: string
       }
+      const payUrl = res?.checkoutUrl || res?.hostedInvoiceUrl
+      if ( payUrl ) {
+        this.resumePaymentUrl.set ( payUrl )
+        sessionStorage.setItem ( "checkoutUrl", payUrl )
+      }
+      if ( res?.cancelToken ) {
+        sessionStorage.setItem ( "checkoutCancelToken", res.cancelToken )
+      }
+      sessionStorage.setItem ( "checkoutDraftId", draftId )
     } catch ( e ) {
       if ( isDevMode ( ) ) {
-        console.warn ( "Failed to send payment-prompt email after cancel:", e )
+        console.warn ( "Failed to create resume payment link after cancel:", e )
       }
     }
   }
@@ -393,7 +438,12 @@ export class EventsComponent implements OnInit {
   private clearQueryParams ( ): void {
     this.router.navigate ( [ ], {
       relativeTo: this.route,
-      queryParams: { registration: null, eventId: null, draftId: null, cancelToken: null },
+      queryParams: {
+        registration: null,
+        draftId: null,
+        cancelToken: null,
+        eventId: null
+      },
       queryParamsHandling: "merge"
     } )
   }
