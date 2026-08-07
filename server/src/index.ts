@@ -16,6 +16,7 @@ import { router as imagesRouter } from "./routes/images.js"
 import { router as adminRouter } from "./routes/admin.js"
 import { router as shareRouter } from "./routes/share.js"
 import { router as eventsRouter } from "./routes/events.js"
+import { router as contactRouter } from "./routes/contact.js"
 
 import { router as galleryRouter } from "./routes/gallery.js"
 import { router as feastRouter } from "./routes/feast.js"
@@ -225,6 +226,7 @@ await app.register ( adminRouter, { prefix: "/api/admin" } )
 await app.register ( shareRouter, { prefix: "/api/share" } )
 await app.register ( shareRouter, { prefix: "/api/public/s" } )
 await app.register ( eventsRouter, { prefix: "/api/events" } )
+await app.register ( contactRouter, { prefix: "/api/contact" } )
 await app.register ( feastRouter, { prefix: "/api/feast" } )
 await app.register ( staticRouter, { prefix: "/" } )
 

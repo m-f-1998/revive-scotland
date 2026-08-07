@@ -4,12 +4,13 @@
  */
 export class StaffNotifyService {
   public static async notify ( payload: {
-    type: "registration" | "payment"
+    type: "registration" | "payment" | "contact"
     eventId: string
     eventTitle?: string
     email?: string | null
     name?: string
     amountPence?: number | null
+    message?: string
   } ): Promise<void> {
     const url = process.env [ "STAFF_NOTIFY_WEBHOOK" ]?.trim ( )
     if ( !url ) return
