@@ -39,6 +39,16 @@ interface Event {
   donationPrice?: number
   stripeProductId?: string
   stripePriceId?: string
+  /** Confirmed seats (status completed). Omit / 0 = unlimited. */
+  maxAttendees?: number
+  waitlistEnabled?: boolean
+}
+
+export type PublicEvent = Event & {
+  registeredCount?: number
+  spotsRemaining?: number | null
+  isFull?: boolean
+  waitlistOpen?: boolean
 }
 
 interface CheckoutDraft {
@@ -61,13 +71,71 @@ interface CheckoutDraft {
   createdAt: unknown
 }
 
-let eventsCache: Event [ ] | null = null
+let eventsCache: PublicEvent [ ] | null = null
 let cacheTime = 0
 const TTL = 60000
 
 export const clearEventsCache = ( ): void => {
   eventsCache = null
   cacheTime = 0
+}
+
+const countConfirmedSeats = async ( eventId: string ): Promise<number> => {
+  const snap = await getFirestore ( ).collection ( "event_registrations" )
+    .where ( "eventId", "==", eventId )
+    .get ( )
+  return snap.docs.filter ( d => d.data ( )?. [ "status" ] === "completed" ).length
+}
+
+const enrichWithCapacity = async ( events: Event [ ] ): Promise<PublicEvent [ ]> => {
+  return Promise.all ( events.map ( async e => {
+    const max = e.maxAttendees && e.maxAttendees > 0 ? e.maxAttendees : undefined
+    if ( !max ) {
+      return {
+        ...e,
+        registeredCount: undefined,
+        spotsRemaining: null,
+        isFull: false,
+        waitlistOpen: false
+      }
+    }
+    const registeredCount = await countConfirmedSeats ( e.id )
+    const spotsRemaining = Math.max ( 0, max - registeredCount )
+    const isFull = spotsRemaining <= 0
+    return {
+      ...e,
+      maxAttendees: max,
+      registeredCount,
+      spotsRemaining,
+      isFull,
+      waitlistOpen: isFull && !!e.waitlistEnabled
+    }
+  } ) )
+}
+
+const resolveCapacityGate = async ( event: Event ): Promise<{
+  allow: boolean
+  asWaitlist: boolean
+  message?: string
+  registeredCount: number
+}> => {
+  const max = event.maxAttendees && event.maxAttendees > 0 ? event.maxAttendees : undefined
+  if ( !max ) {
+    return { allow: true, asWaitlist: false, registeredCount: 0 }
+  }
+  const registeredCount = await countConfirmedSeats ( event.id )
+  if ( registeredCount < max ) {
+    return { allow: true, asWaitlist: false, registeredCount }
+  }
+  if ( event.waitlistEnabled ) {
+    return { allow: true, asWaitlist: true, registeredCount }
+  }
+  return {
+    allow: false,
+    asWaitlist: false,
+    registeredCount,
+    message: "This event is fully booked."
+  }
 }
 
 export const normalizeActionType = ( value: unknown ): "webpage" | "form" => {
@@ -304,6 +372,7 @@ const finalizePaidRegistration = async (
       }, { merge: true } )
       await markDraftFinalized ( draftRef, draftId )
     }
+    clearEventsCache ( )
     void StaffNotifyService.notify ( {
       type: "payment",
       eventId: draft.eventId,
@@ -469,13 +538,48 @@ export const router: FastifyPluginAsync = async app => {
         imageUrl: resolveImageUrl ( e.imageUrl )
       } ) )
 
-      eventsCache = activeEvents
+      eventsCache = await enrichWithCapacity ( activeEvents )
       cacheTime = Date.now ( )
 
       return rep.status ( 200 ).send ( { events: eventsCache } )
     } catch ( error ) {
       console.error ( "Error fetching events data:", error )
       return rep.status ( 500 ).send ( "Failed to fetch events configuration." )
+    }
+  } )
+
+  /** Past events archive (ended; excludes upcoming). */
+  app.get ( "/archive", async ( _req, rep ) => {
+    try {
+      const db = getFirestore ( )
+      const snapshot = await db.collection ( "events" ).get ( )
+      let events: Event [ ] = [ ]
+      const legacyDoc = snapshot.docs.find ( doc => doc.id === "default" )
+      if ( legacyDoc?.exists ) {
+        const legacyData = legacyDoc.data ( ) as { events?: Event [ ] }
+        events = Array.isArray ( legacyData.events ) ? legacyData.events : [ ]
+      } else {
+        events = snapshot.docs.map ( doc => doc.data ( ) as Event )
+      }
+
+      const now = new Date ( )
+      const past = events
+        .filter ( e => {
+          const end = new Date ( e.endDate )
+          return !isNaN ( end.getTime ( ) ) && end < now
+        } )
+        .sort ( ( a, b ) => new Date ( b.endDate ).getTime ( ) - new Date ( a.endDate ).getTime ( ) )
+        .slice ( 0, 60 )
+        .map ( e => ( {
+          ...e,
+          actionType: normalizeActionType ( e.actionType ),
+          imageUrl: resolveImageUrl ( e.imageUrl )
+        } ) )
+
+      return rep.send ( { events: past } )
+    } catch ( error ) {
+      console.error ( "Error fetching archived events:", error )
+      return rep.status ( 500 ).send ( "Failed to fetch archived events." )
     }
   } )
 
@@ -607,6 +711,8 @@ export const router: FastifyPluginAsync = async app => {
       return rep.status ( 404 ).send ( { message: "Event not found." } )
     }
 
+    const capacity = await resolveCapacityGate ( event )
+
     if ( email ) {
       const existingReg = await findExistingRegistrationByEmail ( eventId, email )
       if ( existingReg ) {
@@ -644,6 +750,10 @@ export const router: FastifyPluginAsync = async app => {
           }
         }
 
+        if ( regData [ "status" ] === "waitlist" ) {
+          return rep.status ( 400 ).send ( { message: "You are already on the waitlist for this event." } )
+        }
+
         if ( regData [ "status" ] === "completed" ) {
           return rep.status ( 400 ).send ( { message: "You are already successfully registered for this event." } )
         }
@@ -668,6 +778,17 @@ export const router: FastifyPluginAsync = async app => {
     if ( requiresPayment ) {
       if ( !email ) {
         return rep.status ( 400 ).send ( { message: "Email is required to complete payment." } )
+      }
+
+      // Paid places need an open seat (waitlist is free-only)
+      if ( !capacity.allow || capacity.asWaitlist ) {
+        return rep.status ( 400 ).send ( {
+          message: capacity.asWaitlist
+            ? ( event.donationRequired === "required"
+              ? "This event is fully booked."
+              : "This event is full. Register without a donation to join the waitlist, or contact us." )
+            : ( capacity.message || "This event is fully booked." )
+        } )
       }
 
       const amountPence = ( isOptionalAndOptedIn && customDonationPence != null )
@@ -708,17 +829,24 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     // Free registration (no donation / optional without opt-in) — never auto-email invoices
+    if ( !capacity.allow ) {
+      return rep.status ( 400 ).send ( { message: capacity.message || "This event is fully booked." } )
+    }
+
+    const status = capacity.asWaitlist ? "waitlist" : "completed"
     const registrationRef = getFirestore ( ).collection ( "event_registrations" ).doc ( )
     const registrationPayload: Record<string, unknown> = {
       eventId,
       eventTitle: event.title,
       formData: cleanedFormData,
       email: email || null,
-      status: "completed",
+      status,
+      attended: false,
       createdAt: FieldValue.serverTimestamp ( )
     }
 
     await registrationRef.set ( registrationPayload )
+    clearEventsCache ( )
 
     void StaffNotifyService.notify ( {
       type: "registration",
@@ -729,7 +857,8 @@ export const router: FastifyPluginAsync = async app => {
     } )
 
     return rep.send ( {
-      message: "Registration recorded."
+      message: status === "waitlist" ? "Added to the waitlist." : "Registration recorded.",
+      status
     } )
   } )
 

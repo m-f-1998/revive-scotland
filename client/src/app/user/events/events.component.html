@@ -20,10 +20,10 @@
       Loading...
     </div>
   } @else if (events().length === 0) {
-    <div class="flex flex-col items-center justify-center flex-1 gap-2 my-8">
+    <div class="flex flex-col items-center justify-center gap-2 my-8">
       <app-icon icon="info-circle" iconSize="2x" />
-      <p class="font-semibold">No Events Found</p>
-      <p class="text-muted">Check back later for updates!!</p>
+      <p class="font-semibold">No upcoming events</p>
+      <p class="text-muted">Check back later — or browse past events below.</p>
     </div>
   } @else {
     <div class="flex flex-wrap justify-center gap-6 p-6">
@@ -88,25 +88,54 @@
               </a>
             </div>
 
-            <p class="text-base text-zinc-600 dark:text-zinc-400 line-clamp-6 mb-6 flex-grow whitespace-pre-wrap">{{event.description}}</p>
+            <p class="text-base text-zinc-600 dark:text-zinc-400 line-clamp-6 mb-4 flex-grow whitespace-pre-wrap">{{event.description}}</p>
 
-            <div class="flex gap-3 mt-auto">
+            @if (event.maxAttendees) {
+              <p class="text-xs font-medium mb-4"
+                 [class.text-amber-700]="event.isFull"
+                 [class.dark:text-amber-300]="event.isFull"
+                 [class.text-zinc-500]="!event.isFull">
+                @if (event.isFull && event.waitlistOpen) {
+                  Full — waitlist open
+                } @else if (event.isFull) {
+                  Fully booked
+                } @else {
+                  {{ event.spotsRemaining }} {{ event.spotsRemaining === 1 ? 'spot' : 'spots' }} left
+                  ({{ event.registeredCount || 0 }}/{{ event.maxAttendees }})
+                }
+              </p>
+            }
+
+            <div class="flex gap-3 mt-auto flex-wrap">
               @if (event.actionType === 'webpage' && event.webpageUrl) {
                 <a [href]="event.webpageUrl" class="btn-primary flex-1 justify-center py-2.5 rounded-lg" target="_blank">
                   <app-icon icon="arrow-up-right-from-square" />
                   More Info
                 </a>
               } @else if (event.actionType === 'form') {
-                <button type="button" class="btn-primary flex-1 justify-center py-2.5 rounded-lg font-semibold" (click)="openContactForm(event)" [disabled]="loading()">
-                  @if (event.donationRequired === 'required') {
-                    <app-icon icon="cart-shopping" />
-                    Register & Pay
-                  } @else {
-                    <app-icon icon="clipboard-list" />
-                    Register
-                  }
-                </button>
+                @if (event.isFull && !event.waitlistOpen) {
+                  <button type="button" class="btn-secondary flex-1 justify-center py-2.5 rounded-lg font-semibold opacity-70" disabled>
+                    Sold out
+                  </button>
+                } @else {
+                  <button type="button" class="btn-primary flex-1 justify-center py-2.5 rounded-lg font-semibold" (click)="openContactForm(event)" [disabled]="loading()">
+                    @if (event.isFull && event.waitlistOpen) {
+                      <app-icon icon="clipboard-list" />
+                      Join waitlist
+                    } @else if (event.donationRequired === 'required') {
+                      <app-icon icon="cart-shopping" />
+                      Register & Pay
+                    } @else {
+                      <app-icon icon="clipboard-list" />
+                      Register
+                    }
+                  </button>
+                }
               }
+
+              <button type="button" class="btn-outline-secondary px-4 py-2.5 rounded-lg" (click)="downloadIcs(event)" title="Add to calendar">
+                <app-icon icon="calendar" />
+              </button>
 
               @if (event.imageUrl) {
                 <button type="button" class="btn-secondary px-4 py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-800 hover:bg-zinc-700" (click)="openPoster(event.imageUrl)" title="View Poster">
@@ -118,6 +147,40 @@
         </div>
       }
     </div>
+  }
+
+  @if (!loading()) {
+    <div class="px-6 pb-10 text-center">
+      <button type="button" class="btn-outline-primary btn-sm" (click)="toggleArchive()">
+        {{ showArchive() ? 'Hide past events' : 'View past events' }}
+      </button>
+    </div>
+
+    @if (showArchive()) {
+      <div class="px-6 pb-12">
+        @if (loadingArchive()) {
+          <div class="flex justify-center py-8 text-zinc-500">
+            <app-icon icon="spinner" iconAnimation="spin" />
+          </div>
+        } @else if (pastEvents().length === 0) {
+          <p class="text-center text-sm text-zinc-500">No past events to show yet.</p>
+        } @else {
+          <h3 class="text-center text-lg font-semibold mb-6 text-zinc-800 dark:text-zinc-100">Past events</h3>
+          <div class="flex flex-wrap justify-center gap-4 max-w-5xl mx-auto">
+            @for (event of pastEvents(); track event.id) {
+              <div class="w-full md:w-[48%] max-w-[520px] rounded-xl border border-zinc-200 dark:border-zinc-700 p-4 bg-white dark:bg-zinc-800/80">
+                <h4 class="font-semibold text-zinc-900 dark:text-zinc-50 mb-1">{{ event.title }}</h4>
+                <p class="text-xs text-zinc-500 mb-2">{{ dateSvc.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime) }}</p>
+                <p class="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-3 mb-3">{{ event.description }}</p>
+                <button type="button" class="btn-outline-secondary btn-sm" (click)="downloadIcs(event)">
+                  <app-icon icon="calendar" /> Add to calendar
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
 
     <figure class="px-8 py-16 text-center bg-blue-50 dark:bg-blue-900/10 m-0 border-y border-zinc-100 dark:border-zinc-800">
       <blockquote class="italic text-xl max-w-3xl mx-auto mb-4 text-zinc-700 dark:text-zinc-300">

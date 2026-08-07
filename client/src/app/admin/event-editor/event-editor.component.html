@@ -236,6 +236,7 @@
                         <option value="completed">Completed / Paid</option>
                         <option value="awaiting_payment">Awaiting payment (drafts)</option>
                         <option value="unpaid_optional">Registered (no payment yet)</option>
+                        <option value="waitlist">Waitlist</option>
                       </select>
                     </div>
 
@@ -381,6 +382,20 @@
                                   </td>
                                   <td class="px-4 py-4 text-right whitespace-nowrap">
                                     <div class="flex flex-col gap-2 items-end">
+                                      @if (!isAwaitingPayment(reg) && reg['status'] !== 'awaiting_payment') {
+                                        <button
+                                          type="button"
+                                          class="btn-sm inline-flex items-center justify-center gap-1.5 py-1.5 px-3 w-24 text-xs font-semibold rounded-lg border"
+                                          [class.btn-outline-primary]="!reg['attended']"
+                                          [class.bg-green-600]="reg['attended']"
+                                          [class.text-white]="reg['attended']"
+                                          [class.border-green-600]="reg['attended']"
+                                          (click)="toggleAttendance(reg)"
+                                          [title]="reg['attended'] ? 'Mark as not checked in' : 'Check in'">
+                                          <app-icon [icon]="reg['attended'] ? 'check-circle' : 'clipboard-list'" />
+                                          {{ reg['attended'] ? 'In' : 'Check in' }}
+                                        </button>
+                                      }
                                       <button
                                         type="button"
                                         class="btn-danger btn-sm inline-flex items-center justify-center gap-1.5 py-1.5 px-3 w-24 text-xs font-semibold rounded-lg"

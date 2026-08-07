@@ -179,7 +179,29 @@ export const getEventFields = ( formlySvc: FormlyService, eventModel?: Record<st
       expressions: {
         hide: ( config: FormlyFieldConfig ) => config.model.donationRequired === "none" || !config.model.donationRequired || config.model.actionType !== "form"
       }
-    } )
+    } ),
+
+    {
+      fieldGroupClassName: "grid grid-cols-1 md:grid-cols-2 gap-4",
+      expressions: {
+        hide: ( formlyField: FormlyFieldConfig ) => formlyField.model?.actionType !== "form"
+      },
+      fieldGroup: [
+        formlySvc.TextInput ( "maxAttendees", {
+          label: "Max attendees (optional)",
+          placeholder: "Leave empty for unlimited",
+          type: "number",
+          attributes: { min: "1", step: "1" },
+          description: "Confirmed registrations only. Leave blank for no limit."
+        }, { } ),
+        formlySvc.CheckboxInput ( "waitlistEnabled", {
+          label: "Enable waitlist when full",
+          description: "Free registrations join a waitlist instead of being rejected."
+        }, {
+          defaultValue: false
+        } )
+      ]
+    }
   ]
 
   if ( isFinished ) {

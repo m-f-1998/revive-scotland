@@ -80,7 +80,7 @@ export class EventEditorComponent implements OnInit {
   // Registrations state
   public registrations: WritableSignal<Record<string, Array<Record<string, unknown>>>> = signal ( { } )
   public selectedRegEventId: WritableSignal<string> = signal ( "" )
-  public regStatusFilter: WritableSignal<"all" | "completed" | "awaiting_payment" | "unpaid_optional"> = signal ( "all" )
+  public regStatusFilter: WritableSignal<"all" | "completed" | "awaiting_payment" | "unpaid_optional" | "waitlist"> = signal ( "all" )
   public regSearchQuery: WritableSignal<string> = signal ( "" )
   public loadingRegs: WritableSignal<boolean> = signal ( false )
   public deletingRegIds: WritableSignal<Set<string>> = signal ( new Set ( ) )
@@ -103,6 +103,8 @@ export class EventEditorComponent implements OnInit {
         if ( reg [ "kind" ] !== "draft" && reg [ "status" ] !== "awaiting_payment" ) return false
       } else if ( status === "unpaid_optional" ) {
         if ( reg [ "kind" ] === "draft" || reg [ "status" ] !== "completed" || reg [ "paymentIntent" ] ) return false
+      } else if ( status === "waitlist" ) {
+        if ( reg [ "status" ] !== "waitlist" ) return false
       }
 
       if ( query ) {
@@ -277,7 +279,11 @@ export class EventEditorComponent implements OnInit {
           donationDescription: ef.model [ "donationDescription" ] as string,
           donationPrice: ef.model [ "donationPrice" ] != null ? Math.round ( ( ef.model [ "donationPrice" ] as number ) * 100 ) : undefined,
           stripeProductId: ef.model [ "stripeProductId" ] as string,
-          stripePriceId: ef.model [ "stripePriceId" ] as string
+          stripePriceId: ef.model [ "stripePriceId" ] as string,
+          maxAttendees: ef.model [ "maxAttendees" ] != null && ef.model [ "maxAttendees" ] !== ""
+            ? Math.floor ( Number ( ef.model [ "maxAttendees" ] ) )
+            : undefined,
+          waitlistEnabled: ef.model [ "waitlistEnabled" ] === true
         }
       } )
     }
@@ -406,9 +412,35 @@ export class EventEditorComponent implements OnInit {
 
   public regStatusLabel ( reg: Record<string, unknown> ): string {
     if ( reg [ "kind" ] === "draft" || reg [ "status" ] === "awaiting_payment" ) return "Awaiting payment"
+    if ( reg [ "status" ] === "waitlist" ) return "Waitlist"
     if ( reg [ "status" ] === "completed" && !reg [ "paymentIntent" ] ) return "Registered"
     if ( reg [ "status" ] === "completed" ) return "Paid"
     return String ( reg [ "status" ] || "—" )
+  }
+
+  public async toggleAttendance ( reg: Record<string, unknown> ): Promise<void> {
+    if ( reg [ "kind" ] === "draft" || this.isAwaitingPayment ( reg ) ) return
+    const id = String ( reg [ "id" ] || "" )
+    if ( !id ) return
+    const next = !reg [ "attended" ]
+    try {
+      const token = await this.authSvc.currentUser ( )?.getIdToken ( ) || ""
+      await this.apiSvc.patch (
+        `/api/admin/events/registrations/${id}/attendance`,
+        { attended: next },
+        new HttpHeaders ( { "Authorization": `Bearer ${token}` } )
+      )
+      const eventId = this.selectedRegEventId ( )
+      this.registrations.update ( r => ( {
+        ...r,
+        [ eventId ]: ( r [ eventId ] || [ ] ).map ( item =>
+          item [ "id" ] === id ? { ...item, attended: next } : item
+        )
+      } ) )
+    } catch ( e ) {
+      console.error ( e )
+      this.toastrSvc.error ( "Failed to update attendance." )
+    }
   }
 
   public isAwaitingPayment ( reg: Record<string, unknown> ): boolean {

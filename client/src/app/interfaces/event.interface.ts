@@ -24,4 +24,10 @@ export interface Event {
   donationPrice?: number // in pence/cents
   stripeProductId?: string
   stripePriceId?: string
+  maxAttendees?: number
+  waitlistEnabled?: boolean
+  registeredCount?: number
+  spotsRemaining?: number | null
+  isFull?: boolean
+  waitlistOpen?: boolean
 }

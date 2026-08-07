@@ -1,5 +1,5 @@
 import { FastifyPluginAsync } from "fastify"
-import { WriteBatch } from "firebase-admin/firestore"
+import { FieldValue, WriteBatch } from "firebase-admin/firestore"
 import { getFirestore } from "../admin.js"
 import { checkFirebaseAuth } from "./middleware/fileExplorer.js"
 import { clearEventsCache } from "../events.js"
@@ -30,6 +30,8 @@ interface Event {
   donationPrice?: number
   stripeProductId?: string
   stripePriceId?: string
+  maxAttendees?: number
+  waitlistEnabled?: boolean
 }
 
 let eventsCache: { events: Event [ ] } | null = null
@@ -126,6 +128,7 @@ export const router: FastifyPluginAsync = async app => {
           formData: data [ "formData" ],
           email: data [ "email" ] || null,
           status: data [ "status" ],
+          attended: data [ "attended" ] === true,
           paymentIntent: data [ "paymentIntent" ] || null,
           stripeInvoiceId: data [ "stripeInvoiceId" ] || null,
           createdAt: data [ "createdAt" ]?.toDate ?. ( )?.toISOString ( ) || null
@@ -202,6 +205,39 @@ export const router: FastifyPluginAsync = async app => {
     } catch ( error ) {
       console.error ( "Error deleting checkout draft:", error )
       return rep.status ( 500 ).send ( { error: "Failed to delete checkout draft." } )
+    }
+  } )
+
+  /**
+   * PATCH /api/admin/events/registrations/:id/attendance
+   * Toggle check-in / attended flag for a registration.
+   */
+  app.patch ( "/registrations/:id/attendance", { preHandler: checkFirebaseAuth }, async ( req, rep ) => {
+    try {
+      const { id } = req.params as { id: string }
+      const { attended } = ( req.body || { } ) as { attended?: boolean }
+      if ( !id || typeof attended !== "boolean" ) {
+        return rep.status ( 400 ).send ( { error: "Missing id or attended boolean." } )
+      }
+
+      const docRef = getFirestore ( ).collection ( "event_registrations" ).doc ( id )
+      const doc = await docRef.get ( )
+      if ( !doc.exists ) {
+        return rep.status ( 404 ).send ( { error: "Registration not found" } )
+      }
+      if ( doc.data ( )?. [ "kind" ] === "draft" || doc.data ( )?. [ "status" ] === "awaiting_payment" ) {
+        return rep.status ( 400 ).send ( { error: "Cannot mark a checkout draft as attended." } )
+      }
+
+      await docRef.update ( {
+        attended,
+        attendedAt: attended ? FieldValue.serverTimestamp ( ) : null
+      } )
+
+      return rep.send ( { message: "Attendance updated.", attended } )
+    } catch ( error ) {
+      console.error ( "Error updating attendance:", error )
+      return rep.status ( 500 ).send ( { error: "Failed to update attendance." } )
     }
   } )
 
@@ -393,6 +429,10 @@ export const router: FastifyPluginAsync = async app => {
         if ( event.donationPrice != null ) model.donationPrice = Number ( event.donationPrice )
         if ( event.stripeProductId ) model.stripeProductId = event.stripeProductId
         if ( event.stripePriceId ) model.stripePriceId = event.stripePriceId
+        if ( event.maxAttendees != null && Number ( event.maxAttendees ) > 0 ) {
+          model.maxAttendees = Math.min ( 10_000, Math.floor ( Number ( event.maxAttendees ) ) )
+        }
+        if ( event.waitlistEnabled === true ) model.waitlistEnabled = true
 
         if ( model.actionType === "form" ) {
           if ( !Array.isArray ( event.contactFormFields ) || event.contactFormFields.length === 0 ) {

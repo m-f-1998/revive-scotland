@@ -10,6 +10,8 @@ import { IconComponent } from "../../../icon/icon.component"
 } )
 export class SuccessModalComponent {
   public eventTitle = input ( "" )
+  /** completed | waitlist */
+  public status = input ( "completed" )
   private readonly dialogRef: DialogRef = inject ( DialogRef )
 
   public close ( ): void {

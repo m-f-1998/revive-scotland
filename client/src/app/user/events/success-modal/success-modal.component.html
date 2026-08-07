@@ -1,21 +1,39 @@
 <div class="bg-white dark:bg-slate-900 rounded-xl overflow-hidden shadow-2xl max-w-lg w-full flex flex-col mx-auto my-8">
-  <div class="bg-green-600 dark:bg-green-700 px-6 py-8 text-center relative overflow-hidden">
-    <div class="absolute -top-10 -right-10 w-32 h-32 bg-green-500/30 rounded-full blur-xl"></div>
-    <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-green-500/30 rounded-full blur-xl"></div>
-
+  <div class="px-6 py-8 text-center relative overflow-hidden"
+       [class.bg-green-600]="status() !== 'waitlist'"
+       [class.dark:bg-green-700]="status() !== 'waitlist'"
+       [class.bg-amber-600]="status() === 'waitlist'"
+       [class.dark:bg-amber-700]="status() === 'waitlist'">
     <div class="relative z-10">
       <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-        <app-icon icon="check-circle" iconSize="2x" class="text-green-600" />
+        <app-icon icon="check-circle" iconSize="2x"
+          [class.text-green-600]="status() !== 'waitlist'"
+          [class.text-amber-600]="status() === 'waitlist'" />
       </div>
-      <h2 class="text-2xl font-bold text-white mb-2">Registration Confirmed!</h2>
-      <p class="text-green-100 text-sm font-medium">You are successfully registered for {{ eventTitle() || 'the event' }}.</p>
+      <h2 class="text-2xl font-bold text-white mb-2">
+        {{ status() === 'waitlist' ? "You're on the waitlist" : "Registration Confirmed!" }}
+      </h2>
+      <p class="text-white/90 text-sm font-medium">
+        @if (status() === 'waitlist') {
+          We've added you to the waitlist for {{ eventTitle() || 'the event' }}.
+        } @else {
+          You are successfully registered for {{ eventTitle() || 'the event' }}.
+        }
+      </p>
     </div>
   </div>
 
   <div class="p-6 md:p-8 flex-1 space-y-6">
     <div class="text-center space-y-3">
       <p class="text-zinc-600 dark:text-zinc-300">
-        We have safely received your details. We look forward to seeing you there!
+        @if (status() === 'waitlist') {
+          If a place opens up, we'll contact you using the details you provided.
+        } @else {
+          We have safely received your details. We look forward to seeing you there!
+        }
+      </p>
+      <p class="text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-slate-800/60 rounded-lg px-3 py-2 border border-zinc-100 dark:border-slate-700">
+        We do not send a separate confirmation email for free registrations. Please keep this page confirmation (or a screenshot) for your records. Paid registrations receive a receipt from Stripe.
       </p>
     </div>
 
@@ -41,16 +59,6 @@
           </div>
           <div>
             <div class="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">Call us on</div>
-            <div class="font-medium">+44 7883 824055</div>
-          </div>
-        </a>
-
-        <a href="https://wa.me/447883824055" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 text-zinc-700 dark:text-zinc-300 hover:text-green-600 dark:hover:text-green-400 transition-colors group">
-          <div class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-zinc-200 dark:border-slate-700 group-hover:border-green-300 dark:group-hover:border-green-700">
-            <app-icon icon="comments" class="text-zinc-500 group-hover:text-green-500" />
-          </div>
-          <div>
-            <div class="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">Message us on WhatsApp</div>
             <div class="font-medium">+44 7883 824055</div>
           </div>
         </a>

@@ -23,6 +23,12 @@ export interface ReviveEvent {
   donationPrice?: number
   stripeProductId?: string
   stripePriceId?: string
+  maxAttendees?: number
+  waitlistEnabled?: boolean
+  registeredCount?: number
+  spotsRemaining?: number | null
+  isFull?: boolean
+  waitlistOpen?: boolean
 }
 
 @Service ( )
@@ -31,7 +37,8 @@ export class EventsService {
 
   private readonly apiSvc: ApiService = inject ( ApiService )
 
-  public async getEvents ( ): Promise<ReviveEvent [ ]> {
+  public async getEvents ( forceRefresh = false ): Promise<ReviveEvent [ ]> {
+    if ( forceRefresh ) this.events = undefined
     if ( !this.events ) {
       await this.initialize ( )
     }

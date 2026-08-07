@@ -94,6 +94,33 @@ export class ApiService {
       } )
     } )
   }
+
+  public patch (
+    path: string,
+    body: unknown = { },
+    headers: HttpHeaders = new HttpHeaders ( )
+  ) {
+    const address = ( isDevMode ( ) ? "http://localhost:3000" : "" ) + path
+    let httpHeaders = headers
+
+    if ( !( body instanceof FormData ) ) {
+      httpHeaders = httpHeaders.append ( "Content-Type", "application/json" )
+    }
+
+    return new Promise ( ( resolve, reject ) => {
+      this.httpClient.patch ( address, body, {
+        headers: httpHeaders,
+        responseType: "json"
+      } as object ).subscribe ( {
+        next: response => {
+          resolve ( this.parseObj ( response ) )
+        },
+        error: error => {
+          reject ( error )
+        }
+      } )
+    } )
+  }
   /** Recurse into objects/arrays; only coerce well-known date field names. */
   private parseObj<T>( obj: T ): T {
     if ( obj && typeof obj === "object" ) {
