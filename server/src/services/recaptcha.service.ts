@@ -1,5 +1,8 @@
 import type { FastifyRequest } from "fastify"
 import { isDevMode } from "../routes/static.js"
+import { clientIpFromRequest } from "../utils/client-ip.js"
+
+export { clientIpFromRequest } from "../utils/client-ip.js"
 
 type AssessmentResponse = {
   tokenProperties?: {
@@ -49,17 +52,6 @@ const resolveMinScore = ( ): number => {
     if ( Number.isFinite ( parsed ) && parsed >= 0 && parsed <= 1 ) return parsed
   }
   return 0.5
-}
-
-/** Prefer Fastify's trust-proxy–aware IP; fall back to first X-Forwarded-For hop. */
-export const clientIpFromRequest = ( req: FastifyRequest ): string | undefined => {
-  const fromFastify = typeof req.ip === "string" ? req.ip.trim ( ) : ""
-  if ( fromFastify && fromFastify !== "127.0.0.1" && fromFastify !== "::1" && fromFastify !== "::ffff:127.0.0.1" ) {
-    return fromFastify
-  }
-  const forwarded = req.headers [ "x-forwarded-for" ]
-  const first = ( Array.isArray ( forwarded ) ? forwarded [ 0 ] : forwarded )?.split ( "," ) [ 0 ]?.trim ( )
-  return first || fromFastify || undefined
 }
 
 export const recaptchaContextFromRequest = ( req: FastifyRequest ): RecaptchaVerifyContext => {
