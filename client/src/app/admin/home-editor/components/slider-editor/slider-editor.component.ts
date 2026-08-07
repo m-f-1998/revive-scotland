@@ -54,8 +54,8 @@ export class SliderEditorComponent implements OnInit {
   }
 
   public isSaveDisabled ( ): boolean {
-    if ( this.isDirty ( ) ) return false
-    return !this.isDirty ( )
+    if ( !this.isDirty ( ) ) return true
+    return this.slidesForms ( ).some ( sf => sf.form.invalid )
   }
 
   public async save ( ): Promise<void> {

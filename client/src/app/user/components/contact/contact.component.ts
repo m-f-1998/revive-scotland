@@ -48,7 +48,7 @@ export class ContactComponent implements OnInit {
     modalRef.setInput ( "title", "Send a message" )
     modalRef.setInput (
       "body",
-      "We'll get back to you by email when we can. There is no automatic reply."
+      "We'll get back to you by email when we can. You'll receive a confirmation that your message was sent."
     )
     modalRef.setInput ( "confirmText", "Send" )
     modalRef.setInput ( "recaptchaActive", true )
@@ -58,9 +58,9 @@ export class ContactComponent implements OnInit {
         required: true,
         maxLength: 120
       } ),
-      this.formlySvc.TextInput ( "email", {
+      this.formlySvc.EmailInput ( "email", {
         label: "Email",
-        type: "email",
+        placeholder: "you@example.com",
         required: true,
         maxLength: 200
       } ),

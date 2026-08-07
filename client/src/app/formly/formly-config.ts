@@ -85,6 +85,7 @@ export class FormlyConfig implements ConfigOption {
     { name: "max", message: ( _: unknown, field: FormlyFieldConfig ) => {
       return `Maximum value is ${field.props?.max ?? 0}.`
     } },
+    { name: "ValidEmail", message: "Please enter a valid email address" },
     { name: "PasswordsDoNotMatch", message: "The 'New Password' field cannot match the 'Current Password' field" },
     { name: "invalidClassName", message: "Invalid Class Name" },
     { name: "invalidFormID", message: "Invalid Form ID" },

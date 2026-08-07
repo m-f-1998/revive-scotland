@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, OnDestroy, OnInit } from "@angular/core"
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, input, OnDestroy, OnInit, signal } from "@angular/core"
 import { FormGroup } from "@angular/forms"
 import { DialogRef } from "@angular/cdk/dialog"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
@@ -29,15 +29,23 @@ export class InputDialogComponent<T extends Record<string, unknown> = Record<str
   public captchaToken: string | null = null
 
   public form = new FormGroup ( { } )
+  public formValid = signal ( false )
   public description = ""
 
   private readonly dialogRef: DialogRef = inject ( DialogRef )
   private readonly recaptchaSvc: ReCaptchaV3Service = inject ( ReCaptchaV3Service )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
+  private readonly cdr: ChangeDetectorRef = inject ( ChangeDetectorRef )
 
   private subscription: Subscription | null = null
+  private formStatusSub: Subscription | null = null
 
   public ngOnInit ( ) {
+    this.formValid.set ( this.form.valid )
+    this.formStatusSub = this.form.statusChanges.subscribe ( ( ) => {
+      this.formValid.set ( this.form.valid )
+      this.cdr.markForCheck ( )
+    } )
     if ( this.recaptchaActive ( ) ) {
       this.subscription = this.recaptchaSvc.execute ( "contactForm" ).subscribe ( {
         next: ( token: string ) => {
@@ -52,6 +60,7 @@ export class InputDialogComponent<T extends Record<string, unknown> = Record<str
   }
 
   public ngOnDestroy ( ) {
+    this.formStatusSub?.unsubscribe ( )
     if ( this.subscription ) {
       this.subscription.unsubscribe ( )
     }
