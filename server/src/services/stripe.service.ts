@@ -18,7 +18,7 @@ export class StripeService {
     customAmount?: number,
     productId?: string,
     customerEmail?: string
-  ): Promise<string | undefined> {
+  ): Promise<{ url: string; sessionId: string } | undefined> {
     const host = isDevMode ( )
       ? "http://localhost:4200"
       : ( process.env [ "PUBLIC_DOMAIN" ] || "https://revivescotland.co.uk" )
@@ -27,7 +27,8 @@ export class StripeService {
     if ( !stripe ) {
       if ( isDevMode ( ) ) {
         console.warn ( "Stripe is not configured in DEV_MODE. Returning simulated sandbox success URL." )
-        return `${host}/events?registration=success&eventId=${encodeURIComponent ( eventId )}&draftId=${encodeURIComponent ( draftId )}`
+        const url = `${host}/events?registration=success&eventId=${encodeURIComponent ( eventId )}&draftId=${encodeURIComponent ( draftId )}`
+        return { url, sessionId: "dev_simulated" }
       }
       return undefined
     }
@@ -68,7 +69,22 @@ export class StripeService {
       }
     } )
 
-    return session.url || undefined
+    if ( !session.url || !session.id ) return undefined
+    return { url: session.url, sessionId: session.id }
+  }
+
+  /** Expire an open Checkout Session so an older pay link cannot double-charge. */
+  public static async expireCheckoutSession ( sessionId: string ): Promise<void> {
+    const stripe = this.getStripeInstance ( )
+    if ( !stripe || !sessionId || sessionId === "dev_simulated" ) return
+    try {
+      const session = await stripe.checkout.sessions.retrieve ( sessionId )
+      if ( session.status === "open" ) {
+        await stripe.checkout.sessions.expire ( sessionId )
+      }
+    } catch ( err ) {
+      console.warn ( "Failed to expire Checkout session:", sessionId, err )
+    }
   }
 
   /**

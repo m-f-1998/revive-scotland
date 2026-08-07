@@ -306,25 +306,32 @@ export class EventEditorComponent implements OnInit {
 
     const id = String ( model [ "id" ] || "" ).trim ( )
 
-    // Always remove locally first (covers unsaved / empty-id drafts)
-    this.eventForm.set ( forms.filter ( ( _, i ) => i !== index ) )
-    this.eventData.update ( data => ( {
-      ...data,
-      events: data.events.filter ( ( _, i ) => i !== index )
-    } ) )
-    this.eventsModified.set ( true )
+    const dropLocal = ( ) => {
+      this.eventForm.set ( forms.filter ( ( _, i ) => i !== index ) )
+      this.eventData.update ( data => ( {
+        ...data,
+        events: data.events.filter ( ( _, i ) => i !== index )
+      } ) )
+      this.eventsModified.set ( true )
 
-    // Re-map collapsed indices after removal
-    const nextCollapsed = new Set<number> ( )
-    for ( const collapsed of this.collapsedIndices ) {
-      if ( collapsed < index ) nextCollapsed.add ( collapsed )
-      else if ( collapsed > index ) nextCollapsed.add ( collapsed - 1 )
+      const nextCollapsed = new Set<number> ( )
+      for ( const collapsed of this.collapsedIndices ) {
+        if ( collapsed < index ) nextCollapsed.add ( collapsed )
+        else if ( collapsed > index ) nextCollapsed.add ( collapsed - 1 )
+      }
+      this.collapsedIndices.clear ( )
+      nextCollapsed.forEach ( i => this.collapsedIndices.add ( i ) )
     }
-    this.collapsedIndices.clear ( )
-    nextCollapsed.forEach ( i => this.collapsedIndices.add ( i ) )
 
     if ( !id ) {
+      dropLocal ( )
       this.toastrSvc.success ( "Unsaved event discarded." )
+      return
+    }
+
+    if ( !confirm (
+      "Delete this event?\n\nAny paid registrations will be fully refunded via Stripe, and unpaid invoices/drafts will be voided."
+    ) ) {
       return
     }
 
@@ -335,9 +342,15 @@ export class EventEditorComponent implements OnInit {
       }, new HttpHeaders ( {
         "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || "" }`
       } ) )
-      this.toastrSvc.success ( "Event removed successfully!" )
-    } catch {
-      this.toastrSvc.error ( "Failed to remove event from the server. It has been removed from this editor — save or refresh if needed." )
+      dropLocal ( )
+      this.toastrSvc.success ( "Event removed. Paid registrations were refunded where applicable." )
+    } catch ( err ) {
+      const msg = err instanceof HttpErrorResponse
+        ? ( typeof err.error === "object" && err.error?. [ "error" ]
+          ? String ( err.error [ "error" ] )
+          : "Failed to remove event from the server." )
+        : "Failed to remove event from the server."
+      this.toastrSvc.error ( msg )
     } finally {
       this.loading.set ( false )
     }
@@ -654,7 +667,12 @@ export class EventEditorComponent implements OnInit {
 
   private async loadEventData ( ): Promise<void> {
     try {
-      const events = ( await this.apiSvc.get ( "/api/admin/events" ) ) as { events: Event [ ] }
+      const token = await this.authSvc.currentUser ( )?.getIdToken ( ) || ""
+      const events = ( await this.apiSvc.get (
+        "/api/admin/events",
+        { },
+        new HttpHeaders ( { "Authorization": `Bearer ${token}` } )
+      ) ) as { events: Event [ ] }
       this.eventData.set ( events )
       this.eventForm.set ( events.events.map ( event => ( {
         form: new FormGroup ( { } ),

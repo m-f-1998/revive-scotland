@@ -3,7 +3,6 @@ import { WriteBatch } from "firebase-admin/firestore"
 import { getFirestore } from "../admin.js"
 import { checkFirebaseAuth } from "./middleware/fileExplorer.js"
 import { clearEventsCache } from "../events.js"
-import Stripe from "stripe"
 import { StripeService } from "../../services/stripe.service.js"
 import { isDevMode } from "../static.js"
 
@@ -68,7 +67,7 @@ export const router: FastifyPluginAsync = async app => {
    * GET /api/admin/events
    * Fetches all event documents
    */
-  app.get ( "/", async ( _req, rep ) => {
+  app.get ( "/", { preHandler: checkFirebaseAuth }, async ( _req, rep ) => {
     try {
       if ( eventsCache && Date.now ( ) - cacheTime < TTL ) {
         return rep.send ( eventsCache )
@@ -151,6 +150,10 @@ export const router: FastifyPluginAsync = async app => {
         return rep.status ( 400 ).send ( { error: "Missing required fields." } )
       }
 
+      if ( !Number.isFinite ( amountPence ) || amountPence < 50 || amountPence > 500_000 ) {
+        return rep.status ( 400 ).send ( { error: "Donation amount must be between £0.50 and £5,000." } )
+      }
+
       const stripe = StripeService.getStripeInstance ( )
       if ( !stripe ) {
         if ( isDevMode ( ) ) {
@@ -199,7 +202,7 @@ export const router: FastifyPluginAsync = async app => {
         after_completion: {
           type: "redirect",
           redirect: {
-            url: `${process.env["HOST_URL"] || "https://revivescotland.co.uk"}/events?registration=success`
+            url: `${process.env["PUBLIC_DOMAIN"] || PUBLIC_DOMAIN}/events?registration=success`
           }
         }
       } )
@@ -291,10 +294,7 @@ export const router: FastifyPluginAsync = async app => {
       return rep.status ( 400 ).send ( "All event entries must have a valid title." )
     }
 
-    let stripe: Stripe | null = null
-    if ( process.env [ "STRIPE_SECRET_KEY" ] ) {
-      stripe = new Stripe ( process.env [ "STRIPE_SECRET_KEY" ] )
-    }
+    const stripe = StripeService.getStripeInstance ( )
 
     const sanitizedEvents: Event [ ] = [ ]
     try {
@@ -433,20 +433,57 @@ export const router: FastifyPluginAsync = async app => {
 
       const eventData = doc.data ( ) as Event
 
-      // Cascade delete registrations
       const registrationsRef = db.collection ( "event_registrations" )
       const regsSnapshot = await registrationsRef.where ( "eventId", "==", id ).get ( )
+      const draftsSnapshot = await db.collection ( "event_checkout_drafts" )
+        .where ( "eventId", "==", id ).get ( )
+
+      // Refund / void money first — abort delete if any refund fails
+      for ( const regDoc of regsSnapshot.docs ) {
+        const data = regDoc.data ( ) || { }
+        const paymentIntentId = data [ "paymentIntent" ] ? String ( data [ "paymentIntent" ] ) : ""
+        const stripeInvoiceId = data [ "stripeInvoiceId" ] ? String ( data [ "stripeInvoiceId" ] ) : ""
+
+        if ( paymentIntentId ) {
+          try {
+            const result = await StripeService.refundPaymentIntent ( paymentIntentId )
+            if ( !result && process.env [ "STRIPE_SECRET_KEY" ] ) {
+              return rep.status ( 500 ).send ( {
+                error: `Stripe refund failed for registration ${regDoc.id}. Event was not deleted.`
+              } )
+            }
+          } catch ( err ) {
+            console.error ( "Stripe refund error during event delete:", err )
+            return rep.status ( 500 ).send ( {
+              error: err instanceof Error
+                ? err.message
+                : `Stripe refund failed for registration ${regDoc.id}. Event was not deleted.`
+            } )
+          }
+        } else if ( stripeInvoiceId ) {
+          await StripeService.voidInvoiceIfOpen ( stripeInvoiceId )
+        }
+      }
+
+      for ( const draftDoc of draftsSnapshot.docs ) {
+        const invoiceId = draftDoc.data ( )?. [ "stripeInvoiceId" ]
+        if ( invoiceId ) {
+          await StripeService.voidInvoiceIfOpen ( String ( invoiceId ) )
+        }
+      }
 
       const deleteOps: ( ( batch: WriteBatch ) => void ) [ ] = [
         batch => batch.delete ( docRef ),
-        ...regsSnapshot.docs.map ( d => ( batch: WriteBatch ) => batch.delete ( d.ref ) )
+        ...regsSnapshot.docs.map ( d => ( batch: WriteBatch ) => batch.delete ( d.ref ) ),
+        ...draftsSnapshot.docs.map ( d => ( batch: WriteBatch ) => batch.delete ( d.ref ) )
       ]
       await runBatchedWrites ( deleteOps )
 
-      // Deactivate Stripe Product if it exists
-      if ( eventData.stripeProductId && process.env [ "STRIPE_SECRET_KEY" ] ) {
-        const stripe = new Stripe ( process.env [ "STRIPE_SECRET_KEY" ] )
-        await stripe.products.update ( eventData.stripeProductId, { active: false } ).catch ( ( ) => null )
+      if ( eventData.stripeProductId ) {
+        const stripe = StripeService.getStripeInstance ( )
+        if ( stripe ) {
+          await stripe.products.update ( eventData.stripeProductId, { active: false } ).catch ( ( ) => null )
+        }
       }
 
       if ( eventsCache ) {

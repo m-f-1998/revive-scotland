@@ -239,6 +239,16 @@ export class EventsComponent implements OnInit {
           warnRef.setInput ( "type", "warning" )
           return
         }
+        if ( res?.status === "not_found" ) {
+          const errRef = this.modalSvc.open ( ErrorModalComponent, { centered: true } )
+          errRef.setInput ( "title", "Registration Not Found" )
+          errRef.setInput ( "message", "We couldn't confirm your registration yet. If you were charged, contact us with your Stripe receipt and we'll sort it out." )
+          errRef.setInput ( "type", "warning" )
+          return
+        }
+        if ( res?.status !== "paid" ) {
+          return
+        }
       } catch {
         // Fall through to success if status check fails (webhook may already have completed)
       }
