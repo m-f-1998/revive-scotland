@@ -48,7 +48,7 @@ export class ContactComponent implements OnInit {
     modalRef.setInput ( "title", "Send a message" )
     modalRef.setInput (
       "body",
-      "We'll get back to you by email when we can. You'll receive a confirmation that your message was sent."
+      "We'll get back to you by email as soon as possible."
     )
     modalRef.setInput ( "confirmText", "Send" )
     modalRef.setInput ( "recaptchaActive", true )

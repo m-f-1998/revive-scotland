@@ -158,17 +158,21 @@ export class EventsComponent implements OnInit {
           } ) as { message: string; checkoutUrl?: string; donateLaterUrl?: string; draftId?: string; cancelToken?: string }
 
           if ( res.checkoutUrl ) {
+            const alreadyRegistered = ( res as { status?: string } ).status === "completed"
             if ( res.draftId ) {
               sessionStorage.setItem ( "checkoutDraftId", res.draftId )
               sessionStorage.setItem ( "checkoutUrl", res.checkoutUrl )
               sessionStorage.setItem ( "checkoutEventTitle", current.title )
+              sessionStorage.setItem ( "checkoutIsOptionalDonation", alreadyRegistered ? "1" : "0" )
               if ( res.cancelToken ) {
                 sessionStorage.setItem ( "checkoutCancelToken", res.cancelToken )
               }
             }
             this.toastrSvc.info (
-              "Taking you to Stripe. Your registration is not saved until payment is completed.",
-              "Payment required",
+              alreadyRegistered
+                ? "You're registered. Taking you to Stripe to complete your optional donation."
+                : "Taking you to Stripe. Your registration is not saved until payment is completed.",
+              alreadyRegistered ? "Optional donation" : "Payment required",
               { timeOut: 6000 }
             )
             await new Promise ( resolve => setTimeout ( resolve, 900 ) )
@@ -271,9 +275,7 @@ export class EventsComponent implements OnInit {
         const title = sessionStorage.getItem ( "checkoutEventTitle" )
           || this.events ( ).find ( e => e.id === eventId )?.title
           || ""
-        const cancelToken = ( params [ "cancelToken" ] as string | undefined )
-          || sessionStorage.getItem ( "checkoutCancelToken" )
-          || undefined
+        const cancelToken = sessionStorage.getItem ( "checkoutCancelToken" ) || undefined
         void this.showRegistrationSuccess ( draftId, title, cancelToken, eventId )
         this.clearStoredCheckoutState ( )
         this.clearQueryParams ( )
@@ -281,9 +283,7 @@ export class EventsComponent implements OnInit {
       }
 
       if ( status === "cancelled" ) {
-        const cancelToken = ( params [ "cancelToken" ] as string | undefined )
-          || sessionStorage.getItem ( "checkoutCancelToken" )
-          || undefined
+        const cancelToken = sessionStorage.getItem ( "checkoutCancelToken" ) || undefined
         void this.handlePaymentCancelled ( draftId, cancelToken )
         return
       }
@@ -298,6 +298,7 @@ export class EventsComponent implements OnInit {
     draftId: string | undefined,
     cancelToken: string | undefined
   ): Promise<void> {
+    const isOptionalDonation = sessionStorage.getItem ( "checkoutIsOptionalDonation" ) === "1"
     await this.sendPaymentPromptAfterCancel ( draftId, cancelToken )
 
     const errorRef = this.modalSvc.open ( ErrorModalComponent, {
@@ -305,7 +306,12 @@ export class EventsComponent implements OnInit {
       bare: true
     } )
     errorRef.setInput ( "title", "Payment Cancelled" )
-    errorRef.setInput ( "message", "Your optional donation wasn't completed, but your registration is still confirmed. Use the resume payment link above when you're ready, or contact us if you need help." )
+    errorRef.setInput (
+      "message",
+      isOptionalDonation
+        ? "Your optional donation wasn't completed, but your registration is still confirmed. Use the resume payment link above when you're ready, or contact us if you need help."
+        : "Payment was cancelled, so your registration was not completed. Use the resume payment link above to try again, or contact us if you need help."
+    )
     errorRef.setInput ( "type", "warning" )
 
     this.clearQueryParams ( )
@@ -382,6 +388,7 @@ export class EventsComponent implements OnInit {
     sessionStorage.removeItem ( "checkoutCancelToken" )
     sessionStorage.removeItem ( "checkoutUrl" )
     sessionStorage.removeItem ( "checkoutEventTitle" )
+    sessionStorage.removeItem ( "checkoutIsOptionalDonation" )
     this.resumePaymentUrl.set ( null )
   }
 

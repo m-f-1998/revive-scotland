@@ -113,8 +113,10 @@ export const clearEventsCache = ( ): void => {
 const countConfirmedSeats = async ( eventId: string ): Promise<number> => {
   const snap = await getFirestore ( ).collection ( "event_registrations" )
     .where ( "eventId", "==", eventId )
+    .where ( "status", "==", "completed" )
+    .count ( )
     .get ( )
-  return snap.docs.filter ( d => d.data ( )?. [ "status" ] === "completed" ).length
+  return snap.data ( ).count
 }
 
 const enrichWithCapacity = async ( events: Event [ ] ): Promise<PublicEvent [ ]> => {
@@ -284,6 +286,20 @@ const sendRegistrationEmails = ( opts: {
   } )
 }
 
+/** Remove a just-written seat if a concurrent register raced past the capacity check. */
+const healOverbookIfNeeded = async (
+  event: Event,
+  regRef: DocumentReference
+): Promise<boolean> => {
+  if ( !event.maxAttendees || event.maxAttendees <= 0 ) return false
+  const seats = await countConfirmedSeats ( event.id )
+  if ( seats <= event.maxAttendees ) return false
+  console.warn ( `Overbook heal: removing registration ${regRef.id} for event ${event.id}.` )
+  await regRef.delete ( )
+  clearEventsCache ( )
+  return true
+}
+
 /** Optional donation: confirm the registrant immediately, keep the draft open for payment. */
 const ensureOptionalRegistrationFromDraft = async (
   draftRef: DocumentReference,
@@ -331,6 +347,15 @@ const ensureOptionalRegistrationFromDraft = async (
     createdAt: FieldValue.serverTimestamp ( )
   } )
   clearEventsCache ( )
+
+  if ( await healOverbookIfNeeded ( event, regRef ) ) {
+    await draftRef.update ( {
+      existingRegistrationId: FieldValue.delete ( ),
+      registrationEmailsSentAt: FieldValue.delete ( )
+    } ).catch ( ( ) => null )
+    return draft
+  }
+
   sendRegistrationEmails ( {
     event,
     email: draft.email,
@@ -573,8 +598,7 @@ const sendPaymentPromptForDraft = async (
       draftId,
       customFromForm ?? amountPence,
       event.stripeProductId,
-      draft.email,
-      rotatedCancelToken
+      draft.email
     )
 
     if ( session ) {
@@ -670,6 +694,37 @@ const applyPaymentIntentSafely = async (
   return { newlyPaid: !!paymentIntent }
 }
 
+const applyDonationToExistingRegistration = async (
+  draftRef: DocumentReference,
+  draft: CheckoutDraft,
+  regRef: DocumentReference,
+  existingPaymentIntent: unknown,
+  paymentIntent: string | null
+): Promise<void> => {
+  await applyPaymentIntentSafely (
+    regRef,
+    existingPaymentIntent,
+    paymentIntent,
+    {
+      donatedAt: FieldValue.serverTimestamp ( ),
+      formData: draft.formData
+    }
+  )
+  await copyStatusTokenToRegistration ( regRef.id, draft.cancelTokenHash )
+  clearEventsCache ( )
+  const event = await loadEvent ( draft.eventId )
+  await trySendDonationFollowUpEmails ( draftRef, {
+    eventId: draft.eventId,
+    eventTitle: draft.eventTitle || event?.title || "the event",
+    email: draft.email,
+    name: draft.name,
+    amountPence: draft.amountPence ?? null,
+    eventDate: event ? formatEventDateForEmail ( event ) : undefined,
+    eventLocation: event?.location,
+    donationRequired: event?.donationRequired || "optional"
+  } )
+}
+
 const finalizePaidRegistration = async (
   draftId: string,
   paymentRef: string | Stripe.PaymentIntent | null | undefined
@@ -691,54 +746,25 @@ const finalizePaidRegistration = async (
     if ( draft.existingRegistrationId ) {
       const regRef = db.collection ( "event_registrations" ).doc ( draft.existingRegistrationId )
       const regSnap = await regRef.get ( )
-      await applyPaymentIntentSafely (
+      await applyDonationToExistingRegistration (
+        draftRef,
+        draft,
         regRef,
         regSnap.data ( )?. [ "paymentIntent" ],
-        paymentIntent,
-        {
-          donatedAt: FieldValue.serverTimestamp ( ),
-          formData: draft.formData
-        }
+        paymentIntent
       )
-      await copyStatusTokenToRegistration ( draft.existingRegistrationId, draft.cancelTokenHash )
-      const event = await loadEvent ( draft.eventId )
-      await trySendDonationFollowUpEmails ( draftRef, {
-        eventId: draft.eventId,
-        eventTitle: draft.eventTitle || event?.title || "the event",
-        email: draft.email,
-        name: draft.name,
-        amountPence: draft.amountPence ?? null,
-        eventDate: event ? formatEventDateForEmail ( event ) : undefined,
-        eventLocation: event?.location,
-        donationRequired: event?.donationRequired || "optional"
-      } )
       return
     }
 
     const existing = await findExistingRegistrationByEmail ( draft.eventId, draft.email )
     if ( existing ) {
-      await applyPaymentIntentSafely (
+      await applyDonationToExistingRegistration (
+        draftRef,
+        draft,
         existing.ref,
         existing.data ( )?. [ "paymentIntent" ],
-        paymentIntent,
-        {
-          donatedAt: FieldValue.serverTimestamp ( ),
-          formData: draft.formData
-        }
+        paymentIntent
       )
-      await copyStatusTokenToRegistration ( existing.id, draft.cancelTokenHash )
-      clearEventsCache ( )
-      const event = await loadEvent ( draft.eventId )
-      await trySendDonationFollowUpEmails ( draftRef, {
-        eventId: draft.eventId,
-        eventTitle: draft.eventTitle || event?.title || "the event",
-        email: draft.email,
-        name: draft.name,
-        amountPence: draft.amountPence ?? null,
-        eventDate: event ? formatEventDateForEmail ( event ) : undefined,
-        eventLocation: event?.location,
-        donationRequired: event?.donationRequired || "optional"
-      } )
       return
     }
 
@@ -923,8 +949,7 @@ const startOrResumeCheckout = async ( opts: {
     draftRef.id,
     opts.customAmountInPence,
     opts.event.stripeProductId,
-    opts.email,
-    cancelToken
+    opts.email
   )
 
   if ( !session ) {
@@ -1079,11 +1104,8 @@ export const router: FastifyPluginAsync = async app => {
       if ( hash && tokensMatch ( cancelToken, hash ) ) {
         return rep.send ( { status: "paid" } )
       }
-      // Legacy paid row without hash: webhook likely succeeded; avoid false "not_found"
-      if ( !hash ) {
-        return rep.send ( { status: "paid" } )
-      }
-      return rep.status ( 403 ).send ( { message: "Invalid cancel token." } )
+      // No token hash (or mismatch): do not disclose paid status without a valid cancelToken
+      return rep.send ( { status: "not_found" } )
     }
 
     return rep.send ( { status: "not_found" } )
@@ -1283,6 +1305,10 @@ export const router: FastifyPluginAsync = async app => {
       } )
       clearEventsCache ( )
 
+      if ( await healOverbookIfNeeded ( event, registrationRef ) ) {
+        return rep.status ( 400 ).send ( { message: "This event is fully booked." } )
+      }
+
       sendRegistrationEmails ( {
         event,
         email,
@@ -1402,6 +1428,10 @@ export const router: FastifyPluginAsync = async app => {
 
     await registrationRef.set ( registrationPayload )
     clearEventsCache ( )
+
+    if ( status === "completed" && await healOverbookIfNeeded ( event, registrationRef ) ) {
+      return rep.status ( 400 ).send ( { message: "This event is fully booked." } )
+    }
 
     sendRegistrationEmails ( {
       event,

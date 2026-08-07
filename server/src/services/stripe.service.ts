@@ -17,19 +17,19 @@ export class StripeService {
     draftId: string,
     customAmount?: number,
     productId?: string,
-    customerEmail?: string,
-    cancelToken?: string
+    customerEmail?: string
   ): Promise<{ url: string; sessionId: string } | undefined> {
     const host = isDevMode ( )
       ? "http://localhost:4200"
       : ( process.env [ "PUBLIC_DOMAIN" ] || "https://revivescotland.co.uk" )
     const stripe = this.getStripeInstance ( )
-    const tokenQs = cancelToken ? `&cancelToken=${encodeURIComponent ( cancelToken )}` : ""
+    // Keep cancelToken out of redirect URLs (history / logs / Referer). Client uses sessionStorage.
+    const returnQs = `eventId=${encodeURIComponent ( eventId )}&draftId=${encodeURIComponent ( draftId )}`
 
     if ( !stripe ) {
       if ( isDevMode ( ) ) {
         console.warn ( "Stripe is not configured in DEV_MODE. Returning simulated sandbox success URL." )
-        const url = `${host}/events?registration=success&eventId=${encodeURIComponent ( eventId )}&draftId=${encodeURIComponent ( draftId )}${tokenQs}`
+        const url = `${host}/events?registration=success&${returnQs}`
         return { url, sessionId: "dev_simulated" }
       }
       return undefined
@@ -66,8 +66,8 @@ export class StripeService {
           eventId
         }
       },
-      success_url: `${host}/events?registration=success&eventId=${encodeURIComponent ( eventId )}&draftId=${encodeURIComponent ( draftId )}${tokenQs}`,
-      cancel_url: `${host}/events?registration=cancelled&eventId=${encodeURIComponent ( eventId )}&draftId=${encodeURIComponent ( draftId )}${tokenQs}`,
+      success_url: `${host}/events?registration=success&${returnQs}`,
+      cancel_url: `${host}/events?registration=cancelled&${returnQs}`,
       client_reference_id: draftId,
       metadata: {
         draftId,
