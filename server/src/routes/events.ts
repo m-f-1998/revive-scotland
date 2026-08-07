@@ -4,7 +4,7 @@ import rateLimit from "@fastify/rate-limit"
 import { getFirestore } from "./admin.js"
 import Stripe from "stripe"
 import { DocumentReference, FieldValue } from "firebase-admin/firestore"
-import { RecaptchaService } from "../services/recaptcha.service.js"
+import { RecaptchaService, recaptchaContextFromRequest } from "../services/recaptcha.service.js"
 import { StripeService } from "../services/stripe.service.js"
 import { StaffNotifyService } from "../services/staff-notify.service.js"
 import { EmailService } from "../services/email.service.js"
@@ -1191,7 +1191,7 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     try {
-      await RecaptchaService.verifyToken ( recaptchaToken )
+      await RecaptchaService.verifyToken ( recaptchaToken, recaptchaContextFromRequest ( req ) )
     } catch ( err ) {
       console.error ( "reCAPTCHA verification error:", err )
       return rep.status ( 500 ).send ( { message: "reCAPTCHA verification error." } )

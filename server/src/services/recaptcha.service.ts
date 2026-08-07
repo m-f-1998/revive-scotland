@@ -1,3 +1,4 @@
+import type { FastifyRequest } from "fastify"
 import { isDevMode } from "../routes/static.js"
 
 type AssessmentResponse = {
@@ -15,6 +16,12 @@ type AssessmentResponse = {
   error?: {
     message?: string
   }
+}
+
+export type RecaptchaVerifyContext = {
+  userIpAddress?: string
+  userAgent?: string
+  requestedUri?: string
 }
 
 /** Human-readable notes for ClassificationReason values from the assessment. */
@@ -44,12 +51,34 @@ const resolveMinScore = ( ): number => {
   return 0.5
 }
 
+/** Prefer Fastify's trust-proxy–aware IP; fall back to first X-Forwarded-For hop. */
+export const clientIpFromRequest = ( req: FastifyRequest ): string | undefined => {
+  const fromFastify = typeof req.ip === "string" ? req.ip.trim ( ) : ""
+  if ( fromFastify && fromFastify !== "127.0.0.1" && fromFastify !== "::1" && fromFastify !== "::ffff:127.0.0.1" ) {
+    return fromFastify
+  }
+  const forwarded = req.headers [ "x-forwarded-for" ]
+  const first = ( Array.isArray ( forwarded ) ? forwarded [ 0 ] : forwarded )?.split ( "," ) [ 0 ]?.trim ( )
+  return first || fromFastify || undefined
+}
+
+export const recaptchaContextFromRequest = ( req: FastifyRequest ): RecaptchaVerifyContext => {
+  const userAgent = String ( req.headers [ "user-agent" ] || "" ).trim ( )
+  const origin = process.env [ "PUBLIC_DOMAIN" ]?.replace ( /\/$/, "" ) || ""
+  const path = req.url?.split ( "?" ) [ 0 ] || "/"
+  return {
+    userIpAddress: clientIpFromRequest ( req ),
+    userAgent: userAgent || undefined,
+    requestedUri: origin ? `${origin}${path}` : undefined
+  }
+}
+
 export class RecaptchaService {
   /**
    * Verifies the provided reCAPTCHA token against the Google Enterprise API.
    * Throws an error if validation fails or the score is too low.
    */
-  public static async verifyToken ( token: string ): Promise<void> {
+  public static async verifyToken ( token: string, context: RecaptchaVerifyContext = { } ): Promise<void> {
     if ( isDevMode ( ) ) {
       console.warn ( "reCAPTCHA verification bypassed in DEV_MODE" )
       return
@@ -75,9 +104,12 @@ export class RecaptchaService {
         },
         body: JSON.stringify ( {
           event: {
-            token: token,
-            siteKey: siteKey,
-            expectedAction: "contactForm"
+            token,
+            siteKey,
+            expectedAction: "contactForm",
+            ...( context.userIpAddress ? { userIpAddress: context.userIpAddress } : { } ),
+            ...( context.userAgent ? { userAgent: context.userAgent } : { } ),
+            ...( context.requestedUri ? { requestedUri: context.requestedUri } : { } )
           }
         } )
       }
@@ -113,6 +145,7 @@ export class RecaptchaService {
           reasons,
           reasonDescriptions,
           extendedVerdictReasons,
+          assessedIp: context.userIpAddress || null,
           projectId,
           siteKeyPrefix: `${siteKey.slice ( 0, 10 )}…`
         }

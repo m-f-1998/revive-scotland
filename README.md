@@ -39,7 +39,7 @@ Boot fails in production if required vars are missing. `DEV_MODE=true` is **opt-
 | `EMAIL_FROM` | With Resend | Sender address, e.g. `Revive Scotland <hello@revivescotland.co.uk>` — verify your domain in Resend for production |
 | `PUBLIC_DOMAIN` | Recommended | Public origin for share/Stripe URLs |
 | `CORS_ORIGINS` | Recommended | Comma-separated allowed origins |
-| `TRUST_PROXY` | Behind CDN | Hop count (`1`) or CIDR list; defaults to `1` in production |
+| `TRUST_PROXY` | Behind CDN | Hop count (`1`) or CIDR list; defaults to loopback only. Set `1` behind Cloudflare/Traefik so `req.ip` (and reCAPTCHA assessments) see the real client IP |
 | `DEV_MODE` | Local only | `true`/`1` enables local bypasses (reCAPTCHA/webhook mock). **Rejected at boot** if `NODE_ENV=production`. |
 | `PRE_PROD` | Staging | Use **dev** Firebase for Auth (`revive-scotland-firebase-dev.json`) |
 | `GA_SERVICE_ACCOUNT_JSON` / `GA_GOOGLE_APPLICATION_CREDENTIALS` | Pre-prod / optional | **Prod** SA for dashboard GA (property access is on prod, not the Auth project) |
