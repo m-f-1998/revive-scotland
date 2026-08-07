@@ -1,8 +1,19 @@
 import { inject, Service, InjectionToken, Injector, signal, WritableSignal } from "@angular/core"
 import { ApiService } from "./api.service"
 import { Router } from "@angular/router"
-import { FirebaseApp, initializeApp } from "firebase/app"
-import { Auth, getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut, User } from "firebase/auth"
+import { FirebaseApp, getApps, initializeApp } from "firebase/app"
+import {
+  Auth,
+  browserLocalPersistence,
+  browserPopupRedirectResolver,
+  getAuth,
+  GoogleAuthProvider,
+  initializeAuth,
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut,
+  User
+} from "firebase/auth"
 import { environment } from "@src/environments/environment"
 import { HttpHeaders } from "@angular/common/http"
 
@@ -56,13 +67,21 @@ export class AuthService {
     this.loading$.set ( true )
     try {
       const userCredential = await signInWithPopup ( this.auth, this.provider )
+      await this.waitForPageVisible ( )
       await this.establishSession ( userCredential.user )
       this.currentUser$.set ( userCredential.user )
       return userCredential.user
-    } catch {
-      await this.logout ( )
+    } catch ( err ) {
+      console.error ( "Login failed:", err )
+      const code = ( err as { code?: string } | null )?.code
+      if ( code !== "auth/popup-closed-by-user" && this.auth.currentUser ) {
+        await this.logout ( )
+      } else {
+        this.currentUser$.set ( null )
+        this.profilePhoto$.set ( null )
+      }
       this.router.navigate ( [ "/" ] )
-      throw new Error ( "Login failed" )
+      throw this.toLoginError ( err )
     } finally {
       this.loginInProgress = false
       this.loading$.set ( false )
@@ -81,7 +100,12 @@ export class AuthService {
     } finally {
       this.currentUser$.set ( null )
       this.profilePhoto$.set ( null )
-      await signOut ( this.auth )
+      await this.waitForPageVisible ( )
+      try {
+        await signOut ( this.auth )
+      } catch {
+        // IndexedDB can be unavailable while the page is hidden after popup auth.
+      }
     }
   }
 
@@ -94,12 +118,21 @@ export class AuthService {
         {
           provide: FIREBASE_APP,
           useFactory: ( ) => {
-            return initializeApp ( environment.firebase )
+            return getApps ( ).length ? getApps ( ) [ 0 ]! : initializeApp ( environment.firebase )
           }
         },
         {
           provide: FIREBASE_AUTH,
-          useFactory: ( app: FirebaseApp ) => getAuth ( app ),
+          useFactory: ( app: FirebaseApp ) => {
+            try {
+              return initializeAuth ( app, {
+                persistence: browserLocalPersistence,
+                popupRedirectResolver: browserPopupRedirectResolver
+              } )
+            } catch {
+              return getAuth ( app )
+            }
+          },
           deps: [ FIREBASE_APP ]
         }
       ],
@@ -126,6 +159,42 @@ export class AuthService {
       if ( !this.loginInProgress ) {
         this.loading$.set ( false )
       }
+    } )
+  }
+
+  private toLoginError ( err: unknown ): Error {
+    const authErr = err as { code?: string; message?: string; status?: number; error?: { error?: string } } | null
+    if ( authErr?.code === "auth/popup-closed-by-user" ) {
+      return new Error ( "Sign-in was cancelled." )
+    }
+    if ( authErr?.code === "auth/popup-blocked" ) {
+      return new Error ( "Sign-in popup was blocked by the browser." )
+    }
+    if ( authErr?.status === 401 || authErr?.status === 403 ) {
+      return new Error ( authErr.error?.error || "Your account is not authorized for admin access." )
+    }
+    if ( authErr?.status === 404 ) {
+      return new Error ( "Admin session could not be created. Try again." )
+    }
+    if ( authErr?.message && authErr.message !== "Login failed" ) {
+      return new Error ( authErr.message )
+    }
+    return new Error ( "Login failed. Check the browser console for details." )
+  }
+
+  private waitForPageVisible ( ): Promise<void> {
+    if ( typeof document === "undefined" || document.visibilityState === "visible" ) {
+      return Promise.resolve ( )
+    }
+
+    return new Promise ( resolve => {
+      const onVisible = ( ) => {
+        if ( document.visibilityState === "visible" ) {
+          document.removeEventListener ( "visibilitychange", onVisible )
+          resolve ( )
+        }
+      }
+      document.addEventListener ( "visibilitychange", onVisible )
     } )
   }
 

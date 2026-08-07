@@ -35,8 +35,9 @@ export class FooterComponent {
       try {
         await this.authSvc.login ( )
         await this.router.navigate ( [ "/admin/dashboard" ] )
-      } catch {
-        this.toastrSvc.error ( "Login Unauthorized" )
+      } catch ( e ) {
+        const message = e instanceof Error ? e.message : "Login Unauthorized"
+        this.toastrSvc.error ( message )
       }
     }
   }
