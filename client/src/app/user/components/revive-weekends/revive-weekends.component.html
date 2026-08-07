@@ -1,5 +1,5 @@
 <div class="grid grid-cols-1 md:grid-cols-2 border-b border-gray-200" id="weekends">
-  <div class="flex items-center justify-center p-4 min-h-[20rem]">
+  <div class="flex items-center justify-center self-center p-4 min-h-[20rem] max-h-[28rem] w-full overflow-hidden [&_app-media-display]:flex [&_app-media-display]:items-center [&_app-media-display]:justify-center [&_app-media-display]:w-full [&_app-media-display]:h-full [&_video]:max-h-[26rem] [&_img]:max-h-[26rem] [&_video]:w-auto [&_img]:w-auto">
     @if (content().videoUrl) {
       <app-media-display [src]="content().videoUrl" alt="Revive Weekends Banner" objectFit="contain" />
     }
