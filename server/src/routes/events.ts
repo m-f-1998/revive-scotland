@@ -6,6 +6,7 @@ import Stripe from "stripe"
 import { DocumentReference, FieldValue } from "firebase-admin/firestore"
 import { RecaptchaService } from "../services/recaptcha.service.js"
 import { StripeService } from "../services/stripe.service.js"
+import { StaffNotifyService } from "../services/staff-notify.service.js"
 import { isDevMode } from "./static.js"
 import { newCancelToken, tokensMatch } from "../utils/cancel-token.js"
 
@@ -267,6 +268,14 @@ const finalizePaidRegistration = async (
         }
       )
       await markDraftFinalized ( draftRef, draft.existingRegistrationId )
+      void StaffNotifyService.notify ( {
+        type: "payment",
+        eventId: draft.eventId,
+        eventTitle: draft.eventTitle,
+        email: draft.email,
+        name: draft.name,
+        amountPence: draft.amountPence ?? null
+      } )
       return
     }
 
@@ -295,6 +304,14 @@ const finalizePaidRegistration = async (
       }, { merge: true } )
       await markDraftFinalized ( draftRef, draftId )
     }
+    void StaffNotifyService.notify ( {
+      type: "payment",
+      eventId: draft.eventId,
+      eventTitle: draft.eventTitle,
+      email: draft.email,
+      name: draft.name,
+      amountPence: draft.amountPence ?? null
+    } )
     return
   }
 
@@ -702,6 +719,14 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     await registrationRef.set ( registrationPayload )
+
+    void StaffNotifyService.notify ( {
+      type: "registration",
+      eventId,
+      eventTitle: event.title,
+      email: email || null,
+      name
+    } )
 
     return rep.send ( {
       message: "Registration recorded."

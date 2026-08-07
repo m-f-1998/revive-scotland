@@ -33,6 +33,7 @@ Boot fails in production if required vars are missing. `DEV_MODE=true` is **opt-
 | `ADMIN_EMAIL` / `ADMIN_EMAILS` | Recommended | Extra admin allowlist (comma-separated for `ADMIN_EMAILS`) |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` or `GOOGLE_APPLICATION_CREDENTIALS` | Prod | Firebase Admin credentials (do **not** bake JSON into Docker images) |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Payments | Stripe; webhook secret required outside DEV_MODE |
+| `STAFF_NOTIFY_WEBHOOK` | Optional | HTTPS URL (Slack/Discord/etc.) that receives JSON POSTs on new registrations and successful event payments |
 | `PUBLIC_DOMAIN` | Recommended | Public origin for share/Stripe URLs |
 | `CORS_ORIGINS` | Recommended | Comma-separated allowed origins |
 | `TRUST_PROXY` | Behind CDN | Hop count (`1`) or CIDR list; defaults to `1` in production |
@@ -99,3 +100,15 @@ Abandoned Checkout: the draft is kept and Stripe emails an invoice pay link. Whe
    - `invoice.paid` (or `invoice.payment_succeeded`)
 
 Local webhook testing: `stripe listen --forward-to localhost:3000/api/events/stripe/webhook`
+
+### General (home page) donations
+
+The home **Donate Now** button uses a **Stripe Payment Link** hardcoded in `DonateComponent` (test vs live URLs). It is **not** created by the app Checkout/webhook pipeline.
+
+In the [Stripe Dashboard → Payment Links](https://dashboard.stripe.com/payment-links):
+
+1. Open the live donate link.
+2. Set **After payment → Redirect to** `https://revivescotland.co.uk/donate/thank-you` (and the test link to your staging thank-you URL if needed).
+3. Prefer a clear product name such as **General Donation** so the admin donations view and Stripe reports can filter it.
+
+Event registration payments use Checkout Sessions + webhooks and appear against each event’s Stripe product. General Payment Link donations may only show in the admin donations list when Stripe also creates a Checkout Session for that link.

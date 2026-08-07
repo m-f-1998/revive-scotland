@@ -53,9 +53,4 @@ export class NavbarComponent implements OnInit {
   public toggleMenu ( ) {
     this.isMenuCollapsed.set ( !this.isMenuCollapsed ( ) )
   }
-
-  public openDonationModal ( ) {
-    // This function must be implemented to prevent errors, assuming there is a service for this
-    console.log ( "Open donation modal" )
-  }
 }
