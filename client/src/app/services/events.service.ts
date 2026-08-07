@@ -6,6 +6,7 @@ export interface ReviveEvent {
   id: string
   title: string
   description: string
+  longDescription?: string
   location: string
   imageUrl?: string
   startDate: Date

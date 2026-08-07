@@ -4,6 +4,10 @@ import { getDefaultRegistrationFields } from "../../../user/events/registration-
 
 export { getDefaultRegistrationFields }
 
+const sectionHeader = ( title: string ): FormlyFieldConfig => ( {
+  template: `<h6 class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mt-2 mb-3 pb-2 border-b border-zinc-200 dark:border-zinc-700">${title}</h6>`
+} )
+
 export const getEventFields = ( formlySvc: FormlyService, eventModel?: Record<string, unknown> ): FormlyFieldConfig [ ] => {
   const isFinished = eventModel?. [ "endDate" ] ? ( new Date ( eventModel [ "endDate" ] as string | Date ) < new Date ( ) ) : false
 
@@ -16,6 +20,7 @@ export const getEventFields = ( formlySvc: FormlyService, eventModel?: Record<st
     : new Date ( )
 
   const fields: FormlyFieldConfig [ ] = [
+    sectionHeader ( "Basics" ),
     formlySvc.TextInput ( "title", {
       label: "Event Title",
       placeholder: "Enter event title",
@@ -24,19 +29,25 @@ export const getEventFields = ( formlySvc: FormlyService, eventModel?: Record<st
       includeMaxDescription: true
     }, { } ),
     formlySvc.TextAreaInput ( "description", {
-      label: "Event Description",
-      placeholder: "Enter event description",
+      label: "Summary (shown on event card)",
+      placeholder: "Short summary for the event listing card",
       required: true,
       maxLength: 500,
       includeMaxDescription: true
     }, { } ),
+    formlySvc.TextAreaInput ( "longDescription", {
+      label: "Full description (shown when expanded)",
+      placeholder: "Optional longer description with full event details",
+      maxLength: 5000,
+      includeMaxDescription: true
+    }, { } ),
+
+    sectionHeader ( "When & where" ),
     formlySvc.AddressAutocompleteInput ( "location", {
       label: "Event Location",
       required: true,
       maxLength: 200
     }, { } ),
-
-    // Date and Time Group with Custom Validator
     {
       fieldGroup: [
         {
@@ -75,12 +86,13 @@ export const getEventFields = ( formlySvc: FormlyService, eventModel?: Record<st
       }
     },
 
+    sectionHeader ( "Media" ),
     formlySvc.ImagePickerInput ( "imageUrl", {
       label: "Event Image",
       required: true
     }, { } ),
 
-    // Registration type and external link group
+    sectionHeader ( "Registration" ),
     {
       fieldGroupClassName: "grid grid-cols-1 md:grid-cols-2 gap-4",
       fieldGroup: [
@@ -119,8 +131,6 @@ export const getEventFields = ( formlySvc: FormlyService, eventModel?: Record<st
         } )
       ]
     },
-
-    // Repeatable form fields (pre-seeded with Name / Email / Phone)
     {
       key: "contactFormFields",
       type: "repeat",
@@ -135,7 +145,7 @@ export const getEventFields = ( formlySvc: FormlyService, eventModel?: Record<st
       }
     },
 
-    // Group Donation Status and Donation Price
+    sectionHeader ( "Donations & capacity" ),
     {
       fieldGroupClassName: "grid grid-cols-1 md:grid-cols-2 gap-4",
       expressions: {
@@ -170,7 +180,6 @@ export const getEventFields = ( formlySvc: FormlyService, eventModel?: Record<st
         }
       ]
     },
-
     formlySvc.TextAreaInput ( "donationDescription", {
       label: "Donation Description",
       placeholder: "Enter description for the donation step",
@@ -180,7 +189,6 @@ export const getEventFields = ( formlySvc: FormlyService, eventModel?: Record<st
         hide: ( config: FormlyFieldConfig ) => config.model.donationRequired === "none" || !config.model.donationRequired || config.model.actionType !== "form"
       }
     } ),
-
     {
       fieldGroupClassName: "grid grid-cols-1 md:grid-cols-2 gap-4",
       expressions: {

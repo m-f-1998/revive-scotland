@@ -4,6 +4,7 @@ export interface Event {
   id: string
   title: string
   description: string
+  longDescription?: string
   location: string
   imageUrl?: string // S3 URL after upload
   startDate: Date

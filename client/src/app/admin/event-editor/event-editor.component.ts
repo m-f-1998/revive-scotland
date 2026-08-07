@@ -15,6 +15,7 @@ import { getEventFields } from "./config/event-editor.config"
 import { addDays } from "date-fns"
 import { ModalService } from "../../services/modal.service"
 import { InputDialogComponent } from "../../formly/input-dialog/input-dialog.component"
+import { QrDownloadComponent } from "../../shared/qr-download/qr-download.component"
 
 interface SlideFormEntry {
   form: FormGroup
@@ -48,7 +49,8 @@ export type EventTab = "slider" | "listings" | "registrations"
     AdminFooterComponent,
     DatePipe,
     KeyValuePipe,
-    FormsModule
+    FormsModule,
+    QrDownloadComponent
   ],
   templateUrl: "./event-editor.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -59,6 +61,7 @@ export class EventEditorComponent implements OnInit {
   public eventData: WritableSignal<{ events: Event[] }> = signal ( { events: [ ] } )
   public collapsedIndices: Set<number> = new Set ( )
   public eventsModified: WritableSignal<boolean> = signal ( false )
+  public showPastEvents: WritableSignal<boolean> = signal ( false )
 
   public activeTab: WritableSignal<EventTab> = signal ( "slider" )
   public activeSlideIndex: WritableSignal<number> = signal ( 0 )
@@ -88,6 +91,13 @@ export class EventEditorComponent implements OnInit {
   public getSelectedEvent = computed ( ( ) => {
     const eventId = this.selectedRegEventId ( )
     return this.eventData ( ).events.find ( e => e.id === eventId )
+  } )
+
+  public listingIndices = computed ( ( ) => {
+    const events = this.eventData ( ).events
+    return events
+      .map ( ( _, index ) => index )
+      .filter ( index => this.showPastEvents ( ) || !this.isEventFinished ( events [ index ]?.endDate ) )
   } )
 
   public filteredRegistrations = computed ( ( ) => {
@@ -266,6 +276,7 @@ export class EventEditorComponent implements OnInit {
           id: ( ef.model [ "id" ] as string ) || `event-${Date.now ( )}-${Math.floor ( Math.random ( ) * 1000 )}`,
           title: ef.model [ "title" ] as string,
           description: ef.model [ "description" ] as string,
+          longDescription: ef.model [ "longDescription" ] as string | undefined,
           location: ef.model?. [ "location" ] as string || "",
           imageUrl: ef.model [ "imageUrl" ] as string,
           startDate: ef.model [ "startDate" ] as Date,
@@ -399,15 +410,12 @@ export class EventEditorComponent implements OnInit {
     return !isNaN ( end.getTime ( ) ) && end < new Date ( )
   }
 
-  public getEventTimeoutText ( endDate: string | Date ): string {
-    if ( !endDate ) return ""
-    const end = new Date ( endDate )
-    if ( isNaN ( end.getTime ( ) ) ) return ""
-    const hideDate = new Date ( end.getTime ( ) + 21 * 24 * 60 * 60 * 1000 )
-    const diffTime = hideDate.getTime ( ) - Date.now ( )
-    const diffDays = Math.ceil ( diffTime / ( 1000 * 60 * 60 * 24 ) )
-    if ( diffDays <= 0 ) return "Hidden from public site"
-    return `Finished — hidden from public in ${diffDays} ${diffDays === 1 ? "day" : "days"}`
+  public getEventTimeoutText ( _endDate: string | Date ): string {
+    return "Past event"
+  }
+
+  public togglePastEvents ( ): void {
+    this.showPastEvents.update ( value => !value )
   }
 
   public regStatusLabel ( reg: Record<string, unknown> ): string {
@@ -519,10 +527,18 @@ export class EventEditorComponent implements OnInit {
   }
 
   public copyDirectLink ( eventId: unknown ): void {
-    if ( !eventId || typeof eventId !== "string" ) return
-    const url = `${window.location.origin}/events?id=${eventId}`
+    this.copyEventPageLink ( eventId )
+  }
+
+  public getEventPageUrl ( eventId: unknown ): string {
+    if ( !eventId || typeof eventId !== "string" ) return `${window.location.origin}/events`
+    return `${window.location.origin}/events?eventId=${encodeURIComponent ( eventId )}`
+  }
+
+  public copyEventPageLink ( eventId: unknown ): void {
+    const url = this.getEventPageUrl ( eventId )
     navigator.clipboard.writeText ( url ).then ( ( ) => {
-      this.toastrSvc.success ( "Direct link copied to clipboard!" )
+      this.toastrSvc.success ( "Event page link copied to clipboard!" )
     } ).catch ( ( ) => {
       this.toastrSvc.error ( "Failed to copy link." )
     } )
