@@ -20,6 +20,7 @@ import { ErrorModalComponent } from "./error-modal/error-modal.component"
 import { EventDetailsModalComponent } from "./event-details-modal/event-details-modal.component"
 import { downloadEventIcs, getGoogleMapsUrl } from "./event-download.utils"
 import { pickRandomQuote, EvangelisationQuote } from "./evangelisation-quotes"
+import { RecaptchaAction } from "../../shared/recaptcha-actions"
 
 @Component ( {
   selector: "app-events",
@@ -139,6 +140,10 @@ export class EventsComponent implements OnInit {
       needsPayment ? "Proceed to Payment" : "Submit"
     )
     modalRef.setInput ( "recaptchaActive", true )
+    modalRef.setInput (
+      "recaptchaAction",
+      waitlistOnly ? RecaptchaAction.eventWaitlist : RecaptchaAction.eventRegister
+    )
 
     const fields = this.buildRegistrationFields ( current )
     modalRef.setInput ( "fields", fields )
@@ -154,7 +159,10 @@ export class EventsComponent implements OnInit {
         try {
           const res = await this.apiSvc.post ( `/api/events/${current.id}/register`, {
             ...result,
-            recaptchaToken: modalRef.componentInstance.captchaToken
+            recaptchaToken: modalRef.componentInstance.captchaToken,
+            recaptchaAction: waitlistOnly
+              ? RecaptchaAction.eventWaitlist
+              : RecaptchaAction.eventRegister
           } ) as { message: string; checkoutUrl?: string; donateLaterUrl?: string; draftId?: string; cancelToken?: string }
 
           if ( res.checkoutUrl ) {

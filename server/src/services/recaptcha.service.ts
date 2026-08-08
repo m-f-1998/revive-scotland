@@ -25,6 +25,8 @@ export type RecaptchaVerifyContext = {
   userIpAddress?: string
   userAgent?: string
   requestedUri?: string
+  /** Must match the action used in client `grecaptcha.execute`. */
+  expectedAction?: string
 }
 
 /** Human-readable notes for ClassificationReason values from the assessment. */
@@ -81,6 +83,7 @@ export class RecaptchaService {
     const projectId = process.env [ "RECAPTCHA_PROJECT_ID" ]?.trim ( ) || "revive-scotland"
     const referer = process.env [ "PUBLIC_DOMAIN" ]?.trim ( ) || ""
     const minScore = resolveMinScore ( )
+    const expectedAction = context.expectedAction?.trim ( ) || "contact_submit"
 
     if ( !apiKey || !siteKey ) {
       throw new Error ( "reCAPTCHA is not configured (RECAPTCHA_API_KEY / RECAPTCHA_SITE)." )
@@ -98,7 +101,7 @@ export class RecaptchaService {
           event: {
             token,
             siteKey,
-            expectedAction: "contactForm",
+            expectedAction,
             ...( context.userIpAddress ? { userIpAddress: context.userIpAddress } : { } ),
             ...( context.userAgent ? { userAgent: context.userAgent } : { } ),
             ...( context.requestedUri ? { requestedUri: context.requestedUri } : { } )
@@ -120,11 +123,14 @@ export class RecaptchaService {
 
     const valid = !!data.tokenProperties?.valid
     const score = data.riskAnalysis?.score ?? 0
+    const tokenAction = data.tokenProperties?.action || ""
+    const actionMatches = !tokenAction
+      || tokenAction.toLowerCase ( ) === expectedAction.toLowerCase ( )
     const reasons = data.riskAnalysis?.reasons || [ ]
     const reasonDescriptions = describeReasons ( reasons )
     const extendedVerdictReasons = data.riskAnalysis?.extendedVerdictReasons || [ ]
 
-    if ( !valid || score < minScore ) {
+    if ( !valid || !actionMatches || score < minScore ) {
       console.warn (
         "reCAPTCHA validation failed:",
         {
@@ -133,7 +139,9 @@ export class RecaptchaService {
           minScore,
           invalidReason: data.tokenProperties?.invalidReason,
           hostname: data.tokenProperties?.hostname,
-          action: data.tokenProperties?.action,
+          action: tokenAction,
+          expectedAction,
+          actionMatches,
           reasons,
           reasonDescriptions,
           extendedVerdictReasons,

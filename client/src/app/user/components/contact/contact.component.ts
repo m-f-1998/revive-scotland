@@ -6,6 +6,7 @@ import { ApiService } from "@app/services/api.service"
 import { FormlyService } from "@app/services/formly.service"
 import { ModalService } from "@app/services/modal.service"
 import { InputDialogComponent } from "@app/formly/input-dialog/input-dialog.component"
+import { RecaptchaAction } from "@app/shared/recaptcha-actions"
 
 interface ContactDetails {
   phone: string
@@ -52,6 +53,7 @@ export class ContactComponent implements OnInit {
     )
     modalRef.setInput ( "confirmText", "Send" )
     modalRef.setInput ( "recaptchaActive", true )
+    modalRef.setInput ( "recaptchaAction", RecaptchaAction.contactSubmit )
     modalRef.setInput ( "fields", [
       this.formlySvc.TextInput ( "name", {
         label: "Your name",

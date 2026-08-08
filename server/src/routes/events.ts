@@ -5,6 +5,7 @@ import { getFirestore } from "./admin.js"
 import Stripe from "stripe"
 import { DocumentReference, FieldValue } from "firebase-admin/firestore"
 import { RecaptchaService, recaptchaContextFromRequest } from "../services/recaptcha.service.js"
+import { RecaptchaAction } from "../utils/recaptcha-actions.js"
 import { StripeService } from "../services/stripe.service.js"
 import { StaffNotifyService } from "../services/staff-notify.service.js"
 import { EmailService } from "../services/email.service.js"
@@ -1190,8 +1191,20 @@ export const router: FastifyPluginAsync = async app => {
       return rep.status ( 400 ).send ( { message: "reCAPTCHA token missing." } )
     }
 
+    const requestedAction = String ( formData [ "recaptchaAction" ] || RecaptchaAction.eventRegister )
+    const allowedEventActions: string [ ] = [
+      RecaptchaAction.eventRegister,
+      RecaptchaAction.eventWaitlist
+    ]
+    if ( !allowedEventActions.includes ( requestedAction ) ) {
+      return rep.status ( 400 ).send ( { message: "Invalid reCAPTCHA action." } )
+    }
+
     try {
-      await RecaptchaService.verifyToken ( recaptchaToken, recaptchaContextFromRequest ( req ) )
+      await RecaptchaService.verifyToken ( recaptchaToken, {
+        ...recaptchaContextFromRequest ( req ),
+        expectedAction: requestedAction
+      } )
     } catch ( err ) {
       console.error ( "reCAPTCHA verification error:", err )
       return rep.status ( 500 ).send ( { message: "reCAPTCHA verification error." } )
@@ -1267,6 +1280,7 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     delete formData [ "recaptchaToken" ]
+    delete formData [ "recaptchaAction" ]
     delete formData [ "optInDonation" ]
     delete formData [ "customDonationAmount" ]
 

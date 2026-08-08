@@ -30,6 +30,14 @@ Boot fails in production if required vars are missing. `DEV_MODE=true` is **opt-
 | `RECAPTCHA_SITE` / `RECAPTCHA_API_KEY` | Yes | reCAPTCHA Enterprise. `RECAPTCHA_SITE` is injected into the SPA so browser + server match Portainer |
 | `RECAPTCHA_PROJECT_ID` | Optional | GCP project for assessments (default `revive-scotland`) |
 | `RECAPTCHA_MIN_SCORE` | Optional | Minimum Enterprise score `0`–`1` (default `0.5` in all environments, including pre-prod) |
+
+reCAPTCHA Enterprise actions (client execute ↔ server `expectedAction`):
+
+| Action | Used for |
+|--------|----------|
+| `contact_submit` | Contact form |
+| `event_register` | Event registration |
+| `event_waitlist` | Event waitlist join |
 | `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET_NAME` | Yes | Cloudflare R2 |
 | `SUPERADMIN_EMAIL` | Yes | Primary admin (also used for Firebase custom claims) |
 | `ADMIN_EMAIL` / `ADMIN_EMAILS` | Recommended | Extra admin allowlist (comma-separated for `ADMIN_EMAILS`) |
