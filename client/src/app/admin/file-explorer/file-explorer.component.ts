@@ -392,6 +392,7 @@ export class FileExplorerComponent {
     } )
     modalRef.setInput ( "type", type )
     modalRef.setInput ( "file", data )
+    modalRef.setInput ( "name", data?.name || "" )
     modalRef.setInput ( "userS3Path", this.userS3Path )
     modalRef.setInput ( "currentPath", this.currentPath ( ) )
 
