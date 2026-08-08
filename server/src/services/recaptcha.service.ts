@@ -129,14 +129,20 @@ export class RecaptchaService {
     const reasons = data.riskAnalysis?.reasons || [ ]
     const reasonDescriptions = describeReasons ( reasons )
     const extendedVerdictReasons = data.riskAnalysis?.extendedVerdictReasons || [ ]
+    const noRiskReasons = reasons.length === 0 && extendedVerdictReasons.length === 0
+    // Borderline scores with no classification are often low-confidence, not bot signals.
+    const effectiveMinScore = noRiskReasons ? Math.min ( minScore, 0.4 ) : minScore
+    const scoreOk = score >= effectiveMinScore
 
-    if ( !valid || !actionMatches || score < minScore ) {
+    if ( !valid || !actionMatches || !scoreOk ) {
       console.warn (
         "reCAPTCHA validation failed:",
         {
           valid,
           score,
           minScore,
+          effectiveMinScore,
+          noRiskReasons,
           invalidReason: data.tokenProperties?.invalidReason,
           hostname: data.tokenProperties?.hostname,
           action: tokenAction,
