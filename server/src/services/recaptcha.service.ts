@@ -1,8 +1,8 @@
 import type { FastifyRequest } from "fastify"
 import { isDevMode } from "../routes/static.js"
-import { clientIpFromRequest } from "../utils/client-ip.js"
+import { clientIpForRecaptcha } from "../utils/client-ip.js"
 
-export { clientIpFromRequest } from "../utils/client-ip.js"
+export { clientIpForRecaptcha, clientIpFromRequest } from "../utils/client-ip.js"
 
 type AssessmentResponse = {
   tokenProperties?: {
@@ -61,7 +61,7 @@ export const recaptchaContextFromRequest = ( req: FastifyRequest ): RecaptchaVer
   const origin = process.env [ "PUBLIC_DOMAIN" ]?.replace ( /\/$/, "" ) || ""
   const path = req.url?.split ( "?" ) [ 0 ] || "/"
   return {
-    userIpAddress: clientIpFromRequest ( req ),
+    userIpAddress: clientIpForRecaptcha ( req ),
     userAgent: userAgent || undefined,
     requestedUri: origin ? `${origin}${path}` : undefined
   }

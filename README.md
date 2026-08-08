@@ -47,7 +47,7 @@ reCAPTCHA Enterprise actions (client execute ↔ server `expectedAction`):
 | `EMAIL_FROM` | With Resend | Sender address, e.g. `Revive Scotland <hello@revivescotland.co.uk>` — verify your domain in Resend for production |
 | `PUBLIC_DOMAIN` | Recommended | Public origin for share/Stripe URLs |
 | `CORS_ORIGINS` | Recommended | Comma-separated allowed origins |
-| `TRUST_PROXY` | Behind CDN | Hop count (`1` or `2` if Traefik sits behind Cloudflare). reCAPTCHA also reads `CF-Connecting-IP` so the visitor IP is used, not a Cloudflare edge address |
+| `TRUST_PROXY` | Behind CDN | Hop count (`1` or `2` if Nginx Proxy Manager sits behind Cloudflare). reCAPTCHA reads `CF-Connecting-IP` / prefers IPv4 via Cloudflare **Pseudo IPv4** (`CF-Pseudo-IPv4`) when enabled |
 | `DEV_MODE` | Local only | `true`/`1` enables local bypasses (reCAPTCHA/webhook mock). **Rejected at boot** if `NODE_ENV=production`. |
 | `PRE_PROD` | Staging | Use **dev** Firebase for Auth (`revive-scotland-firebase-dev.json`) |
 | `GA_SERVICE_ACCOUNT_JSON` / `GA_GOOGLE_APPLICATION_CREDENTIALS` | Pre-prod / optional | **Prod** SA for dashboard GA (property access is on prod, not the Auth project) |
