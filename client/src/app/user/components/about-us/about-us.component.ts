@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
-import { IconComponent } from "@revive/src/app/icon/icon.component"
-import { ApiService } from "@revive/src/app/services/api.service"
-import { SolidIcon } from "@revive/src/app/icon/icon.registry"
+import { IconComponent } from "@app/icon/icon.component"
+import { ApiService } from "@app/services/api.service"
+import { SolidIcon } from "@app/icon/icon.registry"
 
 interface AboutCard {
   icon: SolidIcon
@@ -39,7 +39,7 @@ export class AboutUsComponent implements OnInit {
   private readonly apiSvc: ApiService = inject ( ApiService )
 
   public ngOnInit ( ): void {
-    this.apiSvc.get ( "/api/admin/site-content/about-us" ).then ( data => {
+    this.apiSvc.get ( "/api/content/site-content/about-us" ).then ( data => {
       const res = data as { cards?: AboutCard [ ] }
       if ( res.cards?.length ) this.cards.set ( res.cards )
     } ).catch ( ( ) => { /* keep fallback */ } )

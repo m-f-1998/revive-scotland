@@ -5,7 +5,7 @@
 
 <div class="modal-body">
   @if (body()) {
-    <p class="text-sm text-gray-600 mb-4">{{body()}}</p>
+    <p class="text-sm text-gray-600 mb-4" [innerHTML]="body()"></p>
   }
   <formly-form [form]="this.form" [model]="this.model()" [fields]="this.fields()" />
   @if (description) {
@@ -14,7 +14,7 @@
 </div>
 
 <div class="modal-footer">
-  <button type="submit" class="btn-primary" (click)="confirm()" [disabled]="this.form.invalid">
+  <button type="submit" class="btn-primary" (click)="confirm()" [disabled]="!formValid() || submitting()">
     <app-icon icon="save" />
     {{confirmText()}}
   </button>

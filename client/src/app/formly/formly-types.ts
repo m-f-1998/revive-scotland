@@ -18,6 +18,7 @@ export interface FormlyProps {
   loading?: WritableSignal<boolean>
   error?: boolean
   label?: string
+  hideRemoveField?: boolean
   type?: string
   maxLength?: number
   placeholder?: string

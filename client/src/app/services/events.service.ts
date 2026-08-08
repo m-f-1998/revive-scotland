@@ -1,4 +1,4 @@
-import { inject, Injectable } from "@angular/core"
+import { inject, Service } from "@angular/core"
 import { ApiService } from "./api.service"
 import { FormlyFieldConfig } from "@ngx-formly/core"
 
@@ -6,26 +6,40 @@ export interface ReviveEvent {
   id: string
   title: string
   description: string
+  longDescription?: string
   location: string
   imageUrl?: string
   startDate: Date
+  startTime?: string
+  endTime?: string
   endDate: Date
 
-  actionType: "webpage" | "contact"
+  actionType: "webpage" | "form"
   webpageUrl?: string
 
   contactFormFields?: FormlyFieldConfig [ ]
+
+  donationRequired?: "none" | "optional" | "required"
+  donationDescription?: string
+  donationPrice?: number
+  stripeProductId?: string
+  stripePriceId?: string
+  maxAttendees?: number
+  waitlistEnabled?: boolean
+  registeredCount?: number
+  spotsRemaining?: number | null
+  isFull?: boolean
+  waitlistOpen?: boolean
 }
 
-@Injectable ( {
-  providedIn: "root"
-} )
+@Service ( )
 export class EventsService {
   private events: Array<ReviveEvent> | undefined
 
   private readonly apiSvc: ApiService = inject ( ApiService )
 
-  public async getEvents ( ): Promise<ReviveEvent [ ]> {
+  public async getEvents ( forceRefresh = false ): Promise<ReviveEvent [ ]> {
+    if ( forceRefresh ) this.events = undefined
     if ( !this.events ) {
       await this.initialize ( )
     }
@@ -41,10 +55,23 @@ export class EventsService {
 
   private async initialize ( ) {
     try {
-      const response = await this.apiSvc.get ( "/api/admin/events" ) as { events: ReviveEvent [ ] }
-      this.events = ( response.events || [ ] ).sort ( ( a, b ) => {
-        return new Date ( a.startDate ).getTime ( ) - new Date ( b.startDate ).getTime ( )
-      } )
+      const response = await this.apiSvc.get ( "/api/events" ) as { events: ReviveEvent [ ] }
+      const currentTime = new Date ( )
+      this.events = ( response.events || [ ] )
+        .map ( event => ( {
+          ...event,
+          actionType: event.actionType === "form" || ( event.actionType as string ) === "contact" ? "form" as const : "webpage" as const
+        } ) )
+        .filter ( event => {
+          const eventEndDate = new Date ( event.endDate )
+          if ( !isNaN ( eventEndDate.getTime ( ) ) ) {
+            return eventEndDate >= currentTime
+          }
+          return true
+        } )
+        .sort ( ( a, b ) => {
+          return new Date ( a.startDate ).getTime ( ) - new Date ( b.startDate ).getTime ( )
+        } )
     } catch {
       this.events = [ ]
     }

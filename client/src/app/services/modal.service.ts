@@ -1,10 +1,10 @@
-import { inject, Injectable } from "@angular/core"
+import { inject, Service } from "@angular/core"
 import { Dialog, DialogConfig } from "@angular/cdk/dialog"
 import { ComponentType } from "@angular/cdk/portal"
 
 export class ModalRef<T = unknown, R = unknown> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public readonly componentInstance: any
+  public readonly componentInstance: T
+  // Call sites annotate callback params; keep Promise loosely typed for DX
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public readonly result: Promise<any>
 
@@ -51,16 +51,29 @@ export interface ModalOptions {
   centered?: boolean
   backdrop?: "static" | boolean
   lightbox?: boolean
+  /** Self-styled dialogs (success/error cards) — no white panel chrome */
+  bare?: boolean
+  /** Extra panel classes appended after the default modal-panel classes */
+  panelClass?: string | string [ ]
 }
 
-@Injectable ( { providedIn: "root" } )
+@Service ( )
 export class ModalService {
   private readonly dialog = inject ( Dialog )
 
   public open<T, R = unknown> ( component: ComponentType<T>, options: ModalOptions = { } ): ModalRef<T, R> {
+    const extraPanelClasses = options.panelClass
+      ? ( Array.isArray ( options.panelClass ) ? options.panelClass : [ options.panelClass ] )
+      : [ ]
     const panelClasses = options.lightbox
       ? [ "lightbox-panel" ]
-      : [ "modal-panel", ...( options.size && options.size !== "md" ? [ `modal-${options.size}` ] : [] ) ]
+      : options.bare
+        ? [ "modal-panel-bare" ]
+        : [
+          "modal-panel",
+          ...( options.size && options.size !== "md" ? [ `modal-${options.size}` ] : [ ] ),
+          ...extraPanelClasses
+        ]
     const backdropClass = options.lightbox ? "lightbox-backdrop" : "modal-backdrop"
 
     const config: DialogConfig<unknown, import ( "@angular/cdk/dialog" ).DialogRef<R, T>> = {

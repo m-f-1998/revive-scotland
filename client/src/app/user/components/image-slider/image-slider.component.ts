@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, InputSignal } from "@angular/core"
-import { ModalService } from "@revive/src/app/services/modal.service"
+import { ModalService } from "@app/services/modal.service"
 import { ExpandedImageComponent } from "@components/expanded-image/expanded-image.component"
-import { IconComponent } from "@revive/src/app/icon/icon.component"
+import { IconComponent } from "@app/icon/icon.component"
 import { Router } from "@angular/router"
 
 const GALLERY_LIMIT = 8

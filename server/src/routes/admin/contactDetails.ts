@@ -14,7 +14,9 @@ export interface ContactDetails {
 
 const DEFAULT: ContactDetails = {
   phone: process.env [ "DEFAULT_PHONE" ] ?? "+447883824055",
-  email: process.env [ "DEFAULT_EMAIL" ] ?? "luca@revivescotland.co.uk",
+  email: process.env [ "DEFAULT_EMAIL" ]
+    ?? process.env [ "SUPERADMIN_EMAIL" ]
+    ?? "luca@revivescotland.co.uk",
   instagram: "revive.scotland"
 }
 

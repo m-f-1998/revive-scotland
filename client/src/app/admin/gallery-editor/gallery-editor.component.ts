@@ -9,6 +9,8 @@ import { FileExplorerComponent } from "../file-explorer/file-explorer.component"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { TitleCasePipe } from "@angular/common"
 import { HttpHeaders } from "@angular/common/http"
+import { InputDialogComponent } from "../../formly/input-dialog/input-dialog.component"
+import { FormlyService } from "../../services/formly.service"
 
 interface AlbumData {
   static: string [ ]
@@ -34,6 +36,7 @@ export class GalleryEditorComponent implements OnInit {
   private readonly authSvc: AuthService = inject ( AuthService )
   private readonly modalSvc: ModalService = inject ( ModalService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
+  private readonly formlySvc: FormlyService = inject ( FormlyService )
 
   public ngOnInit ( ): void {
     this.loadGallery ( )
@@ -49,6 +52,12 @@ export class GalleryEditorComponent implements OnInit {
     return this.hiddenImages ( ).has ( img )
   }
 
+  public isCustomAlbum ( name: string ): boolean {
+    const data = this.albumData ( ) [ name ]
+    if ( !data ) return true
+    return data.static.length === 0
+  }
+
   public toggleCollapsed ( name: string ): void {
     this.collapsedAlbums.update ( prev => ( { ...prev, [ name ]: !prev [ name ] } ) )
   }
@@ -60,12 +69,89 @@ export class GalleryEditorComponent implements OnInit {
     await this.saveSettings ( )
   }
 
-  public async addFromMediaLibrary ( albumName: string ): Promise<void> {
-    const ref = this.modalSvc.open ( FileExplorerComponent, { size: "xl", centered: true } )
-    ref.componentInstance.isSelectionMode = true
+  public async addAlbum ( ): Promise<void> {
+    const modalRef = this.modalSvc.open ( InputDialogComponent, { centered: true, size: "md" } )
+    modalRef.setInput ( "title", "Create New Album" )
+    modalRef.setInput ( "body", "Enter a name for the new album. (Use lowercase, no spaces)" )
+    modalRef.setInput ( "fields", [
+      this.formlySvc.TextInput ( "albumName", {
+        label: "Album Name",
+        required: true,
+        attributes: { pattern: "^[a-z0-9-]+$" },
+        placeholder: "e.g., edinburgh-2024"
+      } )
+    ] )
+    modalRef.setInput ( "confirmText", "Create Album" )
 
     try {
-      const url = await ref.result as string
+      const result = await modalRef.result as { albumName: string }
+      const newName = result.albumName
+
+      if ( this.albumNames ( ).includes ( newName ) ) {
+        this.toastrSvc.error ( "An album with this name already exists." )
+        return
+      }
+
+      this.albumNames.update ( names => [ ...names, newName ] )
+
+      const currentData = { ...this.albumData ( ) }
+      currentData [ newName ] = { static: [ ], additional: [ ] }
+      this.albumData.set ( currentData )
+
+      const currentAdditional = { ...this.additionalImages ( ) }
+      currentAdditional [ newName ] = [ ]
+      this.additionalImages.set ( currentAdditional )
+
+      this.collapsedAlbums.update ( c => ( { ...c, [ newName ]: false } ) )
+
+      await this.saveSettings ( )
+      this.toastrSvc.success ( "Album created!" )
+    } catch {
+      // Modal dismissed
+    }
+  }
+
+  public async deleteAlbum ( name: string ): Promise<void> {
+    const modalRef = this.modalSvc.open ( InputDialogComponent, { centered: true } )
+    modalRef.setInput ( "title", "Delete Album" )
+    modalRef.setInput (
+      "body",
+      `Delete “${name}” and unlink its images from the gallery? This cannot be undone.`
+    )
+    modalRef.setInput ( "fields", [ ] )
+    modalRef.setInput ( "confirmText", "Delete Album" )
+
+    try {
+      await modalRef.result
+    } catch {
+      return
+    }
+
+    this.albumNames.update ( names => names.filter ( n => n !== name ) )
+
+    this.albumData.update ( data => {
+      const cloned = { ...data }
+      delete cloned [ name ]
+      return cloned
+    } )
+
+    this.additionalImages.update ( additional => {
+      const cloned = { ...additional }
+      delete cloned [ name ]
+      return cloned
+    } )
+
+    await this.saveSettings ( )
+    this.toastrSvc.success ( "Album deleted successfully!" )
+  }
+
+  public async addFromMediaLibrary ( albumName: string ): Promise<void> {
+    const ref = this.modalSvc.open ( FileExplorerComponent, { size: "xl", centered: true } )
+    ref.componentInstance.isSelectionMode.set ( true )
+
+    try {
+      const result = await ref.result as { url: string; filename: string } | string
+      const url = typeof result === "object" ? result.url : result
       if ( !url ) return
 
       const current = { ...this.additionalImages ( ) }
@@ -102,8 +188,20 @@ export class GalleryEditorComponent implements OnInit {
     this.hiddenImages.set ( nextHidden )
 
     await this.saveSettings ( )
-  }
 
+    // Also attempt to delete from R2 if it's an uploaded file
+    if ( url.includes ( "/api/share/" ) || url.includes ( "/api/public/s/" ) ) {
+      try {
+        const uuid = url.split ( "/" ).pop ( )?.split ( "?" ) [ 0 ]
+        if ( uuid ) {
+          const token = await this.authSvc.currentUser ( )?.getIdToken ( )
+          await this.apiSvc.delete ( `/api/admin/gallery/orphaned/${uuid}`, { }, new HttpHeaders ( { "Authorization": `Bearer ${token || ""}` } ) )
+        }
+      } catch ( e ) {
+        if ( isDevMode ( ) ) console.error ( "Failed to delete orphaned file from R2", e )
+      }
+    }
+  }
 
   public previewUrl ( path: string ): string {
     if ( path.startsWith ( "http" ) || path.startsWith ( "/" ) ) return path
@@ -112,6 +210,26 @@ export class GalleryEditorComponent implements OnInit {
 
   public isAdditional ( albumName: string, url: string ): boolean {
     return ( this.albumData ( ) [ albumName ]?.additional ?? [ ] ).includes ( url )
+  }
+
+  public async saveSettings ( ): Promise<void> {
+    this.saving.set ( true )
+    try {
+      const token = await this.authSvc.currentUser ( )?.getIdToken ( )
+      await this.apiSvc.post (
+        "/api/admin/gallery/settings",
+        {
+          hiddenImages: Array.from ( this.hiddenImages ( ) ),
+          additionalImages: this.additionalImages ( )
+        },
+        new HttpHeaders ( { "Authorization": `Bearer ${token || ""}` } )
+      )
+    } catch {
+      if ( isDevMode ( ) ) console.error ( "Failed to save gallery settings" )
+      this.toastrSvc.error ( "Failed to save changes." )
+    } finally {
+      this.saving.set ( false )
+    }
   }
 
   private loadGallery ( ): void {
@@ -138,25 +256,5 @@ export class GalleryEditorComponent implements OnInit {
     } ).finally ( ( ) => {
       this.loading.set ( false )
     } )
-  }
-
-  private async saveSettings ( ): Promise<void> {
-    this.saving.set ( true )
-    try {
-      const token = await this.authSvc.currentUser ( )?.getIdToken ( )
-      await this.apiSvc.post (
-        "/api/admin/gallery/settings",
-        {
-          hiddenImages: Array.from ( this.hiddenImages ( ) ),
-          additionalImages: this.additionalImages ( )
-        },
-        new HttpHeaders ( { "Authorization": `Bearer ${token || ""}` } )
-      )
-    } catch {
-      if ( isDevMode ( ) ) console.error ( "Failed to save gallery settings" )
-      this.toastrSvc.error ( "Failed to save changes." )
-    } finally {
-      this.saving.set ( false )
-    }
   }
 }

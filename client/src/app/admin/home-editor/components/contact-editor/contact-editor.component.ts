@@ -1,0 +1,104 @@
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
+import { DatePipe } from "@angular/common"
+import { IconComponent } from "../../../../icon/icon.component"
+import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
+import { FormGroup } from "@angular/forms"
+import { ApiService } from "../../../../services/api.service"
+import { AuthService } from "../../../../services/auth.service"
+import { FormlyService } from "../../../../services/formly.service"
+import { ToastrService } from "@m-f-1998/ngx-toastr"
+import { HttpHeaders } from "@angular/common/http"
+
+type ContactInquiry = {
+  id: string
+  name: string
+  email: string
+  message: string
+  status: string
+  createdAt: string | null
+}
+
+@Component ( {
+  selector: "app-home-contact-editor",
+  imports: [ IconComponent, FormlyForm, DatePipe ],
+  templateUrl: "./contact-editor.component.html",
+  changeDetection: ChangeDetectionStrategy.OnPush
+} )
+export class ContactEditorComponent implements OnInit {
+  public loading: WritableSignal<boolean> = signal ( true )
+  public form = new FormGroup ( { } )
+  public model: Record<string, unknown> = { }
+  public fields: FormlyFieldConfig [ ] = [ ]
+  public saving: WritableSignal<boolean> = signal ( false )
+  public inquiries: WritableSignal<ContactInquiry [ ]> = signal ( [ ] )
+  public inquiriesLoading: WritableSignal<boolean> = signal ( true )
+
+  private readonly apiSvc: ApiService = inject ( ApiService )
+  private readonly authSvc: AuthService = inject ( AuthService )
+  private readonly formlySvc: FormlyService = inject ( FormlyService )
+  private readonly toastrSvc: ToastrService = inject ( ToastrService )
+
+  public ngOnInit ( ): void {
+    this.fields = [
+      this.formlySvc.TelInput ( "phone", {
+        label: "Phone Number",
+        placeholder: "+447883824055",
+        required: true
+      } ),
+      this.formlySvc.EmailInput ( "email", {
+        label: "Email Address",
+        placeholder: "luca@revivescotland.co.uk",
+        required: true
+      } ),
+      this.formlySvc.TextInput ( "instagram", {
+        label: "Instagram Handle",
+        placeholder: "revive.scotland",
+        required: true,
+        maxLength: 100
+      } )
+    ]
+
+    this.apiSvc.get ( "/api/admin/contact-details" ).then ( data => {
+      this.model = data as Record<string, unknown>
+    } ).catch ( ( ) => {
+      this.toastrSvc.error ( "Failed to load contact details." )
+    } ).finally ( ( ) => {
+      this.loading.set ( false )
+    } )
+
+    void this.loadInquiries ( )
+  }
+
+  public async loadInquiries ( ): Promise<void> {
+    this.inquiriesLoading.set ( true )
+    try {
+      const res = await this.apiSvc.get ( "/api/contact/inquiries", { }, new HttpHeaders ( {
+        "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || ""}`
+      } ) ) as { inquiries?: ContactInquiry [ ] }
+      this.inquiries.set ( res?.inquiries || [ ] )
+    } catch {
+      this.toastrSvc.error ( "Failed to load contact inquiries." )
+    } finally {
+      this.inquiriesLoading.set ( false )
+    }
+  }
+
+  public async save ( ): Promise<void> {
+    if ( this.form.invalid ) {
+      this.toastrSvc.error ( "Please fix validation errors before saving." )
+      return
+    }
+
+    this.saving.set ( true )
+    try {
+      await this.apiSvc.post ( "/api/admin/contact-details", this.model, new HttpHeaders ( {
+        "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || ""}`
+      } ) )
+      this.toastrSvc.success ( "Contact details saved successfully!" )
+    } catch {
+      this.toastrSvc.error ( "Failed to save contact details." )
+    } finally {
+      this.saving.set ( false )
+    }
+  }
+}

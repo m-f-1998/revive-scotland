@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
-import { ApiService } from "@revive/src/app/services/api.service"
+import { ApiService } from "@app/services/api.service"
+import { MediaDisplayComponent } from "../media-display/media-display.component"
 
 interface ReviveWeekendsContent {
   title: string
@@ -15,6 +16,7 @@ const FALLBACK: ReviveWeekendsContent = {
 
 @Component ( {
   selector: "app-revive-weekends",
+  imports: [ MediaDisplayComponent ],
   templateUrl: "./revive-weekends.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
@@ -24,7 +26,7 @@ export class ReviveWeekendsComponent implements OnInit {
   private readonly apiSvc: ApiService = inject ( ApiService )
 
   public ngOnInit ( ): void {
-    this.apiSvc.get ( "/api/admin/site-content/revive-weekends" ).then ( data => {
+    this.apiSvc.get ( "/api/content/site-content/revive-weekends" ).then ( data => {
       const res = data as Partial<ReviveWeekendsContent>
       if ( res.title ) this.content.set ( { ...FALLBACK, ...res } )
     } ).catch ( ( ) => { /* keep fallback */ } )

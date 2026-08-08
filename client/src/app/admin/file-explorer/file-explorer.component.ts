@@ -5,7 +5,7 @@ import { FileEntry, Quota } from "../../interfaces/fileExplorer.interface"
 import { FileExplorerService } from "../../services/fileExplorer.service"
 import { ApiService } from "../../services/api.service"
 import { DialogRef } from "@angular/cdk/dialog"
-import { ModalService } from "@revive/src/app/services/modal.service"
+import { ModalService } from "@app/services/modal.service"
 import { FileExplorerModalComponent } from "./file-explorer-modal/file-explorer-modal.component"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { DatePipe } from "@angular/common"
@@ -37,13 +37,15 @@ export class FileExplorerComponent {
 
   public loading: WritableSignal<boolean> = signal ( false )
   public currentPath: WritableSignal<string> = signal ( "" ) // Relative path: '' or 'documents/images/'
-  public fileList: WritableSignal<FileEntry[]> = signal<FileEntry[]> ( [] )
+  public fileList: WritableSignal<FileEntry[]> = signal<FileEntry[]> ( [ ] )
   public quota: WritableSignal<Quota> = signal<Quota> ( { used: 0, max: 1073741824, remaining: 0 } ) // Default 1GB max
+
+  public dataSource: WritableSignal<"s3" | "static"> = signal ( "s3" )
 
   public breadcrumbs = computed ( ( ) => this.fileExplorerSvc.formatPathToBreadcrumbs ( this.currentPath ( ) ) )
 
-  public isSelectionMode: boolean = false
-  public readonly allowedMimeTypes: string [ ] = [ "image/jpeg", "image/png", "image/webp", "image/gif" ]
+  public isSelectionMode = signal ( false )
+  public readonly allowedMimeTypes: string [ ] = [ "image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4" ]
   public uploadDropdownOpen: WritableSignal<boolean> = signal ( false )
 
   private draggedFile: FileEntry | null = null
@@ -59,9 +61,16 @@ export class FileExplorerComponent {
     effect ( ( ) => {
       if ( this.authSvc.currentUser ( ) ) {
         this.listPath ( this.currentPath ( ) )
-        this.fetchQuota ( )
+        if ( this.dataSource ( ) === "s3" ) this.fetchQuota ( )
       }
     } )
+  }
+
+  public setDataSource ( source: "s3" | "static" ) {
+    this.dataSource.set ( source )
+    this.currentPath.set ( "" )
+    this.listPath ( "" )
+    if ( source === "s3" ) this.fetchQuota ( )
   }
 
   public closeSelectionMode ( ) {
@@ -77,9 +86,17 @@ export class FileExplorerComponent {
       return
     }
 
-    if ( this.isSelectionMode ) {
+    if ( this.isSelectionMode () ) {
       if ( !fileEntry.contentType || !this.allowedMimeTypes.includes ( fileEntry.contentType ) ) {
-        this.toastrSvc.error ( "Only image files can be selected for the Hero Editor." )
+        this.toastrSvc.error ( "Only images and videos can be selected." )
+        return
+      }
+
+      if ( this.dataSource ( ) === "static" ) {
+        this.activeModal.close ( {
+          url: fileEntry.key, // it's already a relative path like 'gallery/skye/skye-1.jpg'
+          filename: fileEntry.name || "file"
+        } )
         return
       }
 
@@ -100,7 +117,12 @@ export class FileExplorerComponent {
         const relativePath = shareUrl.startsWith ( "http" )
           ? new URL ( shareUrl ).pathname
           : shareUrl
-        this.activeModal.close ( relativePath )
+
+        // Return an object containing both the clean url and the display filename
+        this.activeModal.close ( {
+          url: relativePath,
+          filename: fileEntry.name || "file"
+        } )
 
       } catch ( err ) {
         if ( isDevMode ( ) ) {
@@ -123,12 +145,24 @@ export class FileExplorerComponent {
     const path = relativePath || "/"
 
     try {
-      const formattedData = ( await this.fileExplorerSvc.getFilesInFolder ( path ) ).map ( item => ( {
-        ...item,
-        isFolder: item.isFolder ? true : false,
-        lastModified: item.lastModified ? new Date ( item.lastModified ) : undefined
-      } ) )
-      this.fileList.set ( formattedData )
+      if ( this.dataSource ( ) === "static" ) {
+        const response = await this.apiSvc.get ( `${this.baseRoute}/static-list`, { path }, new HttpHeaders ( {
+          "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || "" }`
+        } ) )
+        const formattedData = ( response as FileEntry[] ).map ( item => ( {
+          ...item,
+          isFolder: item.isFolder ? true : false,
+          lastModified: item.lastModified ? new Date ( item.lastModified ) : undefined
+        } ) )
+        this.fileList.set ( formattedData )
+      } else {
+        const formattedData = ( await this.fileExplorerSvc.getFilesInFolder ( path ) ).map ( item => ( {
+          ...item,
+          isFolder: item.isFolder ? true : false,
+          lastModified: item.lastModified ? new Date ( item.lastModified ) : undefined
+        } ) )
+        this.fileList.set ( formattedData )
+      }
       this.loading.set ( false )
     } catch ( err ) {
       if ( isDevMode ( ) ) {
@@ -166,14 +200,34 @@ export class FileExplorerComponent {
     this.listPath ( newPath )
   }
 
+  public onRowActivate ( file: FileEntry ): void {
+    if ( this.isSelectionMode () ) {
+      void this.selectFile ( file )
+      return
+    }
+    if ( file.isFolder ) {
+      this.navigateTo ( file.name )
+      return
+    }
+    void this.viewFile ( file.key )
+  }
+
   public async viewFile ( key: string ) {
+    if ( this.dataSource ( ) === "static" ) {
+      window.open ( `/api/img/${key}`, "_blank", "noopener,noreferrer" )
+      return
+    }
+
     this.loading.set ( true )
     try {
       const response = await this.apiSvc.get ( `${this.baseRoute}/view-url`, { key }, new HttpHeaders ( {
         "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || "" }`
       } ) )
       const data = response as { viewUrl: string }
-      window.open ( data.viewUrl, "_blank" )
+      const viewUrl = data.viewUrl.startsWith ( "http" )
+        ? new URL ( data.viewUrl ).pathname
+        : data.viewUrl
+      window.open ( viewUrl, "_blank", "noopener,noreferrer" )
       this.loading.set ( false )
     } catch ( err ) {
       if ( isDevMode ( ) ) {
@@ -238,7 +292,6 @@ export class FileExplorerComponent {
     } )
   }
 
-  // --- Upload Flow ---
   public async onFileSelected ( event: Event ) {
     const input = event.target as HTMLInputElement
     const file = input.files
@@ -296,7 +349,9 @@ export class FileExplorerComponent {
           modalRef.setInput ( "title", "Overwrite Confirmation" )
           modalRef.setInput ( "body", `File "<strong>${f.name}</strong>" already exists. Do you want to overwrite it?` )
           modalRef.setInput ( "fields", [
-            this.formlySvc.CheckboxInput ( "overwriteAll", { label: "Apply to all files", required: false } )
+            this.formlySvc.CheckboxInput ( "overwriteAll", {
+              label: "Apply to all files"
+            } )
           ] )
           modalRef.setInput ( "confirmText", "Overwrite" )
           modalRef.setInput ( "cancelText", "Skip" )
@@ -340,7 +395,8 @@ export class FileExplorerComponent {
     modalRef.setInput ( "userS3Path", this.userS3Path )
     modalRef.setInput ( "currentPath", this.currentPath ( ) )
 
-    modalRef.result.then ( async result => {
+    modalRef.result.then ( async raw => {
+      const result = raw as { folderName?: string; rename?: string }
       // Result is the model
       this.loading.set ( true )
       if ( type === "createFolder" ) {
@@ -389,7 +445,7 @@ export class FileExplorerComponent {
           this.toastrSvc.error ( "Failed to delete resource" )
         }
       } else if ( type === "rename" ) {
-        let newName: string = result?.rename 
+        let newName: string = result?.rename || ""
         if ( !newName ) {
           this.toastrSvc.error ( "Invalid name" )
           this.loading.set ( false )
@@ -427,15 +483,18 @@ export class FileExplorerComponent {
   }
 
   public onDragStart ( event: DragEvent, file: FileEntry ) {
+    if ( this.dataSource ( ) === "static" ) return
     this.draggedFile = file
     event.dataTransfer?.setData ( "text/plain", file.key )
   }
 
   public onDragOver ( event: DragEvent ) {
+    if ( this.dataSource ( ) === "static" ) return
     event.preventDefault ( ) // allow drop
   }
 
   public async upAFolder ( event: DragEvent ) {
+    if ( this.dataSource ( ) === "static" ) return
     event.preventDefault ( )
 
     if ( !this.draggedFile ) return
@@ -495,6 +554,7 @@ export class FileExplorerComponent {
   }
 
   public async onDrop ( event: DragEvent, targetFolder: FileEntry ) {
+    if ( this.dataSource ( ) === "static" ) return
     event.preventDefault ( )
 
     if ( !this.draggedFile || !targetFolder.isFolder ) return

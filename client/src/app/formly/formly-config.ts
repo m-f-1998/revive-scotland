@@ -1,10 +1,11 @@
-import { Injectable } from "@angular/core"
+import { Service } from "@angular/core"
 import { ConfigOption, FormlyFieldConfig } from "@ngx-formly/core"
 import { ValidPhoneNumber } from "./validators/PhoneNumber.validator"
 import { ValidEmail } from "./validators/EmailAddress.validator"
 import { ValidDate } from "./validators/Date.validator"
 import { DatePickerComponent } from "./date-picker/date-picker.component"
-import { AddressAutocompleteComponent } from "./address-lookup/address-lookup.component"
+import { TimePickerComponent } from "./time-picker/time-picker.component"
+import { AddressComponent } from "./address/address.component"
 import { ValidWebPageURL } from "./validators/URL.validator"
 import { ImagePickerComponent } from "./image-picker/image-picker.component"
 import { RepeatFieldComponent } from "./repeat-formly-field/repeat-formly-field.component"
@@ -13,10 +14,9 @@ import { FormlyFieldInputComponent } from "./types/input.type"
 import { FormlyFieldSelectComponent } from "./types/select.type"
 import { FormlyFieldTextareaComponent } from "./types/textarea.type"
 import { FormlyFieldCheckboxComponent } from "./types/checkbox.type"
+import { StartBeforeEnd } from "./validators/StartBeforeEnd.validator"
 
-@Injectable ( {
-  providedIn: "root"
-} )
+@Service ( )
 export class FormlyConfig implements ConfigOption {
   public types = [
     {
@@ -44,8 +44,13 @@ export class FormlyConfig implements ConfigOption {
       extends: "input"
     },
     {
-      name: "address-autocomplete",
-      component: AddressAutocompleteComponent,
+      name: "timepicker",
+      component: TimePickerComponent,
+      extends: "input"
+    },
+    {
+      name: "address",
+      component: AddressComponent,
       extends: "input"
     },
     {
@@ -80,12 +85,14 @@ export class FormlyConfig implements ConfigOption {
     { name: "max", message: ( _: unknown, field: FormlyFieldConfig ) => {
       return `Maximum value is ${field.props?.max ?? 0}.`
     } },
+    { name: "ValidEmail", message: "Please enter a valid email address" },
     { name: "PasswordsDoNotMatch", message: "The 'New Password' field cannot match the 'Current Password' field" },
     { name: "invalidClassName", message: "Invalid Class Name" },
     { name: "invalidFormID", message: "Invalid Form ID" },
   ]
 
   public validators = [
+    { name: "StartBeforeEnd", validation: StartBeforeEnd },
     { name: "ValidEmail", validation: ValidEmail },
     { name: "ValidPhoneNumber", validation: ValidPhoneNumber },
     { name: "ValidDate", validation: ValidDate },

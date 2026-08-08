@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, WritableSignal, signal, input, InputSignal, OnInit, OnDestroy, inject } from "@angular/core"
-import { ApiService } from "@revive/src/app/services/api.service"
+import { ApiService } from "@app/services/api.service"
 
 type Slide = { title: string; content: string; image: string }
 
@@ -56,7 +56,7 @@ export class SliderComponent implements OnInit, OnDestroy {
 
   private async fetchSlides ( ): Promise<Slide[]> {
     try {
-      const slides = await this.apiSvc.get ( `/api/admin/hero-editor/${this.pageid ( )}` ) as { heroes: {
+      const slides = await this.apiSvc.get ( `/api/content/hero-editor/${this.pageid ( )}` ) as { heroes: {
         id: string
         title: string
         description: string

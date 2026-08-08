@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component } from "@angular/core"
+import { getActiveDonationStripeLink } from "../../../shared/donation-links"
 
 @Component ( {
   selector: "app-donate",
@@ -6,4 +7,10 @@ import { ChangeDetectionStrategy, Component } from "@angular/core"
   styleUrl: "./donate.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
-export class DonateComponent {}
+export class DonateComponent {
+  public get stripeLink ( ): string {
+    return getActiveDonationStripeLink ( )
+  }
+}
+
+

@@ -7,6 +7,7 @@ import { config } from "dotenv"
 
 config ( { path: resolve ( process.cwd ( ), ".env" ), quiet: true } )
 
+/** Opt-in only — unset / any other value means production-safe behaviour. */
 export const isDevMode = ( ): boolean => {
   return process.env [ "DEV_MODE" ] === "true" || process.env [ "DEV_MODE" ] === "1"
 }
@@ -80,26 +81,50 @@ export const router: FastifyPluginAsync = async app => {
       const metaTag = `<meta name="csp-nonce" content="${nonce}">`
       html = html.replace ( "</head>", `${metaTag}</head>` )
     }
+    html = injectRecaptchaSiteKey ( html )
     html = injectGoogleTagManager ( html, nonce )
     return html
+  }
+
+  /** Browser site key must match server RECAPTCHA_SITE (Portainer is source of truth). */
+  const injectRecaptchaSiteKey = ( html: string ): string => {
+    const siteKey = process.env [ "RECAPTCHA_SITE" ]?.trim ( ) || ""
+    if ( !siteKey ) return html
+    const safe = siteKey
+      .replace ( /&/g, "&amp;" )
+      .replace ( /"/g, "&quot;" )
+      .replace ( /</g, "&lt;" )
+    return html.replace ( "</head>", `<meta name="recaptcha-site-key" content="${safe}"></head>` )
   }
 
   const injectGoogleTagManager = ( html: string, nonce: string ): string => {
     const cfToken = process.env [ "CF_BEACON_TOKEN" ] ?? ""
     const gaId = process.env [ "GA_TRACKING_ID" ] ?? ""
+    const scripts: string [ ] = [ ]
 
-    const gtmScript = `<script nonce="${nonce}" async src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "${cfToken}"}'></script>
-      <script nonce="${nonce}" async src="https://www.googletagmanager.com/gtag/js?id=${gaId}"></script>
+    if ( cfToken ) {
+      scripts.push ( `<script nonce="${nonce}" async src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "${cfToken}"}'></script>` )
+    }
+
+    if ( gaId ) {
+      scripts.push ( `<script nonce="${nonce}" async src="https://www.googletagmanager.com/gtag/js?id=${gaId}"></script>
       <script nonce="${nonce}">
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
+        window.dataLayer = window.dataLayer || [ ];
+        function gtag( ){dataLayer.push(arguments);}
+        gtag('js', new Date( ));
         gtag('config', '${gaId}');
-      </script>`
+      </script>` )
+    }
 
-    const bodyIndex = html.indexOf ( "<body>" )
-    if ( bodyIndex !== -1 ) {
-      return html.slice ( 0, bodyIndex ) + gtmScript + html.slice ( bodyIndex )
+    if ( scripts.length === 0 ) {
+      return html
+    }
+
+    const gtmScript = scripts.join ( "\n      " )
+    const bodyOpen = html.indexOf ( "<body>" )
+    if ( bodyOpen !== -1 ) {
+      const insertAt = bodyOpen + "<body>".length
+      return html.slice ( 0, insertAt ) + gtmScript + html.slice ( insertAt )
     }
     return html + gtmScript
   }

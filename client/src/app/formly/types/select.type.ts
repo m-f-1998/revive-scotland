@@ -10,7 +10,7 @@ import { ReactiveFormsModule } from "@angular/forms"
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class FormlyFieldSelectComponent extends FieldType implements OnInit {
-  public readonly resolvedOptions: WritableSignal<FormlySelectOption[]> = signal ( [] )
+  public readonly resolvedOptions: WritableSignal<FormlySelectOption[]> = signal ( [ ] )
 
   private readonly pipe = new FormlySelectOptionsPipe ( )
 

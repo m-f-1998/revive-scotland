@@ -7,7 +7,7 @@ import { IconComponent } from "../../icon/icon.component"
   imports: [ IconComponent ],
   templateUrl: "./icon-picker.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { "(document:click)": "close()" }
+  host: { "(document:click)": "close( )" }
 } )
 export class IconPickerComponent {
   public value = input.required<string> ( )

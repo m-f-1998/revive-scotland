@@ -1,54 +1,42 @@
-import {
-  S3Client,
-  ListObjectsV2Command,
-  PutObjectCommand,
-  DeleteObjectCommand,
-  CopyObjectCommand,
-  HeadObjectCommand
-} from "@aws-sdk/client-s3"
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import { randomUUID } from "crypto"
 
 import { addUserPath, checkFirebaseAuth, validateS3Key } from "./middleware/fileExplorer.js"
 import { onFilesDeleted, onFileRenamed, onFolderRenamed } from "./mediaReferences.js"
 import { getFirestore, incrementValue } from "../admin.js"
 import { FastifyPluginAsync } from "fastify"
+import { S3Service } from "../../services/s3.service.js"
+import { join } from "path"
+import { readdir, stat } from "fs/promises"
 
-const R2_ACCOUNT_ID = process.env [ "R2_ACCOUNT_ID" ]
-const R2_ACCESS_KEY_ID = process.env [ "R2_ACCESS_KEY_ID" ]
-const R2_SECRET_ACCESS_KEY = process.env [ "R2_SECRET_ACCESS_KEY" ]
-const R2_BUCKET_NAME = process.env [ "R2_BUCKET_NAME" ]
 const PUBLIC_DOMAIN = process.env [ "PUBLIC_DOMAIN" ] || "https://revivescotland.co.uk"
-
-// This is the crucial part for R2
-const R2_ENDPOINT = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
 
 const MAX_STORAGE_GB = 5
 const MAX_STORAGE_BYTES = MAX_STORAGE_GB * 1024 * 1024 * 1024
 
-if ( !R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET_NAME ) {
-  throw new Error ( "R2 configuration is missing in environment variables." )
-}
+const ALLOWED_UPLOAD_MIME_TYPES = new Set ( [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "video/mp4",
+] )
 
-const s3Client = new S3Client ( {
-  region: "auto", // R2's "auto" region
-  endpoint: R2_ENDPOINT,
-  credentials: {
-    accessKeyId: R2_ACCESS_KEY_ID,
-    secretAccessKey: R2_SECRET_ACCESS_KEY,
-  }
-} )
+const STATIC_ASSETS_DIR = join ( process.cwd ( ), "../", "assets", "img" )
 
 export const router: FastifyPluginAsync = async app => {
-  // app prehandler
   app.addHook ( "preHandler", checkFirebaseAuth )
   app.addHook ( "preHandler", addUserPath )
   app.addHook ( "preHandler", validateS3Key )
 
-  /**
-   * 1. NAVIGATE FOLDER STRUCTURE
-   * Lists files and folders for a given path.
-   */
+  let cleanupTimer: ReturnType<typeof setInterval> | undefined
+  app.addHook ( "onReady", async ( ) => {
+    await cleanupSharedLinks ( )
+    cleanupTimer = setInterval ( ( ) => { void cleanupSharedLinks ( ) }, 60 * 60 * 1000 )
+  } )
+  app.addHook ( "onClose", async ( ) => {
+    if ( cleanupTimer ) clearInterval ( cleanupTimer )
+  } )
+
   app.get ( "/list", async ( req, rep ) => {
     const userPath = req.user!.s3Path!
     // 'path' query param is relative to user's root (e.g., '/documents' or '/')
@@ -68,15 +56,10 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     try {
-      const command = new ListObjectsV2Command ( {
-        Bucket: R2_BUCKET_NAME,
-        Prefix: prefix,
-        Delimiter: "/", // This is the magic for folders
-      } )
-      const data = await s3Client.send ( command )
+      const data = await S3Service.listObjects ( prefix )
 
       // Folders (CommonPrefixes)
-      const folders = ( data.CommonPrefixes || [] ).map ( p => ( {
+      const folders = ( data.CommonPrefixes || [ ] ).map ( p => ( {
         name: p.Prefix?.replace ( prefix, "" ).replace ( "/", "" ),
         key: p.Prefix,
         isFolder: true,
@@ -113,10 +96,59 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 
-  /**
-   * 2. UPLOAD A FILE (Get Presigned URL)
-   * Generates a secure, temporary URL for the client to upload a file directly.
-   */
+  app.get ( "/static-list", async ( req, rep ) => {
+    const { path } = req.query as { path?: string }
+    const relativePath = path || "/"
+
+    if ( relativePath && ( typeof relativePath !== "string" || relativePath.includes ( ".." ) ) ) {
+      return rep.status ( 400 ).send ( "Invalid path." )
+    }
+
+    const currentDir = join ( STATIC_ASSETS_DIR, relativePath )
+
+    try {
+      const entries = await readdir ( currentDir, { withFileTypes: true } )
+      const folders = [ ]
+      const files = [ ]
+
+      const EXTENSION_TYPES: Record<string, string> = {
+        jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif",
+        webp: "image/webp", avif: "image/avif", svg: "image/svg+xml",
+        mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime"
+      }
+
+      for ( const entry of entries ) {
+        if ( entry.isDirectory ( ) ) {
+          const folderKey = relativePath === "/" ? `${entry.name}/` : `${relativePath}${entry.name}/`
+          folders.push ( {
+            name: entry.name,
+            key: folderKey,
+            isFolder: true
+          } )
+        } else if ( entry.isFile ( ) ) {
+          const ext = entry.name.split ( "." ).pop ( )?.toLowerCase ( ) ?? ""
+          if ( Object.keys ( EXTENSION_TYPES ).includes ( ext ) ) {
+            const fileStat = await stat ( join ( currentDir, entry.name ) )
+            const fileKey = relativePath === "/" ? entry.name : `${relativePath}${entry.name}`
+            files.push ( {
+              name: entry.name,
+              key: fileKey,
+              lastModified: fileStat.mtime,
+              size: fileStat.size,
+              isFolder: false,
+              contentType: EXTENSION_TYPES [ ext ] ?? "application/octet-stream"
+            } )
+          }
+        }
+      }
+
+      return rep.status ( 200 ).send ( [ ...folders, ...files ] )
+    } catch ( error ) {
+      console.error ( "Error listing static files:", error )
+      return rep.status ( 500 ).send ( "Failed to list static files." )
+    }
+  } )
+
   app.post ( "/upload-url", async ( req, rep ) => {
     // key is the FULL S3 path (e.g., users/uid/docs/file.txt)
     const { key, contentType, fileSize } = req.body as { key?: string; contentType?: string; fileSize?: number }
@@ -125,45 +157,47 @@ export const router: FastifyPluginAsync = async app => {
       return rep.status ( 400 ).send ( "Missing key, contentType, or fileSize." )
     }
 
+    if ( !ALLOWED_UPLOAD_MIME_TYPES.has ( contentType ) ) {
+      return rep.status ( 400 ).send ( "Unsupported content type." )
+    }
+
+    const size = Number ( fileSize )
+    if ( !Number.isFinite ( size ) || size <= 0 ) {
+      return rep.status ( 400 ).send ( "Invalid fileSize." )
+    }
+
+    const userRef = getFirestore ( ).collection ( "users" ).doc ( req.user!.uid )
+
     try {
-      const userRef = getFirestore ( ).collection ( "users" ).doc ( req.user!.uid )
-      const userDoc = await userRef.get ( )
+      await getFirestore ( ).runTransaction ( async tx => {
+        const userDoc = await tx.get ( userRef )
+        const storageUsed = userDoc.exists ? ( userDoc.data ( )?. [ "storageUsed" ] || 0 ) : 0
 
-      let storageUsed = 0
-      if ( userDoc.exists ) {
-        storageUsed = userDoc.data ( )?. [ "storageUsed" ] || 0
-      }
+        if ( storageUsed + size > MAX_STORAGE_BYTES ) {
+          throw new Error ( "QUOTA_EXCEEDED" )
+        }
 
-      const projectedUsage = storageUsed + Number ( fileSize || 0 )
-      if ( projectedUsage > MAX_STORAGE_BYTES ) {
+        tx.set ( userRef, { storageUsed: incrementValue ( size ) }, { merge: true } )
+      } )
+    } catch ( err ) {
+      if ( err instanceof Error && err.message === "QUOTA_EXCEEDED" ) {
         return rep.status ( 403 ).send ( "Upload would exceed your storage quota." )
       }
-    } catch {
-      // If quota check fails, block the upload for safety
       return rep.status ( 500 ).send ( "Failed to verify storage quota." )
     }
 
     try {
-      const command = new PutObjectCommand ( {
-        Bucket: R2_BUCKET_NAME,
-        Key: key,
-        ContentType: contentType,
-        ContentLength: fileSize
-      } )
-
-      // This URL is valid for 2 minutes
-      const uploadUrl = await getSignedUrl ( s3Client, command, { expiresIn: 120 } )
+      const uploadUrl = await S3Service.generateUploadUrl ( key, contentType, size )
       return rep.status ( 200 ).send ( { uploadUrl } )
     } catch ( error ) {
+      try {
+        await userRef.set ( { storageUsed: incrementValue ( -size ) }, { merge: true } )
+      } catch { /* best-effort rollback */ }
       console.error ( "Error generating upload URL:", error )
       return rep.status ( 500 ).send ( "Failed to generate URL." )
     }
   } )
 
-  /**
-   * (Helper for Upload) CREATE A FOLDER
-   * S3 folders are just 0-byte objects with a trailing slash.
-   */
   app.post ( "/create-folder", async ( req, rep ) => {
     const { key } = req.body as { key?: string } // e.g., users/uid/new-folder/
 
@@ -181,11 +215,7 @@ export const router: FastifyPluginAsync = async app => {
     }
 
     try {
-      const command = new PutObjectCommand ( {
-        Bucket: R2_BUCKET_NAME,
-        Key: key
-      } )
-      await s3Client.send ( command )
+      await S3Service.createFolder ( key )
       return rep.status ( 201 ).send ( { message: "Folder created." } )
     } catch ( error ) {
       console.error ( "Error creating folder:", error )
@@ -193,32 +223,6 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 
-  // Helper function to list all keys under a prefix, recursively
-  const listAllKeys = async ( prefix: string ) => {
-    const keys: { key: string; size: number }[] = []
-    let isTruncated = true
-    let continuationToken: string | undefined = undefined
-
-    while ( isTruncated ) {
-      const command: ListObjectsV2Command = new ListObjectsV2Command ( {
-        Bucket: R2_BUCKET_NAME,
-        Prefix: prefix,
-        ContinuationToken: continuationToken
-      } )
-      const data = await s3Client.send ( command );
-      ( data.Contents || [ ] ).forEach ( item => {
-        keys.push ( { key: item.Key!, size: item.Size || 0 } )
-      } )
-
-      isTruncated = data.IsTruncated || false
-      continuationToken = data.NextContinuationToken
-    }
-    return keys
-  }
-
-  /**
-   * 3. DELETE A FILE
-   */
   app.post ( "/delete", async ( req, rep ) => {
     const { key, isFolder } = req.body as { key?: string; isFolder?: boolean }
 
@@ -232,17 +236,13 @@ export const router: FastifyPluginAsync = async app => {
       let totalSizeDeleted = 0
 
       if ( isFolder ) {
-        // 1. List all files under the prefix
-        const files = await listAllKeys ( key )
+        const files = await S3Service.listAllKeysUnderPrefix ( key )
         if ( files.length === 0 ) {
           return rep.status ( 200 ).send ( { message: "Folder is empty or already deleted." } )
         }
 
-        // 2. Calculate total size and delete all objects
         totalSizeDeleted = files.reduce ( ( acc, file ) => acc + file.size, 0 )
-        const deletePromises = files.map ( file =>
-          s3Client.send ( new DeleteObjectCommand ( { Bucket: R2_BUCKET_NAME, Key: file.key } ) )
-        )
+        const deletePromises = files.map ( file => S3Service.deleteObject ( file.key ) )
 
         // Cascade: remove media references BEFORE deleting share links
         await onFilesDeleted ( files.map ( f => f.key ) )
@@ -251,8 +251,7 @@ export const router: FastifyPluginAsync = async app => {
       } else {
         try {
           // First, get the file size for quota update
-          const headData = await s3Client.send ( new HeadObjectCommand ( { Bucket: R2_BUCKET_NAME, Key: key } ) ) as { ContentLength?: number }
-          totalSizeDeleted = headData.ContentLength || 0
+          totalSizeDeleted = await S3Service.getObjectSize ( key )
         } catch ( error ) {
           const { name, $metadata } = error as { name: string; $metadata?: { httpStatusCode?: number } }
           if ( name === "NotFound" || $metadata?.httpStatusCode === 404 ) {
@@ -262,11 +261,7 @@ export const router: FastifyPluginAsync = async app => {
           throw error // Rethrow other errors
         }
 
-        const deleteCommand = new DeleteObjectCommand ( {
-          Bucket: R2_BUCKET_NAME,
-          Key: key,
-        } )
-        await s3Client.send ( deleteCommand )
+        await S3Service.deleteObject ( key )
 
         const db = getFirestore ( )
         const querySnapshot = await db.collection ( "shared_links" ).where ( "key", "==", key ).get ( )
@@ -299,10 +294,6 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 
-  /**
-   * 4. RENAME A FILE OR FOLDER
-   * S3 has no "rename" or "move". It's a COPY + DELETE operation.
-   */
   app.post ( "/rename", async ( req, rep ) => {
     const { oldKey, newKey, isFolder } = req.body as { oldKey?: string; newKey?: string; isFolder?: boolean }
 
@@ -325,42 +316,19 @@ export const router: FastifyPluginAsync = async app => {
 
     try {
       if ( isFolder ) {
-        // 1. List all files under the prefix
-        const files = await listAllKeys ( oldKey )
+        const files = await S3Service.listAllKeysUnderPrefix ( oldKey )
 
-        // 2. Copy all files to the new location first
-        await Promise.all ( files.map ( file => s3Client.send ( new CopyObjectCommand ( {
-          Bucket: R2_BUCKET_NAME,
-          CopySource: `${R2_BUCKET_NAME}/${file.key}`,
-          Key: file.key.replace ( oldKey, newKey ),
-        } ) ) ) )
+        await Promise.all ( files.map ( file => S3Service.copyObject ( file.key, file.key.replace ( oldKey, newKey ) ) ) )
 
-        // 3. Update share links before deleting originals so active URLs remain valid
         await onFolderRenamed ( oldKey, newKey )
 
-        // 4. Only delete originals after share links are updated
-        await Promise.all ( files.map ( file => s3Client.send ( new DeleteObjectCommand ( {
-          Bucket: R2_BUCKET_NAME,
-          Key: file.key,
-        } ) ) ) )
+        await Promise.all ( files.map ( file => S3Service.deleteObject ( file.key ) ) )
       } else {
-        // 1. Copy the object
-        const copyCommand = new CopyObjectCommand ( {
-          Bucket: R2_BUCKET_NAME,
-          CopySource: `${R2_BUCKET_NAME}/${oldKey}`,
-          Key: newKey,
-        } )
-        await s3Client.send ( copyCommand )
+        await S3Service.copyObject ( oldKey, newKey )
 
-        // 2. Update share link key before deleting so existing URLs remain valid
         await onFileRenamed ( oldKey, newKey )
 
-        // 3. Delete the old object
-        const deleteCommand = new DeleteObjectCommand ( {
-          Bucket: R2_BUCKET_NAME,
-          Key: oldKey,
-        } )
-        await s3Client.send ( deleteCommand )
+        await S3Service.deleteObject ( oldKey )
       }
 
       return rep.status ( 200 ).send ( { message: "Rename/Move successful." } )
@@ -370,9 +338,6 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 
-  /**
-   * 5. CREATE A SHARED PUBLIC LINK (Presigned URL)
-   */
   app.get ( "/share-url", async ( req, rep ) => {
     const { key, expiresIn } = req.query as { key?: string; expiresIn?: string }
 
@@ -408,8 +373,7 @@ export const router: FastifyPluginAsync = async app => {
       } )
 
       // Return the URL for your domain
-      // Assuming you mount the public router at /api/public
-      const shareUrl = `${PUBLIC_DOMAIN}/api/public/s/${shareId}`
+      const shareUrl = `${PUBLIC_DOMAIN}/api/share/${shareId}`
 
       return rep.status ( 200 ).send ( { shareUrl } )
     } catch ( error ) {
@@ -418,13 +382,28 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 
-  /**
-   * 6. GET USER QUOTA / SPACE LEFT (MODIFIED FOR QUOTA)
-   * Reads from Firestore. Fast, efficient, and free.
-   */
+  app.get ( "/share-info/:id", async ( req, rep ) => {
+    const { id } = req.params as { id: string }
+    if ( !id ) return rep.status ( 400 ).send ( "Missing id parameter." )
+
+    try {
+      const doc = await getFirestore ( ).collection ( "shared_links" ).doc ( id ).get ( )
+      if ( !doc.exists ) {
+        return rep.status ( 404 ).send ( { error: "Link not found." } )
+      }
+
+      const key = doc.data ( )?. [ "key" ] || ""
+      const filename = key.split ( "/" ).pop ( ) || id
+
+      return rep.status ( 200 ).send ( { filename } )
+    } catch ( error ) {
+      console.error ( "Error getting share info:", error )
+      return rep.status ( 500 ).send ( "Failed to get share info." )
+    }
+  } )
+
   app.get ( "/quota", async ( req, rep ) => {
     try {
-      // 1. Fetch the user's quota doc from Firestore
       const userRef = getFirestore ( ).collection ( "users" ).doc ( req.user!.uid )
       const userDoc = await userRef.get ( )
 
@@ -432,8 +411,6 @@ export const router: FastifyPluginAsync = async app => {
       if ( userDoc.exists ) {
         storageUsed = userDoc.data ( )?. [ "storageUsed" ] || 0
       }
-
-      console.log ( `User ${req.user!.uid} has used ${storageUsed} bytes of storage.` )
 
       return rep.status ( 200 ).send ( {
         used: storageUsed,
@@ -454,10 +431,6 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 
-  /**
-   * 7. NEW (REQUIRED FOR QUOTA): UPLOAD COMPLETE
-   * Called by the client AFTER a successful S3 upload.
-   */
   app.post ( "/upload-complete", async ( req, rep ) => {
     const { key, fileSize } = req.body as { key?: string; fileSize?: number }
 
@@ -468,14 +441,18 @@ export const router: FastifyPluginAsync = async app => {
     const userRef = getFirestore ( ).collection ( "users" ).doc ( req.user!.uid )
 
     try {
-      const headResult = await s3Client.send ( new HeadObjectCommand ( { Bucket: R2_BUCKET_NAME, Key: key } ) )
-      const actualSize = headResult.ContentLength ?? 0
+      const actualSize = await S3Service.getObjectSize ( key )
+      const claimed = typeof fileSize === "number" && fileSize > 0 ? fileSize : actualSize
 
-      if ( typeof fileSize === "number" && fileSize > 0 && Math.abs ( actualSize - fileSize ) > 1024 ) {
+      if ( Math.abs ( actualSize - claimed ) > 1024 ) {
         return rep.status ( 400 ).send ( "File size mismatch." )
       }
 
-      await userRef.set ( { storageUsed: incrementValue ( actualSize ) }, { merge: true } )
+      // Quota was reserved at upload-url time; correct to actual object size
+      const delta = actualSize - claimed
+      if ( delta !== 0 ) {
+        await userRef.set ( { storageUsed: incrementValue ( delta ) }, { merge: true } )
+      }
 
       return rep.status ( 200 ).send ( { message: "Quota updated." } )
     } catch ( error ) {
@@ -483,10 +460,7 @@ export const router: FastifyPluginAsync = async app => {
       return rep.status ( 500 ).send ( "Failed to update quota." )
     }
   } )
-  /**
-   * 8. VIEW FILE (For Admin Preview)
-   * Enforces a 15-minute expiry.
-   */
+
   app.get ( "/view-url", async ( req, rep ) => {
     const { key } = req.query as { key?: string }
     if ( !key ) {
@@ -507,7 +481,8 @@ export const router: FastifyPluginAsync = async app => {
         type: "admin_view"
       } )
 
-      const viewUrl = `${PUBLIC_DOMAIN}/api/public/s/${shareId}`
+      // Relative so preview works on the current host (dev/prod), not a hardcoded domain
+      const viewUrl = `/api/share/${shareId}`
       return rep.status ( 200 ).send ( { viewUrl } )
     } catch ( error ) {
       console.error ( "Error generating view URL:", error )
@@ -525,20 +500,18 @@ export const cleanupSharedLinks = async ( ) => {
       .where ( "expiresAt", "<=", now )
       .get ( )
 
-    const batch = db.batch ( )
-    snapshot.forEach ( doc => {
-      batch.delete ( doc.ref )
-    } )
-
-    await batch.commit ( )
-    console.log ( `Cleaned up ${snapshot.size} expired shared links.` )
+    const docs = snapshot.docs
+    for ( let i = 0; i < docs.length; i += 400 ) {
+      const batch = db.batch ( )
+      for ( const doc of docs.slice ( i, i + 400 ) ) {
+        batch.delete ( doc.ref )
+      }
+      await batch.commit ( )
+    }
+    if ( docs.length > 0 ) {
+      console.log ( `Cleaned up ${docs.length} expired shared links.` )
+    }
   } catch ( error ) {
     console.error ( "Error cleaning up shared links:", error )
   }
 }
-
-// Schedule cleanup every hour
-setInterval ( cleanupSharedLinks, 60 * 60 * 1000 ) // Every hour
-
-// Initial cleanup on startup
-cleanupSharedLinks ( )

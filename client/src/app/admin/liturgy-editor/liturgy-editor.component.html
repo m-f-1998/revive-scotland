@@ -1,0 +1,71 @@
+<div class="flex flex-col min-h-screen bg-gray-50 dark:bg-slate-900">
+  <app-admin-navbar />
+
+  <div class="flex-1 w-full max-w-screen-xl mx-auto p-4 md:p-8">
+    <div class="mb-6">
+      <h2 class="text-2xl md:text-3xl font-bold flex items-center gap-2.5 text-gray-900 dark:text-white">
+        <app-icon icon="hands-praying" class="text-primary" />
+        Liturgy Editor
+      </h2>
+      <p class="text-gray-500 dark:text-gray-400 text-sm mt-1.5">Manage prayers and video reflections shown on the public Liturgy page with a modern, split tab interface.</p>
+    </div>
+
+    @if (loading()) {
+      <div class="flex flex-col items-center justify-center gap-3 py-10 text-gray-500 dark:text-gray-400">
+        <app-icon icon="spinner" iconAnimation="spin" iconSize="2x" class="text-primary" />
+        <p class="text-sm font-medium">Loading...</p>
+      </div>
+    } @else {
+      <div class="flex flex-col md:flex-row gap-6 items-start">
+        <div class="w-full md:w-64 flex-shrink-0 flex flex-nowrap md:flex-col gap-2 overflow-x-auto md:overflow-visible snap-x md:snap-none pb-3 md:pb-0 px-4 md:mx-0 md:px-0 scrollbar-none">
+          @for (tab of tabs; track $index) {
+            <button type="button"
+              class="flex-shrink-0 px-4 py-2.5 rounded-full md:rounded-lg text-left flex items-center justify-center md:justify-start gap-3 transition-all duration-200 snap-start font-medium text-sm border md:border-0 cursor-pointer"
+              [class.bg-primary]="activeTab() === tab.id"
+              [class.text-white]="activeTab() === tab.id"
+              [class.border-primary]="activeTab() === tab.id"
+              [class.shadow-md]="activeTab() === tab.id"
+              [class.shadow-primary/20]="activeTab() === tab.id"
+              [class.bg-white]="activeTab() !== tab.id"
+              [class.dark:bg-slate-800]="activeTab() !== tab.id"
+              [class.text-gray-600]="activeTab() !== tab.id"
+              [class.dark:text-gray-300]="activeTab() !== tab.id"
+              [class.border-gray-200]="activeTab() !== tab.id"
+              [class.dark:border-slate-700]="activeTab() !== tab.id"
+              [class.hover:bg-gray-50]="activeTab() !== tab.id"
+              [class.dark:hover:bg-slate-700/50]="activeTab() !== tab.id"
+              (click)="setActiveTab(tab.id)">
+              <app-icon [icon]="tab.icon" [class.text-white]="activeTab() === tab.id" [class.text-gray-400]="activeTab() !== tab.id" class="w-4 h-4" />
+              <span class="whitespace-nowrap">{{ tab.label }}</span>
+            </button>
+          }
+        </div>
+
+        <div class="flex-1 w-full min-w-0">
+          <div class="card bg-white dark:bg-slate-800 shadow-sm border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col transition-all duration-300">
+            @switch (activeTab()) {
+              @case ('prayers') {
+                <app-prayers-editor
+                  [prayers]="prayers()"
+                  [saving]="savingPrayers()"
+                  (prayersChange)="onPrayersChange($event)"
+                  (save)="savePrayers()">
+                </app-prayers-editor>
+              }
+              @case ('reflections') {
+                <app-reflections-editor
+                  [reflections]="reflections()"
+                  [saving]="savingReflections()"
+                  (reflectionsChange)="onReflectionsChange($event)"
+                  (save)="saveReflections()">
+                </app-reflections-editor>
+              }
+            }
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+  <app-admin-footer />
+</div>
+

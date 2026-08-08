@@ -1,6 +1,6 @@
-<nav class="bg-gray-100 dark:bg-slate-900 shadow-sm dark:shadow-slate-800">
-  <div class="max-w-screen-xl mx-auto px-4 flex items-center justify-between h-16">
-    <a href="/" class="flex-shrink-0">
+<nav class="bg-white/80 dark:bg-slate-900 shadow-sm border-b border-zinc-200 dark:border-slate-800">
+  <div class="max-w-screen-xl mx-auto px-6 flex items-center justify-between h-16">
+    <a href="/" class="flex-shrink-0 transition-opacity hover:opacity-80">
       <img src="/api/img/logo.png?w=640&f=webp"
         srcset="
           /api/img/logo.png?w=320&f=webp 320w,
@@ -10,96 +10,110 @@
         sizes="(max-width: 600px) 100vw, 600px"
         alt="Site Logo"
         loading="lazy"
-        width="80"
+        class="h-9 w-auto object-contain"
         decoding="async"
       />
     </a>
 
-    <ul class="hidden sm:flex items-center gap-1">
+    <ul class="hidden sm:flex items-center gap-2 m-0 p-0 list-none">
       <li>
-        <a class="nav-link" (click)="goTo('/admin/dashboard')" [class.active]="url() === '/admin/dashboard'">
+        <a class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+           [class.text-blue-600]="url() === '/admin/dashboard'"
+           [class.dark:text-blue-400]="url() === '/admin/dashboard'"
+           [class.bg-blue-50]="url() === '/admin/dashboard'"
+           [class.dark:bg-blue-900/20]="url() === '/admin/dashboard'"
+           [class.text-zinc-600]="url() !== '/admin/dashboard'"
+           [class.dark:text-zinc-300]="url() !== '/admin/dashboard'"
+           [class.hover:bg-zinc-100]="url() !== '/admin/dashboard'"
+           [class.dark:hover:bg-zinc-800]="url() !== '/admin/dashboard'"
+           (click)="goTo('/admin/dashboard')">
           <app-icon icon="gauge-high" />
           Analytics
         </a>
       </li>
       <li>
-        <a class="nav-link" (click)="goTo('/admin/fileExplorer')" [class.active]="url() === '/admin/fileExplorer'">
+        <a class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+           [class.text-blue-600]="url() === '/admin/fileExplorer'"
+           [class.dark:text-blue-400]="url() === '/admin/fileExplorer'"
+           [class.bg-blue-50]="url() === '/admin/fileExplorer'"
+           [class.dark:bg-blue-900/20]="url() === '/admin/fileExplorer'"
+           [class.text-zinc-600]="url() !== '/admin/fileExplorer'"
+           [class.dark:text-zinc-300]="url() !== '/admin/fileExplorer'"
+           [class.hover:bg-zinc-100]="url() !== '/admin/fileExplorer'"
+           [class.dark:hover:bg-zinc-800]="url() !== '/admin/fileExplorer'"
+           (click)="goTo('/admin/fileExplorer')">
           <app-icon icon="folder-open" />
           Media Library
         </a>
       </li>
 
       <li class="dropdown-container relative">
-        <a class="nav-link cursor-pointer select-none" [class.active]="isContentActive()"
+        <a class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer select-none"
+           [class.text-blue-600]="isContentActive()"
+           [class.dark:text-blue-400]="isContentActive()"
+           [class.bg-blue-50]="isContentActive()"
+           [class.dark:bg-blue-900/20]="isContentActive()"
+           [class.text-zinc-600]="!isContentActive()"
+           [class.dark:text-zinc-300]="!isContentActive()"
+           [class.hover:bg-zinc-100]="!isContentActive()"
+           [class.dark:hover:bg-zinc-800]="!isContentActive()"
            (click)="toggleContentDropdown($event)">
           <app-icon icon="pen-to-square" />
           Edit Content
-          <app-icon [icon]="isContentDropdownOpen() ? 'chevron-up' : 'chevron-down'" />
+          <app-icon [icon]="isContentDropdownOpen() ? 'chevron-up' : 'chevron-down'" class="text-xs ml-1 opacity-60" />
         </a>
         @if (isContentDropdownOpen()) {
-          <ul class="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg py-1 z-50">
+          <ul class="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg shadow-zinc-200/50 dark:shadow-black/50 py-2 z-50 list-none p-0 m-0">
             <li>
-              <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                 [class.text-primary]="url() === '/admin/homeEditor'"
+              <a class="flex items-center gap-3 px-4 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer"
+                 [class.text-blue-600]="url() === '/admin/homeEditor'"
+                 [class.dark:text-blue-400]="url() === '/admin/homeEditor'"
+                 [class.text-zinc-700]="url() !== '/admin/homeEditor'"
+                 [class.dark:text-zinc-300]="url() !== '/admin/homeEditor'"
                  (click)="goTo('/admin/homeEditor')">
-                <app-icon icon="home" />
+                <app-icon icon="home" class="opacity-70" />
                 Home Page
               </a>
             </li>
             <li>
-              <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                 [class.text-primary]="url() === '/admin/eventEditor'"
+              <a class="flex items-center gap-3 px-4 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer"
+                 [class.text-blue-600]="url() === '/admin/eventEditor'"
+                 [class.dark:text-blue-400]="url() === '/admin/eventEditor'"
+                 [class.text-zinc-700]="url() !== '/admin/eventEditor'"
+                 [class.dark:text-zinc-300]="url() !== '/admin/eventEditor'"
                  (click)="goTo('/admin/eventEditor')">
-                <app-icon icon="calendar-days" />
+                <app-icon icon="calendar-days" class="opacity-70" />
                 Events
               </a>
             </li>
             <li>
-              <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                 [class.text-primary]="url() === '/admin/galleryEditor'"
+              <a class="flex items-center gap-3 px-4 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer"
+                 [class.text-blue-600]="url() === '/admin/galleryEditor'"
+                 [class.dark:text-blue-400]="url() === '/admin/galleryEditor'"
+                 [class.text-zinc-700]="url() !== '/admin/galleryEditor'"
+                 [class.dark:text-zinc-300]="url() !== '/admin/galleryEditor'"
                  (click)="goTo('/admin/galleryEditor')">
-                <app-icon icon="images" />
+                <app-icon icon="images" class="opacity-70" />
                 Gallery
               </a>
             </li>
             <li>
-              <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                 [class.text-primary]="url() === '/admin/testimonialsEditor'"
-                 (click)="goTo('/admin/testimonialsEditor')">
-                <app-icon icon="share" />
-                Testimonials
-              </a>
-            </li>
-            <li>
-              <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                 [class.text-primary]="url() === '/admin/contactEditor'"
-                 (click)="goTo('/admin/contactEditor')">
-                <app-icon icon="address-card" />
-                Contact Details
-              </a>
-            </li>
-            <li>
-              <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                 [class.text-primary]="url() === '/admin/storyEditor'"
-                 (click)="goTo('/admin/storyEditor')">
-                <app-icon icon="book-open" />
-                Our Story
-              </a>
-            </li>
-            <li>
-              <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                 [class.text-primary]="url() === '/admin/resourcesEditor'"
-                 (click)="goTo('/admin/resourcesEditor')">
-                <app-icon icon="hands-praying" />
-                Resources
+              <a class="flex items-center gap-3 px-4 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer"
+                 [class.text-blue-600]="url() === '/admin/liturgyEditor'"
+                 [class.dark:text-blue-400]="url() === '/admin/liturgyEditor'"
+                 [class.text-zinc-700]="url() !== '/admin/liturgyEditor'"
+                 [class.dark:text-zinc-300]="url() !== '/admin/liturgyEditor'"
+                 (click)="goTo('/admin/liturgyEditor')">
+                <app-icon icon="hands-praying" class="opacity-70" />
+                Liturgy
               </a>
             </li>
           </ul>
         }
       </li>
 
-      <li>
-        <a class="btn-danger ml-2" (click)="logout()">
+      <li class="pl-2 ml-2 border-l border-zinc-200 dark:border-zinc-700">
+        <a class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer" (click)="logout()">
           <app-icon icon="right-from-bracket" />
           Logout
         </a>
@@ -107,90 +121,84 @@
     </ul>
 
     <div class="relative sm:hidden mobile-menu-container">
-      <button class="p-2 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors" type="button" (click)="toggleMenu()" aria-label="Toggle navigation">
-        <app-icon [icon]="isMenuCollapsed() ? 'bars' : 'xmark'" />
+      <button class="p-2 -mr-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" type="button" (click)="toggleMenu()" aria-label="Toggle navigation">
+        <app-icon [icon]="isMenuCollapsed() ? 'bars' : 'xmark'" class="text-xl" />
       </button>
       @if (!isMenuCollapsed()) {
-        <ul class="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg py-1 z-50">
+        <ul class="absolute right-0 top-full mt-3 w-56 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl shadow-zinc-200/50 dark:shadow-black/50 py-2 z-50 list-none p-0 m-0">
           <li>
-            <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
-               [class.text-primary]="url() === '/admin/dashboard'"
+            <a class="flex items-center gap-3 px-5 py-2.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700/50 cursor-pointer transition-colors"
+               [class.text-blue-600]="url() === '/admin/dashboard'"
+               [class.dark:text-blue-400]="url() === '/admin/dashboard'"
+               [class.text-zinc-700]="url() !== '/admin/dashboard'"
+               [class.dark:text-zinc-300]="url() !== '/admin/dashboard'"
                (click)="goTo('/admin/dashboard')">
-              <app-icon icon="gauge-high" />
+              <app-icon icon="gauge-high" class="opacity-70" />
               Analytics
             </a>
           </li>
           <li>
-            <a class="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
-               [class.text-primary]="url() === '/admin/fileExplorer'"
+            <a class="flex items-center gap-3 px-5 py-2.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700/50 cursor-pointer transition-colors"
+               [class.text-blue-600]="url() === '/admin/fileExplorer'"
+               [class.dark:text-blue-400]="url() === '/admin/fileExplorer'"
+               [class.text-zinc-700]="url() !== '/admin/fileExplorer'"
+               [class.dark:text-zinc-300]="url() !== '/admin/fileExplorer'"
                (click)="goTo('/admin/fileExplorer')">
-              <app-icon icon="folder-open" />
+              <app-icon icon="folder-open" class="opacity-70" />
               Media Library
             </a>
           </li>
-          <li class="px-4 pt-3 pb-1">
-            <span class="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-slate-500">Edit Content</span>
+          <li class="px-5 pt-4 pb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Content</span>
           </li>
           <li>
-            <a class="flex items-center gap-2 px-4 py-2 pl-6 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
-               [class.text-primary]="url() === '/admin/homeEditor'"
+            <a class="flex items-center gap-3 px-5 py-2.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700/50 cursor-pointer transition-colors"
+               [class.text-blue-600]="url() === '/admin/homeEditor'"
+               [class.dark:text-blue-400]="url() === '/admin/homeEditor'"
+               [class.text-zinc-700]="url() !== '/admin/homeEditor'"
+               [class.dark:text-zinc-300]="url() !== '/admin/homeEditor'"
                (click)="goTo('/admin/homeEditor')">
-              <app-icon icon="home" />
+              <app-icon icon="home" class="opacity-70" />
               Home Page
             </a>
           </li>
           <li>
-            <a class="flex items-center gap-2 px-4 py-2 pl-6 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
-               [class.text-primary]="url() === '/admin/eventEditor'"
+            <a class="flex items-center gap-3 px-5 py-2.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700/50 cursor-pointer transition-colors"
+               [class.text-blue-600]="url() === '/admin/eventEditor'"
+               [class.dark:text-blue-400]="url() === '/admin/eventEditor'"
+               [class.text-zinc-700]="url() !== '/admin/eventEditor'"
+               [class.dark:text-zinc-300]="url() !== '/admin/eventEditor'"
                (click)="goTo('/admin/eventEditor')">
-              <app-icon icon="calendar-days" />
+              <app-icon icon="calendar-days" class="opacity-70" />
               Events
             </a>
           </li>
           <li>
-            <a class="flex items-center gap-2 px-4 py-2 pl-6 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
-               [class.text-primary]="url() === '/admin/galleryEditor'"
+            <a class="flex items-center gap-3 px-5 py-2.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700/50 cursor-pointer transition-colors"
+               [class.text-blue-600]="url() === '/admin/galleryEditor'"
+               [class.dark:text-blue-400]="url() === '/admin/galleryEditor'"
+               [class.text-zinc-700]="url() !== '/admin/galleryEditor'"
+               [class.dark:text-zinc-300]="url() !== '/admin/galleryEditor'"
                (click)="goTo('/admin/galleryEditor')">
-              <app-icon icon="images" />
+              <app-icon icon="images" class="opacity-70" />
               Gallery
             </a>
           </li>
           <li>
-            <a class="flex items-center gap-2 px-4 py-2 pl-6 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
-               [class.text-primary]="url() === '/admin/testimonialsEditor'"
-               (click)="goTo('/admin/testimonialsEditor')">
-              <app-icon icon="share" />
-              Testimonials
+            <a class="flex items-center gap-3 px-5 py-2.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700/50 cursor-pointer transition-colors"
+               [class.text-blue-600]="url() === '/admin/liturgyEditor'"
+               [class.dark:text-blue-400]="url() === '/admin/liturgyEditor'"
+               [class.text-zinc-700]="url() !== '/admin/liturgyEditor'"
+               [class.dark:text-zinc-300]="url() !== '/admin/liturgyEditor'"
+               (click)="goTo('/admin/liturgyEditor')">
+              <app-icon icon="hands-praying" class="opacity-70" />
+              Liturgy
             </a>
           </li>
-          <li>
-            <a class="flex items-center gap-2 px-4 py-2 pl-6 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
-               [class.text-primary]="url() === '/admin/contactEditor'"
-               (click)="goTo('/admin/contactEditor')">
-              <app-icon icon="address-card" />
-              Contact Details
-            </a>
-          </li>
-          <li>
-            <a class="flex items-center gap-2 px-4 py-2 pl-6 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
-               [class.text-primary]="url() === '/admin/storyEditor'"
-               (click)="goTo('/admin/storyEditor')">
-              <app-icon icon="book-open" />
-              Our Story
-            </a>
-          </li>
-          <li>
-            <a class="flex items-center gap-2 px-4 py-2 pl-6 text-sm hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
-               [class.text-primary]="url() === '/admin/resourcesEditor'"
-               (click)="goTo('/admin/resourcesEditor')">
-              <app-icon icon="hands-praying" />
-              Resources
-            </a>
-          </li>
-          <li class="border-t border-gray-200 dark:border-slate-700 mt-1 pt-1">
-            <a class="flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer transition-colors"
+          <li class="border-t border-zinc-200 dark:border-zinc-700 mt-2 pt-2 pb-1">
+            <a class="flex items-center gap-3 px-5 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer transition-colors"
                (click)="logout()">
-              <app-icon icon="right-from-bracket" />
+              <app-icon icon="right-from-bracket" class="opacity-70" />
               Logout
             </a>
           </li>

@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal, WritableSignal } from "@angular/core"
-import { ModalService } from "@revive/src/app/services/modal.service"
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
+import { ModalService } from "@app/services/modal.service"
 import { FormlyFieldConfig } from "@ngx-formly/core"
 import { InputDialogComponent } from "../input-dialog/input-dialog.component"
 import { FormlyService } from "../../services/formly.service"
@@ -15,7 +15,7 @@ import { IconComponent } from "../../icon/icon.component"
   templateUrl: "./repeat-formly-field.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
-export class RepeatFieldComponent extends FieldType {
+export class RepeatFieldComponent extends FieldType implements OnInit {
   public editingIndex: number | null = null
   public valuesInModel: WritableSignal<unknown[]> = signal ( [ ] )
 
@@ -55,6 +55,18 @@ export class RepeatFieldComponent extends FieldType {
     super ( )
   }
 
+  public ngOnInit ( ): void {
+    const current = this.formControl?.value
+    const defaults = this.field?.defaultValue
+    if ( ( !current || ( Array.isArray ( current ) && current.length === 0 ) )
+      && Array.isArray ( defaults ) && defaults.length > 0 ) {
+      this.formControl?.setValue ( [ ...defaults ] )
+      this.valuesInModel.set ( [ ...defaults ] )
+    } else if ( Array.isArray ( current ) ) {
+      this.valuesInModel.set ( [ ...current ] )
+    }
+  }
+
   public addField (  ) {
     const modalRef = this.modalSvc.open ( InputDialogComponent, {
       centered: true
@@ -70,10 +82,19 @@ export class RepeatFieldComponent extends FieldType {
     } )
   }
 
+  /** Full Name, Email, and Phone defaults cannot be edited or removed. */
+  public isLockedField ( field: FormlyFieldConfig | null | undefined ): boolean {
+    const key = String ( field?.key ?? "" ).toLowerCase ( )
+    return key === "name" || key === "email" || key === "phone"
+  }
+
   public edit ( index: number ) {
     const fieldToEdit = this.formControl?.value?. [ index ]
     if ( !fieldToEdit ) {
       this.toastrSvc.error ( "Field to edit not found." )
+      return
+    }
+    if ( this.isLockedField ( fieldToEdit ) ) {
       return
     }
     const modalRef = this.modalSvc.open ( InputDialogComponent, {
@@ -95,6 +116,10 @@ export class RepeatFieldComponent extends FieldType {
   }
 
   public removeField ( index: number ) {
+    const field = this.formControl?.value?. [ index ] as FormlyFieldConfig | undefined
+    if ( this.isLockedField ( field ) ) {
+      return
+    }
     const newValue = ( this.formControl?.value || [ ] ).filter ( ( _: unknown, i: number ) => i !== index )
     this.formControl?.setValue ( newValue )
     this.valuesInModel.set ( newValue )
@@ -109,11 +134,11 @@ export class RepeatFieldComponent extends FieldType {
 
   private addNewFieldToModel ( index: number, fieldData: { label: string; type: string; placeholder?: string; required?: boolean } ) {
     let field: FormlyFieldConfig = { }
-    const timestamp = new Date ( ).getTime ( )
+    const uuid = crypto.randomUUID ( )
     switch ( fieldData.type ) {
       case "text":
         field = this.formlySvc.TextInput (
-          "repeat-text-" + timestamp,
+          "repeat-text-" + uuid,
           {
             label: fieldData.label,
             placeholder: fieldData.placeholder || "",
@@ -123,7 +148,7 @@ export class RepeatFieldComponent extends FieldType {
         break
       case "textarea":
         field = this.formlySvc.TextAreaInput (
-          "repeat-textarea-" + timestamp,
+          "repeat-textarea-" + uuid,
           {
             label: fieldData.label,
             placeholder: fieldData.placeholder || "",
@@ -133,7 +158,7 @@ export class RepeatFieldComponent extends FieldType {
         break
       case "checkbox":
         field = this.formlySvc.CheckboxInput (
-          "repeat-checkbox-" + timestamp,
+          "repeat-checkbox-" + uuid,
           {
             label: fieldData.label,
             required: fieldData.required || false
@@ -142,7 +167,7 @@ export class RepeatFieldComponent extends FieldType {
         break
       case "email":
         field = this.formlySvc.EmailInput (
-          "repeat-email-" + timestamp,
+          "repeat-email-" + uuid,
           {
             label: fieldData.label,
             placeholder: fieldData.placeholder || "",
@@ -152,7 +177,7 @@ export class RepeatFieldComponent extends FieldType {
         break
       case "phone":
         field = this.formlySvc.TelInput (
-          "repeat-phone-" + timestamp,
+          "repeat-phone-" + uuid,
           {
             label: fieldData.label,
             placeholder: fieldData.placeholder || "",

@@ -27,7 +27,7 @@
           (click)="stopProp($event)"
         />
       </div>
-      <div class="overflow-y-scroll max-h-56 p-2" style="scrollbar-gutter: stable">
+      <div class="overflow-y-scroll max-h-56 p-2 [scrollbar-gutter:stable]">
         @if (filteredIcons().length === 0) {
           <p class="text-center text-sm text-gray-400 py-4">No icons found.</p>
         } @else {
@@ -41,7 +41,7 @@
                 (click)="selectIcon(icon, $event)"
               >
                 <app-icon [icon]="$any(icon)" />
-                <span class="truncate w-full text-center leading-tight" style="font-size: 9px;">{{ icon }}</span>
+                <span class="truncate w-full text-center leading-tight text-[9px]">{{ icon }}</span>
               </button>
             }
           </div>

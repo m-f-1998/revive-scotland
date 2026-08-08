@@ -1,6 +1,6 @@
 
 import { ChangeDetectionStrategy, Component, inject, OnDestroy, signal, WritableSignal } from "@angular/core"
-import { IconComponent } from "@revive/src/app/icon/icon.component"
+import { IconComponent } from "@app/icon/icon.component"
 import { EventsService, ReviveEvent } from "@services/events.service"
 import { intervalToDuration } from "date-fns"
 

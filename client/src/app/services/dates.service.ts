@@ -1,5 +1,5 @@
-import { Injectable } from "@angular/core"
-import { format, parse } from "date-fns"
+import { Service } from "@angular/core"
+import { format, parse, isSameMonth, isSameDay } from "date-fns"
 
 export interface NgbDateStruct {
   year: number
@@ -7,9 +7,7 @@ export interface NgbDateStruct {
   day: number
 }
 
-@Injectable ( {
-  providedIn: "root"
-} )
+@Service ( )
 export class DatesService {
   public reformat ( date: Date | string, outputFormat: string ) {
     try {
@@ -26,7 +24,7 @@ export class DatesService {
   }
 
   public sameDay ( date1: Date, date2: Date ) {
-    return new Date ( date1 ).getDate ( ) === new Date ( date2 ).getDate ( )
+    return isSameDay ( new Date ( date1 ), new Date ( date2 ) )
   }
 
   public convertToNgbDate ( date: Date ): NgbDateStruct {
@@ -35,6 +33,29 @@ export class DatesService {
       month: date.getMonth ( ) + 1,
       day: date.getDate ( )
     }
+  }
+
+  public formatEventDate ( startDate: Date, endDate: Date, startTime?: string, endTime?: string ): string {
+    const sDate = new Date ( startDate )
+    const eDate = new Date ( endDate )
+
+    let dateStr = ""
+    if ( this.sameDay ( sDate, eDate ) ) {
+      dateStr = format ( sDate, "EEEE do MMMM" )
+    } else if ( isSameMonth ( sDate, eDate ) ) {
+      dateStr = `${format ( sDate, "EEEE do" )} - ${format ( eDate, "EEEE do MMMM" )}`
+    } else {
+      dateStr = `${format ( sDate, "EEEE do MMMM" )} - ${format ( eDate, "EEEE do MMMM" )}`
+    }
+
+    if ( startTime ) {
+      if ( endTime && endTime !== startTime && this.sameDay ( sDate, eDate ) ) {
+        return `${dateStr} @ ${startTime} - ${endTime}`
+      }
+      return `${dateStr} @ ${startTime}`
+    }
+
+    return dateStr
   }
 
   public convertToDate ( date: NgbDateStruct ): Date {

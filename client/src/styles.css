@@ -261,8 +261,15 @@
   .modal-panel.modal-sm {
     @apply max-w-sm;
   }
-  .modal-panel:not(.modal-lg):not(.modal-xl):not(.modal-sm) {
+  .modal-panel.modal-event-details {
+    @apply max-w-xl w-[min(100%,36rem)] max-h-[min(80vh,680px)] h-auto my-8 overflow-hidden p-0;
+  }
+  .modal-panel:not(.modal-lg):not(.modal-xl):not(.modal-sm):not(.modal-event-details) {
     @apply max-w-lg;
+  }
+  /* For components that render their own card (success/error modals) */
+  .modal-panel-bare {
+    @apply w-full max-w-lg mx-4 my-8 max-h-[90vh] overflow-auto bg-transparent shadow-none;
   }
 
   .modal-backdrop {
@@ -498,4 +505,15 @@
     /* Drop target */
     tr.folder-drop-target { background-color: rgba(96, 165, 250, 0.15); }
   }
+}
+
+/* Ensure toastrs appear in front of everything, including CDK modals */
+.toast-container,
+#toast-container {
+  position: fixed !important;
+  z-index: 999999 !important;
+}
+
+.cdk-overlay-container {
+  z-index: 1000 !important;
 }

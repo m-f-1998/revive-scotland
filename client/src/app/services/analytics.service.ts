@@ -1,12 +1,10 @@
-import { inject, Injectable } from "@angular/core"
+import { inject, Service } from "@angular/core"
 import { ApiService } from "./api.service"
 import { DashboardData } from "../interfaces/analytics.interface"
 import { AuthService } from "./auth.service"
 import { HttpHeaders } from "@angular/common/http"
 
-@Injectable ( {
-  providedIn: "root"
-} )
+@Service ( )
 export class AnalyticsService {
   private lastUpdate: Date | null = null
   private cache: DashboardData | null = null

@@ -1,7 +1,7 @@
 import { ApplicationConfig, CSP_NONCE, inject, provideAppInitializer, provideZonelessChangeDetection } from "@angular/core"
 import { provideRouter, withInMemoryScrolling } from "@angular/router"
 import { routes } from "./app.routes"
-import { provideHttpClient, withFetch } from "@angular/common/http"
+import { provideHttpClient } from "@angular/common/http"
 import { provideFormlyCore } from "@ngx-formly/core"
 import { provideToastr } from "@m-f-1998/ngx-toastr"
 import { RECAPTCHA_LOADER_OPTIONS, RECAPTCHA_V3_SITE_KEY } from "ng-recaptcha-2"
@@ -9,8 +9,16 @@ import { FormlyConfig } from "./formly/formly-config"
 import { AuthService } from "./services/auth.service"
 import { environment } from "../environments/environment"
 import { DialogModule } from "@angular/cdk/dialog"
+import { OVERLAY_DEFAULT_CONFIG } from "@angular/cdk/overlay"
 
 const nonce = document.querySelector ( 'meta[name="csp-nonce"]' )?.getAttribute ( "content" )
+
+/** Deployed: from Portainer RECAPTCHA_SITE via index.html. Local ng-serve: environment fallback. */
+const recaptchaSiteKey = document
+  .querySelector ( 'meta[name="recaptcha-site-key"]' )
+  ?.getAttribute ( "content" )
+  ?.trim ( )
+  || environment.recaptcha.siteKey
 
 const appConfig: ApplicationConfig = {
   providers: [
@@ -19,9 +27,7 @@ const appConfig: ApplicationConfig = {
       anchorScrolling: "enabled",
       scrollPositionRestoration: "enabled"
     } ) ),
-    provideHttpClient (
-      withFetch ( )
-    ),
+    provideHttpClient ( ),
     provideAppInitializer ( ( ) => {
       const initializerFn = ( ( authSvc: AuthService ) => async ( ) => {
         await authSvc.loadAuth ( )
@@ -32,6 +38,12 @@ const appConfig: ApplicationConfig = {
       new FormlyConfig ( ),
     ] ),
     DialogModule,
+    {
+      provide: OVERLAY_DEFAULT_CONFIG,
+      useValue: {
+        usePopover: false
+      }
+    },
     provideToastr ( {
       positionClass: "toast-bottom-right",
       preventDuplicates: true,
@@ -43,7 +55,7 @@ const appConfig: ApplicationConfig = {
     } ),
     {
       provide: RECAPTCHA_V3_SITE_KEY,
-      useValue: environment.recaptcha.siteKey
+      useValue: recaptchaSiteKey
     }
   ]
 }

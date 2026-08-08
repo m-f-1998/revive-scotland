@@ -9,5 +9,5 @@ import { ReactiveFormsModule, FormControl } from "@angular/forms"
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class FormlyFieldInputComponent extends FieldType {
-  public get fc (): FormControl { return this.formControl as FormControl }
+  public get fc ( ): FormControl { return this.formControl as FormControl }
 }

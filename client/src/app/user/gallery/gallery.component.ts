@@ -1,10 +1,10 @@
 import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, QueryList, ViewChildren, computed, inject, signal, Renderer2 } from "@angular/core"
-import { ModalService } from "@revive/src/app/services/modal.service"
-import { IconComponent } from "@revive/src/app/icon/icon.component"
+import { ModalService } from "@app/services/modal.service"
+import { IconComponent } from "@app/icon/icon.component"
 import { ExpandedImageComponent } from "@components/expanded-image/expanded-image.component"
 import { NavbarComponent } from "../components/navbar/navbar.component"
 import { FooterComponent } from "../components/footer/footer.component"
-import { ApiService } from "@revive/src/app/services/api.service"
+import { ApiService } from "@app/services/api.service"
 import { TitleCasePipe } from "@angular/common"
 
 type MediaItem = {

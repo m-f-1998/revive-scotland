@@ -1,0 +1,40 @@
+<div class="card-header bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-700/80 px-5 py-4">
+  <h5 class="mb-0 font-semibold flex items-center gap-2 text-primary dark:text-white text-base">
+    <app-icon icon="heart" /> General Donations
+  </h5>
+</div>
+
+<div class="card-body p-5 flex-1 space-y-6">
+  <p class="text-gray-500 dark:text-gray-400 text-sm">
+    The home page <strong>Donate Now</strong> button uses a Stripe Payment Link. Download a QR code here for posters, flyers, or social media.
+  </p>
+
+  <div class="rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20 p-5">
+    <h6 class="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-1">Production donation link</h6>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Use this QR on printed materials for the live site.</p>
+    <p class="text-xs font-mono break-all text-gray-700 dark:text-gray-300 mb-4 bg-white/70 dark:bg-slate-900/50 rounded-lg px-3 py-2 border border-emerald-100 dark:border-emerald-900/30">{{ liveLink }}</p>
+    <div class="flex flex-wrap items-start gap-4">
+      <app-qr-download [value]="liveLink" filename="revive-scotland-donation.png" />
+      <button type="button" class="btn-outline-secondary btn-sm mt-2" (click)="copyLink(liveLink, 'Production donation link')">
+        <app-icon icon="link" /> Copy link
+      </button>
+    </div>
+  </div>
+
+  <div class="rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20 p-5">
+    <h6 class="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 mb-1">Test donation link</h6>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Stripe test mode — for local and dev site testing only.</p>
+    <p class="text-xs font-mono break-all text-gray-700 dark:text-gray-300 mb-4 bg-white/70 dark:bg-slate-900/50 rounded-lg px-3 py-2 border border-amber-100 dark:border-amber-900/30">{{ testLink }}</p>
+    <div class="flex flex-wrap items-start gap-4">
+      <app-qr-download [value]="testLink" filename="revive-scotland-donation-test.png" />
+      <button type="button" class="btn-outline-secondary btn-sm mt-2" (click)="copyLink(testLink, 'Test donation link')">
+        <app-icon icon="link" /> Copy link
+      </button>
+    </div>
+  </div>
+
+  <div class="text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-slate-900/50 rounded-lg px-4 py-3 border border-gray-100 dark:border-slate-700">
+    <p class="mb-1"><strong class="text-gray-700 dark:text-gray-300">Public site currently uses:</strong></p>
+    <p class="font-mono text-xs break-all mb-0">{{ activePublicLink }}</p>
+  </div>
+</div>

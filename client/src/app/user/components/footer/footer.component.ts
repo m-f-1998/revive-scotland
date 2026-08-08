@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject } from "@angular/core"
 import { TermsComponent } from "../terms/terms.component"
-import { ModalService } from "@revive/src/app/services/modal.service"
+import { ModalService } from "@app/services/modal.service"
 import { Router } from "@angular/router"
 import { DatesService } from "@services/dates.service"
 import { version } from "@revive/package.json"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
-import { AuthService } from "@revive/src/app/services/auth.service"
+import { AuthService } from "@app/services/auth.service"
 
 @Component ( {
   selector: "app-footer",
@@ -35,8 +35,9 @@ export class FooterComponent {
       try {
         await this.authSvc.login ( )
         await this.router.navigate ( [ "/admin/dashboard" ] )
-      } catch {
-        this.toastrSvc.error ( "Login Unauthorized" )
+      } catch ( e ) {
+        const message = e instanceof Error ? e.message : "Login Unauthorized"
+        this.toastrSvc.error ( message )
       }
     }
   }

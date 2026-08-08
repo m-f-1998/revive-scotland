@@ -1,17 +1,8 @@
 <div class="grid grid-cols-1 lg:grid-cols-2" id="adoration">
   <div class="half-page-banner min-h-[20rem] lg:min-h-0">
-    <img src="/api/img/adoration.jpg?w=640&f=webp"
-      srcset="
-        /api/img/adoration.jpg?w=320&f=webp 320w,
-        /api/img/adoration.jpg?w=640&f=webp 640w,
-        /api/img/adoration.jpg?w=1024&f=webp 1024w
-      "
-      sizes="(max-width: 600px) 100vw, 600px"
-      alt="Adoration Missions Banner"
-      loading="lazy"
-      decoding="async"
-      class="w-full h-full object-cover block"
-    />
+    @if (content().mediaUrl) {
+      <app-media-display [src]="content().mediaUrl!" alt="Adoration Missions Banner" />
+    }
   </div>
   <div class="border-t border-gray-200 lg:border-t-0 lg:border-l lg:bg-gray-50 dark:lg:bg-slate-800 flex flex-col p-10 justify-center lg:text-right">
     <p class="text-serif text-primary mb-0">Sharing our Faith</p>

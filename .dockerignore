@@ -1,0 +1,11 @@
+**/node_modules
+**/.git
+**/.env
+**/.env.*
+**/revive-scotland-firebase*.json
+server/src/revive-scotland-firebase*.json
+server/dist/**/*.json
+**/*.md
+client/.angular
+**/coverage
+**/.DS_Store

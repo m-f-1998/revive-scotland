@@ -24,5 +24,7 @@ USER node
 WORKDIR /node/server
 RUN npm ci --prefer-offline --no-audit --omit=dev
 
+ENV NODE_ENV=production
+
 EXPOSE 3000
 CMD ["node", "index.js"]

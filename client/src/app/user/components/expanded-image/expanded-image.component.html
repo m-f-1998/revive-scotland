@@ -1,4 +1,3 @@
-<!-- Header -->
 <div class="lightbox-header">
   <span class="lightbox-counter">{{ currentIndex() + 1 }} / {{ items().length }}</span>
   <button type="button" class="lightbox-close" aria-label="Close" (click)="close()">
@@ -6,11 +5,12 @@
   </button>
 </div>
 
-<!-- Media -->
 <div class="lightbox-body">
-  <button class="lightbox-arrow lightbox-arrow--left" type="button" aria-label="Previous" (click)="prevItem()">
-    <app-icon icon="chevron-left" />
-  </button>
+  @if (items().length > 1) {
+    <button class="lightbox-arrow lightbox-arrow--left" type="button" aria-label="Previous" (click)="prevItem()">
+      <app-icon icon="chevron-left" />
+    </button>
+  }
 
   @if (items()[currentIndex()].type === 'video') {
     <video controls autoplay class="lightbox-video"
@@ -20,7 +20,7 @@
   } @else {
     <img
       [src]="imgSrc(items()[currentIndex()].url, 1024)"
-      [srcset]="imgSrcset(items()[currentIndex()].url)"
+      [attr.srcset]="imgSrcset(items()[currentIndex()].url) || null"
       sizes="(max-width: 600px) 100vw, 90vw"
       decoding="async"
       [alt]="'Gallery image ' + (currentIndex() + 1)"
@@ -28,12 +28,13 @@
     />
   }
 
-  <button class="lightbox-arrow lightbox-arrow--right" type="button" aria-label="Next" (click)="nextItem()">
-    <app-icon icon="chevron-right" />
-  </button>
+  @if(items().length > 1) {
+    <button class="lightbox-arrow lightbox-arrow--right" type="button" aria-label="Next" (click)="nextItem()">
+      <app-icon icon="chevron-right" />
+    </button>
+  }
 </div>
 
-<!-- Footer -->
 <div class="lightbox-footer">
   @if (items()[currentIndex()].type === 'image') {
     <a [href]="imgSrc(items()[currentIndex()].url, 1024)"
@@ -44,7 +45,6 @@
   }
 </div>
 
-<!-- Preload adjacent images -->
 <div class="hidden">
   @if (items()[currentIndex() + 1]?.type === 'image') {
     <img [src]="imgSrc(items()[currentIndex() + 1].url, 1024)" alt="" />

@@ -1,7 +1,7 @@
 import { Location } from "@angular/common"
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
 import { NavigationEnd, Router } from "@angular/router"
-import { IconComponent } from "@revive/src/app/icon/icon.component"
+import { IconComponent } from "@app/icon/icon.component"
 
 @Component ( {
   selector: "app-navbar",
@@ -11,14 +11,15 @@ import { IconComponent } from "@revive/src/app/icon/icon.component"
   templateUrl: "./navbar.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    "class": "sticky top-0 z-50 block",
-    "(document:click)": "onDocumentClick($event)"
+    "(document:click)": "onDocumentClick($event)",
+    "(window:scroll)": "onWindowScroll( )"
   }
 } )
 export class NavbarComponent implements OnInit {
   public url: WritableSignal<string> = signal ( "" )
 
   public isMenuCollapsed: WritableSignal<boolean> = signal ( true )
+  public isScrolled: WritableSignal<boolean> = signal ( false )
 
   public readonly location: Location = inject ( Location )
   private readonly router: Router = inject ( Router )
@@ -30,6 +31,11 @@ export class NavbarComponent implements OnInit {
       }
     } )
     this.url.set ( this.location.path ( ) )
+    this.onWindowScroll ( )
+  }
+
+  public onWindowScroll ( ) {
+    this.isScrolled.set ( window.scrollY > 20 )
   }
 
   public goTo ( routerLink: string = "", id?: string ) {
@@ -39,7 +45,7 @@ export class NavbarComponent implements OnInit {
 
   public onDocumentClick ( event: MouseEvent ) {
     const target = event.target as HTMLElement
-    if ( !target.closest ( ".mobile-menu-container" ) ) {
+    if ( !target.closest ( ".mobile-menu-container" ) && !target.closest ( "button[aria-label='Toggle navigation']" ) ) {
       this.isMenuCollapsed.set ( true )
     }
   }

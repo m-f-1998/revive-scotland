@@ -1,5 +1,5 @@
 import { config } from "dotenv"
-import { join, normalize, resolve } from "path"
+import { join, normalize, resolve, sep } from "path"
 
 const envPath = resolve ( process.cwd ( ), ".env" )
 config ( { path: envPath, quiet: true } )
@@ -69,8 +69,11 @@ export const router: FastifyPluginAsync = async app => {
       const format = f && SUPPORTED_FORMATS.includes ( f ) ? f : "webp"
       const quality = parsedQuality
       const safeFilename = normalize ( filename ).replace ( /^(\.\.(\/|\\|$))+/, "" )
+      const inputPath = resolve ( IMAGE_DIR, safeFilename )
 
-      const inputPath = join ( IMAGE_DIR, safeFilename )
+      if ( inputPath !== IMAGE_DIR && !inputPath.startsWith ( IMAGE_DIR + sep ) ) {
+        return rep.status ( 400 ).send ( "Bad Request" )
+      }
 
       // Check if image or mp4
       // Only allow mp4, jpg, jpeg, png, webp, avif
@@ -93,7 +96,7 @@ export const router: FastifyPluginAsync = async app => {
 
           const file = createReadStream ( inputPath, { start, end } )
 
-          // In Fastify, use .header() and return the stream directly
+          // In Fastify, use .header( ) and return the stream directly
           return rep
             .code ( 206 )
             .headers ( {

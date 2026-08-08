@@ -1,4 +1,4 @@
-import { Injectable } from "@angular/core"
+import { Service } from "@angular/core"
 import { FormlyFieldConfig } from "@ngx-formly/core"
 import {
   FormlyDate,
@@ -7,9 +7,7 @@ import {
   FormlyText,
 } from "../formly/formly-types"
 
-@Injectable ( {
-  providedIn: "root"
-} )
+@Service ( )
 export class FormlyService {
   public TextInput (
     key: string,
@@ -83,13 +81,18 @@ export class FormlyService {
     return this.CustomField ( key, "datepicker", { ...expressions, props }, focus )
   }
 
-  public AddressAutocompleteInput (
+  public TimeInput ( key: string, props: FormlyProps = { }, expressions: FormlyExpressions = { }, focus: boolean = false ): FormlyFieldConfig {
+    expressions.name = key
+    return this.CustomField ( key, "timepicker", { ...expressions, props }, focus )
+  }
+
+  public AddressInput (
     key: string,
     props: FormlyProps = { },
     expressions: FormlyExpressions = { },
     focus: boolean = false
   ): FormlyFieldConfig {
-    return this.CustomField ( key, "address-autocomplete", { ...expressions, props }, focus )
+    return this.CustomField ( key, "address", { ...expressions, props }, focus )
   }
 
   public ImagePickerInput (

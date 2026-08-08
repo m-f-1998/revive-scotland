@@ -4,13 +4,13 @@
       <img
         aria-hidden="true"
         alt=""
-        [attr.src]="img.image.startsWith('http') ? img.image : '/api/img/' + img.image + '?w=640&f=webp&q=60'"
+        [attr.src]="img.image.startsWith('/api/share') ? img.image : '/api/img/' + img.image + '?w=640&f=webp&q=60'"
         class="carousel-bg"
       />
 
       <img
-        [attr.src]="img.image.startsWith('http') ? img.image : '/api/img/' + img.image + '?f=webp&q=92'"
-        [attr.srcset]="img.image.startsWith('http') ? '' :
+        [attr.src]="img.image.startsWith('/api/share') ? img.image : '/api/img/' + img.image + '?f=webp&q=92'"
+        [attr.srcset]="img.image.startsWith('/api/share') ? '' :
           '/api/img/' + img.image + '?w=640&f=webp&q=92 640w, ' +
           '/api/img/' + img.image + '?w=1280&f=webp&q=92 1280w, ' +
           '/api/img/' + img.image + '?f=webp&q=92 2x'"
