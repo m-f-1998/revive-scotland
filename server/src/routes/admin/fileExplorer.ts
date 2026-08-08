@@ -24,7 +24,6 @@ const ALLOWED_UPLOAD_MIME_TYPES = new Set ( [
 const STATIC_ASSETS_DIR = join ( process.cwd ( ), "../", "assets", "img" )
 
 export const router: FastifyPluginAsync = async app => {
-  // app prehandler
   app.addHook ( "preHandler", checkFirebaseAuth )
   app.addHook ( "preHandler", addUserPath )
   app.addHook ( "preHandler", validateS3Key )
@@ -38,10 +37,6 @@ export const router: FastifyPluginAsync = async app => {
     if ( cleanupTimer ) clearInterval ( cleanupTimer )
   } )
 
-  /**
-   * 1. NAVIGATE FOLDER STRUCTURE
-   * Lists files and folders for a given path.
-   */
   app.get ( "/list", async ( req, rep ) => {
     const userPath = req.user!.s3Path!
     // 'path' query param is relative to user's root (e.g., '/documents' or '/')
@@ -101,10 +96,6 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 
-  /**
-   * 1b. NAVIGATE STATIC ASSETS
-   * Lists built-in files and folders from the local assets directory.
-   */
   app.get ( "/static-list", async ( req, rep ) => {
     const { path } = req.query as { path?: string }
     const relativePath = path || "/"
@@ -158,10 +149,6 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 
-  /**
-   * 2. UPLOAD A FILE (Get Presigned URL)
-   * Generates a secure, temporary URL for the client to upload a file directly.
-   */
   app.post ( "/upload-url", async ( req, rep ) => {
     // key is the FULL S3 path (e.g., users/uid/docs/file.txt)
     const { key, contentType, fileSize } = req.body as { key?: string; contentType?: string; fileSize?: number }
@@ -211,10 +198,6 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 
-  /**
-   * (Helper for Upload) CREATE A FOLDER
-   * S3 folders are just 0-byte objects with a trailing slash.
-   */
   app.post ( "/create-folder", async ( req, rep ) => {
     const { key } = req.body as { key?: string } // e.g., users/uid/new-folder/
 
@@ -240,9 +223,6 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 
-  /**
-   * 3. DELETE A FILE
-   */
   app.post ( "/delete", async ( req, rep ) => {
     const { key, isFolder } = req.body as { key?: string; isFolder?: boolean }
 
@@ -256,13 +236,11 @@ export const router: FastifyPluginAsync = async app => {
       let totalSizeDeleted = 0
 
       if ( isFolder ) {
-        // 1. List all files under the prefix
         const files = await S3Service.listAllKeysUnderPrefix ( key )
         if ( files.length === 0 ) {
           return rep.status ( 200 ).send ( { message: "Folder is empty or already deleted." } )
         }
 
-        // 2. Calculate total size and delete all objects
         totalSizeDeleted = files.reduce ( ( acc, file ) => acc + file.size, 0 )
         const deletePromises = files.map ( file => S3Service.deleteObject ( file.key ) )
 
@@ -316,10 +294,6 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 
-  /**
-   * 4. RENAME A FILE OR FOLDER
-   * S3 has no "rename" or "move". It's a COPY + DELETE operation.
-   */
   app.post ( "/rename", async ( req, rep ) => {
     const { oldKey, newKey, isFolder } = req.body as { oldKey?: string; newKey?: string; isFolder?: boolean }
 
@@ -342,25 +316,18 @@ export const router: FastifyPluginAsync = async app => {
 
     try {
       if ( isFolder ) {
-        // 1. List all files under the prefix
         const files = await S3Service.listAllKeysUnderPrefix ( oldKey )
 
-        // 2. Copy all files to the new location first
         await Promise.all ( files.map ( file => S3Service.copyObject ( file.key, file.key.replace ( oldKey, newKey ) ) ) )
 
-        // 3. Update share links before deleting originals so active URLs remain valid
         await onFolderRenamed ( oldKey, newKey )
 
-        // 4. Only delete originals after share links are updated
         await Promise.all ( files.map ( file => S3Service.deleteObject ( file.key ) ) )
       } else {
-        // 1. Copy the object
         await S3Service.copyObject ( oldKey, newKey )
 
-        // 2. Update share link key before deleting so existing URLs remain valid
         await onFileRenamed ( oldKey, newKey )
 
-        // 3. Delete the old object
         await S3Service.deleteObject ( oldKey )
       }
 
@@ -371,9 +338,6 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 
-  /**
-   * 5. CREATE A SHARED PUBLIC LINK (Presigned URL)
-   */
   app.get ( "/share-url", async ( req, rep ) => {
     const { key, expiresIn } = req.query as { key?: string; expiresIn?: string }
 
@@ -418,10 +382,6 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 
-  /**
-   * 5b. GET SHARE INFO
-   * Resolves the filename from a shared UUID.
-   */
   app.get ( "/share-info/:id", async ( req, rep ) => {
     const { id } = req.params as { id: string }
     if ( !id ) return rep.status ( 400 ).send ( "Missing id parameter." )
@@ -442,13 +402,8 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 
-  /**
-   * 6. GET USER QUOTA / SPACE LEFT (MODIFIED FOR QUOTA)
-   * Reads from Firestore. Fast, efficient, and free.
-   */
   app.get ( "/quota", async ( req, rep ) => {
     try {
-      // 1. Fetch the user's quota doc from Firestore
       const userRef = getFirestore ( ).collection ( "users" ).doc ( req.user!.uid )
       const userDoc = await userRef.get ( )
 
@@ -476,10 +431,6 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 
-  /**
-   * 7. NEW (REQUIRED FOR QUOTA): UPLOAD COMPLETE
-   * Called by the client AFTER a successful S3 upload.
-   */
   app.post ( "/upload-complete", async ( req, rep ) => {
     const { key, fileSize } = req.body as { key?: string; fileSize?: number }
 
@@ -509,10 +460,7 @@ export const router: FastifyPluginAsync = async app => {
       return rep.status ( 500 ).send ( "Failed to update quota." )
     }
   } )
-  /**
-   * 8. VIEW FILE (For Admin Preview)
-   * Enforces a 15-minute expiry.
-   */
+
   app.get ( "/view-url", async ( req, rep ) => {
     const { key } = req.query as { key?: string }
     if ( !key ) {

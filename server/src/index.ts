@@ -25,9 +25,9 @@ import { router as contentRouter } from "./routes/content.js"
 import { randomBytes } from "crypto"
 
 const REQUIRED_ENV_VARS = [
-  "RECAPTCHA_API_KEY", "RECAPTCHA_SITE",
   "R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME",
-  "SUPERADMIN_EMAIL"
+  "SUPERADMIN_EMAIL",
+  ...( isDevMode ( ) ? [ ] : [ "RECAPTCHA_API_KEY", "RECAPTCHA_SITE" ] )
 ]
 
 if ( process.env [ "NODE_ENV" ] === "production" && isDevMode ( ) ) {

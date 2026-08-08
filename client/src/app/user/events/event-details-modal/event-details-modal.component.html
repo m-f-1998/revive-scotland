@@ -35,7 +35,7 @@
         <span class="inline-flex items-center gap-1.5 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-xs font-bold mb-2">
           <app-icon icon="ticket" />
           £{{ (event.donationPrice / 100).toFixed(2) }}
-          @if (event.donationRequired === 'required') { Required donation } @else { Optional donation }
+          @if (event.donationRequired === 'optional') { (Optional) }
         </span>
       }
 

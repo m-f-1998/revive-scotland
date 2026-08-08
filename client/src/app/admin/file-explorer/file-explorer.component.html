@@ -82,7 +82,7 @@
               Upload
             </button>
             @if (uploadDropdownOpen()) {
-              <div class="absolute right-0 mt-1 w-44 bg-white dark:bg-zinc-800 rounded-lg shadow-xl border border-zinc-200 dark:border-zinc-700 z-50 overflow-hidden">
+              <div class="absolute right-0 mt-1 w-44 dark:bg-zinc-800 rounded-lg shadow-xl border border-zinc-200 dark:border-zinc-700 z-50 overflow-hidden">
                 <button class="w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700 dark:text-zinc-200 flex items-center gap-2 transition-colors border-b border-zinc-100 dark:border-zinc-700/50" (click)="fileInput.webkitdirectory=false; fileInput.click(); uploadDropdownOpen.set(false)">
                   <app-icon icon="file-upload" class="text-blue-500" /> File
                 </button>
@@ -93,12 +93,12 @@
             }
           </div>
 
-          <button (click)="openModal('createFolder')" [disabled]="loading()" class="btn-secondary bg-white border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700 py-1.5 px-3 text-sm font-semibold rounded-lg flex items-center gap-2">
+          <button (click)="openModal('createFolder')" [disabled]="loading()" class="btn-secondary bg-secondary border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700 py-1.5 px-3 text-sm font-semibold rounded-lg flex items-center gap-2">
             <app-icon icon="folder-plus" />
             New Folder
           </button>
         }
-        <button (click)="listPath(currentPath())" [disabled]="loading()" class="btn-secondary bg-white border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700 py-1.5 px-3 text-sm font-semibold rounded-lg flex items-center gap-2" title="Refresh List">
+        <button (click)="listPath(currentPath())" [disabled]="loading()" class="btn-secondary bg-secondary border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700 py-1.5 px-3 text-sm font-semibold rounded-lg flex items-center gap-2" title="Refresh List">
           <app-icon icon="arrows-rotate" [iconAnimation]="loading() ? 'spin' : undefined" />
           Refresh
         </button>

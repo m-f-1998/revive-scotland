@@ -292,7 +292,6 @@ export class FileExplorerComponent {
     } )
   }
 
-  // --- Upload Flow ---
   public async onFileSelected ( event: Event ) {
     const input = event.target as HTMLInputElement
     const file = input.files

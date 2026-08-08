@@ -43,7 +43,7 @@ export const getEventFields = ( formlySvc: FormlyService, eventModel?: Record<st
     }, { } ),
 
     sectionHeader ( "When & where" ),
-    formlySvc.AddressAutocompleteInput ( "location", {
+    formlySvc.AddressInput ( "location", {
       label: "Event Location",
       required: true,
       maxLength: 200

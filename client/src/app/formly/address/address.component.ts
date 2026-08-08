@@ -3,15 +3,15 @@ import { FormControl, ReactiveFormsModule } from "@angular/forms"
 import { FieldType, FormlyFieldConfig } from "@ngx-formly/core"
 
 @Component ( {
-  selector: "app-formly-address-autocomplete",
+  selector: "app-formly-address",
   imports: [
     ReactiveFormsModule
   ],
   standalone: true,
-  templateUrl: "./address-lookup.component.html",
+  templateUrl: "./address.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
-export class AddressAutocompleteComponent extends FieldType<FormlyFieldConfig> implements OnInit {
+export class AddressComponent extends FieldType<FormlyFieldConfig> implements OnInit {
   // Split manual entry form fields
   public line1Control: FormControl = new FormControl ( "" )
   public line2Control: FormControl = new FormControl ( "" )

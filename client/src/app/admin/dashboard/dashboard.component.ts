@@ -40,13 +40,11 @@ export class DashboardComponent implements OnInit {
     conversions: 0
   }
 
-  // --- Pagination State ---
   public readonly pageSize = 10
   public geoPage: WritableSignal<number> = signal ( 0 )
   public trafficPage: WritableSignal<number> = signal ( 0 )
   public donationsPage: WritableSignal<number> = signal ( 0 )
 
-  // --- Computed Paginated Data ---
   public readonly paginatedGeoData = computed ( ( ) => {
     const data = this.dashboardData ( )?.geographyData || [ ]
     const start = this.geoPage ( ) * this.pageSize
@@ -79,7 +77,6 @@ export class DashboardComponent implements OnInit {
     return ( this.donationsPage ( ) + 1 ) * this.pageSize < this.donations ( ).length
   } )
 
-  // --- Chart Properties (initialized so template never reads .datasets on undefined) ---
   public trendChartData: ChartData<"line"> = { labels: [ ], datasets: [ ] }
   public trendChartOptions: ChartOptions<"line"> = {
     responsive: true,
@@ -130,7 +127,6 @@ export class DashboardComponent implements OnInit {
     } )
   }
 
-  // --- Pagination Controls ---
   public nextGeoPage ( ): void {
     if ( this.hasMoreGeo ( ) ) this.geoPage.update ( p => p + 1 )
   }

@@ -5,7 +5,7 @@ import { ValidEmail } from "./validators/EmailAddress.validator"
 import { ValidDate } from "./validators/Date.validator"
 import { DatePickerComponent } from "./date-picker/date-picker.component"
 import { TimePickerComponent } from "./time-picker/time-picker.component"
-import { AddressAutocompleteComponent } from "./address-lookup/address-lookup.component"
+import { AddressComponent } from "./address/address.component"
 import { ValidWebPageURL } from "./validators/URL.validator"
 import { ImagePickerComponent } from "./image-picker/image-picker.component"
 import { RepeatFieldComponent } from "./repeat-formly-field/repeat-formly-field.component"
@@ -49,8 +49,8 @@ export class FormlyConfig implements ConfigOption {
       extends: "input"
     },
     {
-      name: "address-autocomplete",
-      component: AddressAutocompleteComponent,
+      name: "address",
+      component: AddressComponent,
       extends: "input"
     },
     {

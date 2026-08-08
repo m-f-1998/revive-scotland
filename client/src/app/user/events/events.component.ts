@@ -32,7 +32,6 @@ import { RecaptchaAction } from "../../shared/recaptcha-actions"
     NavbarComponent
   ],
   templateUrl: "./events.component.html",
-  styleUrl: "./events.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
 } )
 export class EventsComponent implements OnInit {

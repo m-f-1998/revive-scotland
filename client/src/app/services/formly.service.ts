@@ -86,13 +86,13 @@ export class FormlyService {
     return this.CustomField ( key, "timepicker", { ...expressions, props }, focus )
   }
 
-  public AddressAutocompleteInput (
+  public AddressInput (
     key: string,
     props: FormlyProps = { },
     expressions: FormlyExpressions = { },
     focus: boolean = false
   ): FormlyFieldConfig {
-    return this.CustomField ( key, "address-autocomplete", { ...expressions, props }, focus )
+    return this.CustomField ( key, "address", { ...expressions, props }, focus )
   }
 
   public ImagePickerInput (
