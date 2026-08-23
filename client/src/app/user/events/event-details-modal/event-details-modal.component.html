@@ -1,35 +1,43 @@
 @let event = this.event();
 
-<div class="flex flex-col max-h-[min(80vh,680px)]">
-  <div class="relative shrink-0 bg-zinc-100 dark:bg-zinc-900">
+<div class="max-h-[min(80vh,680px)] overflow-y-auto overscroll-contain">
+  <div class="relative bg-zinc-100 dark:bg-zinc-900">
+    <div class="sticky top-3 z-30 h-0 overflow-visible">
+      <button type="button"
+              class="absolute right-3 top-0 w-9 h-9 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center transition-colors shadow-sm"
+              (click)="close()"
+              title="Close">
+        <app-icon icon="xmark" />
+      </button>
+    </div>
     @if (event.imageUrl) {
       <img
         [attr.src]="event.imageUrl"
         [attr.srcset]="
-          event.imageUrl + '?w=480&f=webp 480w, ' +
-          event.imageUrl + '?w=768&f=webp 768w'
+          event.imageUrl + '?w=640&f=webp 640w, ' +
+          event.imageUrl + '?w=960&f=webp 960w, ' +
+          event.imageUrl + '?w=1280&f=webp 1280w'
         "
-        sizes="576px"
+        sizes="(max-width: 768px) 100vw, 640px"
         [attr.alt]="event.title + ' poster'"
-        class="w-full h-44 sm:h-52 object-cover"
+        class="w-full max-h-[min(55vh,520px)] object-contain block"
       />
     } @else {
       <div class="w-full h-36 flex items-center justify-center text-zinc-400">
         <app-icon icon="image" iconSize="2x" />
       </div>
     }
-
-    <button type="button"
-            class="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center transition-colors"
-            (click)="close()"
-            title="Close">
-      <app-icon icon="xmark" />
-    </button>
   </div>
 
-  <div class="overflow-y-auto flex-1 min-h-0 p-5 md:p-6 space-y-4">
+  <div class="p-5 md:p-6 space-y-4">
     <div>
       <h2 class="text-xl md:text-2xl font-bold text-zinc-900 dark:text-zinc-50 mb-2">{{ event.title }}</h2>
+
+      @if (event.comingSoon) {
+        <p class="text-sm font-medium text-violet-700 dark:text-violet-300 mb-2">
+          Coming soon — registration not yet open
+        </p>
+      }
 
       @if ((event.donationRequired === 'required' || event.donationRequired === 'optional') && event.donationPrice) {
         <span class="inline-flex items-center gap-1.5 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-xs font-bold mb-2">
@@ -56,38 +64,52 @@
       }
     </div>
 
-    <div class="grid gap-3 sm:grid-cols-2">
-      <button type="button"
-              class="group w-full flex items-start gap-3 p-3 rounded-xl border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/50 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all text-left cursor-pointer"
-              (click)="addToCalendar()"
-              title="Add to calendar">
-        <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-          <app-icon icon="calendar" />
+    <div class="grid gap-3" [class.sm:grid-cols-2]="!!event.startDate && !!event.location?.trim()">
+      @if (event.startDate) {
+        <button type="button"
+                class="group w-full flex items-start gap-3 p-3 rounded-xl border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/50 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all text-left cursor-pointer"
+                (click)="addToCalendar()"
+                title="Add to calendar">
+          <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+            <app-icon icon="calendar" />
+          </div>
+          <div class="min-w-0">
+            <p class="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-0.5">When</p>
+            <p class="text-sm font-medium text-zinc-800 dark:text-zinc-200 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
+              {{ dateSvc.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime) }}
+            </p>
+            <p class="text-[11px] text-zinc-500 dark:text-zinc-400 font-semibold uppercase tracking-wider mt-1 flex items-center gap-1">
+              Add to calendar <app-icon icon="calendar-check" class="text-[10px]" />
+            </p>
+          </div>
+        </button>
+      } @else {
+        <div class="flex items-start gap-3 p-3 rounded-xl border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/50">
+          <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+            <app-icon icon="calendar" />
+          </div>
+          <div class="min-w-0">
+            <p class="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-0.5">When</p>
+            <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Date to be announced</p>
+          </div>
         </div>
-        <div class="min-w-0">
-          <p class="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-0.5">When</p>
-          <p class="text-sm font-medium text-zinc-800 dark:text-zinc-200 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
-            {{ dateSvc.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime) }}
-          </p>
-          <p class="text-[11px] text-zinc-500 dark:text-zinc-400 font-semibold uppercase tracking-wider mt-1 flex items-center gap-1">
-            Add to calendar <app-icon icon="calendar-check" class="text-[10px]" />
-          </p>
-        </div>
-      </button>
+      }
 
-      <a [href]="mapsUrl(event.location)" target="_blank" rel="noopener noreferrer"
-         class="group flex items-start gap-3 p-3 rounded-xl border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/50 hover:border-red-400 dark:hover:border-red-600 hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-all text-left">
-        <div class="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-          <app-icon icon="map-marker" />
-        </div>
-        <div class="min-w-0">
-          <p class="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-0.5">Where</p>
-          <p class="text-sm font-medium text-zinc-800 dark:text-zinc-200 group-hover:text-red-700 dark:group-hover:text-red-400 transition-colors">{{ event.location }}</p>
-          <p class="text-[11px] text-zinc-500 dark:text-zinc-400 font-semibold uppercase tracking-wider mt-1 flex items-center gap-1">
-            View map <app-icon icon="arrow-up-right-from-square" class="text-[10px]" />
-          </p>
-        </div>
-      </a>
+      @if (event.location?.trim()) {
+        <a [href]="mapsUrl(event.location)" target="_blank" rel="noopener noreferrer"
+           class="group flex items-start gap-3 p-3 rounded-xl border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/50 hover:border-red-400 dark:hover:border-red-600 hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-all text-left">
+          <div class="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+            <app-icon icon="map-marker" />
+          </div>
+          <div class="min-w-0">
+            <p class="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-0.5">Where</p>
+            <p class="text-sm font-medium text-zinc-800 dark:text-zinc-200 group-hover:text-red-700 dark:group-hover:text-red-400 transition-colors">{{ event.location }}</p>
+            <p class="text-[11px] text-zinc-500 dark:text-zinc-400 font-semibold uppercase tracking-wider mt-1 flex items-center gap-1">
+              View map <app-icon icon="arrow-up-right-from-square" class="text-[10px]" />
+            </p>
+          </div>
+        </a>
+      }
     </div>
 
     @if (event.description) {

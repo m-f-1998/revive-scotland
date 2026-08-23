@@ -6,11 +6,15 @@
         <div>
           <span class="inline-block bg-white text-primary text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-4">Up Next</span>
           <h2 class="text-3xl font-bold mb-3">{{nextEvent()?.title}}</h2>
-          <p class="opacity-80 text-lg mb-6 flex items-center gap-2">
-            <app-icon icon="map-marker" />
-            {{nextEvent()?.location}}
-          </p>
-          @if (nextEvent()?.webpageUrl) {
+          @if (nextEvent()?.location?.trim()) {
+            <p class="opacity-80 text-lg mb-6 flex items-center gap-2">
+              <app-icon icon="map-marker" />
+              {{ nextEvent()?.location }}
+            </p>
+          } @else if (nextEvent()?.comingSoon) {
+            <p class="opacity-80 text-lg mb-6">Details coming soon</p>
+          }
+          @if (nextEvent()?.webpageUrl && !nextEvent()?.comingSoon) {
             <a class="btn-outline-light rounded-full px-6 py-2.5 font-medium inline-flex items-center gap-2 transition-all hover:-translate-y-0.5"
                [href]="$safeNavigationMigration(nextEvent()?.webpageUrl)" target="_blank">
               Get Details <app-icon icon="arrow-right" />
@@ -19,33 +23,37 @@
         </div>
 
         <div class="p-6 md:p-10 rounded-2xl bg-white/10 border border-white/10 backdrop-blur-md">
-          <div class="flex justify-center md:justify-between items-center text-center gap-2 md:gap-4">
+          @if (showCountdown) {
+            <div class="flex justify-center md:justify-between items-center text-center gap-2 md:gap-4">
 
-            <div class="flex-1">
-              <div class="timer-num">{{timeRemaining().months}}</div>
-              <div class="timer-label">MO</div>
+              <div class="flex-1">
+                <div class="timer-num">{{timeRemaining().months}}</div>
+                <div class="timer-label">MO</div>
+              </div>
+              <div class="timer-divider">:</div>
+              <div class="flex-1">
+                <div class="timer-num">{{timeRemaining().days}}</div>
+                <div class="timer-label">DAYS</div>
+              </div>
+              <div class="timer-divider">:</div>
+              <div class="flex-1">
+                <div class="timer-num">{{timeRemaining().hours}}</div>
+                <div class="timer-label">HRS</div>
+              </div>
+              <div class="timer-divider hidden sm:block">:</div>
+              <div class="flex-1 hidden sm:block">
+                <div class="timer-num">{{timeRemaining().minutes}}</div>
+                <div class="timer-label">MIN</div>
+              </div>
+              <div class="timer-divider hidden sm:block">:</div>
+              <div class="flex-1 hidden sm:block">
+                <div class="timer-num opacity-80">{{timeRemaining().seconds}}</div>
+                <div class="timer-label">SEC</div>
+              </div>
             </div>
-            <div class="timer-divider">:</div>
-            <div class="flex-1">
-              <div class="timer-num">{{timeRemaining().days}}</div>
-              <div class="timer-label">DAYS</div>
-            </div>
-            <div class="timer-divider">:</div>
-            <div class="flex-1">
-              <div class="timer-num">{{timeRemaining().hours}}</div>
-              <div class="timer-label">HRS</div>
-            </div>
-            <div class="timer-divider hidden sm:block">:</div>
-            <div class="flex-1 hidden sm:block">
-              <div class="timer-num">{{timeRemaining().minutes}}</div>
-              <div class="timer-label">MIN</div>
-            </div>
-            <div class="timer-divider hidden sm:block">:</div>
-            <div class="flex-1 hidden sm:block">
-              <div class="timer-num opacity-80">{{timeRemaining().seconds}}</div>
-              <div class="timer-label">SEC</div>
-            </div>
-          </div>
+          } @else {
+            <p class="text-center text-lg font-medium opacity-90">Stay tuned — more details coming soon.</p>
+          }
         </div>
       </div>
     </div>

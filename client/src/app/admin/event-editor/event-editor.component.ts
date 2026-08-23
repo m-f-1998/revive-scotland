@@ -272,30 +272,52 @@ export class EventEditorComponent implements OnInit {
 
     const updatedEventData = {
       events: this.eventForm ( ).map ( ef => {
-        return {
+        const comingSoon = ef.model [ "comingSoon" ] === true
+        const event: Event = {
           id: ( ef.model [ "id" ] as string ) || `event-${Date.now ( )}-${Math.floor ( Math.random ( ) * 1000 )}`,
           title: ef.model [ "title" ] as string,
           description: ef.model [ "description" ] as string,
           longDescription: ef.model [ "longDescription" ] as string | undefined,
           location: ef.model?. [ "location" ] as string || "",
           imageUrl: ef.model [ "imageUrl" ] as string,
-          startDate: ef.model [ "startDate" ] as Date,
-          endDate: ef.model [ "endDate" ] as Date,
-          startTime: ef.model [ "startTime" ] as string,
-          endTime: ef.model [ "endTime" ] as string,
           actionType: ( ef.model [ "actionType" ] === "form" || ef.model [ "actionType" ] === "contact" ? "form" : "webpage" ) as "webpage" | "form",
-          webpageUrl: ef.model [ "webpageUrl" ] as string,
-          contactFormFields: ef.model [ "contactFormFields" ] as FormlyFieldConfig [ ] || [ ],
-          donationRequired: ef.model [ "donationRequired" ] as "required" | "none" | "optional" | undefined,
-          donationDescription: ef.model [ "donationDescription" ] as string,
-          donationPrice: ef.model [ "donationPrice" ] != null ? Math.round ( ( ef.model [ "donationPrice" ] as number ) * 100 ) : undefined,
-          stripeProductId: ef.model [ "stripeProductId" ] as string,
-          stripePriceId: ef.model [ "stripePriceId" ] as string,
-          maxAttendees: ef.model [ "maxAttendees" ] != null && ef.model [ "maxAttendees" ] !== ""
-            ? Math.floor ( Number ( ef.model [ "maxAttendees" ] ) )
-            : undefined,
-          waitlistEnabled: ef.model [ "waitlistEnabled" ] === true
+          comingSoon
         }
+
+        if ( ef.model [ "startDate" ] ) event.startDate = ef.model [ "startDate" ] as Date
+        if ( ef.model [ "endDate" ] ) event.endDate = ef.model [ "endDate" ] as Date
+        if ( ef.model [ "startTime" ] ) event.startTime = ef.model [ "startTime" ] as string
+        if ( ef.model [ "endTime" ] ) event.endTime = ef.model [ "endTime" ] as string
+
+        if ( !comingSoon ) {
+          event.webpageUrl = ef.model [ "webpageUrl" ] as string
+          event.contactFormFields = ef.model [ "contactFormFields" ] as FormlyFieldConfig [ ] || [ ]
+          event.donationRequired = ef.model [ "donationRequired" ] as "required" | "none" | "optional" | undefined
+          event.donationDescription = ef.model [ "donationDescription" ] as string
+          event.donationPrice = ef.model [ "donationPrice" ] != null ? Math.round ( ( ef.model [ "donationPrice" ] as number ) * 100 ) : undefined
+          event.stripeProductId = ef.model [ "stripeProductId" ] as string
+          event.stripePriceId = ef.model [ "stripePriceId" ] as string
+          event.maxAttendees = ef.model [ "maxAttendees" ] != null && ef.model [ "maxAttendees" ] !== ""
+            ? Math.floor ( Number ( ef.model [ "maxAttendees" ] ) )
+            : undefined
+          event.waitlistEnabled = ef.model [ "waitlistEnabled" ] === true
+        } else {
+          if ( ef.model [ "webpageUrl" ] ) event.webpageUrl = ef.model [ "webpageUrl" ] as string
+          if ( ef.model [ "contactFormFields" ] ) event.contactFormFields = ef.model [ "contactFormFields" ] as FormlyFieldConfig [ ]
+          if ( ef.model [ "donationRequired" ] ) event.donationRequired = ef.model [ "donationRequired" ] as "required" | "none" | "optional"
+          if ( ef.model [ "donationDescription" ] ) event.donationDescription = ef.model [ "donationDescription" ] as string
+          if ( ef.model [ "donationPrice" ] != null ) {
+            event.donationPrice = Math.round ( ( ef.model [ "donationPrice" ] as number ) * 100 )
+          }
+          if ( ef.model [ "stripeProductId" ] ) event.stripeProductId = ef.model [ "stripeProductId" ] as string
+          if ( ef.model [ "stripePriceId" ] ) event.stripePriceId = ef.model [ "stripePriceId" ] as string
+          if ( ef.model [ "maxAttendees" ] != null && ef.model [ "maxAttendees" ] !== "" ) {
+            event.maxAttendees = Math.floor ( Number ( ef.model [ "maxAttendees" ] ) )
+          }
+          if ( ef.model [ "waitlistEnabled" ] === true ) event.waitlistEnabled = true
+        }
+
+        return event
       } )
     }
 
@@ -410,7 +432,7 @@ export class EventEditorComponent implements OnInit {
     return !isNaN ( end.getTime ( ) ) && end < new Date ( )
   }
 
-  public getEventTimeoutText ( _endDate: string | Date ): string {
+  public getEventTimeoutText ( _endDate?: string | Date ): string {
     return "Past event"
   }
 

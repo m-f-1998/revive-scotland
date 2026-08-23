@@ -163,6 +163,11 @@
                               {{ getEventTimeoutText(eventData().events[idx].endDate) }}
                             </span>
                           }
+                          @if (eventForm()[idx].model['comingSoon']) {
+                            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300 ml-2">
+                              Coming soon
+                            </span>
+                          }
                         </div>
                         <div class="flex items-center gap-2">
                           @if (eventData().events[idx].id && eventForm()[idx].model['id']) {

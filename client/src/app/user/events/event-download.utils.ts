@@ -7,12 +7,14 @@ export const getGoogleMapsUrl = ( location: string ): string =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent ( location )}`
 
 export const downloadEventIcs = ( event: ReviveEvent ): void => {
+  if ( !event.startDate ) return
+
   const pad = ( n: number ) => String ( n ).padStart ( 2, "0" )
   const toUtcStamp = ( d: Date ) =>
     `${d.getUTCFullYear ( )}${pad ( d.getUTCMonth ( ) + 1 )}${pad ( d.getUTCDate ( ) )}T${pad ( d.getUTCHours ( ) )}${pad ( d.getUTCMinutes ( ) )}00Z`
 
   const start = new Date ( event.startDate )
-  const end = new Date ( event.endDate )
+  const end = event.endDate ? new Date ( event.endDate ) : new Date ( start )
   if ( event.startTime ) {
     const [ h, m ] = event.startTime.split ( ":" ).map ( Number )
     start.setHours ( h || 0, m || 0, 0, 0 )

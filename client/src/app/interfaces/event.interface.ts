@@ -7,8 +7,8 @@ export interface Event {
   longDescription?: string
   location: string
   imageUrl?: string // S3 URL after upload
-  startDate: Date
-  endDate: Date
+  startDate?: Date
+  endDate?: Date
   startTime?: string // format "HH:MM"
   endTime?: string // format "HH:MM"
 
@@ -27,6 +27,7 @@ export interface Event {
   stripePriceId?: string
   maxAttendees?: number
   waitlistEnabled?: boolean
+  comingSoon?: boolean
   registeredCount?: number
   spotsRemaining?: number | null
   isFull?: boolean

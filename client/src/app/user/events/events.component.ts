@@ -115,6 +115,11 @@ export class EventsComponent implements OnInit {
     await this.getEvents ( true )
     const current = this.events ( ).find ( e => e.id === event.id ) || event
 
+    if ( current.comingSoon ) {
+      this.toastrSvc.info ( "Registration is not yet open for this event." )
+      return
+    }
+
     if ( current.isFull && !current.waitlistOpen && current.donationRequired === "required" ) {
       this.toastrSvc.error ( "This event is fully booked." )
       return

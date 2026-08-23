@@ -54,8 +54,8 @@ interface Event {
   longDescription?: string
   location: string
   imageUrl?: string
-  startDate: string
-  endDate: string
+  startDate?: string
+  endDate?: string
   startTime?: string
   endTime?: string
   actionType: "webpage" | "form"
@@ -69,6 +69,7 @@ interface Event {
   /** Confirmed seats (status completed). Omit / 0 = unlimited. */
   maxAttendees?: number
   waitlistEnabled?: boolean
+  comingSoon?: boolean
 }
 
 export type PublicEvent = Event & {
@@ -179,12 +180,17 @@ export const filterUpcomingEvents = ( events: Event [ ] ): Event [ ] => {
   const now = new Date ( )
 
   return events.filter ( event => {
+    if ( !event.endDate ) return true
     const eventEndDate = new Date ( event.endDate )
     if ( !isNaN ( eventEndDate.getTime ( ) ) ) {
       return eventEndDate >= now
     }
     return true
-  } ).sort ( ( a, b ) => new Date ( a.startDate ).getTime ( ) - new Date ( b.startDate ).getTime ( ) )
+  } ).sort ( ( a, b ) => {
+    const aTime = a.startDate ? new Date ( a.startDate ).getTime ( ) : Number.POSITIVE_INFINITY
+    const bTime = b.startDate ? new Date ( b.startDate ).getTime ( ) : Number.POSITIVE_INFINITY
+    return aTime - bTime
+  } )
 }
 
 /** @deprecated Use filterUpcomingEvents */
@@ -244,8 +250,10 @@ const loadEvent = async ( eventId: string ): Promise<Event | undefined> => {
 }
 
 const formatEventDateForEmail = ( event: Event ): string => {
+  if ( !event.startDate ) return "Date to be announced"
+
   const start = new Date ( event.startDate )
-  const end = new Date ( event.endDate )
+  const end = event.endDate ? new Date ( event.endDate ) : start
   const dateFmt = new Intl.DateTimeFormat ( "en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" } )
   let text = dateFmt.format ( start )
   if ( event.startTime ) text += ` at ${event.startTime}`
@@ -1051,10 +1059,15 @@ export const router: FastifyPluginAsync = async app => {
       const now = new Date ( )
       const past = events
         .filter ( e => {
+          if ( !e.endDate ) return false
           const end = new Date ( e.endDate )
           return !isNaN ( end.getTime ( ) ) && end < now
         } )
-        .sort ( ( a, b ) => new Date ( b.endDate ).getTime ( ) - new Date ( a.endDate ).getTime ( ) )
+        .sort ( ( a, b ) => {
+          const aTime = a.endDate ? new Date ( a.endDate ).getTime ( ) : 0
+          const bTime = b.endDate ? new Date ( b.endDate ).getTime ( ) : 0
+          return bTime - aTime
+        } )
         .map ( e => ( {
           ...e,
           actionType: normalizeActionType ( e.actionType ),
@@ -1228,6 +1241,10 @@ export const router: FastifyPluginAsync = async app => {
     const event = await loadEvent ( eventId )
     if ( !event ) {
       return rep.status ( 404 ).send ( { message: "Event not found." } )
+    }
+
+    if ( event.comingSoon ) {
+      return rep.status ( 403 ).send ( { message: "Registration is not yet open for this event." } )
     }
 
     const capacity = await resolveCapacityGate ( event )

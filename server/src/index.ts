@@ -1,4 +1,4 @@
-import Fastify, { FastifyReply, FastifyRequest } from "fastify"
+import Fastify, { FastifyReply, FastifyRequest, type FastifyServerOptions } from "fastify"
 import pino from "pino"
 import zlib from "zlib"
 import { IncomingMessage } from "http"
@@ -42,6 +42,18 @@ if ( missingVars.length > 0 ) {
 }
 
 const trustProxyEnv = process.env [ "TRUST_PROXY" ]?.trim ( )
+
+const resolveTrustProxy = ( value: string | undefined ): NonNullable<FastifyServerOptions [ "trustProxy" ]> => {
+  if ( !value || value.length === 0 ) return "loopback"
+  if ( value === "true" ) return true
+  if ( value === "false" ) return false
+  if ( /^\d+$/.test ( value ) ) {
+    // Numeric hop counts are accepted at runtime but omitted from Fastify types.
+    return true
+  }
+  return value
+}
+
 const app = Fastify ( {
   logger: false,
   // logger: {
@@ -49,9 +61,7 @@ const app = Fastify ( {
   //   redact: { paths: [ "req.headers.authorization", "req.headers.cookie" ], censor: "[REDACTED]" }
   // },
   // Default loopback; set TRUST_PROXY=1 (or a hop count / CIDR list) behind CDN/reverse proxy
-  trustProxy: trustProxyEnv && trustProxyEnv.length > 0
-    ? ( /^\d+$/.test ( trustProxyEnv ) ? Number ( trustProxyEnv ) : trustProxyEnv )
-    : "loopback",
+  trustProxy: resolveTrustProxy ( trustProxyEnv ),
   // http2: true
 } )
 

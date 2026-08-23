@@ -9,10 +9,10 @@ export interface ReviveEvent {
   longDescription?: string
   location: string
   imageUrl?: string
-  startDate: Date
+  startDate?: Date
   startTime?: string
   endTime?: string
-  endDate: Date
+  endDate?: Date
 
   actionType: "webpage" | "form"
   webpageUrl?: string
@@ -26,6 +26,7 @@ export interface ReviveEvent {
   stripePriceId?: string
   maxAttendees?: number
   waitlistEnabled?: boolean
+  comingSoon?: boolean
   registeredCount?: number
   spotsRemaining?: number | null
   isFull?: boolean
@@ -63,6 +64,7 @@ export class EventsService {
           actionType: event.actionType === "form" || ( event.actionType as string ) === "contact" ? "form" as const : "webpage" as const
         } ) )
         .filter ( event => {
+          if ( !event.endDate ) return true
           const eventEndDate = new Date ( event.endDate )
           if ( !isNaN ( eventEndDate.getTime ( ) ) ) {
             return eventEndDate >= currentTime
@@ -70,7 +72,9 @@ export class EventsService {
           return true
         } )
         .sort ( ( a, b ) => {
-          return new Date ( a.startDate ).getTime ( ) - new Date ( b.startDate ).getTime ( )
+          const aTime = a.startDate ? new Date ( a.startDate ).getTime ( ) : Number.POSITIVE_INFINITY
+          const bTime = b.startDate ? new Date ( b.startDate ).getTime ( ) : Number.POSITIVE_INFINITY
+          return aTime - bTime
         } )
     } catch {
       this.events = [ ]

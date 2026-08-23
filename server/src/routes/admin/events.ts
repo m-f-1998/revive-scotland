@@ -16,8 +16,8 @@ interface Event {
   longDescription?: string
   location: string
   imageUrl?: string
-  startDate: string
-  endDate: string
+  startDate?: string
+  endDate?: string
   startTime?: string
   endTime?: string
 
@@ -33,6 +33,7 @@ interface Event {
   stripePriceId?: string
   maxAttendees?: number
   waitlistEnabled?: boolean
+  comingSoon?: boolean
 }
 
 let eventsCache: { events: Event [ ] } | null = null
@@ -430,10 +431,11 @@ export const router: FastifyPluginAsync = async app => {
           title: String ( event.title || "" ).substring ( 0, 100 ),
           description: String ( event.description || "" ).substring ( 0, 500 ),
           location: String ( event.location || "" ).substring ( 0, 200 ),
-          startDate: event.startDate,
-          endDate: event.endDate,
           actionType: event.actionType === "form" || ( event.actionType as string ) === "contact" ? "form" : "webpage"
         }
+
+        if ( event.startDate ) model.startDate = event.startDate
+        if ( event.endDate ) model.endDate = event.endDate
 
         if ( event.longDescription ) {
           model.longDescription = String ( event.longDescription ).trim ( ).substring ( 0, 5000 )
@@ -451,22 +453,32 @@ export const router: FastifyPluginAsync = async app => {
           model.maxAttendees = Math.min ( 10_000, Math.floor ( Number ( event.maxAttendees ) ) )
         }
         if ( event.waitlistEnabled === true ) model.waitlistEnabled = true
+        if ( event.comingSoon === true ) model.comingSoon = true
 
-        if ( model.actionType === "form" ) {
-          if ( !Array.isArray ( event.contactFormFields ) || event.contactFormFields.length === 0 ) {
-            throw new Error ( "Registration form events must have at least one form field." )
+        if ( !event.comingSoon ) {
+          if ( model.actionType === "form" ) {
+            if ( !Array.isArray ( event.contactFormFields ) || event.contactFormFields.length === 0 ) {
+              throw new Error ( "Registration form events must have at least one form field." )
+            }
+            model.contactFormFields = Array.isArray ( event.contactFormFields ) ? event.contactFormFields : [ ]
           }
-          model.contactFormFields = Array.isArray ( event.contactFormFields ) ? event.contactFormFields : [ ]
-        }
-        if ( model.actionType === "webpage" ) {
-          if ( !event.webpageUrl ) {
-            throw new Error ( "Webpage events must have a webpage URL." )
+          if ( model.actionType === "webpage" ) {
+            if ( !event.webpageUrl ) {
+              throw new Error ( "Webpage events must have a webpage URL." )
+            }
+            model.webpageUrl = String ( event.webpageUrl ).trim ( )
           }
-          model.webpageUrl = String ( event.webpageUrl ).trim ( )
+        } else {
+          if ( Array.isArray ( event.contactFormFields ) && event.contactFormFields.length > 0 ) {
+            model.contactFormFields = event.contactFormFields
+          }
+          if ( event.webpageUrl ) {
+            model.webpageUrl = String ( event.webpageUrl ).trim ( )
+          }
         }
 
         // Stripe product + price create / update
-        if ( model.donationRequired && model.donationRequired !== "none" ) {
+        if ( !event.comingSoon && model.donationRequired && model.donationRequired !== "none" ) {
           if ( !stripe ) {
             throw new Error ( "Stripe is not configured. Cannot create a donation-required event. Please add STRIPE_SECRET_KEY." )
           }

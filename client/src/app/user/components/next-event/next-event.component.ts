@@ -39,15 +39,25 @@ export class NextEventComponent implements OnDestroy {
       if ( nextEvent ) {
         this.nextEvent.set ( nextEvent )
 
-        this.intervalId = setInterval ( ( ) => {
-          this.getTimeRemaining ( )
-        }, 1000 )
+        if ( nextEvent.startDate && nextEvent.startDate > new Date ( ) ) {
+          this.intervalId = setInterval ( ( ) => {
+            this.getTimeRemaining ( )
+          }, 1000 )
+        }
       }
     } )
   }
 
   public get validNextEvent ( ) : boolean {
-    return this.nextEvent ( ) !== null && this.nextEvent ( )!.startDate > new Date ( )
+    const event = this.nextEvent ( )
+    if ( !event ) return false
+    if ( event.comingSoon ) return true
+    return !!event.startDate && event.startDate > new Date ( )
+  }
+
+  public get showCountdown ( ) : boolean {
+    const event = this.nextEvent ( )
+    return !!event?.startDate && event.startDate > new Date ( )
   }
 
   public ngOnDestroy ( ): void {

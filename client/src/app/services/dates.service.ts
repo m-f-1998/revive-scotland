@@ -35,9 +35,11 @@ export class DatesService {
     }
   }
 
-  public formatEventDate ( startDate: Date, endDate: Date, startTime?: string, endTime?: string ): string {
+  public formatEventDate ( startDate?: Date, endDate?: Date, startTime?: string, endTime?: string ): string {
+    if ( !startDate ) return "Date to be announced"
+
     const sDate = new Date ( startDate )
-    const eDate = new Date ( endDate )
+    const eDate = endDate ? new Date ( endDate ) : sDate
 
     let dateStr = ""
     if ( this.sameDay ( sDate, eDate ) ) {
