@@ -5,6 +5,14 @@ set -e
 # Get the directory of the script to handle relative paths correctly
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Optional local deploy secrets (CR_PAT, Portainer webhooks). Not used by the app server.
+if [[ -f "$SCRIPT_DIR/.deploy.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$SCRIPT_DIR/.deploy.env"
+  set +a
+fi
+
 USERNAME="m-f-1998"
 REPO_NAME="revive-scotland"
 MODE="${1:-local}"
@@ -51,3 +59,23 @@ docker buildx build \
   --push .
 
 echo "✅ Success! Image pushed to: $IMAGE"
+
+if [[ "$TAG" == "latest" && -n "$PORTAINER_WEBHOOK_LATEST" ]]; then
+  PORTAINER_WEBHOOK="$PORTAINER_WEBHOOK_LATEST"
+elif [[ "$TAG" == "dev" && -n "$PORTAINER_WEBHOOK_DEV" ]]; then
+  PORTAINER_WEBHOOK="$PORTAINER_WEBHOOK_DEV"
+fi
+
+if [[ -n "$PORTAINER_WEBHOOK" ]]; then
+  echo "🔄 Triggering Portainer redeploy for tag: $TAG"
+  HTTP_STATUS=$(curl -s -o /tmp/portainer-webhook.out -w "%{http_code}" -X POST "$PORTAINER_WEBHOOK")
+  if [[ "$HTTP_STATUS" == "204" || "$HTTP_STATUS" == "200" ]]; then
+    echo "✅ Portainer redeploy triggered."
+  else
+    echo "⚠️  Portainer webhook returned HTTP $HTTP_STATUS:"
+    cat /tmp/portainer-webhook.out
+    exit 1
+  fi
+else
+  echo "ℹ️  No Portainer webhook configured for tag '$TAG' (set PORTAINER_WEBHOOK_LATEST or PORTAINER_WEBHOOK_DEV)."
+fi

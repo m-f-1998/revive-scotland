@@ -21,6 +21,31 @@ Images are published to:
 ./deploy.sh ${dev|latest} # Deploy Package (Requires GHCR Access Token)
 ```
 
+### Portainer auto-redeploy (optional)
+
+After each deploy, Portainer can pull the new image for the same tag and redeploy the stack.
+
+1. In Portainer → **Stacks** → open your stack → **Editor** → enable **Create a stack webhook** → copy the URL.
+2. Create one webhook per environment (prod stack uses `:latest`, dev stack uses `:dev`).
+3. Ensure each stack’s compose `image` matches the tag you deploy, e.g. `ghcr.io/m-f-1998/revive-scotland:latest`.
+4. Run deploy with the matching webhook env var (or put them in `.deploy.env` at the repo root — that file is gitignored):
+
+```bash
+# .deploy.env (local only, not committed)
+CR_PAT=ghp_...
+PORTAINER_WEBHOOK_LATEST=https://portainer.example.com/api/stacks/webhooks/<uuid>
+PORTAINER_WEBHOOK_DEV=https://portainer.example.com/api/stacks/webhooks/<uuid>
+```
+
+```bash
+./deploy.sh latest
+./deploy.sh dev
+```
+
+Do **not** put these in `server/.env` — that file is for the Node app at runtime, and `deploy.sh` does not read it.
+
+The webhook URL is a secret (unauthenticated POST). Store it in `.deploy.env` or your shell profile, not in git. By default Portainer pulls the latest digest for the stack’s existing tag when the webhook fires.
+
 ## 🔧 Required Environment Variables
 
 Boot fails in production if required vars are missing. `DEV_MODE=true` is **opt-in only** and must never be set when `NODE_ENV=production`.

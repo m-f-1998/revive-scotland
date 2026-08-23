@@ -20,26 +20,29 @@ export const normalizeS3Key = ( key: string ): string | null => {
   return parts.join ( "/" )
 }
 
-/** Admin emails from env only — SUPERADMIN_EMAIL, ADMIN_EMAIL, ADMIN_EMAILS (comma-separated). */
+/** Google treats @googlemail.com and @gmail.com as the same mailbox. */
+export const normalizeAdminEmail = ( email: string ): string => {
+  return email.trim ( ).toLowerCase ( ).replace ( /@googlemail\.com$/, "@gmail.com" )
+}
+
+const parseEmailEnv = ( value: string | undefined ): string [ ] => {
+  if ( !value?.trim ( ) ) return [ ]
+  return value.split ( "," ).map ( e => normalizeAdminEmail ( e ) ).filter ( Boolean )
+}
+
+/** Admin emails from env — SUPERADMIN_EMAIL, ADMIN_EMAIL, ADMIN_EMAILS (each may be comma-separated). */
 export const getAdminEmails = ( ): string [ ] => {
-  const emails: string [ ] = [ ]
-  const single = [ process.env [ "SUPERADMIN_EMAIL" ], process.env [ "ADMIN_EMAIL" ] ]
-  for ( const e of single ) {
-    if ( e?.trim ( ) ) emails.push ( e.trim ( ).toLowerCase ( ) )
-  }
-  const list = process.env [ "ADMIN_EMAILS" ]
-  if ( list ) {
-    for ( const e of list.split ( "," ) ) {
-      const trimmed = e.trim ( ).toLowerCase ( )
-      if ( trimmed ) emails.push ( trimmed )
-    }
-  }
+  const emails: string [ ] = [
+    ...parseEmailEnv ( process.env [ "SUPERADMIN_EMAIL" ] ),
+    ...parseEmailEnv ( process.env [ "ADMIN_EMAIL" ] ),
+    ...parseEmailEnv ( process.env [ "ADMIN_EMAILS" ] )
+  ]
   return [ ...new Set ( emails ) ]
 }
 
 export const isEmailAdmin = ( email: string | undefined | null ): boolean => {
   if ( !email ) return false
-  return getAdminEmails ( ).includes ( email.toLowerCase ( ) )
+  return getAdminEmails ( ).includes ( normalizeAdminEmail ( email ) )
 }
 
 export const checkFirebaseAuth = async (

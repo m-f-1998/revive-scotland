@@ -29,16 +29,21 @@ export class FooterComponent {
   }
 
   public async goToAdmin ( ) {
-    if ( this.authSvc.currentUser ( ) ) {
+    if ( await this.authSvc.isAdminUser ( ) ) {
       await this.router.navigate ( [ "/admin/dashboard" ] )
-    } else {
-      try {
-        await this.authSvc.login ( )
-        await this.router.navigate ( [ "/admin/dashboard" ] )
-      } catch ( e ) {
-        const message = e instanceof Error ? e.message : "Login Unauthorized"
-        this.toastrSvc.error ( message )
-      }
+      return
+    }
+
+    if ( this.authSvc.currentUser ( ) ) {
+      await this.authSvc.logout ( )
+    }
+
+    try {
+      await this.authSvc.login ( )
+      await this.router.navigate ( [ "/admin/dashboard" ] )
+    } catch ( e ) {
+      const message = e instanceof Error ? e.message : "Login Unauthorized"
+      this.toastrSvc.error ( message )
     }
   }
 }

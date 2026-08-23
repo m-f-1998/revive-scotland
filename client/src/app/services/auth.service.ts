@@ -29,10 +29,16 @@ export class AuthService {
   private currentUser$: WritableSignal<User | null> = signal ( null )
   private profilePhoto$: WritableSignal<string | null> = signal ( null )
   private provider = new GoogleAuthProvider ( )
+
   private loading$: WritableSignal<boolean> = signal ( true )
   /** When true, onAuthStateChanged skips /verify — login() owns session creation. */
   private loginInProgress = false
   private sessionSync: Promise<void> = Promise.resolve ( )
+
+  public constructor ( ) {
+    // Always show Google's account picker so shared computers don't auto-sign-in to the wrong account.
+    this.provider.setCustomParameters ( { prompt: "select_account" } )
+  }
 
   public get currentUser ( ) {
     return this.currentUser$.asReadonly ( )
@@ -62,6 +68,21 @@ export class AuthService {
     } )
   }
 
+  public async isAdminUser ( user?: User | null ): Promise<boolean> {
+    const u = user ?? this.currentUser$ ( )
+    if ( !u ) return false
+    try {
+      const res = await this.apiSvc.get (
+        "/api/admin/isAdmin",
+        { },
+        await this.authHeaders ( u )
+      ) as { isAdmin?: boolean }
+      return !!res?.isAdmin
+    } catch {
+      return false
+    }
+  }
+
   public async login ( ) {
     this.loginInProgress = true
     this.loading$.set ( true )
@@ -69,6 +90,10 @@ export class AuthService {
       const userCredential = await signInWithPopup ( this.auth, this.provider )
       await this.waitForPageVisible ( )
       await this.establishSession ( userCredential.user )
+      if ( !await this.isAdminUser ( userCredential.user ) ) {
+        await this.logout ( )
+        throw new Error ( "Your account is not authorized for admin access." )
+      }
       this.currentUser$.set ( userCredential.user )
       return userCredential.user
     } catch ( err ) {
@@ -169,6 +194,9 @@ export class AuthService {
     }
     if ( authErr?.code === "auth/popup-blocked" ) {
       return new Error ( "Sign-in popup was blocked by the browser." )
+    }
+    if ( authErr?.code === "auth/admin-restricted-operation" ) {
+      return new Error ( "This Google account has not been set up for admin access yet. Ask the site administrator to enable your account." )
     }
     if ( authErr?.status === 401 || authErr?.status === 403 ) {
       return new Error ( authErr.error?.error || "Your account is not authorized for admin access." )
