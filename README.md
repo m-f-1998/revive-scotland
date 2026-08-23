@@ -46,6 +46,29 @@ Do **not** put these in `server/.env` — that file is for the Node app at runti
 
 The webhook URL is a secret (unauthenticated POST). Store it in `.deploy.env` or your shell profile, not in git. By default Portainer pulls the latest digest for the stack’s existing tag when the webhook fires.
 
+### Image cleanup after deploy (optional)
+
+After redeploy, `deploy.sh` removes **only the previous image for the tag you pushed** (e.g. old `:latest` when deploying `latest` — `:dev` is untouched).
+
+Before the webhook it records which image ID currently has `ghcr.io/m-f-1998/revive-scotland:<tag>`. After redeploy it deletes that specific image if no container still uses it.
+
+Add to `.deploy.env`:
+
+```bash
+PORTAINER_API_TOKEN=ptr_...          # Must be an Administrator access token
+PORTAINER_ENDPOINT_ID=1              # Portainer → Environments → #/endpoints/N
+# PORTAINER_URL=https://portainer... # Optional if different from webhook host
+# PORTAINER_PRUNE_WAIT_SECONDS=60    # Poll up to this many seconds for redeploy to finish
+```
+
+Test API access (should return JSON, not 403):
+
+```bash
+curl -s -H "X-API-Key: $PORTAINER_API_TOKEN" "$PORTAINER_URL/api/endpoints/1/docker/info"
+```
+
+Pruning is best-effort — a failed prune won't fail the deploy.
+
 ## 🔧 Required Environment Variables
 
 Boot fails in production if required vars are missing. `DEV_MODE=true` is **opt-in only** and must never be set when `NODE_ENV=production`.
