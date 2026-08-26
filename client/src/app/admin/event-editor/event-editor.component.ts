@@ -199,7 +199,7 @@ export class EventEditorComponent implements OnInit {
       if ( cloned [ index ] ) {
         cloned [ index ] = {
           ...cloned [ index ],
-          model: { ...value }
+          model: { ...cloned [ index ].model, ...value }
         }
       }
       return cloned
@@ -271,10 +271,12 @@ export class EventEditorComponent implements OnInit {
     if ( this.loading ( ) ) return
 
     const updatedEventData = {
-      events: this.eventForm ( ).map ( ef => {
+      events: this.eventForm ( ).map ( ( ef, index ) => {
         const comingSoon = ef.model [ "comingSoon" ] === true
         const event: Event = {
-          id: ( ef.model [ "id" ] as string ) || `event-${Date.now ( )}-${Math.floor ( Math.random ( ) * 1000 )}`,
+          id: ( ef.model [ "id" ] as string )
+            || this.eventData ( ).events [ index ]?.id
+            || `event-${Date.now ( )}-${Math.floor ( Math.random ( ) * 1000 )}`,
           title: ef.model [ "title" ] as string,
           description: ef.model [ "description" ] as string,
           longDescription: ef.model [ "longDescription" ] as string | undefined,
@@ -328,19 +330,16 @@ export class EventEditorComponent implements OnInit {
 
     this.loading.set ( true )
     try {
-      await this.apiSvc.post ( `/api/admin/events`, updatedEventData, new HttpHeaders ( {
+      await this.apiSvc.post ( "/api/admin/events", updatedEventData, new HttpHeaders ( {
         "Authorization": `Bearer ${await this.authSvc.currentUser ( )?.getIdToken ( ) || "" }`
       } ) )
       this.eventData.set ( updatedEventData )
       this.eventsModified.set ( false )
       this.eventForm ( ).forEach ( ef => ef.form.markAsPristine ( ) )
       this.toastrSvc.success ( "Event data saved successfully!" )
-    } catch ( e ) {
-      if ( e instanceof HttpErrorResponse && e.error ) {
-        this.toastrSvc.error ( `Failed to save event data: ${e.error}` )
-      } else {
-        this.toastrSvc.error ( "Failed to save event data." )
-      }
+    } catch ( err ) {
+      console.error ( "Failed to save event data:", err )
+      this.toastrSvc.error ( "Failed to save event data." )
     } finally {
       this.loading.set ( false )
     }

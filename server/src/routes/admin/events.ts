@@ -82,18 +82,21 @@ export const router: FastifyPluginAsync = async app => {
 
       let events: Event[] = [ ]
 
-      // Fallback logic for legacy `default` document migration
-      const legacyDoc = snapshot.docs.find ( doc => doc.id === "default" )
-      if ( legacyDoc && legacyDoc.exists ) {
-        const legacyData = legacyDoc.data ( ) as { events?: Event[] }
-        if ( legacyData.events && Array.isArray ( legacyData.events ) ) {
-          events = legacyData.events
-        }
-      } else {
-        events = snapshot.docs.map ( doc => {
+      const individualDocs = snapshot.docs.filter ( doc => doc.id !== "default" )
+      if ( individualDocs.length > 0 ) {
+        events = individualDocs.map ( doc => {
           const data = doc.data ( ) as Event
           return { ...data, actionType: data.actionType === "form" || ( data.actionType as string ) === "contact" ? "form" : "webpage" }
         } )
+      } else {
+        // Legacy single-document format (`events/default` with an embedded array)
+        const legacyDoc = snapshot.docs.find ( doc => doc.id === "default" )
+        if ( legacyDoc?.exists ) {
+          const legacyData = legacyDoc.data ( ) as { events?: Event[] }
+          if ( legacyData.events && Array.isArray ( legacyData.events ) ) {
+            events = legacyData.events
+          }
+        }
       }
 
       // Admin must see ALL events — filtering here caused save to delete aged events
@@ -402,14 +405,17 @@ export const router: FastifyPluginAsync = async app => {
     const { events } = req.body as { events?: Event [ ] }
 
     if ( !events || !Array.isArray ( events ) ) {
+      console.log ( "Invalid events data format:", req.body )
       return rep.status ( 400 ).send ( "Invalid Events Data Format" )
     }
 
     if ( !events.length ) {
+      console.log ( "Empty events data received:", req.body )
       return rep.status ( 400 ).send ( "Events data cannot be empty." )
     }
 
     if ( events.some ( ( event: { title: string } ) => !event.title ) ) {
+      console.log ( "Event entry missing title:", events )
       return rep.status ( 400 ).send ( "All event entries must have a valid title." )
     }
 
@@ -544,6 +550,7 @@ export const router: FastifyPluginAsync = async app => {
       // Removals must go through DELETE /api/admin/events (refunds, voids, Checkout expiry).
       // Never silently drop event docs from a bulk save — that skips the money path.
       if ( idsToDelete.length > 0 ) {
+        console.error ( `Attempted to remove events via save. IDs: ${idsToDelete.join ( ", " )}` )
         return rep.status ( 400 ).send ( {
           error: `Cannot remove events via save. Delete them individually first: ${idsToDelete.join ( ", " )}`
         } )
