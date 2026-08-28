@@ -230,6 +230,15 @@ export class EventsComponent implements OnInit {
     requestAnimationFrame ( ( ) => {
       scrollToEvent ( )
       window.setTimeout ( scrollToEvent, 400 )
+      // open the event details modal if the event is still highlighted after a short delay
+      window.setTimeout ( ( ) => {
+        if ( this.isHighlighted ( eventId ) ) {
+          const event = this.events ( ).find ( e => e.id === eventId )
+          if ( event ) {
+            this.openEventDetails ( event )
+          }
+        }
+      }, 600 )
     } )
   }
 
@@ -291,17 +300,13 @@ export class EventsComponent implements OnInit {
         void this.showRegistrationSuccess ( draftId, title, cancelToken, eventId )
         this.clearStoredCheckoutState ( )
         this.clearQueryParams ( )
-        return
-      }
-
-      if ( status === "cancelled" ) {
+      } else if ( status === "cancelled" ) {
         const cancelToken = sessionStorage.getItem ( "checkoutCancelToken" ) || undefined
         void this.handlePaymentCancelled ( draftId, cancelToken )
-        return
-      }
-
-      if ( eventId && this.events ( ).some ( e => e.id === eventId ) ) {
+        this.clearQueryParams ( )
+      } else if ( eventId && this.events ( ).some ( e => e.id === eventId ) ) {
         this.focusEventFromQuery ( eventId )
+        this.clearQueryParams ( )
       }
     } )
   }

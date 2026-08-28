@@ -11,17 +11,26 @@
       </button>
     </div>
     @if (event.imageUrl) {
-      <img
-        [attr.src]="event.imageUrl"
-        [attr.srcset]="
-          event.imageUrl + '?w=640&f=webp 640w, ' +
-          event.imageUrl + '?w=960&f=webp 960w, ' +
-          event.imageUrl + '?w=1280&f=webp 1280w'
-        "
-        sizes="(max-width: 768px) 100vw, 640px"
-        [attr.alt]="event.title + ' poster'"
-        class="w-full max-h-[min(55vh,520px)] object-contain block"
-      />
+      <div class="relative min-h-[min(55vh,520px)]">
+        @if (!posterLoaded()) {
+          <div class="event-poster-skeleton absolute inset-0"></div>
+        }
+        <img
+          #posterImg
+          [attr.src]="event.imageUrl"
+          [attr.srcset]="
+            event.imageUrl + '?w=640&f=webp 640w, ' +
+            event.imageUrl + '?w=960&f=webp 960w, ' +
+            event.imageUrl + '?w=1280&f=webp 1280w'
+          "
+          sizes="(max-width: 768px) 100vw, 640px"
+          [attr.alt]="event.title + ' poster'"
+          (load)="onPosterLoad()"
+          class="relative w-full max-h-[min(55vh,520px)] object-contain block transition-opacity duration-300"
+          [class.opacity-0]="!posterLoaded()"
+          [class.opacity-100]="posterLoaded()"
+        />
+      </div>
     } @else {
       <div class="w-full h-36 flex items-center justify-center text-zinc-400">
         <app-icon icon="image" iconSize="2x" />

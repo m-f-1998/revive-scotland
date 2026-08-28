@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input } from "@angular/core"
+import { afterNextRender, ChangeDetectionStrategy, Component, ElementRef, inject, input, signal, viewChild } from "@angular/core"
 import { DialogRef } from "@angular/cdk/dialog"
 import { DatesService } from "@services/dates.service"
 import { ReviveEvent } from "@services/events.service"
@@ -13,9 +13,20 @@ import { downloadEventIcs, downloadEventPoster, getGoogleMapsUrl } from "../even
 } )
 export class EventDetailsModalComponent {
   public event = input.required<ReviveEvent> ( )
+  public posterLoaded = signal ( false )
 
   public readonly dateSvc = inject ( DatesService )
   private readonly dialogRef = inject ( DialogRef )
+  private readonly posterImg = viewChild<ElementRef<HTMLImageElement>> ( "posterImg" )
+
+  public constructor ( ) {
+    afterNextRender ( ( ) => {
+      const img = this.posterImg ( )?.nativeElement
+      if ( img?.complete && img.naturalWidth > 0 ) {
+        this.posterLoaded.set ( true )
+      }
+    } )
+  }
 
   public close ( ): void {
     this.dialogRef.close ( )
@@ -35,5 +46,9 @@ export class EventDetailsModalComponent {
 
   public hasLongDescription ( ): boolean {
     return !!this.event ( ).longDescription?.trim ( )
+  }
+
+  public onPosterLoad ( ): void {
+    this.posterLoaded.set ( true )
   }
 }
