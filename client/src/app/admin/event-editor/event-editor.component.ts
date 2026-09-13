@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal, computed } from "@angular/core"
+import { afterNextRender, ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal, WritableSignal, computed } from "@angular/core"
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop"
 import { AdminNavbarComponent } from "../navbar/navbar.component"
 import { Event } from "../../interfaces/event.interface"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
@@ -142,6 +143,8 @@ export class EventEditorComponent implements OnInit {
   private readonly authSvc: AuthService = inject ( AuthService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
   private readonly modalSvc: ModalService = inject ( ModalService )
+  private readonly destroyRef: DestroyRef = inject ( DestroyRef )
+  private readonly attachedEventForms = new WeakSet<FormGroup> ( )
 
   public get formEvents ( ) {
     return this.eventData ( ).events.filter ( e => e.actionType === "form" )
@@ -189,7 +192,10 @@ export class EventEditorComponent implements OnInit {
     Promise.all ( [
       this.loadEventData ( ),
       this.loadSlider ( )
-    ] ).finally ( ( ) => this.loading.set ( false ) )
+    ] ).finally ( ( ) => {
+      this.loading.set ( false )
+      this.attachEventFormWatchers ( )
+    } )
   }
 
   public onEventFormChange ( index: number, value: Record<string, unknown> ): void {
@@ -265,6 +271,10 @@ export class EventEditorComponent implements OnInit {
         { ...defaultModel }
       ]
     } )
+    const newForm = this.eventForm ( ) [ this.eventForm ( ).length - 1 ]?.form
+    if ( newForm ) {
+      this.attachWatcherToEventForm ( newForm )
+    }
   }
 
   public async saveEventData ( ) {
@@ -407,7 +417,7 @@ export class EventEditorComponent implements OnInit {
   }
 
   public someFormDirty ( ): boolean {
-    return this.eventsModified ( ) || this.eventForm ( ).some ( ef => ef.form.dirty )
+    return this.eventsModified ( )
   }
 
   public async loadRegistrations ( eventId: string ): Promise<void> {
@@ -774,6 +784,28 @@ export class EventEditorComponent implements OnInit {
     } finally {
       this.saving.update ( s => ( { ...s, slider: false } ) )
     }
+  }
+
+  private attachEventFormWatchers ( ): void {
+    for ( const ef of this.eventForm ( ) ) {
+      this.attachWatcherToEventForm ( ef.form )
+    }
+  }
+
+  private attachWatcherToEventForm ( form: FormGroup ): void {
+    if ( this.attachedEventForms.has ( form ) ) {
+      return
+    }
+    this.attachedEventForms.add ( form )
+    afterNextRender ( ( ) => {
+      form.valueChanges
+        .pipe ( takeUntilDestroyed ( this.destroyRef ) )
+        .subscribe ( ( ) => {
+          if ( form.dirty ) {
+            this.eventsModified.set ( true )
+          }
+        } )
+    } )
   }
 
   private async loadSlider ( ): Promise<void> {

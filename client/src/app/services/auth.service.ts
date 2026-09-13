@@ -31,6 +31,7 @@ export class AuthService {
   private provider = new GoogleAuthProvider ( )
 
   private loading$: WritableSignal<boolean> = signal ( true )
+  private adminAccessInProgress$: WritableSignal<boolean> = signal ( false )
   /** When true, onAuthStateChanged skips /verify — login() owns session creation. */
   private loginInProgress = false
   private sessionSync: Promise<void> = Promise.resolve ( )
@@ -50,6 +51,18 @@ export class AuthService {
 
   public get loading ( ) {
     return this.loading$.asReadonly ( )
+  }
+
+  public get adminAccessInProgress ( ) {
+    return this.adminAccessInProgress$.asReadonly ( )
+  }
+
+  public beginAdminAccess ( ): void {
+    this.adminAccessInProgress$.set ( true )
+  }
+
+  public endAdminAccess ( ): void {
+    this.adminAccessInProgress$.set ( false )
   }
 
   /** Resolves once Firebase auth state (and any background session sync) has settled. */

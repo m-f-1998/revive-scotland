@@ -2,7 +2,17 @@
   <div class="border-t border-gray-300 dark:border-slate-700 bg-gray-100 dark:bg-slate-900 text-center px-4 py-4">
     <div class="text-sm text-gray-500 dark:text-slate-400 space-y-1">
       <div>
-        <a (click)="goToAdmin()" class="hover:text-primary transition-colors cursor-pointer">Admin Login</a>
+        <a (click)="goToAdmin()"
+           class="inline-flex items-center gap-1.5 hover:text-primary transition-colors cursor-pointer"
+           [class.pointer-events-none]="authSvc.adminAccessInProgress()"
+           [class.opacity-60]="authSvc.adminAccessInProgress()">
+          @if (authSvc.adminAccessInProgress()) {
+            <app-icon icon="spinner" iconAnimation="spin" iconSize="sm" />
+            Signing in…
+          } @else {
+            Admin Login
+          }
+        </a>
         &nbsp;|&nbsp;
         <a (click)="openTerms()" class="hover:text-primary transition-colors cursor-pointer">Privacy Policy</a>
       </div>

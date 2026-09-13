@@ -123,6 +123,7 @@ export class RepeatFieldComponent extends FieldType implements OnInit {
     const newValue = ( this.formControl?.value || [ ] ).filter ( ( _: unknown, i: number ) => i !== index )
     this.formControl?.setValue ( newValue )
     this.valuesInModel.set ( newValue )
+    this.notifyFormChanged ( )
   }
 
   public getSummary ( field: FormlyFieldConfig ) {
@@ -198,5 +199,17 @@ export class RepeatFieldComponent extends FieldType implements OnInit {
     this.valuesInModel.set ( [
       ...currentValue
     ] )
+    this.notifyFormChanged ( )
+  }
+
+  /** Ensure parent forms detect edits (OnPush + custom field updates). */
+  private notifyFormChanged ( ): void {
+    this.formControl?.markAsDirty ( )
+    this.formControl?.markAsTouched ( )
+    let parent = this.formControl?.parent
+    while ( parent ) {
+      parent.markAsDirty ( )
+      parent = parent.parent
+    }
   }
 }
