@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from "@angular/core"
+import { ChangeDetectionStrategy, Component, computed, model, signal } from "@angular/core"
 import { brandIconNames, solidIconNames } from "../../icon/icon.registry"
 import { IconComponent } from "../../icon/icon.component"
 
@@ -10,8 +10,7 @@ import { IconComponent } from "../../icon/icon.component"
   host: { "(document:click)": "close( )" }
 } )
 export class IconPickerComponent {
-  public value = input.required<string> ( )
-  public readonly valueChange = output<string> ( )
+  public value = model.required<string> ( )
 
   public isOpen = signal ( false )
   public searchQuery = signal ( "" )
@@ -37,7 +36,7 @@ export class IconPickerComponent {
 
   public selectIcon ( icon: string, event: Event ): void {
     event.stopPropagation ( )
-    this.valueChange.emit ( icon )
+    this.value.set ( icon )
     this.isOpen.set ( false )
     this.searchQuery.set ( "" )
   }
