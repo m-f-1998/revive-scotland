@@ -2,11 +2,17 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, input, O
 import { FormGroup } from "@angular/forms"
 import { DialogRef } from "@angular/cdk/dialog"
 import { FormlyFieldConfig, FormlyForm } from "@ngx-formly/core"
-import { RecaptchaV3Module, ReCaptchaV3Service } from "ng-recaptcha-2"
-import { firstValueFrom, Subscription } from "rxjs"
+import { RecaptchaV3Module } from "ng-recaptcha-2"
+import { Subscription } from "rxjs"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { IconComponent } from "../../icon/icon.component"
 import { RecaptchaAction, RecaptchaActionName } from "../../shared/recaptcha-actions"
+import { RecaptchaExecuteService } from "../../services/recaptcha-execute.service"
+import {
+  getRecaptchaTestMode,
+  isServerRecaptchaTestMode,
+  recaptchaTestToken
+} from "../../shared/recaptcha-test"
 
 @Component ( {
   selector: "iqx-input-dialog",
@@ -37,7 +43,7 @@ export class InputDialogComponent<T extends Record<string, unknown> = Record<str
   public description = ""
 
   private readonly dialogRef: DialogRef = inject ( DialogRef )
-  private readonly recaptchaSvc: ReCaptchaV3Service = inject ( ReCaptchaV3Service )
+  private readonly recaptchaExecuteSvc: RecaptchaExecuteService = inject ( RecaptchaExecuteService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
   private readonly cdr: ChangeDetectorRef = inject ( ChangeDetectorRef )
 
@@ -68,16 +74,24 @@ export class InputDialogComponent<T extends Record<string, unknown> = Record<str
       this.submitting.set ( true )
       this.cdr.markForCheck ( )
       try {
-        this.captchaToken = await firstValueFrom (
-          this.recaptchaSvc.execute ( this.recaptchaAction ( ) )
-        )
+        const testMode = getRecaptchaTestMode ( )
+        if ( testMode === "client-fail" ) {
+          throw new Error ( "reCAPTCHA client failure simulated" )
+        }
+        if ( isServerRecaptchaTestMode ( testMode ) ) {
+          this.captchaToken = recaptchaTestToken ( testMode )
+        } else {
+          this.captchaToken = await this.recaptchaExecuteSvc.execute ( this.recaptchaAction ( ) )
+        }
       } catch {
-        this.toastrSvc.error ( "Failed to load reCAPTCHA. Please try again later." )
+        this.toastrSvc.error (
+          "We couldn't complete the security check in your browser. Try again on mobile data or a different browser."
+        )
+        return
+      } finally {
         this.submitting.set ( false )
         this.cdr.markForCheck ( )
-        return
       }
-      this.submitting.set ( false )
     }
 
     this.dialogRef.close ( this.model ( ) )

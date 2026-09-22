@@ -1,8 +1,77 @@
 import type { FastifyRequest } from "fastify"
 import { isDevMode } from "../routes/static.js"
 import { clientIpForRecaptcha } from "../utils/client-ip.js"
+import { isNonProdStaffRouting } from "../utils/staff-inbox.js"
+
+const RECAPTCHA_TEST_TOKEN_PREFIX = "__recaptcha_test_"
 
 export { clientIpForRecaptcha, clientIpFromRequest } from "../utils/client-ip.js"
+
+/** localhost DEV_MODE or dev/pre-prod — never production. */
+export const isRecaptchaTestAllowed = ( ): boolean => isNonProdStaffRouting ( )
+
+export const recaptchaTestToken = ( mode: string ): string =>
+  `${RECAPTCHA_TEST_TOKEN_PREFIX}${mode.replace ( /-/g, "_" )}__`
+
+/** Returns a simulated failure, or null if token is not a recognised test token. */
+export const resolveRecaptchaTestFailure = ( token: string ): RecaptchaVerificationError | null => {
+  if ( !token.startsWith ( RECAPTCHA_TEST_TOKEN_PREFIX ) || !token.endsWith ( "__" ) ) {
+    return null
+  }
+
+  if ( !isRecaptchaTestAllowed ( ) ) {
+    return new RecaptchaVerificationError (
+      "INVALID_TOKEN",
+      "The security check could not be verified. Please try submitting again.",
+      true
+    )
+  }
+
+  const mode = token.slice ( RECAPTCHA_TEST_TOKEN_PREFIX.length, -2 )
+
+  switch ( mode ) {
+    case "browser_error":
+      return classifyRecaptchaFailure ( {
+        valid: false,
+        invalidReason: "BROWSER_ERROR",
+        actionMatches: true,
+        scoreOk: false
+      } )
+    case "invalid_token":
+      return classifyRecaptchaFailure ( {
+        valid: false,
+        invalidReason: "MALFORMED",
+        actionMatches: true,
+        scoreOk: false
+      } )
+    case "action_mismatch":
+      return classifyRecaptchaFailure ( {
+        valid: true,
+        actionMatches: false,
+        scoreOk: true
+      } )
+    case "score_too_low":
+      return classifyRecaptchaFailure ( {
+        valid: true,
+        actionMatches: true,
+        scoreOk: false
+      } )
+    case "http_failed":
+      return new RecaptchaVerificationError (
+        "HTTP_FAILED",
+        "Security verification is temporarily unavailable. Please try again shortly.",
+        true
+      )
+    case "not_configured":
+      return new RecaptchaVerificationError (
+        "NOT_CONFIGURED",
+        "Security verification is not configured. Please try again later.",
+        false
+      )
+    default:
+      return null
+  }
+}
 
 type AssessmentResponse = {
   tokenProperties?: {
@@ -18,6 +87,54 @@ type AssessmentResponse = {
   }
   error?: {
     message?: string
+  }
+}
+
+export type RecaptchaFailureCode =
+  | "BROWSER_ERROR"
+  | "INVALID_TOKEN"
+  | "ACTION_MISMATCH"
+  | "SCORE_TOO_LOW"
+  | "HTTP_FAILED"
+  | "NOT_CONFIGURED"
+
+export class RecaptchaVerificationError extends Error {
+  public readonly code: RecaptchaFailureCode
+  public readonly retryable: boolean
+  public readonly userMessage: string
+
+  public constructor ( code: RecaptchaFailureCode, userMessage: string, retryable: boolean ) {
+    super ( userMessage )
+    this.name = "RecaptchaVerificationError"
+    this.code = code
+    this.userMessage = userMessage
+    this.retryable = retryable
+  }
+}
+
+export type RecaptchaErrorBody = {
+  message: string
+  retryable?: boolean
+  code?: RecaptchaFailureCode
+}
+
+export const recaptchaErrorResponse = ( err: unknown ): { statusCode: number; body: RecaptchaErrorBody } => {
+  if ( err instanceof RecaptchaVerificationError ) {
+    return {
+      statusCode: 403,
+      body: {
+        message: err.userMessage,
+        retryable: err.retryable,
+        code: err.code
+      }
+    }
+  }
+
+  return {
+    statusCode: 503,
+    body: {
+      message: "Security verification is temporarily unavailable. Please try again shortly."
+    }
   }
 }
 
@@ -39,6 +156,9 @@ const REASON_DESCRIPTIONS: Record<string, string> = {
   LOW_CONFIDENCE_SCORE: "Too little traffic on this site/key so far for a high-confidence score (common on new or low-traffic hosts like pre-prod)."
 }
 
+const BROWSER_ERROR_MESSAGE =
+  "We couldn't complete the security check in your browser. This often happens on restricted WiFi or with ad blockers enabled. Please try again — switching to mobile data or a different browser usually works."
+
 const describeReasons = ( reasons: string [ ] | undefined ): string [ ] => {
   if ( !reasons?.length ) return [ ]
   return reasons.map ( reason => {
@@ -56,6 +176,41 @@ const resolveMinScore = ( ): number => {
   return 0.5
 }
 
+export const classifyRecaptchaFailure = ( params: {
+  valid: boolean
+  invalidReason?: string
+  actionMatches: boolean
+  scoreOk: boolean
+} ): RecaptchaVerificationError => {
+  const invalidReason = params.invalidReason?.trim ( ) || ""
+
+  if ( invalidReason === "BROWSER_ERROR" ) {
+    return new RecaptchaVerificationError ( "BROWSER_ERROR", BROWSER_ERROR_MESSAGE, true )
+  }
+
+  if ( !params.valid ) {
+    return new RecaptchaVerificationError (
+      "INVALID_TOKEN",
+      "The security check could not be verified. Please try submitting again.",
+      true
+    )
+  }
+
+  if ( !params.actionMatches ) {
+    return new RecaptchaVerificationError (
+      "ACTION_MISMATCH",
+      "The security check could not be verified. Please try submitting again.",
+      true
+    )
+  }
+
+  return new RecaptchaVerificationError (
+    "SCORE_TOO_LOW",
+    "We couldn't verify your submission automatically. Please try again, or contact us if the problem persists.",
+    false
+  )
+}
+
 export const recaptchaContextFromRequest = ( req: FastifyRequest ): RecaptchaVerifyContext => {
   const userAgent = String ( req.headers [ "user-agent" ] || "" ).trim ( )
   const origin = process.env [ "PUBLIC_DOMAIN" ]?.replace ( /\/$/, "" ) || ""
@@ -70,9 +225,15 @@ export const recaptchaContextFromRequest = ( req: FastifyRequest ): RecaptchaVer
 export class RecaptchaService {
   /**
    * Verifies the provided reCAPTCHA token against the Google Enterprise API.
-   * Throws an error if validation fails or the score is too low.
+   * Throws RecaptchaVerificationError if validation fails or the score is too low.
    */
   public static async verifyToken ( token: string, context: RecaptchaVerifyContext = { } ): Promise<void> {
+    const testFailure = resolveRecaptchaTestFailure ( token )
+    if ( testFailure ) {
+      console.warn ( `reCAPTCHA test simulation: ${testFailure.code}` )
+      throw testFailure
+    }
+
     if ( isDevMode ( ) ) {
       console.warn ( "reCAPTCHA verification bypassed in DEV_MODE" )
       return
@@ -86,7 +247,11 @@ export class RecaptchaService {
     const expectedAction = context.expectedAction?.trim ( ) || "contact_submit"
 
     if ( !apiKey || !siteKey ) {
-      throw new Error ( "reCAPTCHA is not configured (RECAPTCHA_API_KEY / RECAPTCHA_SITE)." )
+      throw new RecaptchaVerificationError (
+        "NOT_CONFIGURED",
+        "Security verification is not configured. Please try again later.",
+        false
+      )
     }
 
     const response = await fetch (
@@ -118,7 +283,11 @@ export class RecaptchaService {
         response.status,
         data.error?.message || JSON.stringify ( data ).slice ( 0, 300 )
       )
-      throw new Error ( "reCAPTCHA verification HTTP request failed." )
+      throw new RecaptchaVerificationError (
+        "HTTP_FAILED",
+        "Security verification is temporarily unavailable. Please try again shortly.",
+        true
+      )
     }
 
     const valid = !!data.tokenProperties?.valid
@@ -156,7 +325,12 @@ export class RecaptchaService {
           siteKeyPrefix: `${siteKey.slice ( 0, 10 )}…`
         }
       )
-      throw new Error ( "reCAPTCHA validation failed or score too low." )
+      throw classifyRecaptchaFailure ( {
+        valid,
+        invalidReason: data.tokenProperties?.invalidReason,
+        actionMatches,
+        scoreOk
+      } )
     }
   }
 }

@@ -15,7 +15,11 @@
 
 <div class="modal-footer">
   <button type="submit" class="btn-primary" (click)="confirm()" [disabled]="!formValid() || submitting()">
-    <app-icon icon="save" />
-    {{confirmText()}}
+    @if (submitting()) {
+      <app-icon icon="spinner" iconAnimation="spin" />
+    } @else {
+      <app-icon icon="save" />
+    }
+    {{ submitting() ? "Checking…" : confirmText() }}
   </button>
 </div>

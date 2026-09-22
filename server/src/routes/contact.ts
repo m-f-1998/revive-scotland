@@ -2,7 +2,11 @@ import { FastifyPluginAsync } from "fastify"
 import rateLimit from "@fastify/rate-limit"
 import { FieldValue } from "firebase-admin/firestore"
 import { getFirestore } from "./admin.js"
-import { RecaptchaService, recaptchaContextFromRequest } from "../services/recaptcha.service.js"
+import {
+  RecaptchaService,
+  recaptchaContextFromRequest,
+  recaptchaErrorResponse
+} from "../services/recaptcha.service.js"
 import { RecaptchaAction } from "../utils/recaptcha-actions.js"
 import { StaffNotifyService } from "../services/staff-notify.service.js"
 import { getStaffInboxEmail } from "../utils/staff-inbox.js"
@@ -51,7 +55,8 @@ export const router: FastifyPluginAsync = async app => {
       } )
     } catch ( err ) {
       console.error ( "Contact reCAPTCHA error:", err )
-      return rep.status ( 403 ).send ( { message: "reCAPTCHA verification failed. Please try again." } )
+      const { statusCode, body } = recaptchaErrorResponse ( err )
+      return rep.status ( statusCode ).send ( body )
     }
 
     const doc = {

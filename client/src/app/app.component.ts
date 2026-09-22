@@ -1,8 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
 import { NavigationEnd, Router, RouterOutlet } from "@angular/router"
 import { FaConfig } from "@fortawesome/angular-fontawesome"
+import { ToastrService } from "@m-f-1998/ngx-toastr"
+import { filter } from "rxjs/operators"
 import { AuthService } from "./services/auth.service"
 import { IconComponent } from "./icon/icon.component"
+import { applyRecaptchaTestFromUrl } from "./shared/recaptcha-test"
 
 @Component ( {
   selector: "app-root",
@@ -23,19 +26,19 @@ export class AppComponent implements OnInit {
   public readonly authSvc: AuthService = inject ( AuthService )
   public readonly router: Router = inject ( Router )
   private readonly faConfig: FaConfig = inject ( FaConfig )
+  private readonly toastrSvc: ToastrService = inject ( ToastrService )
 
   public constructor ( ) {
-    // Listen for changes to the route
-    this.router.events.subscribe ( event => {
-      if ( event instanceof NavigationEnd ) {
-        this.currentPath.set ( this.router.url )
-      }
+    this.router.events.pipe ( filter ( event => event instanceof NavigationEnd ) ).subscribe ( ( ) => {
+      this.currentPath.set ( this.router.url )
+      applyRecaptchaTestFromUrl ( this.router, this.toastrSvc )
     } )
     this.faConfig.autoAddCss = false
   }
 
   public ngOnInit ( ) {
     this.currentPath.set ( this.router.url )
+    applyRecaptchaTestFromUrl ( this.router, this.toastrSvc )
   }
 
   public onScroll ( ) {

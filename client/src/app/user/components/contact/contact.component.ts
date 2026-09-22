@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal, WritableSignal } from "@angular/core"
-import { HttpErrorResponse } from "@angular/common/http"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { IconComponent } from "@app/icon/icon.component"
 import { ApiService } from "@app/services/api.service"
@@ -7,6 +6,8 @@ import { FormlyService } from "@app/services/formly.service"
 import { ModalService } from "@app/services/modal.service"
 import { InputDialogComponent } from "@app/formly/input-dialog/input-dialog.component"
 import { RecaptchaAction } from "@app/shared/recaptcha-actions"
+import { parseRecaptchaApiError } from "@app/shared/recaptcha-api-error"
+import { RecaptchaExecuteService } from "@app/services/recaptcha-execute.service"
 
 interface ContactDetails {
   phone: string
@@ -35,6 +36,7 @@ export class ContactComponent implements OnInit {
   private readonly formlySvc: FormlyService = inject ( FormlyService )
   private readonly modalSvc: ModalService = inject ( ModalService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
+  private readonly recaptchaExecuteSvc: RecaptchaExecuteService = inject ( RecaptchaExecuteService )
 
   public ngOnInit ( ): void {
     this.apiSvc.get ( "/api/content/contact-details" ).then ( data => {
@@ -83,18 +85,43 @@ export class ContactComponent implements OnInit {
       }
 
       this.sending.set ( true )
-      await this.apiSvc.post ( "/api/contact", {
-        ...result,
-        recaptchaToken: modalRef.componentInstance.captchaToken
-      } )
-      this.toastrSvc.success ( "Thanks — your message has been sent." )
+      let recaptchaToken = modalRef.componentInstance.captchaToken
+      let lastRecaptchaError: ReturnType<typeof parseRecaptchaApiError>
+
+      for ( let attempt = 1; attempt <= 2; attempt++ ) {
+        try {
+          await this.apiSvc.post ( "/api/contact", {
+            ...result,
+            recaptchaToken
+          } )
+          this.toastrSvc.success ( "Thanks — your message has been sent." )
+          return
+        } catch ( postError ) {
+          const recaptchaError = parseRecaptchaApiError ( postError )
+          if ( recaptchaError?.retryable && attempt < 2 ) {
+            try {
+              recaptchaToken = await this.recaptchaExecuteSvc.execute ( RecaptchaAction.contactSubmit )
+              continue
+            } catch {
+              // Fall through to show the server message from the failed attempt.
+            }
+          }
+
+          lastRecaptchaError = recaptchaError
+          break
+        }
+      }
+
+      this.toastrSvc.error (
+        lastRecaptchaError?.message || "Could not send your message. Please try email instead."
+      )
     } catch ( e ) {
       // ModalRef rejects with "dismissed" when closed without confirming
       if ( e === "dismissed" || e === undefined || e === null ) return
-      const msg = e instanceof HttpErrorResponse
-        ? ( typeof e.error === "object" && e.error?.message ? String ( e.error.message ) : undefined )
-        : undefined
-      this.toastrSvc.error ( msg || "Could not send your message. Please try email instead." )
+      const recaptchaError = parseRecaptchaApiError ( e )
+      this.toastrSvc.error (
+        recaptchaError?.message || "Could not send your message. Please try email instead."
+      )
     } finally {
       this.sending.set ( false )
     }

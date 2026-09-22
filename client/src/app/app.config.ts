@@ -1,10 +1,10 @@
-import { ApplicationConfig, CSP_NONCE, inject, provideAppInitializer, provideZonelessChangeDetection } from "@angular/core"
+import { ApplicationConfig, CSP_NONCE, importProvidersFrom, inject, provideAppInitializer, provideZonelessChangeDetection } from "@angular/core"
 import { provideRouter, withInMemoryScrolling } from "@angular/router"
 import { routes } from "./app.routes"
 import { provideHttpClient } from "@angular/common/http"
 import { provideFormlyCore } from "@ngx-formly/core"
 import { provideToastr } from "@m-f-1998/ngx-toastr"
-import { RECAPTCHA_LOADER_OPTIONS, RECAPTCHA_V3_SITE_KEY } from "ng-recaptcha-2"
+import { RECAPTCHA_LOADER_OPTIONS, RECAPTCHA_V3_SITE_KEY, RecaptchaV3Module } from "ng-recaptcha-2"
 import { FormlyConfig } from "./formly/formly-config"
 import { AuthService } from "./services/auth.service"
 import { environment } from "../environments/environment"
@@ -53,6 +53,7 @@ const appConfig: ApplicationConfig = {
       timeOut: 4000,
       extendedTimeOut: 3000
     } ),
+    importProvidersFrom ( RecaptchaV3Module ),
     {
       provide: RECAPTCHA_V3_SITE_KEY,
       useValue: recaptchaSiteKey

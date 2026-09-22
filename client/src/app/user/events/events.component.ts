@@ -20,7 +20,9 @@ import { ErrorModalComponent } from "./error-modal/error-modal.component"
 import { EventDetailsModalComponent } from "./event-details-modal/event-details-modal.component"
 import { downloadEventIcs, getGoogleMapsUrl } from "./event-download.utils"
 import { pickRandomQuote, EvangelisationQuote } from "./evangelisation-quotes"
-import { RecaptchaAction } from "../../shared/recaptcha-actions"
+import { RecaptchaAction, RecaptchaActionName } from "../../shared/recaptcha-actions"
+import { parseRecaptchaApiError } from "../../shared/recaptcha-api-error"
+import { RecaptchaExecuteService } from "../../services/recaptcha-execute.service"
 
 @Component ( {
   selector: "app-events",
@@ -63,6 +65,7 @@ export class EventsComponent implements OnInit {
   private readonly modalSvc: ModalService = inject ( ModalService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
   private readonly apiSvc: ApiService = inject ( ApiService )
+  private readonly recaptchaExecuteSvc: RecaptchaExecuteService = inject ( RecaptchaExecuteService )
   private readonly route: ActivatedRoute = inject ( ActivatedRoute )
   private readonly router: Router = inject ( Router )
 
@@ -160,59 +163,86 @@ export class EventsComponent implements OnInit {
         }
 
         this.loading.set ( true )
-        try {
-          const res = await this.apiSvc.post ( `/api/events/${current.id}/register`, {
-            ...result,
-            recaptchaToken: modalRef.componentInstance.captchaToken,
-            recaptchaAction: waitlistOnly
-              ? RecaptchaAction.eventWaitlist
-              : RecaptchaAction.eventRegister
-          } ) as { message: string; checkoutUrl?: string; donateLaterUrl?: string; draftId?: string; cancelToken?: string }
+        const recaptchaAction: RecaptchaActionName = waitlistOnly
+          ? RecaptchaAction.eventWaitlist
+          : RecaptchaAction.eventRegister
+        let recaptchaToken = modalRef.componentInstance.captchaToken
+        let lastRecaptchaError: ReturnType<typeof parseRecaptchaApiError>
 
-          if ( res.checkoutUrl ) {
-            const alreadyRegistered = ( res as { status?: string } ).status === "completed"
-            if ( res.draftId ) {
-              sessionStorage.setItem ( "checkoutDraftId", res.draftId )
-              sessionStorage.setItem ( "checkoutUrl", res.checkoutUrl )
-              sessionStorage.setItem ( "checkoutEventTitle", current.title )
-              sessionStorage.setItem ( "checkoutIsOptionalDonation", alreadyRegistered ? "1" : "0" )
-              if ( res.cancelToken ) {
-                sessionStorage.setItem ( "checkoutCancelToken", res.cancelToken )
+        try {
+          for ( let attempt = 1; attempt <= 2; attempt++ ) {
+            try {
+              const res = await this.apiSvc.post ( `/api/events/${current.id}/register`, {
+                ...result,
+                recaptchaToken,
+                recaptchaAction
+              } ) as { message: string; checkoutUrl?: string; donateLaterUrl?: string; draftId?: string; cancelToken?: string }
+
+              if ( res.checkoutUrl ) {
+                const alreadyRegistered = ( res as { status?: string } ).status === "completed"
+                if ( res.draftId ) {
+                  sessionStorage.setItem ( "checkoutDraftId", res.draftId )
+                  sessionStorage.setItem ( "checkoutUrl", res.checkoutUrl )
+                  sessionStorage.setItem ( "checkoutEventTitle", current.title )
+                  sessionStorage.setItem ( "checkoutIsOptionalDonation", alreadyRegistered ? "1" : "0" )
+                  if ( res.cancelToken ) {
+                    sessionStorage.setItem ( "checkoutCancelToken", res.cancelToken )
+                  }
+                }
+                this.toastrSvc.info (
+                  alreadyRegistered
+                    ? "You're registered. Taking you to Stripe to complete your optional donation."
+                    : "Taking you to Stripe. Your registration is not saved until payment is completed.",
+                  alreadyRegistered ? "Optional donation" : "Payment required",
+                  { timeOut: 6000 }
+                )
+                await new Promise ( resolve => setTimeout ( resolve, 900 ) )
+                window.location.href = res.checkoutUrl
+              } else {
+                const successRef = this.modalSvc.open ( SuccessModalComponent, {
+                  centered: true,
+                  bare: true
+                } )
+                successRef.setInput ( "eventTitle", current.title )
+                successRef.setInput ( "status", ( res as { status?: string } ).status === "waitlist" ? "waitlist" : "completed" )
+                void this.getEvents ( true )
               }
+              return
+            } catch ( postError ) {
+              const recaptchaError = parseRecaptchaApiError ( postError )
+              if ( recaptchaError?.retryable && attempt < 2 ) {
+                try {
+                  recaptchaToken = await this.recaptchaExecuteSvc.execute ( recaptchaAction )
+                  continue
+                } catch {
+                  // Fall through to show the server message from the failed attempt.
+                }
+              }
+
+              lastRecaptchaError = recaptchaError
+              throw postError
             }
-            this.toastrSvc.info (
-              alreadyRegistered
-                ? "You're registered. Taking you to Stripe to complete your optional donation."
-                : "Taking you to Stripe. Your registration is not saved until payment is completed.",
-              alreadyRegistered ? "Optional donation" : "Payment required",
-              { timeOut: 6000 }
-            )
-            await new Promise ( resolve => setTimeout ( resolve, 900 ) )
-            window.location.href = res.checkoutUrl
-          } else {
-            const successRef = this.modalSvc.open ( SuccessModalComponent, {
-              centered: true,
-              bare: true
-            } )
-            successRef.setInput ( "eventTitle", current.title )
-            successRef.setInput ( "status", ( res as { status?: string } ).status === "waitlist" ? "waitlist" : "completed" )
-            void this.getEvents ( true )
           }
         } catch ( e ) {
           if ( isDevMode ( ) ) {
             console.error ( e )
           }
-          const apiMessage = e instanceof HttpErrorResponse
-            ? ( typeof e.error === "string" ? e.error : e.error?.message )
-            : undefined
+          const recaptchaError = lastRecaptchaError ?? parseRecaptchaApiError ( e )
+          const apiMessage = recaptchaError?.message
+            ?? ( e instanceof HttpErrorResponse
+              ? ( typeof e.error === "string" ? e.error : e.error?.message )
+              : undefined )
 
           const errorRef = this.modalSvc.open ( ErrorModalComponent, {
             centered: true,
             bare: true
           } )
-          errorRef.setInput ( "title", "Registration Error" )
-          errorRef.setInput ( "message", apiMessage || "An error occurred while submitting your registration. Please try again later." )
-          errorRef.setInput ( "type", "error" )
+          errorRef.setInput ( "title", recaptchaError?.retryable ? "Security check incomplete" : "Registration Error" )
+          errorRef.setInput (
+            "message",
+            apiMessage || "An error occurred while submitting your registration. Please try again later."
+          )
+          errorRef.setInput ( "type", recaptchaError?.retryable ? "warning" : "error" )
         } finally {
           this.loading.set ( false )
         }

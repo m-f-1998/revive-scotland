@@ -191,7 +191,7 @@ Abandoned Checkout: the draft is kept and Stripe emails an invoice pay link. Whe
    - `checkout.session.expired`
    - `invoice.paid` (or `invoice.payment_succeeded`)
 
-Local webhook testing: `stripe listen --forward-to localhost:3000/api/events/stripe/webhook`
+Local webhook testing: `stripe listen --forward-to localhost:3000/api/events/stripe/webhook --events checkout.session.completed,checkout.session.expired,invoice.paid`
 
 ### General (home page) donations
 

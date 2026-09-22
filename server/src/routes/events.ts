@@ -4,7 +4,11 @@ import rateLimit from "@fastify/rate-limit"
 import { getFirestore } from "./admin.js"
 import Stripe from "stripe"
 import { DocumentReference, FieldValue } from "firebase-admin/firestore"
-import { RecaptchaService, recaptchaContextFromRequest } from "../services/recaptcha.service.js"
+import {
+  RecaptchaService,
+  recaptchaContextFromRequest,
+  recaptchaErrorResponse
+} from "../services/recaptcha.service.js"
 import { RecaptchaAction } from "../utils/recaptcha-actions.js"
 import { StripeService } from "../services/stripe.service.js"
 import { StaffNotifyService } from "../services/staff-notify.service.js"
@@ -1220,7 +1224,8 @@ export const router: FastifyPluginAsync = async app => {
       } )
     } catch ( err ) {
       console.error ( "reCAPTCHA verification error:", err )
-      return rep.status ( 500 ).send ( { message: "reCAPTCHA verification error." } )
+      const { statusCode, body } = recaptchaErrorResponse ( err )
+      return rep.status ( statusCode ).send ( body )
     }
 
     const customDonationPence = parseDonationPence ( formData?. [ "customDonationAmount" ] )

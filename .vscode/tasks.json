@@ -24,7 +24,7 @@
     {
       "label": "Run Stripe CLI Webhook (Stripe listen)",
       "type": "shell",
-      "command": "stripe listen --forward-to http://localhost:3000/api/events/stripe/webhook",
+      "command": "stripe listen --forward-to http://localhost:3000/api/events/stripe/webhook --events checkout.session.completed,checkout.session.expired,invoice.paid",
       "isBackground": true,
       "problemMatcher": []
     },

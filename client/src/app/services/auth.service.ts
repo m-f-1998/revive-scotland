@@ -31,7 +31,9 @@ export class AuthService {
   private provider = new GoogleAuthProvider ( )
 
   private loading$: WritableSignal<boolean> = signal ( true )
-  private adminAccessInProgress$: WritableSignal<boolean> = signal ( false )
+  private adminAccessInProgressState = signal ( false )
+  /** Stable readonly signal — do not expose via getter (breaks OnPush consumers). */
+  public readonly adminAccessInProgress = this.adminAccessInProgressState.asReadonly ( )
   /** When true, onAuthStateChanged skips /verify — login() owns session creation. */
   private loginInProgress = false
   private sessionSync: Promise<void> = Promise.resolve ( )
@@ -53,16 +55,36 @@ export class AuthService {
     return this.loading$.asReadonly ( )
   }
 
-  public get adminAccessInProgress ( ) {
-    return this.adminAccessInProgress$.asReadonly ( )
-  }
-
   public beginAdminAccess ( ): void {
-    this.adminAccessInProgress$.set ( true )
+    this.adminAccessInProgressState.set ( true )
   }
 
   public endAdminAccess ( ): void {
-    this.adminAccessInProgress$.set ( false )
+    this.adminAccessInProgressState.set ( false )
+  }
+
+  /** Footer / admin entry — Google sign-in with overlay lifecycle. */
+  public async signInToAdmin ( ): Promise<void> {
+    if ( this.adminAccessInProgressState ( ) ) {
+      return
+    }
+
+    this.beginAdminAccess ( )
+    try {
+      if ( this.currentUser$ ( ) && await this.isAdminUser ( ) ) {
+        await this.router.navigate ( [ "/admin/dashboard" ] )
+        return
+      }
+
+      if ( this.currentUser$ ( ) ) {
+        await this.logout ( )
+      }
+
+      await this.login ( )
+      await this.router.navigate ( [ "/admin/dashboard" ] )
+    } finally {
+      this.endAdminAccess ( )
+    }
   }
 
   /** Resolves once Firebase auth state (and any background session sync) has settled. */
@@ -112,6 +134,9 @@ export class AuthService {
     } catch ( err ) {
       console.error ( "Login failed:", err )
       const code = ( err as { code?: string } | null )?.code
+      if ( code === "auth/popup-closed-by-user" ) {
+        this.endAdminAccess ( )
+      }
       if ( code !== "auth/popup-closed-by-user" && this.auth.currentUser ) {
         await this.logout ( )
       } else {
