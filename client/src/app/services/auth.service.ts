@@ -21,6 +21,10 @@ type ProfileResponse = { uid: string; role: string; profilePhoto: string | null 
 
 @Service ( )
 export class AuthService {
+  public adminAccessInProgressState = signal ( false )
+  /** Stable readonly signal — do not expose via getter (breaks OnPush consumers). */
+  public readonly adminAccessInProgress = this.adminAccessInProgressState.asReadonly ( )
+
   private auth!: Auth
   private readonly apiSvc: ApiService = inject ( ApiService )
   private readonly router: Router = inject ( Router )
@@ -31,9 +35,6 @@ export class AuthService {
   private provider = new GoogleAuthProvider ( )
 
   private loading$: WritableSignal<boolean> = signal ( true )
-  private adminAccessInProgressState = signal ( false )
-  /** Stable readonly signal — do not expose via getter (breaks OnPush consumers). */
-  public readonly adminAccessInProgress = this.adminAccessInProgressState.asReadonly ( )
   /** When true, onAuthStateChanged skips /verify — login() owns session creation. */
   private loginInProgress = false
   private sessionSync: Promise<void> = Promise.resolve ( )
