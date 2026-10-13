@@ -5,6 +5,13 @@ import { checkFirebaseAuth } from "./middleware/fileExplorer.js"
 import { clearEventsCache, checkoutDraftIdFor } from "../events.js"
 import { StripeService } from "../../services/stripe.service.js"
 import { isDevMode } from "../static.js"
+import {
+  ensureDefaultOrganization,
+  eventOrganizationId,
+  getDefaultOrganizationId,
+  resolveOrganizationById,
+  userCanAccessOrganization
+} from "../../services/organization.service.js"
 
 const PUBLIC_DOMAIN = process.env [ "PUBLIC_DOMAIN" ] || "https://revivescotland.co.uk"
 const FIRESTORE_BATCH_LIMIT = 400
@@ -34,6 +41,7 @@ interface Event {
   maxAttendees?: number
   waitlistEnabled?: boolean
   comingSoon?: boolean
+  organizationId?: string
 }
 
 let eventsCache: { events: Event [ ] } | null = null
@@ -55,6 +63,41 @@ const getAbsoluteImageUrl = ( url: string | undefined ): string | undefined => {
   return `${PUBLIC_DOMAIN}${resolved}`
 }
 
+const registrantNameFromData = ( data: Record<string, unknown> ): string | null => {
+  const direct = String ( data [ "name" ] || "" ).trim ( )
+  if ( direct ) return direct
+  const form = ( data [ "formData" ] || { } ) as Record<string, unknown>
+  const fromForm = String (
+    form [ "name" ] || form [ "Name" ] || form [ "firstName" ] || form [ "First Name" ] || ""
+  ).trim ( )
+  return fromForm || null
+}
+
+const amountPenceFromRegistration = ( data: Record<string, unknown> ): number | null => {
+  if ( data [ "amountPence" ] != null && Number.isFinite ( Number ( data [ "amountPence" ] ) ) ) {
+    return Number ( data [ "amountPence" ] )
+  }
+  const form = ( data [ "formData" ] || { } ) as Record<string, unknown>
+  const custom = form [ "customDonationAmount" ]
+  if ( custom == null || !Number.isFinite ( Number ( custom ) ) ) return null
+  const n = Number ( custom )
+  return n >= 50 ? Math.round ( n ) : Math.round ( n * 100 )
+}
+
+const countRegistrationsByEventId = async ( db: ReturnType<typeof getFirestore> ): Promise<Record<string, number>> => {
+  const counts: Record<string, number> = { }
+  const snap = await db.collection ( "event_registrations" ).select ( "eventId", "status" ).get ( )
+  snap.docs.forEach ( doc => {
+    const data = doc.data ( )
+    const status = String ( data [ "status" ] || "" )
+    if ( status !== "completed" && status !== "waitlist" ) return
+    const id = String ( data [ "eventId" ] || "" ).trim ( )
+    if ( !id ) return
+    counts [ id ] = ( counts [ id ] || 0 ) + 1
+  } )
+  return counts
+}
+
 const runBatchedWrites = async ( ops: ( ( batch: WriteBatch ) => void ) [ ] ): Promise<void> => {
   const db = getFirestore ( )
   for ( let i = 0; i < ops.length; i += FIRESTORE_BATCH_LIMIT ) {
@@ -71,13 +114,27 @@ export const router: FastifyPluginAsync = async app => {
    * GET /api/admin/events
    * Fetches all event documents
    */
-  app.get ( "/", { preHandler: checkFirebaseAuth }, async ( _req, rep ) => {
+  app.get ( "/", { preHandler: checkFirebaseAuth }, async ( req, rep ) => {
     try {
+      const admin = req.adminUser
+      const db = getFirestore ( )
+      await ensureDefaultOrganization ( ).catch ( ( ) => null )
+      const registrationCounts = await countRegistrationsByEventId ( db )
+
       if ( eventsCache && Date.now ( ) - cacheTime < TTL ) {
-        return rep.send ( eventsCache )
+        const events = admin
+          ? eventsCache.events.filter ( e =>
+            userCanAccessOrganization ( admin.role, admin.organizationIds, eventOrganizationId ( e ) )
+          )
+          : eventsCache.events
+        return rep.send ( {
+          events,
+          registrationCounts,
+          stripeLivemode: StripeService.isLivemode ( )
+        } )
       }
 
-      const eventsCollection = getFirestore ( ).collection ( "events" )
+      const eventsCollection = db.collection ( "events" )
       const snapshot = await eventsCollection.get ( )
 
       let events: Event[] = [ ]
@@ -99,11 +156,20 @@ export const router: FastifyPluginAsync = async app => {
         }
       }
 
-      // Admin must see ALL events — filtering here caused save to delete aged events
+      if ( admin ) {
+        events = events.filter ( e =>
+          userCanAccessOrganization ( admin.role, admin.organizationIds, eventOrganizationId ( e ) )
+        )
+      }
+
       eventsCache = { events }
       cacheTime = Date.now ( )
 
-      return rep.status ( 200 ).send ( eventsCache )
+      return rep.status ( 200 ).send ( {
+        events,
+        registrationCounts,
+        stripeLivemode: StripeService.isLivemode ( )
+      } )
     } catch ( error ) {
       console.error ( "Error fetching events data:", error )
       return rep.status ( 500 ).send ( "Failed to fetch events configuration." )
@@ -124,7 +190,7 @@ export const router: FastifyPluginAsync = async app => {
       ] )
 
       const registrations = regsSnapshot.docs.map ( doc => {
-        const data = doc.data ( )
+        const data = doc.data ( ) as Record<string, unknown>
         return {
           id: doc.id,
           kind: "registration" as const,
@@ -132,11 +198,13 @@ export const router: FastifyPluginAsync = async app => {
           eventTitle: data [ "eventTitle" ],
           formData: data [ "formData" ],
           email: data [ "email" ] || null,
+          name: registrantNameFromData ( data ),
           status: data [ "status" ],
           attended: data [ "attended" ] === true,
           paymentIntent: data [ "paymentIntent" ] || null,
           stripeInvoiceId: data [ "stripeInvoiceId" ] || null,
-          createdAt: data [ "createdAt" ]?.toDate ?. ( )?.toISOString ( ) || null
+          amountPence: amountPenceFromRegistration ( data ),
+          createdAt: ( data [ "createdAt" ] as { toDate?: ( ) => Date } | undefined )?.toDate ?. ( )?.toISOString ( ) || null
         }
       } )
 
@@ -419,8 +487,14 @@ export const router: FastifyPluginAsync = async app => {
       return rep.status ( 400 ).send ( "All event entries must have a valid title." )
     }
 
+    const admin = req.adminUser
+    if ( !admin ) {
+      return rep.status ( 401 ).send ( "Unauthorized." )
+    }
+
     const stripe = StripeService.getStripeInstance ( )
     const db = getFirestore ( )
+    const registrationCounts = await countRegistrationsByEventId ( db )
     const eventsCollection = db.collection ( "events" )
     const currentSnap = await eventsCollection.get ( )
     const existingById = new Map (
@@ -461,6 +535,35 @@ export const router: FastifyPluginAsync = async app => {
         if ( event.waitlistEnabled === true ) model.waitlistEnabled = true
         if ( event.comingSoon === true ) model.comingSoon = true
 
+        const targetOrgId = String ( event.organizationId || getDefaultOrganizationId ( ) ).trim ( )
+        if ( !userCanAccessOrganization ( admin.role, admin.organizationIds, targetOrgId ) ) {
+          throw new Error ( `You do not have access to publish events for organization "${targetOrgId}".` )
+        }
+        model.organizationId = targetOrgId
+
+        const takesDonation = !!model.donationRequired && model.donationRequired !== "none"
+        if ( takesDonation && !event.comingSoon ) {
+          const org = await resolveOrganizationById ( targetOrgId )
+          const isPlatformOrg = targetOrgId === getDefaultOrganizationId ( )
+          if ( !isPlatformOrg && !org?.stripeConnectChargesEnabled ) {
+            throw new Error (
+              `Event "${model.title}": partner paid events need payouts enabled. Finish Stripe onboarding for ${org?.name || targetOrgId} first. (The Revive platform organisation can use the platform Stripe account.)`
+            )
+          }
+        }
+
+        const prior = existingById.get ( model.id )
+        const regCount = registrationCounts [ model.id ] || 0
+        if ( prior && regCount > 0 ) {
+          const prevDonation = prior.donationRequired || "none"
+          const nextDonation = model.donationRequired || "none"
+          if ( prevDonation !== nextDonation ) {
+            throw new Error (
+              `Event "${model.title}": donation setting cannot change while ${regCount} registration${regCount === 1 ? "" : "s"} exist.`
+            )
+          }
+        }
+
         if ( !event.comingSoon ) {
           if ( model.actionType === "form" ) {
             if ( !Array.isArray ( event.contactFormFields ) || event.contactFormFields.length === 0 ) {
@@ -492,7 +595,6 @@ export const router: FastifyPluginAsync = async app => {
             throw new Error ( `Event "${model.title}" needs a donation price of at least £0.50.` )
           }
 
-          const prior = existingById.get ( model.id )
           const stripeImages = getAbsoluteImageUrl ( model.imageUrl )
             ? [ getAbsoluteImageUrl ( model.imageUrl ) as string ]
             : undefined

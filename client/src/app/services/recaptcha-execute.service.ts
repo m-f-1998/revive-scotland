@@ -1,7 +1,14 @@
-import { inject, Service } from "@angular/core"
+import { inject, isDevMode, Service } from "@angular/core"
 import { ReCaptchaV3Service } from "ng-recaptcha-2"
 import { firstValueFrom } from "rxjs"
 import { RecaptchaActionName } from "../shared/recaptcha-actions"
+import {
+  getRecaptchaTestMode,
+  isRecaptchaTestHost,
+  isServerRecaptchaTestMode,
+  RECAPTCHA_LOCAL_DEV_BYPASS,
+  recaptchaTestToken
+} from "../shared/recaptcha-test"
 
 const sleep = ( ms: number ): Promise<void> =>
   new Promise ( resolve => setTimeout ( resolve, ms ) )
@@ -18,6 +25,17 @@ export class RecaptchaExecuteService {
   private readonly recaptchaSvc: ReCaptchaV3Service = inject ( ReCaptchaV3Service )
 
   public async execute ( action: RecaptchaActionName ): Promise<string> {
+    const testMode = getRecaptchaTestMode ( )
+    if ( testMode === "client-fail" ) {
+      throw new Error ( "reCAPTCHA client failure simulated" )
+    }
+    if ( isServerRecaptchaTestMode ( testMode ) ) {
+      return recaptchaTestToken ( testMode )
+    }
+    if ( isDevMode ( ) && isRecaptchaTestHost ( ) ) {
+      return RECAPTCHA_LOCAL_DEV_BYPASS
+    }
+
     let lastError: unknown
 
     for ( let attempt = 1; attempt <= RecaptchaExecuteService.maxAttempts; attempt++ ) {

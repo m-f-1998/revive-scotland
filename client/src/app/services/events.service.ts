@@ -36,8 +36,20 @@ export interface ReviveEvent {
 @Service ( )
 export class EventsService {
   private events: Array<ReviveEvent> | undefined
+  private organizationSlug: string | undefined
 
   private readonly apiSvc: ApiService = inject ( ApiService )
+
+  public configureOrganization ( slug?: string ): void {
+    const next = slug?.trim ( ) || undefined
+    if ( this.organizationSlug === next ) return
+    this.organizationSlug = next
+    this.events = undefined
+  }
+
+  public getOrganizationSlug ( ): string | undefined {
+    return this.organizationSlug
+  }
 
   public async getEvents ( forceRefresh = false ): Promise<ReviveEvent [ ]> {
     if ( forceRefresh ) this.events = undefined
@@ -56,7 +68,10 @@ export class EventsService {
 
   private async initialize ( ) {
     try {
-      const response = await this.apiSvc.get ( "/api/events" ) as { events: ReviveEvent [ ] }
+      const orgQs = this.organizationSlug
+        ? `?org=${encodeURIComponent ( this.organizationSlug )}`
+        : ""
+      const response = await this.apiSvc.get ( `/api/events${orgQs}` ) as { events: ReviveEvent [ ] }
       const currentTime = new Date ( )
       this.events = ( response.events || [ ] )
         .map ( event => ( {

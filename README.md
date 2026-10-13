@@ -182,6 +182,28 @@ Checkout sessions also set `receipt_email` from the registrant’s address when 
 
 Abandoned Checkout: the draft is kept and Stripe emails an invoice pay link. When the invoice is paid, the registration is created. Ensure Customer emails / unpaid invoice reminders are enabled in the Stripe Dashboard.
 
+## Partner booking pages (`/book/:slug`)
+
+Each partner organisation has a public booking URL you can put on the parish site **instead of ChurchSuite** (events-only).
+
+| URL | Purpose |
+|-----|---------|
+| `/book/{slug}` | Branded list of that org’s events |
+| `/book/{slug}?return=https://parish.example` | Shows **Back to website** |
+| `/book/{slug}?embed=1` | Hides Revive chrome (for an embed / kiosk tab) |
+| `/book/{slug}?eventId={id}` | Deep-link a single event after load |
+
+Example button (copy from **Admin → Partners**):
+
+```html
+<a href="https://revivescotland.co.uk/book/st-marys?return=https://stmarys.example&embed=1"
+   style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.75rem 1.25rem;border-radius:9999px;background:#1d4ed8;color:#fff;font-weight:600;text-decoration:none;">
+  Book an event
+</a>
+```
+
+Paid partner events require Stripe Connect **payouts enabled** for that org. The Revive platform organisation (`revive-scotland` by default) can use the platform Stripe account without Connect.
+
 ### Unpaid invoice reminders (optional donate-later only)
 
 1. Open [Stripe Dashboard → Settings → Customer emails](https://dashboard.stripe.com/settings/emails) (and Billing email settings if prompted).

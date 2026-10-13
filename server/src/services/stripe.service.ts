@@ -1,7 +1,21 @@
 import Stripe from "stripe"
 import { isDevMode } from "../routes/static.js"
 
+export type EventCheckoutOpts = {
+  orgSlug?: string
+  successPath?: string
+  cancelPath?: string
+  connectAccountId?: string
+  platformFeePence?: number
+  paymentAmountPence?: number
+}
+
 export class StripeService {
+  public static isLivemode ( ): boolean {
+    const key = process.env [ "STRIPE_SECRET_KEY" ] || ""
+    return key.startsWith ( "sk_live_" )
+  }
+
   public static getStripeInstance ( ): Stripe | null {
     const key = process.env [ "STRIPE_SECRET_KEY" ]
     if ( !key ) return null
@@ -17,7 +31,8 @@ export class StripeService {
     draftId: string,
     customAmount?: number,
     productId?: string,
-    customerEmail?: string
+    customerEmail?: string,
+    checkoutOpts?: EventCheckoutOpts
   ): Promise<{ url: string; sessionId: string } | undefined> {
     const host = isDevMode ( )
       ? "http://localhost:4200"
@@ -25,11 +40,13 @@ export class StripeService {
     const stripe = this.getStripeInstance ( )
     // Keep cancelToken out of redirect URLs (history / logs / Referer). Client uses sessionStorage.
     const returnQs = `eventId=${encodeURIComponent ( eventId )}&draftId=${encodeURIComponent ( draftId )}`
+    const successBase = checkoutOpts?.successPath || "/events"
+    const cancelBase = checkoutOpts?.cancelPath || successBase
 
     if ( !stripe ) {
       if ( isDevMode ( ) ) {
         console.warn ( "Stripe is not configured in DEV_MODE. Returning simulated sandbox success URL." )
-        const url = `${host}/events?registration=success&${returnQs}`
+        const url = `${host}${successBase}?registration=success&${returnQs}`
         return { url, sessionId: "dev_simulated" }
       }
       return undefined
@@ -52,31 +69,94 @@ export class StripeService {
         quantity: 1,
       }
 
+    const paymentAmountPence = checkoutOpts?.paymentAmountPence
+      ?? ( customAmount != null ? customAmount : undefined )
+
+    const paymentIntentData: Stripe.Checkout.SessionCreateParams.PaymentIntentData = {
+      transfer_group: eventId,
+      receipt_email: customerEmail || undefined,
+      metadata: {
+        draftId,
+        eventId,
+        ...( checkoutOpts?.orgSlug ? { organizationSlug: checkoutOpts.orgSlug } : { } )
+      }
+    }
+
+    if (
+      checkoutOpts?.connectAccountId
+      && checkoutOpts.platformFeePence
+      && checkoutOpts.platformFeePence > 0
+      && paymentAmountPence
+      && checkoutOpts.platformFeePence < paymentAmountPence
+    ) {
+      paymentIntentData.application_fee_amount = checkoutOpts.platformFeePence
+      paymentIntentData.transfer_data = { destination: checkoutOpts.connectAccountId }
+    }
+
     const session = await stripe.checkout.sessions.create ( {
-      payment_method_types: [ "card" ],
+      allowed_payment_method_types: [ "card" ],
       line_items: [ lineItem ],
       mode: "payment",
       customer_email: customerEmail || undefined,
       customer_creation: customerEmail ? "always" : undefined,
-      payment_intent_data: {
-        transfer_group: eventId,
-        receipt_email: customerEmail || undefined,
-        metadata: {
-          draftId,
-          eventId
-        }
-      },
-      success_url: `${host}/events?registration=success&${returnQs}`,
-      cancel_url: `${host}/events?registration=cancelled&${returnQs}`,
+      payment_intent_data: paymentIntentData,
+      success_url: `${host}${successBase}?registration=success&${returnQs}`,
+      cancel_url: `${host}${cancelBase}?registration=cancelled&${returnQs}`,
       client_reference_id: draftId,
       metadata: {
         draftId,
-        eventId
+        eventId,
+        ...( checkoutOpts?.orgSlug ? { organizationSlug: checkoutOpts.orgSlug } : { } )
       }
     } )
 
     if ( !session.url || !session.id ) return undefined
     return { url: session.url, sessionId: session.id }
+  }
+
+  public static async createConnectOnboardingLink ( opts: {
+    organizationId: string
+    refreshUrl: string
+    returnUrl: string
+    existingAccountId?: string
+  } ): Promise<{ url: string; accountId: string } | undefined> {
+    const stripe = this.getStripeInstance ( )
+    if ( !stripe ) return undefined
+
+    let accountId = opts.existingAccountId
+    if ( !accountId ) {
+      const account = await stripe.accounts.create ( {
+        type: "express",
+        metadata: { organizationId: opts.organizationId },
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true }
+        }
+      } )
+      accountId = account.id
+    }
+
+    const link = await stripe.accountLinks.create ( {
+      account: accountId,
+      refresh_url: opts.refreshUrl,
+      return_url: opts.returnUrl,
+      type: "account_onboarding"
+    } )
+
+    return { url: link.url, accountId }
+  }
+
+  public static async retrieveConnectAccountStatus (
+    accountId: string
+  ): Promise<{ chargesEnabled: boolean; detailsSubmitted: boolean; payoutsEnabled: boolean } | undefined> {
+    const stripe = this.getStripeInstance ( )
+    if ( !stripe || !accountId ) return undefined
+    const account = await stripe.accounts.retrieve ( accountId )
+    return {
+      chargesEnabled: !!account.charges_enabled,
+      detailsSubmitted: !!account.details_submitted,
+      payoutsEnabled: !!account.payouts_enabled
+    }
   }
 
   /** Expire an open Checkout Session so an older pay link cannot double-charge. */

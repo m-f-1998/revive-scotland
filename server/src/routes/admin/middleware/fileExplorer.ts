@@ -1,6 +1,4 @@
 import { DecodedIdToken } from "firebase-admin/auth"
-import { Timestamp } from "firebase-admin/firestore"
-import { getAuth, getFirestore } from "../../../routes/admin.js"
 import { FastifyReply, FastifyRequest } from "fastify"
 
 declare module "fastify" {
@@ -45,46 +43,7 @@ export const isEmailAdmin = ( email: string | undefined | null ): boolean => {
   return getAdminEmails ( ).includes ( normalizeAdminEmail ( email ) )
 }
 
-export const checkFirebaseAuth = async (
-  request: FastifyRequest,
-  reply: FastifyReply
-) => {
-  const authHeader = request.headers.authorization
-
-  if ( !authHeader?.startsWith ( "Bearer " ) ) {
-    return reply.code ( 401 ).send ( "Unauthorized: No token provided." )
-  }
-
-  const idToken = authHeader.split ( "Bearer " ) [ 1 ]
-
-  try {
-    // checkRevoked: true so /logout (revokeRefreshTokens) takes effect immediately
-    const decodedToken = await getAuth ( ).verifyIdToken ( idToken, true )
-
-    if ( !decodedToken.email_verified ) {
-      return reply.code ( 403 ).send ( "Forbidden: Email not verified." )
-    }
-
-    if ( !isEmailAdmin ( decodedToken.email ) ) {
-      return reply.code ( 403 ).send ( "Forbidden: User is not an administrator." )
-    }
-
-    const sessionDoc = await getFirestore ( ).collection ( "users" ).doc ( decodedToken.uid ).get ( )
-    const sessionExpiry = sessionDoc.data ( )?. [ "sessionExpiry" ] as Timestamp | undefined
-    const expiryDate = sessionExpiry && typeof sessionExpiry.toDate === "function"
-      ? sessionExpiry.toDate ( )
-      : null
-
-    if ( !expiryDate || expiryDate < new Date ( ) ) {
-      return reply.code ( 401 ).send ( "Unauthorized: Session has expired." )
-    }
-
-    request.user = decodedToken
-  } catch ( error ) {
-    request.log.error ( error )
-    return reply.code ( 403 ).send ( "Forbidden: Invalid token." )
-  }
-}
+export { attachAdminUser as checkFirebaseAuth } from "./authz.js"
 
 // Middleware to add the user's root S3 path
 export const addUserPath = async (

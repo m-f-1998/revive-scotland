@@ -23,6 +23,8 @@ import { pickRandomQuote, EvangelisationQuote } from "./evangelisation-quotes"
 import { RecaptchaAction, RecaptchaActionName } from "../../shared/recaptcha-actions"
 import { parseRecaptchaApiError } from "../../shared/recaptcha-api-error"
 import { RecaptchaExecuteService } from "../../services/recaptcha-execute.service"
+import { OrganizationService } from "../../services/organization.service"
+import { PublicOrganization } from "../../interfaces/organization.interface"
 
 @Component ( {
   selector: "app-events",
@@ -58,10 +60,20 @@ export class EventsComponent implements OnInit {
   public readonly resumePaymentUrl: WritableSignal<string | null> = signal ( null )
   public readonly quote: WritableSignal<EvangelisationQuote> = signal ( pickRandomQuote ( ) )
   public readonly highlightedEventId: WritableSignal<string | null> = signal ( null )
+  public readonly partnerOrgSlug: WritableSignal<string | null> = signal ( null )
+  public readonly partnerOrg: WritableSignal<PublicOrganization | null> = signal ( null )
+  public readonly partnerOrgUnavailable: WritableSignal<boolean> = signal ( false )
+  public readonly embedMode: WritableSignal<boolean> = signal ( false )
+  public readonly returnUrl: WritableSignal<string | null> = signal ( null )
 
   public readonly eventsSvc: EventsService = inject ( EventsService )
   public readonly dateSvc: DatesService = inject ( DatesService )
   public readonly formlySvc: FormlyService = inject ( FormlyService )
+
+  /** Exposed for capacity bar width in template. */
+  protected readonly Math = Math
+
+  private readonly orgSvc: OrganizationService = inject ( OrganizationService )
   private readonly modalSvc: ModalService = inject ( ModalService )
   private readonly toastrSvc: ToastrService = inject ( ToastrService )
   private readonly apiSvc: ApiService = inject ( ApiService )
@@ -71,10 +83,20 @@ export class EventsComponent implements OnInit {
 
   public ngOnInit ( ) {
     this.quote.set ( pickRandomQuote ( ) )
-    this.getEvents ( true ).then ( ( ) => {
-      void this.reconcileStoredCheckoutState ( )
-      this.checkQueryParameters ( )
-    } )
+    this.embedMode.set ( this.route.snapshot.queryParamMap.get ( "embed" ) === "1" )
+    const returnParam = this.route.snapshot.queryParamMap.get ( "return" )
+    if ( returnParam ) {
+      this.returnUrl.set ( returnParam )
+    }
+    void this.bootstrapBookingPage ( )
+  }
+
+  public isPartnerBooking ( ): boolean {
+    return !!this.partnerOrgSlug ( )
+  }
+
+  public showPublicEventChrome ( ): boolean {
+    return !this.loading ( ) && !this.partnerOrgUnavailable ( )
   }
 
   public openEventDetails ( event: ReviveEvent ): void {
@@ -103,7 +125,9 @@ export class EventsComponent implements OnInit {
     if ( next && this.pastEvents ( ).length === 0 ) {
       this.loadingArchive.set ( true )
       try {
-        const res = await this.apiSvc.get ( "/api/events/archive" ) as { events: ReviveEvent [ ] }
+        const orgSlug = this.eventsSvc.getOrganizationSlug ( )
+        const archiveQs = orgSlug ? `?org=${encodeURIComponent ( orgSlug )}` : ""
+        const res = await this.apiSvc.get ( `/api/events/archive${archiveQs}` ) as { events: ReviveEvent [ ] }
         this.pastEvents.set ( res.events || [ ] )
       } catch ( e ) {
         if ( isDevMode ( ) ) console.error ( e )
@@ -248,6 +272,38 @@ export class EventsComponent implements OnInit {
         }
       }
     } ).catch ( ( ) => { } )
+  }
+
+  private async bootstrapBookingPage ( ): Promise<void> {
+    const orgSlug = this.resolvePartnerOrgSlug ( )
+    if ( orgSlug ) {
+      this.partnerOrgSlug.set ( orgSlug )
+      this.eventsSvc.configureOrganization ( orgSlug )
+      const org = await this.orgSvc.getPublicOrganization ( orgSlug )
+      if ( !org ) {
+        this.partnerOrgUnavailable.set ( true )
+        this.loading.set ( false )
+        return
+      }
+      this.partnerOrg.set ( org )
+      if ( !this.returnUrl ( ) && org.websiteUrl ) {
+        this.returnUrl.set ( org.websiteUrl )
+      }
+    }
+
+    await this.getEvents ( true )
+    void this.reconcileStoredCheckoutState ( )
+    this.checkQueryParameters ( )
+  }
+
+  private resolvePartnerOrgSlug ( ): string | null {
+    let route = this.route.snapshot
+    while ( route ) {
+      const slug = route.paramMap.get ( "orgSlug" )
+      if ( slug ) return slug
+      route = route.parent!
+    }
+    return null
   }
 
   private focusEventFromQuery ( eventId: string ): void {

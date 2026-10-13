@@ -14,6 +14,8 @@ import { getAuth as getFirebaseAuth, Auth } from "firebase-admin/auth"
 import { getFirestore as getFirebaseFirestore, Firestore, FieldValue, Timestamp } from "firebase-admin/firestore"
 import { isDevMode } from "./static.js"
 import { isEmailAdmin } from "./admin/middleware/fileExplorer.js"
+import { resolveOrganizationIdsForEmail } from "../services/organization.service.js"
+import { router as organizationsRouter } from "./admin/organizations.js"
 import { loadFirebaseServiceAccount } from "../services/firebase-credentials.js"
 import { router as donationsRouter } from "./admin/donations.js"
 import rateLimit from "@fastify/rate-limit"
@@ -68,6 +70,7 @@ export const router: FastifyPluginAsync = async app => {
   await app.register ( prayersRouter, { prefix: "/prayers" } )
   await app.register ( reflectionsRouter, { prefix: "/reflections" } )
   await app.register ( donationsRouter, { prefix: "/donations" } )
+  await app.register ( organizationsRouter, { prefix: "/organizations" } )
 
   app.get ( "/logout", async ( req, res ) => {
     const authHeader = req.headers.authorization
@@ -136,6 +139,7 @@ export const router: FastifyPluginAsync = async app => {
       return res.status ( 200 ).send ( {
         uid,
         role: data?. [ "role" ] || "viewer",
+        organizationIds: data?. [ "organizationIds" ] || [ ],
         profilePhoto: data?. [ "profilePhoto" ] || null
       } )
     } catch ( error ) {
@@ -172,6 +176,8 @@ export const router: FastifyPluginAsync = async app => {
       else if ( isEmailAdmin ( user.email ) && role !== "superadmin" ) role = "admin"
       else if ( !isEmailAdmin ( user.email ) ) role = "viewer"
 
+      const organizationIds = await resolveOrganizationIdsForEmail ( user.email, role as "viewer" | "admin" | "superadmin" )
+
       if ( !user.customClaims?. [ "role" ] || user.customClaims [ "role" ] !== role ) {
         await getAuth ( ).setCustomUserClaims ( uid, { role } )
       }
@@ -182,7 +188,8 @@ export const router: FastifyPluginAsync = async app => {
       await firestore.set ( {
         lastLogin: FieldValue.serverTimestamp ( ),
         sessionExpiry: Timestamp.fromDate ( new Date ( Date.now ( ) + 7 * 24 * 60 * 60 * 1000 ) ),
-        role
+        role,
+        organizationIds
       }, { merge: true } )
 
       const doc = await firestore.get ( )
@@ -194,7 +201,7 @@ export const router: FastifyPluginAsync = async app => {
         }
       }
 
-      return res.status ( 200 ).send ( { uid: user.uid, role } )
+      return res.status ( 200 ).send ( { uid: user.uid, role, organizationIds } )
     } catch ( error ) {
       console.error ( "Error creating session:", error )
       if ( isFirebaseAuthError ( error ) ) {

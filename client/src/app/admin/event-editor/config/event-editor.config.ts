@@ -1,5 +1,7 @@
 import { FormlyFieldConfig } from "@ngx-formly/core"
 import { FormlyService } from "@services/formly.service"
+import { addDays } from "date-fns"
+import { Subscription } from "rxjs"
 import { getDefaultRegistrationFields } from "../../../user/events/registration-form.defaults"
 
 export { getDefaultRegistrationFields }
@@ -8,7 +10,80 @@ const sectionHeader = ( title: string ): FormlyFieldConfig => ( {
   template: `<h6 class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mt-2 mb-3 pb-2 border-b border-zinc-200 dark:border-zinc-700">${title}</h6>`
 } )
 
-export const getEventFields = ( formlySvc: FormlyService, eventModel?: Record<string, unknown> ): FormlyFieldConfig [ ] => {
+export type EventEditorFieldOptions = {
+  registrationCount?: number
+  organizations?: Array<{ id: string; name: string }>
+}
+
+const calendarDay = ( value: unknown ): Date | null => {
+  if ( !value ) return null
+  const d = value instanceof Date ? new Date ( value.getTime ( ) ) : new Date ( String ( value ) )
+  if ( isNaN ( d.getTime ( ) ) ) return null
+  d.setHours ( 0, 0, 0, 0 )
+  return d
+}
+
+export const dayAfterStart = ( start: unknown ): Date | null => {
+  const day = calendarDay ( start )
+  return day ? addDays ( day, 1 ) : null
+}
+
+const setEndDateControl = (
+  form: { get: ( key: string ) => { setValue: ( value: unknown ) => void } | null } | null | undefined,
+  value: unknown
+): void => {
+  form?.get ( "endDate" )?.setValue ( value )
+}
+
+export const syncEventEndDate = (
+  model: Record<string, unknown>,
+  form?: { get: ( key: string ) => { setValue: ( value: unknown ) => void } | null } | null,
+  multiDay = model [ "multiDay" ] === true
+): void => {
+  const start = calendarDay ( model [ "startDate" ] )
+  if ( !start ) return
+  model [ "multiDay" ] = multiDay
+  if ( !multiDay ) {
+    model [ "endDate" ] = model [ "startDate" ]
+    setEndDateControl ( form, model [ "startDate" ] )
+    return
+  }
+  const minEnd = addDays ( start, 1 )
+  const end = calendarDay ( model [ "endDate" ] )
+  if ( !end || end.getTime ( ) <= start.getTime ( ) ) {
+    model [ "endDate" ] = minEnd
+    setEndDateControl ( form, minEnd )
+  }
+}
+
+const END_DATE_SYNC_SUB = "_endDateSyncSub"
+
+export const endDateSyncHooks = ( source: "multiDay" | "startDate" ): FormlyFieldConfig [ "hooks" ] => ( {
+  onInit: field => {
+    const control = field.formControl
+    if ( !control ) return
+    const bag = field as Record<string, unknown>
+    ;( bag [ END_DATE_SYNC_SUB ] as Subscription | undefined )?.unsubscribe ( )
+    bag [ END_DATE_SYNC_SUB ] = control.valueChanges.subscribe ( value => {
+      if ( !field.model ) return
+      const model = field.model as Record<string, unknown>
+      const multiDay = source === "multiDay" ? value === true : model [ "multiDay" ] === true
+      syncEventEndDate ( model, field.form, multiDay )
+    } )
+  },
+  onDestroy: field => {
+    const bag = field as Record<string, unknown>
+    ;( bag [ END_DATE_SYNC_SUB ] as Subscription | undefined )?.unsubscribe ( )
+  }
+} )
+
+export const getEventFields = (
+  formlySvc: FormlyService,
+  eventModel?: Record<string, unknown>,
+  options: EventEditorFieldOptions = { }
+): FormlyFieldConfig [ ] => {
+  const registrationCount = options.registrationCount ?? 0
+  const donationLockedByRegistrations = registrationCount > 0
   const isFinished = eventModel?. [ "endDate" ] ? ( new Date ( eventModel [ "endDate" ] as string | Date ) < new Date ( ) ) : false
   const isComingSoon = ( field: FormlyFieldConfig ) => !!field.model?.comingSoon
 
@@ -61,37 +136,45 @@ export const getEventFields = ( formlySvc: FormlyService, eventModel?: Record<st
     {
       fieldGroup: [
         {
-          fieldGroupClassName: "grid grid-cols-1 md:grid-cols-2 gap-4",
-          fieldGroup: [
-            formlySvc.DateInput ( "startDate", {
-              label: "Start Date",
-              placeholder: "Select start date",
-              minDate: minStart
-            }, {
-              expressions: {
-                "props.required": ( field: FormlyFieldConfig ) => !isComingSoon ( field )
-              }
-            } ),
-            formlySvc.TimeInput ( "startTime", {
-              label: "Start Time",
-              placeholder: "19:00"
-            }, { } )
-          ]
+          ...formlySvc.DateInput ( "startDate", {
+            placeholder: "Select date",
+            minDate: minStart
+          }, {
+            expressions: {
+              "props.required": ( field: FormlyFieldConfig ) => !isComingSoon ( field ),
+              "props.label": ( field: FormlyFieldConfig ) => field.model?.multiDay ? "Start date" : "Date"
+            }
+          } ),
+          hooks: endDateSyncHooks ( "startDate" )
         },
+        {
+          ...formlySvc.CheckboxInput ( "multiDay", {
+            label: "Lasts more than one day"
+          }, {
+            defaultValue: false
+          } ),
+          hooks: endDateSyncHooks ( "multiDay" )
+        },
+        formlySvc.DateInput ( "endDate", {
+          label: "End date",
+          placeholder: "Last day of the event",
+          minDate: minEnd
+        }, {
+          expressions: {
+            hide: ( field: FormlyFieldConfig ) => !field.model?.multiDay,
+            "props.required": ( field: FormlyFieldConfig ) => !isComingSoon ( field ) && !!field.model?.multiDay,
+            "props.minDate": ( field: FormlyFieldConfig ) => dayAfterStart ( field.model?.startDate ) || minEnd
+          }
+        } ),
         {
           fieldGroupClassName: "grid grid-cols-1 md:grid-cols-2 gap-4",
           fieldGroup: [
-            formlySvc.DateInput ( "endDate", {
-              label: "End Date",
-              placeholder: "Select end date",
-              minDate: minEnd
-            }, {
-              expressions: {
-                "props.required": ( field: FormlyFieldConfig ) => !isComingSoon ( field )
-              }
-            } ),
+            formlySvc.TimeInput ( "startTime", {
+              label: "Start time",
+              placeholder: "19:00"
+            }, { } ),
             formlySvc.TimeInput ( "endTime", {
-              label: "End Time",
+              label: "End time",
               placeholder: "21:00"
             }, { } )
           ]
@@ -107,6 +190,18 @@ export const getEventFields = ( formlySvc: FormlyService, eventModel?: Record<st
       label: "Event Image",
       required: true
     }, { } ),
+
+    ...( ( options.organizations?.length || 0 ) > 0
+      ? [
+        sectionHeader ( "Publishing" ),
+        formlySvc.SelectInput ( "organizationId", {
+          label: "Publishing organisation",
+          required: true,
+          options: ( options.organizations || [ ] ).map ( o => ( { label: o.name, value: o.id } ) ),
+          description: "Which partner booking page this event appears on."
+        }, { } )
+      ]
+      : [ ] ),
 
     {
       expressions: {
@@ -176,12 +271,21 @@ export const getEventFields = ( formlySvc: FormlyService, eventModel?: Record<st
             formlySvc.SelectInput ( "donationRequired", {
               label: "Donation Status",
               options: [
-                { label: "No Donation", value: "none" },
-                { label: "Optional Donation", value: "optional" },
-                { label: "Required Donation", value: "required" }
-              ]
+                { label: "No donation", value: "none" },
+                { label: "Optional donation", value: "optional" },
+                { label: "Required donation", value: "required" }
+              ],
+              required: true
             }, {
-              defaultValue: "none"
+              defaultValue: "none",
+              expressions: {
+                "props.disabled": ( ) => donationLockedByRegistrations,
+                "props.description": ( ) => {
+                  if ( !donationLockedByRegistrations ) return undefined
+                  const n = registrationCount
+                  return `Locked: ${n} registration${n === 1 ? "" : "s"} already exist. Donation setting cannot change.`
+                }
+              }
             } ),
             {
               ...formlySvc.TextInput ( "donationPrice", {

@@ -75,23 +75,37 @@
 
     <div class="grid gap-3" [class.sm:grid-cols-2]="!!event.startDate && !!event.location?.trim()">
       @if (event.startDate) {
-        <button type="button"
-                class="group w-full flex items-start gap-3 p-3 rounded-xl border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/50 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all text-left cursor-pointer"
-                (click)="addToCalendar()"
-                title="Add to calendar">
-          <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-            <app-icon icon="calendar" />
+        @if (eventHasEnded()) {
+          <div class="flex items-start gap-3 p-3 rounded-xl border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/50">
+            <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+              <app-icon icon="calendar" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-0.5">When</p>
+              <p class="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                {{ dateSvc.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime) }}
+              </p>
+            </div>
           </div>
-          <div class="min-w-0">
-            <p class="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-0.5">When</p>
-            <p class="text-sm font-medium text-zinc-800 dark:text-zinc-200 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
-              {{ dateSvc.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime) }}
-            </p>
-            <p class="text-[11px] text-zinc-500 dark:text-zinc-400 font-semibold uppercase tracking-wider mt-1 flex items-center gap-1">
-              Add to calendar <app-icon icon="calendar-check" class="text-[10px]" />
-            </p>
-          </div>
-        </button>
+        } @else {
+          <button type="button"
+                  class="group w-full flex items-start gap-3 p-3 rounded-xl border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/50 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all text-left cursor-pointer"
+                  (click)="addToCalendar()"
+                  title="Add to calendar">
+            <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <app-icon icon="calendar" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-0.5">When</p>
+              <p class="text-sm font-medium text-zinc-800 dark:text-zinc-200 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
+                {{ dateSvc.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime) }}
+              </p>
+              <p class="text-[11px] text-zinc-500 dark:text-zinc-400 font-semibold uppercase tracking-wider mt-1 flex items-center gap-1">
+                Add to calendar <app-icon icon="calendar-check" class="text-[10px]" />
+              </p>
+            </div>
+          </button>
+        }
       } @else {
         <div class="flex items-start gap-3 p-3 rounded-xl border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/50">
           <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">

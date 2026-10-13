@@ -11,12 +11,15 @@ import { AuthService } from "../../services/auth.service"
 import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { AdminFooterComponent } from "../footer/footer.component"
 import { IconComponent } from "../../icon/icon.component"
-import { DatePipe, KeyValuePipe } from "@angular/common"
-import { getEventFields } from "./config/event-editor.config"
+import { DatePipe } from "@angular/common"
+import { dayAfterStart, endDateSyncHooks, getDefaultRegistrationFields, getEventFields, syncEventEndDate } from "./config/event-editor.config"
 import { addDays } from "date-fns"
 import { ModalService } from "../../services/modal.service"
 import { InputDialogComponent } from "../../formly/input-dialog/input-dialog.component"
 import { QrDownloadComponent } from "../../shared/qr-download/qr-download.component"
+import { EmailGravatarComponent } from "../../shared/email-gravatar/email-gravatar.component"
+import { OrganizationService } from "../../services/organization.service"
+import { AdminOrganization } from "../../interfaces/organization.interface"
 
 interface SlideFormEntry {
   form: FormGroup
@@ -41,6 +44,28 @@ const DEFAULT_EVENTS_HEROES = [
 
 export type EventTab = "slider" | "listings" | "registrations"
 
+export type RegStatusTone =
+  | "waitlist"
+  | "checkout"
+  | "confirmed"
+  | "paid"
+  | "donation-unpaid"
+  | "no-donation"
+  | "unknown"
+
+export type RegManagerFilter =
+  | "all"
+  | "confirmed"
+  | "checkout"
+  | "waitlist"
+  | "paid"
+  | "donation_due"
+  | "checked_in"
+
+export type RegFilterGroup = "place" | "money" | "door"
+
+export type RegManagerSort = "newest" | "oldest" | "name_az"
+
 @Component ( {
   selector: "app-admin-event-editor",
   imports: [
@@ -49,9 +74,9 @@ export type EventTab = "slider" | "listings" | "registrations"
     FormlyForm,
     AdminFooterComponent,
     DatePipe,
-    KeyValuePipe,
     FormsModule,
-    QrDownloadComponent
+    QrDownloadComponent,
+    EmailGravatarComponent
   ],
   templateUrl: "./event-editor.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -62,11 +87,13 @@ export class EventEditorComponent implements OnInit {
   public eventData: WritableSignal<{ events: Event[] }> = signal ( { events: [ ] } )
   public collapsedIndices: Set<number> = new Set ( )
   public eventsModified: WritableSignal<boolean> = signal ( false )
+  public listingsSaveAttempted: WritableSignal<boolean> = signal ( false )
   public showPastEvents: WritableSignal<boolean> = signal ( false )
 
   public activeTab: WritableSignal<EventTab> = signal ( "slider" )
   public activeSlideIndex: WritableSignal<number> = signal ( 0 )
 
+  
   public readonly tabs = [
     { id: "slider" as const, label: "Page Slider", icon: "image" as const },
     { id: "listings" as const, label: "Event Listings", icon: "calendar-days" as const },
@@ -84,14 +111,68 @@ export class EventEditorComponent implements OnInit {
   // Registrations state
   public registrations: WritableSignal<Record<string, Array<Record<string, unknown>>>> = signal ( { } )
   public selectedRegEventId: WritableSignal<string> = signal ( "" )
-  public regStatusFilter: WritableSignal<"all" | "completed" | "awaiting_payment" | "unpaid_optional" | "waitlist"> = signal ( "all" )
+  public regManagerFilter: WritableSignal<RegManagerFilter> = signal ( "all" )
   public regSearchQuery: WritableSignal<string> = signal ( "" )
+  public regSort: WritableSignal<RegManagerSort> = signal ( "newest" )
+
+  public readonly regManagerFilterDefs: Array<{
+    id: RegManagerFilter
+    label: string
+    group: RegFilterGroup
+    donationOnly?: boolean
+  }> = [
+    { id: "all", label: "All", group: "place" },
+    { id: "confirmed", label: "Registered", group: "place" },
+    { id: "checkout", label: "Payment not finished", group: "place" },
+    { id: "waitlist", label: "Waitlist", group: "place" },
+    { id: "paid", label: "Paid", group: "money", donationOnly: true },
+    { id: "donation_due", label: "Donation unpaid", group: "money", donationOnly: true },
+    { id: "checked_in", label: "Checked in", group: "door" }
+  ]
   public loadingRegs: WritableSignal<boolean> = signal ( false )
   public deletingRegIds: WritableSignal<Set<string>> = signal ( new Set ( ) )
+  public publishingOrganizationId: WritableSignal<string> = signal ( "" )
+  public adminOrganizations: WritableSignal<AdminOrganization [ ]> = signal ( [ ] )
+  public registrationCounts: WritableSignal<Record<string, number>> = signal ( { } )
+  public stripeLivemode: WritableSignal<boolean> = signal ( true )
+  public expandedRegIds: WritableSignal<Set<string>> = signal ( new Set ( ) )
 
   public getSelectedEvent = computed ( ( ) => {
     const eventId = this.selectedRegEventId ( )
     return this.eventData ( ).events.find ( e => e.id === eventId )
+  } )
+
+  public regFilterCounts = computed ( ( ) => {
+    const regs = this.regsForSelectedEvent ( )
+    const counts = { } as Record<RegManagerFilter, number>
+    for ( const def of this.regManagerFilterDefs ) {
+      counts [ def.id ] = def.id === "all"
+        ? regs.length
+        : regs.filter ( reg => this.regMatchesManagerFilter ( reg, def.id ) ).length
+    }
+    return counts
+  } )
+
+  public regFiltersActive = computed ( ( ) => {
+    return this.regManagerFilter ( ) !== "all"
+      || !!this.regSearchQuery ( ).trim ( )
+  } )
+
+  public filteredRegistrations = computed ( ( ) => {
+    const regs = this.regsForSelectedEvent ( )
+    const filter = this.regManagerFilter ( )
+    const query = this.regSearchQuery ( ).toLowerCase ( ).trim ( )
+    const sort = this.regSort ( )
+
+    let rows = regs.filter ( reg => {
+      if ( filter !== "all" && !this.regMatchesManagerFilter ( reg, filter ) ) {
+        return false
+      }
+      return !query || this.regMatchesSearchQuery ( reg, query )
+    } )
+
+    rows = [ ...rows ].sort ( ( a, b ) => this.compareRegsForSort ( a, b, sort ) )
+    return rows
   } )
 
   public listingIndices = computed ( ( ) => {
@@ -101,42 +182,15 @@ export class EventEditorComponent implements OnInit {
       .filter ( index => this.showPastEvents ( ) || !this.isEventFinished ( events [ index ]?.endDate ) )
   } )
 
-  public filteredRegistrations = computed ( ( ) => {
+  public regsForSelectedEvent = computed ( ( ) => {
     const eventId = this.selectedRegEventId ( )
-    const regs = this.registrations ( ) [ eventId ] || [ ]
-    const status = this.regStatusFilter ( )
-    const query = this.regSearchQuery ( ).toLowerCase ( ).trim ( )
-
-    return regs.filter ( reg => {
-      if ( status === "completed" ) {
-        if ( reg [ "kind" ] === "draft" || reg [ "status" ] !== "completed" ) return false
-      } else if ( status === "awaiting_payment" ) {
-        if ( reg [ "kind" ] !== "draft" && reg [ "status" ] !== "awaiting_payment" ) return false
-      } else if ( status === "unpaid_optional" ) {
-        if ( reg [ "kind" ] === "draft" || reg [ "status" ] !== "completed" || reg [ "paymentIntent" ] ) return false
-      } else if ( status === "waitlist" ) {
-        if ( reg [ "status" ] !== "waitlist" ) return false
-      }
-
-      if ( query ) {
-        const formData = ( reg [ "formData" ] || { } ) as Record<string, unknown>
-        const stringifiedValues = Object.values ( formData ).map ( v => String ( v ).toLowerCase ( ) ).join ( " " )
-        const email = String ( reg [ "email" ] || "" ).toLowerCase ( )
-        const name = String ( reg [ "name" ] || "" ).toLowerCase ( )
-        const creationDate = String ( reg [ "createdAt" ] || "" ).toLowerCase ( )
-        const regStatus = String ( reg [ "status" ] || "" ).toLowerCase ( )
-        return stringifiedValues.includes ( query )
-          || email.includes ( query )
-          || name.includes ( query )
-          || creationDate.includes ( query )
-          || regStatus.includes ( query )
-      }
-
-      return true
-    } )
+    return this.registrations ( ) [ eventId ] || [ ]
   } )
 
-  public expandedRegIds: Set<string> = new Set ( )
+  public selectedEventHasDonationFilters = computed ( ( ) => {
+    const mode = this.getSelectedEvent ( )?.donationRequired || "none"
+    return mode !== "none"
+  } )
 
   private readonly apiSvc: ApiService = inject ( ApiService )
   private readonly formlySvc: FormlyService = inject ( FormlyService )
@@ -145,9 +199,22 @@ export class EventEditorComponent implements OnInit {
   private readonly modalSvc: ModalService = inject ( ModalService )
   private readonly destroyRef: DestroyRef = inject ( DestroyRef )
   private readonly attachedEventForms = new WeakSet<FormGroup> ( )
+  private readonly orgSvc: OrganizationService = inject ( OrganizationService )
 
   public get formEvents ( ) {
     return this.eventData ( ).events.filter ( e => e.actionType === "form" )
+  }
+
+  public visibleRegManagerFilterDefs ( group: RegFilterGroup ) {
+    const donation = this.selectedEventHasDonationFilters ( )
+    const counts = this.regFilterCounts ( )
+    const selected = this.regManagerFilter ( )
+    return this.regManagerFilterDefs.filter ( def => {
+      if ( def.group !== group ) return false
+      if ( def.donationOnly && !donation ) return false
+      if ( def.id === "all" || def.id === selected ) return true
+      return ( counts [ def.id ] || 0 ) > 0
+    } )
   }
 
   public getSummaryDetail ( formData: unknown, keys: string[] ): string {
@@ -167,12 +234,59 @@ export class EventEditorComponent implements OnInit {
     window.print ( )
   }
 
+  public isRegExpanded ( id: string ): boolean {
+    return this.expandedRegIds ( ).has ( id )
+  }
+
   public toggleRegExpanded ( id: string ): void {
-    if ( this.expandedRegIds.has ( id ) ) {
-      this.expandedRegIds.delete ( id )
-    } else {
-      this.expandedRegIds.add ( id )
+    this.expandedRegIds.update ( set => {
+      const next = new Set ( set )
+      if ( next.has ( id ) ) {
+        next.delete ( id )
+      } else {
+        next.add ( id )
+      }
+      return next
+    } )
+  }
+
+  public getRegExtraFields ( reg: Record<string, unknown> ): Array<{ key: string; value: unknown }> {
+    const formData = ( reg [ "formData" ] || { } ) as Record<string, unknown>
+    return Object.entries ( formData )
+      .filter ( ( [ k ] ) => !this.isCoreRegField ( k ) )
+      .map ( ( [ key, value ] ) => ( { key, value } ) )
+  }
+
+  public formatRegFieldValue ( key: string | number | symbol, value: unknown ): string {
+    if ( value === null || value === undefined || value === "" ) return "—"
+
+    const event = this.getSelectedEvent ( )
+    const fieldKey = String ( key )
+    const field = event?.contactFormFields?.find (
+      f => String ( f.key ) === fieldKey || String ( f.key ).toLowerCase ( ) === fieldKey.toLowerCase ( )
+    )
+    const isCheckbox = field?.type === "checkbox" || typeof value === "boolean"
+      || value === "true" || value === "false"
+
+    if ( isCheckbox ) {
+      return this.regCheckboxTruthy ( value ) ? "✓" : "✗"
     }
+
+    if ( Array.isArray ( value ) ) return value.map ( v => this.formatRegFieldValue ( key, v ) ).join ( ", " )
+    return String ( value )
+  }
+
+  public getRegDisplayName ( reg: Record<string, unknown> ): string {
+    const name = reg [ "name" ]
+      || this.getSummaryDetail ( reg [ "formData" ], [ "name", "Name", "firstName", "First Name" ] )
+    return name === "—" ? "Unknown registrant" : String ( name )
+  }
+
+  public getRegEmail ( reg: Record<string, unknown> ): string {
+    const direct = String ( reg [ "email" ] || "" ).trim ( )
+    if ( direct ) return direct
+    const fromForm = this.getSummaryDetail ( reg [ "formData" ], [ "email", "Email" ] )
+    return fromForm === "—" ? "" : String ( fromForm ).trim ( )
   }
 
   public isCoreRegField ( key: string | number | symbol ): boolean {
@@ -189,12 +303,19 @@ export class EventEditorComponent implements OnInit {
   }
 
   public ngOnInit ( ): void {
-    Promise.all ( [
-      this.loadEventData ( ),
-      this.loadSlider ( )
-    ] ).finally ( ( ) => {
-      this.loading.set ( false )
-      this.attachEventFormWatchers ( )
+    this.orgSvc.listAdminOrganizations ( ).then ( orgs => {
+      this.adminOrganizations.set ( orgs )
+      if ( orgs.length && !this.publishingOrganizationId ( ) ) {
+        this.publishingOrganizationId.set ( orgs [ 0 ]!.id )
+      }
+    } ).catch ( ( ) => null ).finally ( ( ) => {
+      Promise.all ( [
+        this.loadEventData ( ),
+        this.loadSlider ( )
+      ] ).finally ( ( ) => {
+        this.loading.set ( false )
+        this.attachEventFormWatchers ( )
+      } )
     } )
   }
 
@@ -203,17 +324,16 @@ export class EventEditorComponent implements OnInit {
     this.eventForm.update ( forms => {
       const cloned = [ ...forms ]
       if ( cloned [ index ] ) {
-        cloned [ index ] = {
-          ...cloned [ index ],
-          model: { ...cloned [ index ].model, ...value }
-        }
+        const model = { ...cloned [ index ].model, ...value }
+        syncEventEndDate ( model, cloned [ index ].form, model [ "multiDay" ] === true )
+        cloned [ index ] = { ...cloned [ index ], model }
       }
       return cloned
     } )
   }
 
   public setActiveTab ( tab: EventTab ): void {
-    this.expandedRegIds.clear ( )
+    this.expandedRegIds.set ( new Set ( ) )
     this.activeTab.set ( tab )
   }
 
@@ -244,41 +364,178 @@ export class EventEditorComponent implements OnInit {
     }
   }
 
-  public addNewEvent ( ): void {
+  public isUnsavedEvent ( index: number ): boolean {
+    return !String ( this.eventForm ( ) [ index ]?.model [ "id" ] || "" ).trim ( )
+  }
+
+  public listingEventDateLabel ( index: number ): string {
+    const start = this.eventForm ( ) [ index ]?.model [ "startDate" ]
+    if ( !start ) return ""
+    const d = start instanceof Date ? start : new Date ( String ( start ) )
+    if ( isNaN ( d.getTime ( ) ) ) return ""
+    return d.toLocaleDateString ( "en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" } )
+  }
+
+  public async addNewEvent ( ): Promise<void> {
+    const startDate = addDays ( new Date ( ), 7 )
+    const orgs = this.adminOrganizations ( )
+    const organizationId = this.publishingOrganizationId ( ) || orgs [ 0 ]?.id || ""
+
+    const fields: FormlyFieldConfig [ ] = [
+      this.formlySvc.TextInput ( "title", {
+        label: "Event title",
+        placeholder: "e.g. Parish mission",
+        required: true,
+        maxLength: 100
+      }, { }, true ),
+      ...( orgs.length > 1
+        ? [ this.formlySvc.SelectInput ( "organizationId", {
+          label: "Publishing organisation",
+          required: true,
+          options: orgs.map ( o => ( { label: o.name, value: o.id } ) ),
+          description: "Which partner booking page this event appears on."
+        }, { } ) ]
+        : [ ] ),
+      {
+        ...this.formlySvc.DateInput ( "startDate", {
+          label: "Date",
+          required: true,
+          minDate: new Date ( )
+        }, { } ),
+        hooks: endDateSyncHooks ( "startDate" )
+      },
+      {
+        ...this.formlySvc.CheckboxInput ( "multiDay", {
+          label: "Lasts more than one day"
+        }, { defaultValue: false } ),
+        hooks: endDateSyncHooks ( "multiDay" )
+      },
+      this.formlySvc.DateInput ( "endDate", {
+        label: "End date",
+        minDate: addDays ( startDate, 1 )
+      }, {
+        expressions: {
+          hide: ( field: FormlyFieldConfig ) => !field.model?.multiDay,
+          "props.required": ( field: FormlyFieldConfig ) => !!field.model?.multiDay,
+          "props.minDate": ( field: FormlyFieldConfig ) => dayAfterStart ( field.model?.startDate ) || addDays ( startDate, 1 )
+        }
+      } ),
+      this.formlySvc.SelectInput ( "actionType", {
+        label: "How people take part",
+        required: true,
+        options: [
+          { label: "Registration form on this site", value: "form" },
+          { label: "Link to an external page", value: "webpage" }
+        ]
+      }, { } ),
+      this.formlySvc.CheckboxInput ( "comingSoon", {
+        label: "Coming soon",
+        description: "List it publicly, but keep registration closed until you are ready."
+      }, { defaultValue: false } )
+    ]
+
+    const modalRef = this.modalSvc.open ( InputDialogComponent, { centered: true, size: "md" } )
+    modalRef.setInput ( "title", "New event" )
+    modalRef.setInput (
+      "body",
+      "Set the essentials. You can add the image, copy, and registration details next — then save."
+    )
+    modalRef.setInput ( "confirmText", "Continue" )
+    modalRef.setInput ( "cancelText", "Cancel" )
+    modalRef.setInput ( "fields", fields )
+    modalRef.setInput ( "model", {
+      title: "",
+      organizationId,
+      startDate,
+      endDate: startDate,
+      multiDay: false,
+      actionType: "form",
+      comingSoon: false
+    } )
+
+    let result: Record<string, unknown>
+    try {
+      result = await modalRef.result as Record<string, unknown>
+    } catch {
+      return
+    }
+
+    const title = String ( result [ "title" ] || "" ).trim ( )
+    if ( !title ) return
+
+    const resolvedOrg = String ( result [ "organizationId" ] || organizationId ).trim ( )
+    const actionType = result [ "actionType" ] === "webpage" ? "webpage" as const : "form" as const
+    const comingSoon = result [ "comingSoon" ] === true
+    const asDate = ( value: unknown, fallback: Date ): Date => {
+      if ( value instanceof Date && !isNaN ( value.getTime ( ) ) ) return value
+      if ( value ) {
+        const parsed = new Date ( String ( value ) )
+        if ( !isNaN ( parsed.getTime ( ) ) ) return parsed
+      }
+      return fallback
+    }
+    const resolvedStart = asDate ( result [ "startDate" ], startDate )
+    const multiDay = result [ "multiDay" ] === true
+    const resolvedEnd = multiDay ? asDate ( result [ "endDate" ], resolvedStart ) : resolvedStart
+
     const defaultModel = {
       id: "",
-      title: "",
+      title,
       description: "",
       location: "",
-      startDate: new Date ( ),
-      endDate: addDays ( new Date ( ), 1 ),
-      startTime: "",
-      endTime: "",
-      actionType: "webpage" as const
+      startDate: resolvedStart,
+      endDate: resolvedEnd.getTime ( ) < resolvedStart.getTime ( ) ? resolvedStart : resolvedEnd,
+      startTime: "19:00",
+      endTime: "21:00",
+      actionType,
+      comingSoon,
+      multiDay,
+      donationRequired: "none" as const,
+      organizationId: resolvedOrg,
+      ...( actionType === "form"
+        ? { contactFormFields: getDefaultRegistrationFields ( this.formlySvc ) }
+        : { } )
     }
+
     this.eventsModified.set ( true )
     this.eventForm.set ( [
-      ...this.eventForm ( ),
       {
         form: new FormGroup ( { } ),
         model: { ...defaultModel },
-        fields: getEventFields ( this.formlySvc, defaultModel )
-      }
+        fields: this.eventFieldsForModel ( defaultModel, 0 )
+      },
+      ...this.eventForm ( )
     ] )
     this.eventData.set ( {
-      events: [
-        ...this.eventData ( ).events,
-        { ...defaultModel }
-      ]
+      events: [ { ...defaultModel }, ...this.eventData ( ).events ]
     } )
-    const newForm = this.eventForm ( ) [ this.eventForm ( ).length - 1 ]?.form
+
+    const shifted = new Set<number> ( )
+    this.collapsedIndices.forEach ( i => shifted.add ( i + 1 ) )
+    this.collapsedIndices = shifted
+
+    const newForm = this.eventForm ( ) [ 0 ]?.form
     if ( newForm ) {
       this.attachWatcherToEventForm ( newForm )
     }
+
+    this.dirtyManual.update ( d => ( { ...d, events: true } ) )
+    this.toastrSvc.success ( "Draft added. Complete the details, then save." )
+    queueMicrotask ( ( ) => {
+      document.getElementById ( "event-card-0" )?.scrollIntoView ( { behavior: "smooth", block: "nearest" } )
+    } )
   }
 
   public async saveEventData ( ) {
     if ( this.loading ( ) ) return
+    if ( !this.someFormDirty ( ) ) return
+
+    this.listingsSaveAttempted.set ( true )
+    if ( this.someFormInvalid ( ) || this.allEventSaveIssues ( ).length > 0 ) {
+      this.revealInvalidListings ( )
+      this.toastrSvc.warning ( "Fill in the highlighted fields, then save." )
+      return
+    }
 
     const updatedEventData = {
       events: this.eventForm ( ).map ( ( ef, index ) => {
@@ -293,11 +550,22 @@ export class EventEditorComponent implements OnInit {
           location: ef.model?. [ "location" ] as string || "",
           imageUrl: ef.model [ "imageUrl" ] as string,
           actionType: ( ef.model [ "actionType" ] === "form" || ef.model [ "actionType" ] === "contact" ? "form" : "webpage" ) as "webpage" | "form",
-          comingSoon
+          comingSoon,
+          organizationId: String (
+            ef.model [ "organizationId" ]
+            || ( ( ef.model [ "id" ] || this.eventData ( ).events [ index ]?.id )
+              ? this.eventData ( ).events [ index ]?.organizationId
+              : this.publishingOrganizationId ( ) )
+            || ""
+          ).trim ( ) || undefined
         }
 
         if ( ef.model [ "startDate" ] ) event.startDate = ef.model [ "startDate" ] as Date
-        if ( ef.model [ "endDate" ] ) event.endDate = ef.model [ "endDate" ] as Date
+        if ( ef.model [ "multiDay" ] === true && ef.model [ "endDate" ] ) {
+          event.endDate = ef.model [ "endDate" ] as Date
+        } else if ( ef.model [ "startDate" ] ) {
+          event.endDate = ef.model [ "startDate" ] as Date
+        }
         if ( ef.model [ "startTime" ] ) event.startTime = ef.model [ "startTime" ] as string
         if ( ef.model [ "endTime" ] ) event.endTime = ef.model [ "endTime" ] as string
 
@@ -345,11 +613,17 @@ export class EventEditorComponent implements OnInit {
       } ) )
       this.eventData.set ( updatedEventData )
       this.eventsModified.set ( false )
+      this.listingsSaveAttempted.set ( false )
       this.eventForm ( ).forEach ( ef => ef.form.markAsPristine ( ) )
       this.toastrSvc.success ( "Event data saved successfully!" )
     } catch ( err ) {
       console.error ( "Failed to save event data:", err )
-      this.toastrSvc.error ( "Failed to save event data." )
+      const msg = err instanceof HttpErrorResponse
+        ? ( typeof err.error === "object" && err.error?. [ "error" ]
+          ? String ( err.error [ "error" ] )
+          : typeof err.error === "string" ? err.error : "Failed to save event data." )
+        : "Failed to save event data."
+      this.toastrSvc.error ( msg )
     } finally {
       this.loading.set ( false )
     }
@@ -413,7 +687,10 @@ export class EventEditorComponent implements OnInit {
   }
 
   public someFormInvalid ( ): boolean {
-    return this.eventForm ( ).some ( ef => ef.form.invalid )
+    return this.eventForm ( ).some ( ( ef, index ) => {
+      if ( this.isListingEventFinished ( index ) ) return false
+      return ef.form.invalid
+    } )
   }
 
   public someFormDirty ( ): boolean {
@@ -449,16 +726,123 @@ export class EventEditorComponent implements OnInit {
     this.showPastEvents.update ( value => !value )
   }
 
+  public regMatchesManagerFilter ( reg: Record<string, unknown>, filter: RegManagerFilter ): boolean {
+    switch ( filter ) {
+      case "all":
+        return true
+      case "waitlist":
+        return reg [ "status" ] === "waitlist"
+      case "checkout":
+        return this.isAwaitingPayment ( reg )
+      case "confirmed":
+        return reg [ "status" ] === "completed" && !this.isAwaitingPayment ( reg )
+      case "paid":
+        return !!reg [ "paymentIntent" ]
+      case "donation_due":
+        return this.getRegStatus ( reg ).tone === "donation-unpaid"
+      case "checked_in":
+        return !!reg [ "attended" ] && this.canCheckInRegistration ( reg )
+      default:
+        return true
+    }
+  }
+
+  public regMatchesSearchQuery ( reg: Record<string, unknown>, query: string ): boolean {
+    const formData = ( reg [ "formData" ] || { } ) as Record<string, unknown>
+    const stringifiedValues = Object.entries ( formData )
+      .map ( ( [ k, v ] ) => {
+        const display = this.formatRegFieldValue ( k, v )
+        const extra = display === "✓" ? " yes" : display === "✗" ? " no" : ""
+        return ( display + extra ).toLowerCase ( )
+      } )
+      .join ( " " )
+    const email = String ( reg [ "email" ] || "" ).toLowerCase ( )
+    const name = String ( reg [ "name" ] || "" ).toLowerCase ( )
+    const displayName = this.getRegDisplayName ( reg ).toLowerCase ( )
+    const creationDate = String ( reg [ "createdAt" ] || "" ).toLowerCase ( )
+    const regStatus = String ( reg [ "status" ] || "" ).toLowerCase ( )
+    const statusLabel = this.getRegStatus ( reg ).label.toLowerCase ( )
+    return stringifiedValues.includes ( query )
+      || email.includes ( query )
+      || name.includes ( query )
+      || displayName.includes ( query )
+      || creationDate.includes ( query )
+      || regStatus.includes ( query )
+      || statusLabel.includes ( query )
+  }
+
+  public activeRegManagerFilterLabel ( ): string {
+    return this.regManagerFilterDefs.find ( d => d.id === this.regManagerFilter ( ) )?.label || "All"
+  }
+
+  public resetRegManagerFilters ( ): void {
+    this.regManagerFilter.set ( "all" )
+    this.regSearchQuery.set ( "" )
+  }
+
+  public getRegStatus ( reg: Record<string, unknown> ): { label: string; tone: RegStatusTone } {
+    const status = String ( reg [ "status" ] || "" )
+    const { mode, optIn, paid } = this.regDonationContext ( reg )
+
+    if ( status === "waitlist" ) {
+      return { label: "Waitlist", tone: "waitlist" }
+    }
+
+    if ( this.isAwaitingPayment ( reg ) ) {
+      return { label: "Payment not finished", tone: "checkout" }
+    }
+
+    if ( status === "completed" ) {
+      if ( mode === "none" ) {
+        return { label: "Registered", tone: "confirmed" }
+      }
+      if ( paid ) {
+        return mode === "required"
+          ? { label: "Registered (paid)", tone: "paid" }
+          : { label: "Registered (donated)", tone: "paid" }
+      }
+      if ( mode === "optional" && optIn ) {
+        return { label: "Registered — donation unpaid", tone: "donation-unpaid" }
+      }
+      if ( mode === "optional" && !optIn ) {
+        return { label: "Registered (no donation)", tone: "no-donation" }
+      }
+      if ( mode === "required" ) {
+        return { label: "Registered — donation unpaid", tone: "donation-unpaid" }
+      }
+    }
+
+    if ( status ) {
+      return { label: status.replace ( /_/g, " " ), tone: "unknown" }
+    }
+    return { label: "Unknown", tone: "unknown" }
+  }
+
   public regStatusLabel ( reg: Record<string, unknown> ): string {
-    if ( reg [ "kind" ] === "draft" || reg [ "status" ] === "awaiting_payment" ) return "Awaiting payment"
-    if ( reg [ "status" ] === "waitlist" ) return "Waitlist"
-    if ( reg [ "status" ] === "completed" && !reg [ "paymentIntent" ] ) return "Registered"
-    if ( reg [ "status" ] === "completed" ) return "Paid"
-    return String ( reg [ "status" ] || "—" )
+    return this.getRegStatus ( reg ).label
+  }
+
+  public regStatusToneClasses ( tone: RegStatusTone ): string {
+    switch ( tone ) {
+      case "waitlist":
+        return "bg-violet-100 text-violet-800 dark:bg-violet-900/35 dark:text-violet-200"
+      case "checkout":
+        return "bg-amber-100 text-amber-900 dark:bg-amber-900/35 dark:text-amber-100"
+      case "confirmed":
+        return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/35 dark:text-emerald-200"
+      case "paid":
+        return "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100"
+      case "donation-unpaid":
+        return "bg-orange-100 text-orange-900 dark:bg-orange-950/40 dark:text-orange-100"
+      case "no-donation":
+        return "bg-sky-100 text-sky-900 dark:bg-sky-900/35 dark:text-sky-100"
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-slate-700 dark:text-slate-200"
+    }
   }
 
   public async toggleAttendance ( reg: Record<string, unknown> ): Promise<void> {
-    if ( reg [ "kind" ] === "draft" || this.isAwaitingPayment ( reg ) ) return
+    if ( !this.canCheckInRegistration ( reg ) ) return
     const id = String ( reg [ "id" ] || "" )
     if ( !id ) return
     const next = !reg [ "attended" ]
@@ -486,6 +870,214 @@ export class EventEditorComponent implements OnInit {
     return reg [ "kind" ] === "draft" || reg [ "status" ] === "awaiting_payment"
   }
 
+  /** Checkout drafts vs saved registration rows (legacy rows without kind infer from status). */
+  public registrationRowKind ( reg: Record<string, unknown> ): "draft" | "registration" {
+    if ( reg [ "kind" ] === "draft" ) return "draft"
+    if ( reg [ "kind" ] === "registration" ) return "registration"
+    if ( reg [ "status" ] === "awaiting_payment" ) return "draft"
+    return "registration"
+  }
+
+  /** Attendance applies to confirmed saved registrations — not drafts or waitlist. */
+  public canCheckInRegistration ( reg: Record<string, unknown> ): boolean {
+    if ( this.registrationRowKind ( reg ) === "draft" ) return false
+    return String ( reg [ "status" ] || "" ) === "completed"
+  }
+
+  public canSendOptionalPayLink ( reg: Record<string, unknown> ): boolean {
+    if ( this.isAwaitingPayment ( reg ) ) return false
+    if ( reg [ "paymentIntent" ] ) return false
+    if ( String ( reg [ "status" ] || "" ) !== "completed" ) return false
+    if ( this.getSelectedEvent ( )?.donationRequired !== "optional" ) return false
+    const { optIn } = this.regDonationContext ( reg )
+    return optIn
+  }
+
+  public stripePaymentDashboardUrl ( paymentIntentId: string ): string {
+    const base = this.stripeLivemode ( )
+      ? "https://dashboard.stripe.com"
+      : "https://dashboard.stripe.com/test"
+    return `${base}/payments/${encodeURIComponent ( paymentIntentId )}`
+  }
+
+  public getEventRegistrationCount ( eventId: unknown ): number {
+    const id = String ( eventId || "" ).trim ( )
+    if ( !id ) return 0
+    return this.registrationCounts ( ) [ id ] || 0
+  }
+
+  public formatGbpFromPence ( pence: number ): string {
+    if ( !Number.isFinite ( pence ) ) return "—"
+    return `£${( pence / 100 ).toFixed ( 2 )}`
+  }
+
+  public getRegPaymentPanel ( reg: Record<string, unknown> ): {
+    amountPence: number
+    amountLabel: string
+    statusLabel: string
+    statusTone: RegStatusTone
+    stripePaymentId?: string
+    payLink?: string
+  } | null {
+    const event = this.getSelectedEvent ( )
+    if ( !event ) return null
+
+    const formData = ( reg [ "formData" ] || { } ) as Record<string, unknown>
+    const donationRequired = event.donationRequired || "none"
+    const optInDonation = formData [ "optInDonation" ] === true || formData [ "optInDonation" ] === "true"
+    const hasPaymentIntent = !!reg [ "paymentIntent" ]
+    const hasInvoice = !!reg [ "stripeInvoiceId" ]
+    const amountPenceRaw = reg [ "amountPence" ]
+
+    const show = donationRequired === "required"
+      || ( donationRequired === "optional" && optInDonation )
+      || hasPaymentIntent
+      || hasInvoice
+      || amountPenceRaw != null
+
+    if ( !show ) return null
+
+    const storedAmount = this.storedRegAmountPence ( reg )
+    const amountPence = storedAmount ?? 0
+    const amountLabel = storedAmount != null ? this.formatGbpFromPence ( storedAmount ) : "—"
+
+    const regStatus = this.getRegStatus ( reg )
+
+    const payLink = this.isAwaitingPayment ( reg )
+      ? String ( reg [ "donateLaterUrl" ] || reg [ "checkoutUrl" ] || "" ).trim ( ) || undefined
+      : undefined
+
+    return {
+      amountPence,
+      amountLabel,
+      statusLabel: regStatus.label,
+      statusTone: regStatus.tone,
+      stripePaymentId: hasPaymentIntent ? String ( reg [ "paymentIntent" ] ) : undefined,
+      payLink
+    }
+  }
+
+  public isListingEventFinished ( index: number ): boolean {
+    const modelEnd = this.eventForm ( ) [ index ]?.model [ "endDate" ]
+    const dataEnd = this.eventData ( ).events [ index ]?.endDate
+    return this.isEventFinished ( modelEnd || dataEnd )
+  }
+
+  public storedRegAmountPence ( reg: Record<string, unknown> ): number | null {
+    if ( reg [ "amountPence" ] != null && Number.isFinite ( Number ( reg [ "amountPence" ] ) ) ) {
+      return Number ( reg [ "amountPence" ] )
+    }
+    const formData = ( reg [ "formData" ] || { } ) as Record<string, unknown>
+    const custom = formData [ "customDonationAmount" ]
+    if ( custom != null && Number.isFinite ( Number ( custom ) ) ) {
+      const n = Number ( custom )
+      return n >= 50 ? Math.round ( n ) : Math.round ( n * 100 )
+    }
+    return null
+  }
+
+  public eventSaveIssueLabelsForIndex ( index: number ): string [ ] {
+    const entry = this.eventForm ( ) [ index ]
+    if ( !entry ) return [ ]
+    if ( this.isListingEventFinished ( index ) ) return [ ]
+
+    const model = entry.model
+    const form = entry.form
+    const issues: string [ ] = [ ]
+
+    if ( !String ( model [ "title" ] || "" ).trim ( ) ) issues.push ( "Event title" )
+    if ( !String ( model [ "description" ] || "" ).trim ( ) ) issues.push ( "Summary on event card" )
+    if ( !model [ "imageUrl" ] ) issues.push ( "Event image" )
+
+    const comingSoon = model [ "comingSoon" ] === true
+    if ( !comingSoon ) {
+      if ( !String ( model [ "location" ] || "" ).trim ( ) ) issues.push ( "Location" )
+      if ( !model [ "startDate" ] ) issues.push ( model [ "multiDay" ] === true ? "Start date" : "Date" )
+      if ( model [ "multiDay" ] === true && !model [ "endDate" ] ) issues.push ( "End date" )
+
+      const actionType = model [ "actionType" ]
+      if ( actionType === "webpage" ) {
+        if ( !String ( model [ "webpageUrl" ] || "" ).trim ( ) ) {
+          issues.push ( "External registration URL" )
+        } else if ( form.get ( "webpageUrl" )?.invalid ) {
+          issues.push ( "Valid external URL (https://…)" )
+        }
+      }
+
+      if ( actionType === "form" ) {
+        const fields = model [ "contactFormFields" ]
+        if ( !Array.isArray ( fields ) || fields.length === 0 ) {
+          issues.push ( "Registration form fields" )
+        }
+        const donation = model [ "donationRequired" ] || "none"
+        if ( donation !== "none" ) {
+          const price = Number ( model [ "donationPrice" ] )
+          if ( !Number.isFinite ( price ) || price < 0.5 ) {
+            issues.push ( "Donation price (min £0.50)" )
+          }
+        }
+      }
+    }
+
+    if ( form.errors?. [ "StartBeforeEnd" ] ) {
+      issues.push ( "End after start (date & time)" )
+    }
+
+    if ( form.invalid && !issues.length ) {
+      issues.push ( "Fix highlighted fields above" )
+    }
+
+    return issues
+  }
+
+  public eventSaveIssuesForIndex ( index: number ): string [ ] {
+    const entry = this.eventForm ( ) [ index ]
+    if ( !entry ) return [ ]
+    const title = String ( entry.model [ "title" ] || "" ).trim ( ) || `Event #${index + 1}`
+    return this.eventSaveIssueLabelsForIndex ( index ).map ( label => `${title}: ${label}` )
+  }
+
+  public allEventSaveIssues ( ): string [ ] {
+    return this.eventForm ( ).flatMap ( ( _, index ) => this.eventSaveIssuesForIndex ( index ) )
+  }
+
+  public canSaveEventListings ( ): boolean {
+    return this.someFormDirty ( )
+      && !this.someFormInvalid ( )
+      && this.allEventSaveIssues ( ).length === 0
+  }
+
+  public eventNeedsAttention ( index: number ): boolean {
+    return this.listingsSaveAttempted ( ) && this.eventSaveIssueLabelsForIndex ( index ).length > 0
+  }
+
+  public eventSaveFooterHint ( ): string {
+    if ( !this.someFormDirty ( ) ) return "No unsaved changes."
+    if ( this.listingsSaveAttempted ( ) && this.allEventSaveIssues ( ).length ) {
+      return "Check the highlighted fields, then save again."
+    }
+    return "Unsaved changes."
+  }
+
+  public organizationName ( organizationId: unknown ): string {
+    const id = String ( organizationId || "" ).trim ( )
+    if ( !id ) return ""
+    return this.adminOrganizations ( ).find ( o => o.id === id )?.name || id
+  }
+
+  public formEventOptionLabel ( event: Event ): string {
+    const bits = [ event.title || "Untitled event" ]
+    if ( event.startDate ) {
+      const d = new Date ( event.startDate as unknown as string )
+      if ( !isNaN ( d.getTime ( ) ) ) {
+        bits.push ( d.toLocaleDateString ( "en-GB", { day: "numeric", month: "short", year: "numeric" } ) )
+      }
+    }
+    if ( this.isEventFinished ( event.endDate ) ) bits.push ( "past" )
+    if ( event.comingSoon ) bits.push ( "coming soon" )
+    return bits.join ( " · " )
+  }
+
   public exportRegistrationsCsv ( ): void {
     const rows = this.filteredRegistrations ( )
     if ( !rows.length ) {
@@ -493,7 +1085,6 @@ export class EventEditorComponent implements OnInit {
       return
     }
 
-    const event = this.getSelectedEvent ( )
     const headers = [ "Date", "Kind", "Status", "Name", "Email", "Phone", "Amount", "PaymentIntent", "Details" ]
     const escape = ( v: unknown ) => {
       let s = v == null ? "" : String ( v )
@@ -512,20 +1103,18 @@ export class EventEditorComponent implements OnInit {
       const email = reg [ "email" ]
         || this.getSummaryDetail ( formData, [ "email", "Email" ] )
       const phone = this.getSummaryDetail ( formData, [ "phone", "Phone", "tel" ] )
-      const amountPence = reg [ "amountPence" ] != null
-        ? Number ( reg [ "amountPence" ] )
-        : ( event?.donationPrice ?? "" )
-      const amount = typeof amountPence === "number" && Number.isFinite ( amountPence )
+      const amountPence = this.storedRegAmountPence ( reg )
+      const amount = amountPence != null && Number.isFinite ( amountPence )
         ? ( amountPence / 100 ).toFixed ( 2 )
         : ""
       const details = Object.entries ( formData )
         .filter ( ( [ k ] ) => !this.isCoreRegField ( k ) )
-        .map ( ( [ k, v ] ) => `${this.getSelectedEventFieldLabel ( k )}=${v}` )
+        .map ( ( [ k, v ] ) => `${this.getSelectedEventFieldLabel ( k )}=${this.formatRegFieldValue ( k, v )}` )
         .join ( "; " )
 
       lines.push ( [
         escape ( reg [ "createdAt" ] ),
-        escape ( reg [ "kind" ] === "draft" ? "draft" : "registration" ),
+        escape ( reg [ "kind" ] === "draft" ? "payment not finished" : "registration" ),
         escape ( this.regStatusLabel ( reg ) ),
         escape ( name === "—" ? "" : name ),
         escape ( email === "—" ? "" : email ),
@@ -616,13 +1205,9 @@ export class EventEditorComponent implements OnInit {
     this.activeSlideIndex.set ( 0 )
   }
 
-  public getRegsForSelectedEvent ( ): Array<Record<string, unknown>> {
-    const eventId = this.selectedRegEventId ( )
-    return this.registrations ( ) [ eventId ] || [ ]
-  }
-
   public onRegEventSelect ( eventId: string ): void {
-    this.expandedRegIds.clear ( )
+    this.expandedRegIds.set ( new Set ( ) )
+    this.resetRegManagerFilters ( )
     this.selectedRegEventId.set ( eventId )
     if ( eventId ) {
       this.loadingRegs.set ( true )
@@ -709,11 +1294,11 @@ export class EventEditorComponent implements OnInit {
     const email = String ( reg [ "email" ] || "" )
       || this.getSummaryDetail ( reg [ "formData" ], [ "email", "Email" ] )
     const who = [ name && name !== "—" ? name : "", email && email !== "—" ? email : "" ]
-      .filter ( Boolean ).join ( " · " ) || ( isDraft ? "this checkout draft" : "this registration" )
+      .filter ( Boolean ).join ( " · " ) || ( isDraft ? "this unfinished payment" : "this registration" )
 
     const confirmed = window.confirm (
       isDraft
-        ? `Remove unpaid checkout for ${who}?\n\nAny open Stripe invoice or Checkout session will be voided/expired.`
+        ? `Remove unfinished payment for ${who}?\n\nAny open invoice or payment session will be cancelled.`
         : hasPayment
           ? `Refund payment for ${who}?\n\nThe Stripe payment will be fully refunded and the registration removed.`
           : `Delete ${who}?\n\nThis cannot be undone.`
@@ -739,9 +1324,15 @@ export class EventEditorComponent implements OnInit {
         ...r,
         [ eventId ]: ( r [ eventId ] || [ ] ).filter ( item => item [ "id" ] !== id )
       } ) )
+      if ( !isDraft ) {
+        this.registrationCounts.update ( counts => ( {
+          ...counts,
+          [ eventId ]: Math.max ( 0, ( counts [ eventId ] || 1 ) - 1 )
+        } ) )
+      }
 
       if ( isDraft ) {
-        this.toastrSvc.success ( "Checkout draft removed." )
+        this.toastrSvc.success ( "Unfinished payment removed." )
       } else if ( res.refunded ) {
         this.toastrSvc.success ( "Payment refunded and registration removed." )
       } else if ( res.invoiceVoided ) {
@@ -784,6 +1375,75 @@ export class EventEditorComponent implements OnInit {
     } finally {
       this.saving.update ( s => ( { ...s, slider: false } ) )
     }
+  }
+
+  private regCheckboxTruthy ( value: unknown ): boolean {
+    return value === true || value === "true" || value === 1 || value === "1"
+  }
+
+  private isMultiDayRange ( startDate: unknown, endDate: unknown ): boolean {
+    if ( !startDate || !endDate ) return false
+    const start = startDate instanceof Date ? startDate : new Date ( String ( startDate ) )
+    const end = endDate instanceof Date ? endDate : new Date ( String ( endDate ) )
+    if ( isNaN ( start.getTime ( ) ) || isNaN ( end.getTime ( ) ) ) return false
+    return start.getFullYear ( ) !== end.getFullYear ( )
+      || start.getMonth ( ) !== end.getMonth ( )
+      || start.getDate ( ) !== end.getDate ( )
+  }
+
+  private regDonationContext ( reg: Record<string, unknown> ): {
+    mode: "none" | "optional" | "required"
+    optIn: boolean
+    paid: boolean
+  } {
+    const event = this.getSelectedEvent ( )
+    const formData = ( reg [ "formData" ] || { } ) as Record<string, unknown>
+    const mode = ( event?.donationRequired || "none" ) as "none" | "optional" | "required"
+    const optIn = formData [ "optInDonation" ] === true || formData [ "optInDonation" ] === "true"
+    const paid = !!reg [ "paymentIntent" ]
+    return { mode, optIn, paid }
+  }
+
+  private revealInvalidListings ( ): void {
+    this.eventForm ( ).forEach ( ( ef, index ) => {
+      if ( this.isListingEventFinished ( index ) ) return
+      ef.form.markAllAsTouched ( )
+    } )
+
+    const first = this.eventForm ( ).findIndex ( ( _, index ) =>
+      !this.isListingEventFinished ( index ) && this.eventSaveIssueLabelsForIndex ( index ).length > 0
+    )
+    if ( first < 0 ) return
+    this.collapsedIndices.delete ( first )
+    queueMicrotask ( ( ) => {
+      const card = document.getElementById ( `event-card-${first}` )
+      card?.scrollIntoView ( { behavior: "smooth", block: "nearest" } )
+      const field = card?.querySelector<HTMLElement> ( ".border-red-500, .is-invalid, input, textarea, select" )
+      field?.focus ( { preventScroll: true } )
+    } )
+  }
+
+  private compareRegsForSort (
+    a: Record<string, unknown>,
+    b: Record<string, unknown>,
+    sort: RegManagerSort
+  ): number {
+    if ( sort === "name_az" ) {
+      return this.getRegDisplayName ( a ).localeCompare ( this.getRegDisplayName ( b ), undefined, { sensitivity: "base" } )
+    }
+    const ta = new Date ( String ( a [ "createdAt" ] || 0 ) ).getTime ( )
+    const tb = new Date ( String ( b [ "createdAt" ] || 0 ) ).getTime ( )
+    return sort === "oldest" ? ta - tb : tb - ta
+  }
+
+  private eventFieldsForModel (
+    model: Record<string, unknown>,
+    registrationCount: number
+  ): FormlyFieldConfig [ ] {
+    return getEventFields ( this.formlySvc, model, {
+      registrationCount,
+      organizations: this.adminOrganizations ( ).map ( o => ( { id: o.id, name: o.name } ) )
+    } )
   }
 
   private attachEventFormWatchers ( ): void {
@@ -859,24 +1519,38 @@ export class EventEditorComponent implements OnInit {
   private async loadEventData ( ): Promise<void> {
     try {
       const token = await this.authSvc.currentUser ( )?.getIdToken ( ) || ""
-      const events = ( await this.apiSvc.get (
+      const res = ( await this.apiSvc.get (
         "/api/admin/events",
         { },
         new HttpHeaders ( { "Authorization": `Bearer ${token}` } )
-      ) ) as { events: Event [ ] }
-      this.eventData.set ( events )
-      this.eventForm.set ( events.events.map ( event => ( {
-        form: new FormGroup ( { } ),
-        model: {
+      ) ) as { events: Event [ ]; registrationCounts?: Record<string, number>; stripeLivemode?: boolean }
+      this.eventData.set ( { events: res.events } )
+      this.registrationCounts.set ( res.registrationCounts || { } )
+      if ( typeof res.stripeLivemode === "boolean" ) {
+        this.stripeLivemode.set ( res.stripeLivemode )
+      }
+      this.eventForm.set ( res.events.map ( event => {
+        const model = {
           ...event,
           actionType: event.actionType === "form" || ( event.actionType as string ) === "contact" ? "form" : "webpage",
           startDate: event.startDate ? new Date ( event.startDate ) : null,
           endDate: event.endDate ? new Date ( event.endDate ) : null,
-          donationPrice: event.donationPrice != null ? event.donationPrice / 100 : undefined
-        },
-        fields: getEventFields ( this.formlySvc, event as unknown as Record<string, unknown> )
-      } ) ) )
-      events.events.forEach ( ( _, i ) => this.collapsedIndices.add ( i ) )
+          multiDay: this.isMultiDayRange ( event.startDate, event.endDate ),
+          donationPrice: event.donationPrice != null ? event.donationPrice / 100 : undefined,
+          organizationId: event.organizationId
+            || this.publishingOrganizationId ( )
+            || this.adminOrganizations ( ) [ 0 ]?.id
+        }
+        return {
+          form: new FormGroup ( { } ),
+          model,
+          fields: this.eventFieldsForModel (
+            model as Record<string, unknown>,
+            this.getEventRegistrationCount ( event.id )
+          )
+        }
+      } ) )
+      res.events.forEach ( ( _, i ) => this.collapsedIndices.add ( i ) )
     } catch ( error ) {
       console.error ( "Error loading event data:", error )
     }

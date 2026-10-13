@@ -1,0 +1,110 @@
+<div class="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
+  <app-admin-navbar />
+
+  <main class="flex-1 max-w-4xl mx-auto w-full px-6 py-8 space-y-8">
+    <header>
+      <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Partner organizations</h1>
+      <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-1 max-w-2xl">
+        Host event booking for parishes and partners. Link <code class="text-xs">/book/:slug</code> from the parish site instead of ChurchSuite. Add <code class="text-xs">?return=</code> for a back-to-website button and <code class="text-xs">embed=1</code> to hide Revive chrome.
+      </p>
+    </header>
+
+    @if (loading()) {
+      <div class="flex justify-center py-16 text-zinc-500">
+        <app-icon icon="spinner" iconAnimation="spin" iconSize="2x" />
+      </div>
+    } @else {
+      @for (org of organizations(); track org.id) {
+        <section class="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-4 shadow-sm">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-50">{{ org.name }}</h2>
+              <p class="text-xs text-zinc-500 font-mono mt-0.5">{{ org.slug }} · {{ org.id }}</p>
+              @if (org.websiteUrl) {
+                <a [href]="org.websiteUrl" target="_blank" rel="noopener" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">{{ org.websiteUrl }}</a>
+              }
+            </div>
+            <div class="flex flex-wrap gap-2">
+              @if (isSuperAdmin()) {
+                <button type="button" class="btn-outline-primary btn-sm" (click)="connectStripe(org)">
+                  <app-icon icon="link" /> Stripe Connect
+                </button>
+              }
+              <button type="button" class="btn-outline-secondary btn-sm" (click)="syncStripe(org)">
+                <app-icon icon="refresh" /> Sync Stripe
+              </button>
+            </div>
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-3 text-xs">
+            <div class="rounded-lg bg-zinc-50 dark:bg-zinc-800/60 p-3 border border-zinc-100 dark:border-zinc-700">
+              <p class="font-semibold text-zinc-500 uppercase tracking-wider mb-1">Booking page</p>
+              <code class="block break-all text-zinc-800 dark:text-zinc-200">{{ bookingLink(org) }}</code>
+              <button type="button" class="btn-outline-primary btn-sm mt-2" (click)="copyText(bookingLink(org), 'Booking URL')">
+                Copy link
+              </button>
+            </div>
+            <div class="rounded-lg bg-zinc-50 dark:bg-zinc-800/60 p-3 border border-zinc-100 dark:border-zinc-700">
+              <p class="font-semibold text-zinc-500 uppercase tracking-wider mb-1">Website embed</p>
+              <p class="text-zinc-600 dark:text-zinc-400 mb-2">Paste on the partner site (opens branded booking in a new tab).</p>
+              <button type="button" class="btn-outline-secondary btn-sm" (click)="copyText(embedSnippet(org), 'Embed HTML')">
+                Copy button HTML
+              </button>
+            </div>
+          </div>
+
+          <div class="rounded-lg border border-zinc-100 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/60 p-3 text-xs space-y-1">
+            <p class="font-semibold uppercase tracking-wider text-zinc-500">Payments</p>
+            <p>
+              <span class="font-semibold"
+                    [class.text-green-700]="org.stripeConnectPayoutsEnabled || org.stripeConnectChargesEnabled"
+                    [class.dark:text-green-400]="org.stripeConnectPayoutsEnabled || org.stripeConnectChargesEnabled"
+                    [class.text-amber-700]="!!org.stripeConnectAccountId && !org.stripeConnectChargesEnabled && !org.stripeConnectPayoutsEnabled"
+                    [class.dark:text-amber-300]="!!org.stripeConnectAccountId && !org.stripeConnectChargesEnabled && !org.stripeConnectPayoutsEnabled">
+                {{ connectStatusLabel(org) }}
+              </span>
+              — {{ connectStatusHint(org) }}
+            </p>
+          </div>
+
+          @if (isSuperAdmin()) {
+            <div class="grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+              <label class="text-xs text-zinc-600 dark:text-zinc-400">
+                Platform fee %
+                <input class="form-control text-sm mt-1" type="number" min="0" max="100" step="0.1"
+                       [ngModel]="org.platformFeePercent ?? 0"
+                       (ngModelChange)="org.platformFeePercent = $event" />
+              </label>
+              <label class="text-xs text-zinc-600 dark:text-zinc-400">
+                Fixed fee (£)
+                <input class="form-control text-sm mt-1" type="number" min="0" step="0.01"
+                       [ngModel]="feePounds(org)"
+                       (ngModelChange)="setFeePounds(org, $event)" />
+              </label>
+              <button type="button" class="btn-outline-primary btn-sm" (click)="saveFees(org)">Save fees</button>
+            </div>
+          }
+        </section>
+      }
+
+      @if (isSuperAdmin()) {
+        <section class="rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 p-5 space-y-3">
+          <h3 class="font-semibold text-zinc-900 dark:text-zinc-50">Add organization</h3>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <input class="form-control text-sm" placeholder="Document id (e.g. st-marys)" [(ngModel)]="newOrg.id" />
+            <input class="form-control text-sm" placeholder="URL slug (e.g. st-marys)" [(ngModel)]="newOrg.slug" />
+            <input class="form-control text-sm sm:col-span-2" placeholder="Display name" [(ngModel)]="newOrg.name" />
+            <input class="form-control text-sm sm:col-span-2" placeholder="Partner website (return link)" [(ngModel)]="newOrg.websiteUrl" />
+            <input class="form-control text-sm" type="number" min="0" step="0.1" placeholder="Platform fee %" [(ngModel)]="newOrg.platformFeePercent" />
+            <input class="form-control text-sm" type="number" min="0" step="1" placeholder="Fixed fee (pence)" [(ngModel)]="newOrg.platformFeeFixedPence" />
+          </div>
+          <button type="button" class="btn-primary btn-sm" (click)="createOrg()">
+            <app-icon icon="plus" /> Create organization
+          </button>
+        </section>
+      }
+    }
+  </main>
+
+  <app-admin-footer />
+</div>

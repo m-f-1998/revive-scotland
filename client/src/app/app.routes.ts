@@ -14,6 +14,11 @@ export const routes: Routes = [
       import ( "./user/events/events.component" ).then ( m => m.EventsComponent )
   },
   {
+    path: "book/:orgSlug",
+    loadComponent: ( ) =>
+      import ( "./user/events/events.component" ).then ( m => m.EventsComponent )
+  },
+  {
     path: "gallery",
     loadComponent: ( ) =>
       import ( "./user/gallery/gallery.component" ).then ( m => m.GalleryComponent )
@@ -57,6 +62,12 @@ export const routes: Routes = [
         loadComponent: ( ) =>
           import ( "./admin/event-editor/event-editor.component" )
             .then ( m => m.EventEditorComponent )
+      },
+      {
+        path: "organizations",
+        loadComponent: ( ) =>
+          import ( "./admin/organizations/organizations.component" )
+            .then ( m => m.OrganizationsAdminComponent )
       },
       {
         path: "homeEditor",

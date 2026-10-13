@@ -1,0 +1,27 @@
+<div
+  class="relative rounded-full overflow-hidden flex items-center justify-center bg-primary/10 text-primary font-bold uppercase select-none"
+  [style.width.px]="size()"
+  [style.height.px]="size()"
+  [class.text-sm]="size() <= 44"
+  [class.text-xs]="size() < 36"
+  [attr.aria-hidden]="true">
+  <span
+    class="leading-none"
+    [class.invisible]="showPhoto()">
+    {{ initial() }}
+  </span>
+  @if (photoSrc(); as src) {
+    <img
+      class="absolute inset-0 h-full w-full object-cover transition-opacity duration-150"
+      [class.opacity-0]="!showPhoto()"
+      [class.opacity-100]="showPhoto()"
+      [src]="src"
+      [width]="size()"
+      [height]="size()"
+      alt=""
+      referrerpolicy="no-referrer"
+      decoding="async"
+      (load)="onPhotoLoad()"
+      (error)="onPhotoError()" />
+  }
+</div>

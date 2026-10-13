@@ -8,11 +8,6 @@ import { ToastrService } from "@m-f-1998/ngx-toastr"
 import { IconComponent } from "../../icon/icon.component"
 import { RecaptchaAction, RecaptchaActionName } from "../../shared/recaptcha-actions"
 import { RecaptchaExecuteService } from "../../services/recaptcha-execute.service"
-import {
-  getRecaptchaTestMode,
-  isServerRecaptchaTestMode,
-  recaptchaTestToken
-} from "../../shared/recaptcha-test"
 
 @Component ( {
   selector: "iqx-input-dialog",
@@ -74,18 +69,10 @@ export class InputDialogComponent<T extends Record<string, unknown> = Record<str
       this.submitting.set ( true )
       this.cdr.markForCheck ( )
       try {
-        const testMode = getRecaptchaTestMode ( )
-        if ( testMode === "client-fail" ) {
-          throw new Error ( "reCAPTCHA client failure simulated" )
-        }
-        if ( isServerRecaptchaTestMode ( testMode ) ) {
-          this.captchaToken = recaptchaTestToken ( testMode )
-        } else {
-          this.captchaToken = await this.recaptchaExecuteSvc.execute ( this.recaptchaAction ( ) )
-        }
+        this.captchaToken = await this.recaptchaExecuteSvc.execute ( this.recaptchaAction ( ) )
       } catch {
         this.toastrSvc.error (
-          "We couldn't complete the security check in your browser. Try again on mobile data or a different browser."
+          "We couldn't complete the security check in your browser. Try again, or disable ad blockers."
         )
         return
       } finally {

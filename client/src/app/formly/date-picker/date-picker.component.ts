@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, signal, WritableSignal, inject } from "@angular/core"
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, signal, WritableSignal, inject } from "@angular/core"
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop"
 import { FieldType, FormlyModule } from "@ngx-formly/core"
 import { ReactiveFormsModule } from "@angular/forms"
 import { DatesService } from "../../services/dates.service"
@@ -16,6 +17,8 @@ export class DatePickerComponent extends FieldType implements OnInit {
   public readonly datesSvc: DatesService = inject ( DatesService )
   public nativeValue: WritableSignal<string> = signal ( "" )
 
+  private readonly destroyRef = inject ( DestroyRef )
+
   public get minDateAttr ( ): string {
     const d = this.field.props?.[ "minDate" ]
     return d instanceof Date ? this.toInputValue ( d ) : ""
@@ -27,15 +30,10 @@ export class DatePickerComponent extends FieldType implements OnInit {
   }
 
   public ngOnInit ( ) {
-    const val = this.formControl?.value
-    if ( val instanceof Date && !isNaN ( val.getTime ( ) ) ) {
-      this.nativeValue.set ( this.toInputValue ( val ) )
-    } else if ( typeof val === "string" ) {
-      const parsed = new Date ( val )
-      if ( !isNaN ( parsed.getTime ( ) ) ) {
-        this.nativeValue.set ( this.toInputValue ( parsed ) )
-      }
-    }
+    this.syncNativeValue ( this.formControl?.value )
+    this.formControl?.valueChanges
+      .pipe ( takeUntilDestroyed ( this.destroyRef ) )
+      .subscribe ( value => this.syncNativeValue ( value ) )
   }
 
   public onNativeChange ( event: Event ): void {
@@ -49,6 +47,19 @@ export class DatePickerComponent extends FieldType implements OnInit {
     if ( !isNaN ( date.getTime ( ) ) ) {
       this.formControl?.setValue ( date )
       this.formControl?.markAsDirty ( )
+    }
+  }
+
+  private syncNativeValue ( val: unknown ): void {
+    if ( val instanceof Date && !isNaN ( val.getTime ( ) ) ) {
+      this.nativeValue.set ( this.toInputValue ( val ) )
+    } else if ( typeof val === "string" ) {
+      const parsed = new Date ( val )
+      if ( !isNaN ( parsed.getTime ( ) ) ) {
+        this.nativeValue.set ( this.toInputValue ( parsed ) )
+      }
+    } else if ( !val ) {
+      this.nativeValue.set ( "" )
     }
   }
 

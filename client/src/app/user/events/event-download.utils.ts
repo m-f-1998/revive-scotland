@@ -6,7 +6,21 @@ const slugify = ( title: string ): string =>
 export const getGoogleMapsUrl = ( location: string ): string =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent ( location )}`
 
+/** Matches server archive: ended events (by endDate, or startDate if no end). */
+export const isPastEvent = ( event: ReviveEvent, now = new Date ( ) ): boolean => {
+  if ( event.endDate ) {
+    const end = new Date ( event.endDate )
+    return !isNaN ( end.getTime ( ) ) && end < now
+  }
+  if ( event.startDate ) {
+    const start = new Date ( event.startDate )
+    return !isNaN ( start.getTime ( ) ) && start < now
+  }
+  return false
+}
+
 export const downloadEventIcs = ( event: ReviveEvent ): void => {
+  if ( isPastEvent ( event ) ) return
   if ( !event.startDate ) return
 
   const pad = ( n: number ) => String ( n ).padStart ( 2, "0" )

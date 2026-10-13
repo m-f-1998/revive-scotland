@@ -10,11 +10,21 @@ import {
   recaptchaErrorResponse
 } from "../services/recaptcha.service.js"
 import { RecaptchaAction } from "../utils/recaptcha-actions.js"
-import { StripeService } from "../services/stripe.service.js"
 import { StaffNotifyService } from "../services/staff-notify.service.js"
 import { EmailService } from "../services/email.service.js"
 import { isDevMode } from "./static.js"
 import { newCancelToken, tokensMatch } from "../utils/cancel-token.js"
+import {
+  computePlatformFeePence,
+  eventOrganizationId,
+  filterEventsForOrganization,
+  getDefaultOrganizationId,
+  normalizeOrgSlug,
+  partnerBookingBasePath,
+  resolveOrganizationById,
+  resolveOrganizationBySlug
+} from "../services/organization.service.js"
+import { EventCheckoutOpts, StripeService } from "../services/stripe.service.js"
 
 /** Stable draft id so concurrent paid registers for the same email reuse one draft. */
 export const checkoutDraftIdFor = ( eventId: string, email: string ): string => {
@@ -74,6 +84,7 @@ interface Event {
   maxAttendees?: number
   waitlistEnabled?: boolean
   comingSoon?: boolean
+  organizationId?: string
 }
 
 export type PublicEvent = Event & {
@@ -107,13 +118,82 @@ interface CheckoutDraft {
   createdAt: unknown
 }
 
-let eventsCache: PublicEvent [ ] | null = null
-let cacheTime = 0
+const eventsCacheByOrg = new Map<string, { events: PublicEvent [ ]; time: number }> ( )
 const TTL = 60000
 
 export const clearEventsCache = ( ): void => {
-  eventsCache = null
-  cacheTime = 0
+  eventsCacheByOrg.clear ( )
+}
+
+const loadAllEventsFromFirestore = async ( ): Promise<Event [ ]> => {
+  const db = getFirestore ( )
+  const snapshot = await db.collection ( "events" ).get ( )
+
+  const legacyDoc = snapshot.docs.find ( doc => doc.id === "default" )
+  if ( legacyDoc && legacyDoc.exists ) {
+    const legacyData = legacyDoc.data ( ) as { events?: Event [ ] }
+    if ( legacyData.events && Array.isArray ( legacyData.events ) ) {
+      return legacyData.events
+    }
+  }
+  return snapshot.docs
+    .filter ( doc => doc.id !== "default" )
+    .map ( doc => doc.data ( ) as Event )
+}
+
+const resolvePublicOrganizationId = async ( orgQuery?: string ): Promise<string | null> => {
+  if ( orgQuery?.trim ( ) ) {
+    const org = await resolveOrganizationBySlug ( normalizeOrgSlug ( orgQuery ) )
+    if ( !org || org.enabled === false ) return null
+    return org.id
+  }
+  return getDefaultOrganizationId ( )
+}
+
+const getPublicEventsForOrganization = async ( organizationId: string ): Promise<PublicEvent [ ]> => {
+  const cacheKey = organizationId
+  const cached = eventsCacheByOrg.get ( cacheKey )
+  if ( cached && Date.now ( ) - cached.time < TTL ) {
+    return cached.events
+  }
+
+  const events = filterEventsForOrganization ( await loadAllEventsFromFirestore ( ), organizationId )
+  const activeEvents = filterUpcomingEvents ( events ).map ( e => ( {
+    ...e,
+    actionType: normalizeActionType ( e.actionType ),
+    imageUrl: resolveImageUrl ( e.imageUrl )
+  } ) )
+
+  const enriched = await enrichWithCapacity ( activeEvents )
+  eventsCacheByOrg.set ( cacheKey, { events: enriched, time: Date.now ( ) } )
+  return enriched
+}
+
+const buildCheckoutOptsForEvent = async (
+  event: Event,
+  amountPence?: number
+): Promise<EventCheckoutOpts> => {
+  const orgId = eventOrganizationId ( event )
+  const org = await resolveOrganizationById ( orgId )
+  const orgSlug = org?.slug
+  const isPartner = orgSlug && orgId !== getDefaultOrganizationId ( )
+  const path = isPartner ? partnerBookingBasePath ( orgSlug ) : "/events"
+  const paymentAmountPence = amountPence ?? event.donationPrice
+  const platformFeePence = org && paymentAmountPence
+    ? computePlatformFeePence ( paymentAmountPence, org )
+    : 0
+  const connectAccountId = org?.stripeConnectAccountId && org.stripeConnectChargesEnabled
+    ? org.stripeConnectAccountId
+    : undefined
+
+  return {
+    orgSlug,
+    successPath: path,
+    cancelPath: path,
+    connectAccountId,
+    platformFeePence,
+    paymentAmountPence: paymentAmountPence ?? undefined
+  }
 }
 
 const countConfirmedSeats = async ( eventId: string ): Promise<number> => {
@@ -353,10 +433,12 @@ const ensureOptionalRegistrationFromDraft = async (
   await regRef.set ( {
     eventId: draft.eventId,
     eventTitle: draft.eventTitle || event.title,
+    organizationId: eventOrganizationId ( event ),
     formData: draft.formData,
     email: draft.email,
     status: "completed",
     attended: false,
+    ...( typeof draft.amountPence === "number" ? { amountPence: draft.amountPence } : { } ),
     createdAt: FieldValue.serverTimestamp ( )
   } )
   clearEventsCache ( )
@@ -605,13 +687,15 @@ const sendPaymentPromptForDraft = async (
     }
 
     const { token: rotatedCancelToken, hash: rotatedCancelTokenHash } = newCancelToken ( )
+    const checkoutOpts = await buildCheckoutOptsForEvent ( event, customFromForm ?? amountPence )
     const session = await StripeService.createEventCheckoutSession (
       draft.eventId,
       event.stripePriceId,
       draftId,
       customFromForm ?? amountPence,
       event.stripeProductId,
-      draft.email
+      draft.email,
+      checkoutOpts
     )
 
     if ( session ) {
@@ -720,7 +804,8 @@ const applyDonationToExistingRegistration = async (
     paymentIntent,
     {
       donatedAt: FieldValue.serverTimestamp ( ),
-      formData: draft.formData
+      formData: draft.formData,
+      ...( typeof draft.amountPence === "number" ? { amountPence: draft.amountPence } : { } )
     }
   )
   await copyStatusTokenToRegistration ( regRef.id, draft.cancelTokenHash )
@@ -809,11 +894,13 @@ const finalizePaidRegistration = async (
     await regRef.set ( {
       eventId: draft.eventId,
       eventTitle: draft.eventTitle,
+      organizationId: event ? eventOrganizationId ( event ) : getDefaultOrganizationId ( ),
       formData: draft.formData,
       email: draft.email || null,
       status: "completed",
       attended: false,
       paymentIntent,
+      ...( typeof draft.amountPence === "number" ? { amountPence: draft.amountPence } : { } ),
       ...( draft.cancelTokenHash ? { statusTokenHash: draft.cancelTokenHash } : { } ),
       createdAt: FieldValue.serverTimestamp ( ),
       donatedAt: FieldValue.serverTimestamp ( )
@@ -956,13 +1043,18 @@ const startOrResumeCheckout = async ( opts: {
     createdAt: FieldValue.serverTimestamp ( )
   } )
 
+  const checkoutOpts = await buildCheckoutOptsForEvent (
+    opts.event,
+    opts.customAmountInPence ?? opts.amountPence
+  )
   const session = await StripeService.createEventCheckoutSession (
     opts.eventId,
     opts.event.stripePriceId || "",
     draftRef.id,
     opts.customAmountInPence,
     opts.event.stripeProductId,
-    opts.email
+    opts.email,
+    checkoutOpts
   )
 
   if ( !session ) {
@@ -1009,37 +1101,15 @@ export const router: FastifyPluginAsync = async app => {
     }
   } )
 
-  app.get ( "/", async ( _req, rep ) => {
+  app.get ( "/", async ( req, rep ) => {
     try {
-      if ( eventsCache && Date.now ( ) - cacheTime < TTL ) {
-        return rep.send ( { events: eventsCache } )
+      const { org } = req.query as { org?: string }
+      const organizationId = await resolvePublicOrganizationId ( org )
+      if ( !organizationId ) {
+        return rep.status ( 404 ).send ( { events: [ ], error: "Organization not found." } )
       }
-
-      const db = getFirestore ( )
-      const snapshot = await db.collection ( "events" ).get ( )
-
-      let events: Event[] = [ ]
-
-      const legacyDoc = snapshot.docs.find ( doc => doc.id === "default" )
-      if ( legacyDoc && legacyDoc.exists ) {
-        const legacyData = legacyDoc.data ( ) as { events?: Event[] }
-        if ( legacyData.events && Array.isArray ( legacyData.events ) ) {
-          events = legacyData.events
-        }
-      } else {
-        events = snapshot.docs.map ( doc => doc.data ( ) as Event )
-      }
-
-      const activeEvents = filterUpcomingEvents ( events ).map ( e => ( {
-        ...e,
-        actionType: normalizeActionType ( e.actionType ),
-        imageUrl: resolveImageUrl ( e.imageUrl )
-      } ) )
-
-      eventsCache = await enrichWithCapacity ( activeEvents )
-      cacheTime = Date.now ( )
-
-      return rep.status ( 200 ).send ( { events: eventsCache } )
+      const events = await getPublicEventsForOrganization ( organizationId )
+      return rep.status ( 200 ).send ( { events, organizationId } )
     } catch ( error ) {
       console.error ( "Error fetching events data:", error )
       return rep.status ( 500 ).send ( "Failed to fetch events configuration." )
@@ -1047,18 +1117,18 @@ export const router: FastifyPluginAsync = async app => {
   } )
 
   /** Past events archive (ended; excludes upcoming). */
-  app.get ( "/archive", async ( _req, rep ) => {
+  app.get ( "/archive", async ( req, rep ) => {
     try {
-      const db = getFirestore ( )
-      const snapshot = await db.collection ( "events" ).get ( )
-      let events: Event [ ] = [ ]
-      const legacyDoc = snapshot.docs.find ( doc => doc.id === "default" )
-      if ( legacyDoc?.exists ) {
-        const legacyData = legacyDoc.data ( ) as { events?: Event [ ] }
-        events = Array.isArray ( legacyData.events ) ? legacyData.events : [ ]
-      } else {
-        events = snapshot.docs.map ( doc => doc.data ( ) as Event )
+      const { org } = req.query as { org?: string }
+      const organizationId = await resolvePublicOrganizationId ( org )
+      if ( !organizationId ) {
+        return rep.status ( 404 ).send ( { events: [ ], error: "Organization not found." } )
       }
+
+      const events = filterEventsForOrganization (
+        await loadAllEventsFromFirestore ( ),
+        organizationId
+      )
 
       const now = new Date ( )
       const past = events
@@ -1329,14 +1399,17 @@ export const router: FastifyPluginAsync = async app => {
         } )
       }
 
+      const amountPence = customDonationPence != null ? customDonationPence : event.donationPrice
       const registrationRef = getFirestore ( ).collection ( "event_registrations" ).doc ( )
       await registrationRef.set ( {
         eventId,
         eventTitle: event.title,
+        organizationId: eventOrganizationId ( event ),
         formData: cleanedFormData,
         email,
         status: "completed",
         attended: false,
+        ...( typeof amountPence === "number" ? { amountPence } : { } ),
         createdAt: FieldValue.serverTimestamp ( )
       } )
       clearEventsCache ( )
@@ -1351,8 +1424,6 @@ export const router: FastifyPluginAsync = async app => {
         name,
         status: "completed"
       } )
-
-      const amountPence = customDonationPence != null ? customDonationPence : event.donationPrice
       const customAmountInPence = customDonationPence != null ? customDonationPence : undefined
 
       try {
@@ -1455,6 +1526,7 @@ export const router: FastifyPluginAsync = async app => {
     const registrationPayload: Record<string, unknown> = {
       eventId,
       eventTitle: event.title,
+      organizationId: eventOrganizationId ( event ),
       formData: cleanedFormData,
       email,
       status,
@@ -1523,7 +1595,10 @@ export const router: FastifyPluginAsync = async app => {
             docRef,
             regData [ "paymentIntent" ],
             paymentIntent,
-            { donatedAt: FieldValue.serverTimestamp ( ) }
+            {
+              donatedAt: FieldValue.serverTimestamp ( ),
+              ...( invoice.amount_paid != null ? { amountPence: invoice.amount_paid } : { } )
+            }
           )
           if ( newlyPaid && !hadPayment ) {
             await sendPaymentReceivedNotificationsForRegistration ( {

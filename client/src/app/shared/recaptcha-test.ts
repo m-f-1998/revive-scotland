@@ -59,6 +59,9 @@ export const recaptchaTestToken = ( mode: RecaptchaServerTestMode ): string => {
   return `__recaptcha_test_${mode.replace ( /-/g, "_" )}__`
 }
 
+/** Sent to the API on localhost when Angular dev mode is on; server skips verify when DEV_MODE=true. */
+export const RECAPTCHA_LOCAL_DEV_BYPASS = "local-dev-bypass"
+
 export const isServerRecaptchaTestMode = (
   mode: RecaptchaTestMode | null
 ): mode is RecaptchaServerTestMode => {

@@ -1,6 +1,27 @@
 <div class="flex flex-col min-h-screen">
-  <app-navbar />
-  <app-slider [defaultSlides]="slides" pageid="events" />
+  @if (isPartnerBooking()) {
+    <header class="border-b border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-sm sticky top-0 z-40">
+      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3 min-w-0">
+          @if (partnerOrg()?.logoUrl) {
+            <img [src]="partnerOrg()!.logoUrl" alt="" class="h-9 w-auto max-w-[120px] object-contain" />
+          }
+          <div class="min-w-0">
+            <p class="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Event booking</p>
+            <h1 class="font-semibold text-zinc-900 dark:text-zinc-50 truncate">{{ partnerOrg()?.name || partnerOrgSlug() }}</h1>
+          </div>
+        </div>
+        @if (returnUrl()) {
+          <a [href]="returnUrl()!" class="btn-outline-secondary btn-sm shrink-0 rounded-full text-xs font-semibold inline-flex items-center gap-1.5">
+            <app-icon icon="chevron-left" /> Back to website
+          </a>
+        }
+      </div>
+    </header>
+  } @else {
+    <app-navbar />
+    <app-slider [defaultSlides]="slides" pageid="events" />
+  }
 
   @if (resumePaymentUrl()) {
     <div class="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-800/50 p-4 text-center">
@@ -14,182 +35,224 @@
     </div>
   }
 
-  @if (loading()) {
-    <div class="flex flex-col items-center gap-2 my-8">
-      <app-icon icon="spinner" iconAnimation="spin" iconSize="2x" />
-      Loading...
+  <section class="relative px-6 pt-8 pb-2 max-w-6xl mx-auto w-full">
+    <div class="text-center max-w-2xl mx-auto mb-8">
+      @if (isPartnerBooking()) {
+        @if (!partnerOrgUnavailable()) {
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 mb-2">Secure online registration</p>
+          <h2 class="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight">Upcoming events</h2>
+          @if (partnerOrg()?.tagline) {
+            <p class="text-sm md:text-base text-zinc-600 dark:text-zinc-400 mt-2 leading-relaxed">{{ partnerOrg()!.tagline }}</p>
+          } @else {
+            <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-2">Book your place in a few steps — powered by Revive Scotland.</p>
+          }
+        }
+      } @else {
+        <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 mb-2">Gather · Pray · Go</p>
+        <h2 class="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight">Upcoming events</h2>
+        <p class="text-sm md:text-base text-zinc-600 dark:text-zinc-400 mt-2 leading-relaxed">
+          Register online, add dates to your calendar, and support Revive Scotland where optional donations apply.
+        </p>
+      }
     </div>
-  } @else if (events().length === 0) {
-    <div class="flex flex-col items-center justify-center gap-2 my-8">
-      <app-icon icon="info-circle" iconSize="2x" />
-      <p class="font-semibold">No upcoming events</p>
-      <p class="text-muted">Check back later — or browse past events below.</p>
-    </div>
-  } @else {
-    <div class="flex flex-wrap justify-center gap-6 p-6">
-      @for (event of events(); track $index) {
-        <div class="card w-full md:w-[48%] max-w-[600px] shadow-sm hover:shadow-md transition-shadow flex flex-col bg-white dark:bg-zinc-800 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-700"
-             [id]="'event-' + event.id"
-             [class.ring-2]="isHighlighted(event.id)"
-             [class.ring-blue-500]="isHighlighted(event.id)"
-             [class.ring-offset-2]="isHighlighted(event.id)">
 
-          <div class="relative bg-zinc-100 dark:bg-zinc-900">
-            <button type="button" class="block w-full text-left" (click)="openEventDetails(event)" [attr.aria-label]="'View details for ' + event.title">
-              <img
-                [attr.src]="event.imageUrl"
-                [attr.srcset]="
-                  event.imageUrl + '?w=400&f=webp 400w, ' +
-                  event.imageUrl + '?w=640&f=webp 640w, ' +
-                  event.imageUrl + '?w=960&f=webp 960w'
-                "
-                sizes="(max-width: 600px) 100vw, 600px"
-                [attr.alt]="event.title || 'Event image'"
-                loading="lazy"
-                decoding="async"
-                crossorigin="anonymous"
-                class="w-full max-h-60 sm:max-h-72 object-contain block mx-auto"
-              />
-            </button>
+    @if (loading()) {
+      <div class="flex flex-col items-center gap-2 my-12">
+        <app-icon icon="spinner" iconAnimation="spin" iconSize="2x" />
+        <p class="text-sm text-zinc-500">Loading events…</p>
+      </div>
+    } @else if (partnerOrgUnavailable()) {
+      <div class="flex flex-col items-center justify-center gap-3 my-12 rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-600 py-16 px-6 bg-zinc-50/80 dark:bg-zinc-900/40">
+        <app-icon icon="circle-exclamation" iconSize="2x" class="text-zinc-400" />
+        <p class="font-semibold text-lg">Booking page unavailable</p>
+        <p class="text-muted text-sm text-center max-w-sm">
+          This organisation is not listed for public booking, or booking has been turned off. Check the URL, or contact Revive Scotland if you think this is a mistake.
+        </p>
+      </div>
+    } @else if (events().length === 0) {
+      <div class="flex flex-col items-center justify-center gap-3 my-12 rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-600 py-16 px-6 bg-zinc-50/80 dark:bg-zinc-900/40">
+        <app-icon icon="calendar-days" iconSize="2x" class="text-zinc-400" />
+        <p class="font-semibold text-lg">No upcoming events</p>
+        <p class="text-muted text-sm text-center max-w-sm">Check back later — or browse past events below.</p>
+      </div>
+    } @else {
+      <div class="w-full gap-8"
+           [class.max-w-2xl]="events().length === 1"
+           [class.mx-auto]="events().length === 1"
+           [class.grid]="events().length > 1"
+           [class.grid-cols-1]="events().length > 1"
+           [class.lg:grid-cols-2]="events().length > 1">
+        @for (event of events(); track event.id) {
+          <article class="group flex flex-col rounded-2xl overflow-hidden border border-zinc-200/80 dark:border-zinc-700/80 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
+                   [id]="'event-' + event.id"
+                   [class.ring-2]="isHighlighted(event.id)"
+                   [class.ring-blue-500]="isHighlighted(event.id)"
+                   [class.ring-offset-2]="isHighlighted(event.id)">
 
-            @if ((event.donationRequired === 'required' || event.donationRequired === 'optional') && event.donationPrice) {
-              <div class="absolute top-3 right-3 pointer-events-none">
-                <span class="bg-blue-600/90 backdrop-blur-sm text-white px-2.5 py-0.5 rounded-full text-[11px] font-bold shadow-sm flex items-center gap-1">
-                  <app-icon icon="ticket" class="text-[10px]" />
-                  £{{ (event.donationPrice / 100).toFixed(2) }}
-                </span>
+            <div class="relative aspect-[16/10] bg-zinc-100 dark:bg-zinc-950 overflow-hidden">
+              <button type="button" class="absolute inset-0 w-full h-full text-left" (click)="openEventDetails(event)" [attr.aria-label]="'View details for ' + event.title">
+                <img
+                  [attr.src]="event.imageUrl"
+                  [attr.srcset]="
+                    event.imageUrl + '?w=480&f=webp 480w, ' +
+                    event.imageUrl + '?w=768&f=webp 768w, ' +
+                    event.imageUrl + '?w=1200&f=webp 1200w'
+                  "
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  [attr.alt]="event.title || 'Event image'"
+                  loading="lazy"
+                  decoding="async"
+                  crossorigin="anonymous"
+                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                />
+                <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent pointer-events-none"></div>
+                <div class="absolute bottom-0 left-0 right-0 p-5 pointer-events-none">
+                  <h2 class="font-bold text-xl md:text-2xl text-white leading-tight drop-shadow-sm">{{ event.title }}</h2>
+                </div>
+              </button>
+
+              @if ((event.donationRequired === 'required' || event.donationRequired === 'optional') && event.donationPrice) {
+                <div class="absolute top-4 right-4 pointer-events-none">
+                  <span class="bg-white/95 dark:bg-zinc-900/90 backdrop-blur-sm text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1.5">
+                    <app-icon icon="ticket" class="text-[10px]" />
+                    £{{ (event.donationPrice / 100).toFixed(2) }}
+                  </span>
+                </div>
+              }
+              @if (event.comingSoon) {
+                <div class="absolute top-4 left-4 pointer-events-none">
+                  <span class="bg-violet-600/95 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-bold shadow-md">
+                    Coming soon
+                  </span>
+                </div>
+              }
+            </div>
+
+            <div class="p-5 flex flex-col flex-grow gap-4">
+              <div class="space-y-2">
+                @if (event.startDate) {
+                  <button type="button"
+                          class="group/date w-full flex items-center gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/60 dark:hover:bg-blue-950/20 transition-all text-left"
+                          (click)="downloadIcs(event)"
+                          title="Add to calendar">
+                    <div class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                      <app-icon icon="calendar" />
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <span class="block text-sm font-semibold text-zinc-800 dark:text-zinc-200 leading-snug">
+                        {{ dateSvc.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime) }}
+                      </span>
+                      <span class="text-[10px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider">Add to calendar</span>
+                    </div>
+                  </button>
+                } @else {
+                  <div class="flex items-center gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700">
+                    <div class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                      <app-icon icon="calendar" />
+                    </div>
+                    <span class="text-sm font-medium text-zinc-500">Date to be announced</span>
+                  </div>
+                }
+
+                @if (event.location?.trim()) {
+                  <a [href]="getGoogleMapsUrl(event.location)" target="_blank" rel="noopener noreferrer"
+                     class="group/loc flex items-center gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700 hover:border-red-400 dark:hover:border-red-500 hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-all">
+                    <div class="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
+                      <app-icon icon="map-marker" />
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <span class="block text-sm font-semibold text-zinc-800 dark:text-zinc-200 truncate">{{ event.location }}</span>
+                      <span class="text-[10px] text-red-600 dark:text-red-400 font-bold uppercase tracking-wider">View map</span>
+                    </div>
+                  </a>
+                }
               </div>
-            }
-            @if (event.comingSoon) {
-              <div class="absolute top-3 left-3 pointer-events-none">
-                <span class="bg-violet-600/90 backdrop-blur-sm text-white px-2.5 py-0.5 rounded-full text-[11px] font-bold shadow-sm">
-                  Coming soon
-                </span>
-              </div>
-            }
-          </div>
 
-          <div class="p-4 flex flex-col flex-grow">
-            <h4 class="font-bold text-xl mb-2 text-zinc-900 dark:text-zinc-50 leading-tight">{{event.title}}</h4>
+              @if (event.description) {
+                <p class="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-2 leading-relaxed">{{ event.description }}</p>
+              }
 
-            <div class="space-y-2 mb-3">
-              @if (event.startDate) {
-                <button type="button"
-                        class="group w-full flex items-center gap-2.5 p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-300 dark:border-zinc-600 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all text-left cursor-pointer"
-                        (click)="downloadIcs(event)"
-                        title="Add to calendar">
-                  <div class="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
-                    <app-icon icon="calendar" class="text-xs" />
+              <button type="button"
+                      class="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1 self-start"
+                      (click)="openEventDetails(event)">
+                <app-icon icon="expand" class="text-[10px]" />
+                View full details
+              </button>
+
+              @if (event.maxAttendees) {
+                <div class="flex items-center gap-2">
+                  <div class="flex-1 h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
+                    <div class="h-full rounded-full transition-all"
+                         [class.bg-amber-500]="event.isFull"
+                         [class.bg-blue-500]="!event.isFull"
+                         [style.width.%]="Math.min(100, ((event.registeredCount || 0) / event.maxAttendees) * 100)"></div>
                   </div>
-                  <div class="flex-1 min-w-0">
-                    <span class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors leading-snug">
-                      {{dateSvc.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime)}}
-                    </span>
-                    <span class="text-[10px] text-zinc-500 dark:text-zinc-400 font-semibold uppercase tracking-wider flex items-center gap-1">
-                      Add to calendar
-                    </span>
-                  </div>
-                </button>
-              } @else {
-                <div class="flex items-center gap-2.5 p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-300 dark:border-zinc-600">
-                  <div class="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
-                    <app-icon icon="calendar" class="text-xs" />
-                  </div>
-                  <span class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Date to be announced</span>
+                  <span class="text-[11px] font-semibold whitespace-nowrap"
+                        [class.text-amber-700]="event.isFull"
+                        [class.dark:text-amber-300]="event.isFull"
+                        [class.text-zinc-500]="!event.isFull">
+                    @if (event.isFull && event.waitlistOpen) {
+                      Waitlist
+                    } @else if (event.isFull) {
+                      Full
+                    } @else {
+                      {{ event.spotsRemaining }} left
+                    }
+                  </span>
                 </div>
               }
 
-              @if (event.location?.trim()) {
-                <a [href]="getGoogleMapsUrl(event.location)" target="_blank" rel="noopener noreferrer"
-                   class="group flex items-center gap-2.5 p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-300 dark:border-zinc-600 hover:border-red-400 dark:hover:border-red-600 hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-all text-left">
-                  <div class="w-7 h-7 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0">
-                    <app-icon icon="map-marker" class="text-xs" />
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <span class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 group-hover:text-red-700 dark:group-hover:text-red-400 transition-colors truncate">
-                      {{ event.location }}
-                    </span>
-                    <span class="text-[10px] text-zinc-500 dark:text-zinc-400 font-semibold uppercase tracking-wider flex items-center gap-1">
-                      View map
-                    </span>
-                  </div>
-                </a>
-              }
-            </div>
-
-            <button type="button"
-                    class="mb-3 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1 self-start"
-                    (click)="openEventDetails(event)">
-              <app-icon icon="expand" class="text-[10px]" />
-              View full details
-            </button>
-
-            @if (event.maxAttendees) {
-              <p class="text-[11px] font-medium mb-3"
-                 [class.text-amber-700]="event.isFull"
-                 [class.dark:text-amber-300]="event.isFull"
-                 [class.text-zinc-500]="!event.isFull">
-                @if (event.isFull && event.waitlistOpen) {
-                  Full — waitlist open
-                } @else if (event.isFull) {
-                  Fully booked
-                } @else {
-                  {{ event.spotsRemaining }} {{ event.spotsRemaining === 1 ? 'spot' : 'spots' }} left
-                  ({{ event.registeredCount || 0 }}/{{ event.maxAttendees }})
+              <div class="flex gap-2 mt-auto pt-1">
+                @if (event.comingSoon) {
+                  <button type="button" class="btn-secondary flex-1 justify-center py-2.5 rounded-xl text-sm font-semibold opacity-70" disabled>
+                    Coming soon
+                  </button>
+                } @else if (event.actionType === 'webpage' && event.webpageUrl) {
+                  <a [href]="event.webpageUrl" class="btn-primary flex-1 justify-center py-2.5 rounded-xl text-sm font-semibold" target="_blank">
+                    <app-icon icon="arrow-up-right-from-square" />
+                    More Info
+                  </a>
+                } @else if (event.actionType === 'form') {
+                  @if (event.isFull && !event.waitlistOpen) {
+                    <button type="button" class="btn-secondary flex-1 justify-center py-2.5 rounded-xl text-sm font-semibold opacity-70" disabled>
+                      Sold out
+                    </button>
+                  } @else {
+                    <button type="button" class="btn-primary flex-1 justify-center py-2.5 rounded-xl text-sm font-semibold shadow-sm" (click)="openContactForm(event)" [disabled]="loading()">
+                      @if (event.isFull && event.waitlistOpen) {
+                        <app-icon icon="clipboard-list" />
+                        Join waitlist
+                      } @else if (event.donationRequired === 'required') {
+                        <app-icon icon="cart-shopping" />
+                        Register & Pay
+                      } @else {
+                        <app-icon icon="clipboard-list" />
+                        Register
+                      }
+                    </button>
+                  }
                 }
-              </p>
-            }
 
-            <div class="flex gap-2 mt-auto flex-wrap">
-              @if (event.comingSoon) {
-                <button type="button" class="btn-secondary flex-1 justify-center py-2 rounded-lg text-sm font-semibold opacity-70" disabled>
-                  Coming soon
+                <button type="button" class="btn-outline-secondary px-3.5 py-2.5 rounded-xl text-sm border border-zinc-300 dark:border-zinc-600" (click)="openEventDetails(event)" title="View full details">
+                  <app-icon icon="expand" />
                 </button>
-              } @else if (event.actionType === 'webpage' && event.webpageUrl) {
-                <a [href]="event.webpageUrl" class="btn-primary flex-1 justify-center py-2 rounded-lg text-sm" target="_blank">
-                  <app-icon icon="arrow-up-right-from-square" />
-                  More Info
-                </a>
-              } @else if (event.actionType === 'form') {
-                @if (event.isFull && !event.waitlistOpen) {
-                  <button type="button" class="btn-secondary flex-1 justify-center py-2 rounded-lg text-sm font-semibold opacity-70" disabled>
-                    Sold out
-                  </button>
-                } @else {
-                  <button type="button" class="btn-primary flex-1 justify-center py-2 rounded-lg text-sm font-semibold" (click)="openContactForm(event)" [disabled]="loading()">
-                    @if (event.isFull && event.waitlistOpen) {
-                      <app-icon icon="clipboard-list" />
-                      Join waitlist
-                    } @else if (event.donationRequired === 'required') {
-                      <app-icon icon="cart-shopping" />
-                      Register & Pay
-                    } @else {
-                      <app-icon icon="clipboard-list" />
-                      Register
-                    }
-                  </button>
-                }
-              }
-
-              <button type="button" class="btn-outline-secondary px-3 py-2 rounded-lg text-sm border border-zinc-300 dark:border-zinc-600" (click)="openEventDetails(event)" title="View full details">
-                <app-icon icon="expand" />
-              </button>
+              </div>
             </div>
-          </div>
-        </div>
-      }
-    </div>
-  }
+          </article>
+        }
+      </div>
+    }
+  </section>
 
-  @if (!loading()) {
-    <div class="px-6 pb-10 text-center">
-      <button type="button" class="btn-outline-primary btn-sm" (click)="toggleArchive()">
+  @if (showPublicEventChrome()) {
+    <div class="px-6 pb-10 pt-4 text-center max-w-6xl mx-auto w-full">
+      <button type="button" class="btn-outline-primary btn-sm rounded-full px-5" (click)="toggleArchive()">
         {{ showArchive() ? 'Hide past events' : 'View past events' }}
       </button>
     </div>
 
     @if (showArchive()) {
-      <div class="px-6 pb-12">
+      <div class="px-6 pb-12 max-w-6xl mx-auto w-full">
         @if (loadingArchive()) {
           <div class="flex justify-center py-8 text-zinc-500">
             <app-icon icon="spinner" iconAnimation="spin" />
@@ -198,18 +261,15 @@
           <p class="text-center text-sm text-zinc-500">No past events to show yet.</p>
         } @else {
           <h3 class="text-center text-lg font-semibold mb-6 text-zinc-800 dark:text-zinc-100">Past events</h3>
-          <div class="flex flex-wrap justify-center gap-4 max-w-5xl mx-auto">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             @for (event of pastEvents(); track event.id) {
-              <div class="w-full md:w-[48%] max-w-[520px] rounded-xl border border-zinc-200 dark:border-zinc-700 p-4 bg-white dark:bg-zinc-800/80">
+              <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-4 bg-white dark:bg-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors">
                 <h4 class="font-semibold text-zinc-900 dark:text-zinc-50 mb-1">{{ event.title }}</h4>
                 <p class="text-xs text-zinc-500 mb-2">{{ dateSvc.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime) }}</p>
                 <p class="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-3 mb-3">{{ event.description }}</p>
                 <div class="flex flex-wrap gap-2">
-                  <button type="button" class="btn-outline-secondary btn-sm" (click)="openEventDetails(event)">
+                  <button type="button" class="btn-outline-secondary btn-sm rounded-lg" (click)="openEventDetails(event)">
                     <app-icon icon="expand" /> View details
-                  </button>
-                  <button type="button" class="btn-outline-secondary btn-sm" (click)="downloadIcs(event)">
-                    <app-icon icon="calendar" /> Add to calendar
                   </button>
                 </div>
               </div>
@@ -219,14 +279,24 @@
       </div>
     }
 
-    <figure class="px-8 py-16 text-center bg-blue-50 dark:bg-blue-900/10 m-0 border-y border-zinc-100 dark:border-zinc-800">
-      <blockquote class="italic text-xl max-w-3xl mx-auto mb-4 text-zinc-700 dark:text-zinc-300">
-        "{{ quote().text }}"
-      </blockquote>
-      <figcaption class="text-sm font-semibold tracking-wider uppercase text-blue-600 dark:text-blue-400">— {{ quote().author }}</figcaption>
-    </figure>
-
-    <app-contact />
+    @if (!embedMode()) {
+      @if (isPartnerBooking()) {
+        <p class="text-center text-xs text-zinc-500 py-8 border-t border-zinc-100 dark:border-zinc-800">
+          Secure registration powered by
+          <a href="https://revivescotland.co.uk" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold">Revive Scotland</a>
+        </p>
+      } @else {
+        <figure class="px-8 py-16 text-center bg-gradient-to-b from-blue-50/80 to-transparent dark:from-blue-950/20 m-0 border-y border-zinc-100 dark:border-zinc-800">
+          <blockquote class="italic text-xl max-w-3xl mx-auto mb-4 text-zinc-700 dark:text-zinc-300 leading-relaxed">
+            "{{ quote().text }}"
+          </blockquote>
+          <figcaption class="text-sm font-semibold tracking-wider uppercase text-blue-600 dark:text-blue-400">— {{ quote().author }}</figcaption>
+        </figure>
+        <app-contact />
+      }
+    }
   }
-  <app-footer />
+  @if (!isPartnerBooking()) {
+    <app-footer />
+  }
 </div>

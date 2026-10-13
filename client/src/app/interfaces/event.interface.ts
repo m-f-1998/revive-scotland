@@ -32,4 +32,5 @@ export interface Event {
   spotsRemaining?: number | null
   isFull?: boolean
   waitlistOpen?: boolean
+  organizationId?: string
 }

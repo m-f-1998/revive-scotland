@@ -133,31 +133,58 @@
               }
 
               @case ('listings') {
-                <div class="card-header bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-700/80 px-5 py-4">
-                  <h5 class="mb-0 font-semibold flex items-center gap-2 text-primary dark:text-white text-base">
-                    <app-icon icon="calendar-days" /> Event Listings
-                  </h5>
+                <div class="card-header bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-700/80 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <h5 class="mb-0 font-semibold flex items-center gap-2 text-primary dark:text-white text-base">
+                      <app-icon icon="calendar-days" /> Event listings
+                    </h5>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Public events on the site. Drafts are only published when you save.</p>
+                  </div>
+                  @if (showPastEvents() || listingIndices().length > 0) {
+                    <div class="flex flex-wrap items-center gap-2">
+                      <button type="button" class="btn-outline-secondary btn-sm" (click)="togglePastEvents()">
+                        {{ showPastEvents() ? 'Hide past' : 'Show past' }}
+                      </button>
+                      <button type="button" class="btn-primary btn-sm" (click)="addNewEvent()">
+                        <app-icon icon="plus-circle" /> New event
+                      </button>
+                    </div>
+                  }
                 </div>
 
                 <div class="card-body p-5 space-y-4">
-                  <p class="text-gray-500 dark:text-gray-400 text-sm">Add, remove, and update events. Past events remain in the public archive until you delete them manually.</p>
-
-                  <div class="flex justify-end">
-                    <button type="button" class="btn-outline-primary btn-sm" (click)="togglePastEvents()">
-                      {{ showPastEvents() ? 'Hide past events' : 'Show past events' }}
-                    </button>
-                  </div>
-
                   @for (idx of listingIndices(); track idx) {
-                    <div class="border border-gray-100 dark:border-slate-700/50 rounded-xl bg-white dark:bg-slate-800 shadow-xs transition-all duration-300 overflow-hidden mb-4">
+                    <div class="border border-gray-100 dark:border-slate-700/50 rounded-xl bg-white dark:bg-slate-800 shadow-xs transition-all duration-300 overflow-hidden mb-4"
+                         [id]="'event-card-' + idx"
+                         [class.ring-2]="isUnsavedEvent(idx) || eventNeedsAttention(idx)"
+                         [class.ring-primary/30]="isUnsavedEvent(idx) && !eventNeedsAttention(idx)"
+                         [class.ring-red-300]="eventNeedsAttention(idx)">
                       <div class="flex items-center justify-between p-4 cursor-pointer select-none bg-gray-50/50 dark:bg-slate-800/50 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors" (click)="toggleCollapsed(idx)">
-                        <div class="flex items-center gap-2 flex-wrap text-sm">
+                        <div class="flex items-center gap-2 flex-wrap text-sm min-w-0">
                           <span class="inline-block transition-transform duration-200 text-gray-400" [class.rotate-180]="!collapsedIndices.has(idx)">
                             <app-icon icon="chevron-down" />
                           </span>
-                          <span class="font-semibold text-gray-800 dark:text-gray-200">
-                            {{ eventForm()[idx].model['title'] || 'Event #' + (idx + 1) }}
+                          <span class="font-semibold text-gray-800 dark:text-gray-200 truncate">
+                            {{ eventForm()[idx].model['title'] || 'Untitled event' }}
                           </span>
+                          @if (isUnsavedEvent(idx)) {
+                            <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-primary/10 text-primary">
+                              Not saved
+                            </span>
+                          }
+                          @if (eventNeedsAttention(idx)) {
+                            <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                              Needs details
+                            </span>
+                          }
+                          @if (listingEventDateLabel(idx)) {
+                            <span class="text-xs text-gray-400 font-medium">{{ listingEventDateLabel(idx) }}</span>
+                          }
+                          @if (adminOrganizations().length > 1 && organizationName(eventForm()[idx].model['organizationId'])) {
+                            <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-gray-200">
+                              {{ organizationName(eventForm()[idx].model['organizationId']) }}
+                            </span>
+                          }
                           @if (isEventFinished(eventData().events[idx].endDate)) {
                             <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 ml-2">
                               {{ getEventTimeoutText(eventData().events[idx].endDate) }}
@@ -186,10 +213,15 @@
                           <div class="mb-5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 p-4 rounded-lg flex items-start gap-3">
                             <app-icon icon="circle-exclamation" class="text-amber-500 mt-0.5" />
                             <div>
-                              <h4 class="text-amber-800 dark:text-amber-200 text-sm font-bold">Event Finished</h4>
-                              <p class="text-amber-700 dark:text-amber-300/80 text-xs mt-1">This event has ended and is read-only here. It stays available in the public past events archive until you delete it.</p>
+                              <h4 class="text-amber-800 dark:text-amber-200 text-sm font-bold">Past event</h4>
+                              <p class="text-amber-700 dark:text-amber-300/80 text-xs mt-1">This event has ended and stays in the public archive until you delete it. You can still edit details; missing fields here will not block saving other events.</p>
                             </div>
                           </div>
+                        }
+                        @if (eventForm()[idx].model['actionType'] === 'form' && getEventRegistrationCount(eventForm()[idx].model['id']) > 0) {
+                          <p class="mb-4 text-xs text-gray-500 dark:text-gray-400">
+                            {{ getEventRegistrationCount(eventForm()[idx].model['id']) }} confirmed registration{{ getEventRegistrationCount(eventForm()[idx].model['id']) === 1 ? '' : 's' }} — donation type is locked.
+                          </p>
                         }
                         <formly-form [form]="eventForm()[idx].form" [model]="eventForm()[idx].model" [fields]="eventForm()[idx].fields" (modelChange)="onEventFormChange(idx, $event)" />
 
@@ -216,25 +248,37 @@
                   }
 
                   @if (listingIndices().length === 0) {
-                    <p class="text-center text-sm text-gray-500 dark:text-gray-400 py-6">
-                      @if (showPastEvents()) {
-                        No events yet.
-                      } @else {
-                        No upcoming events. <button type="button" class="text-primary underline" (click)="togglePastEvents()">Show past events</button>
-                      }
-                    </p>
+                    <div class="flex flex-col items-center justify-center text-center gap-3 py-12 px-6 rounded-2xl border border-dashed border-gray-200 dark:border-slate-600 bg-gray-50/60 dark:bg-slate-900/30">
+                      <app-icon icon="calendar-days" iconSize="2x" class="text-gray-300 dark:text-slate-600" />
+                      <p class="font-semibold text-gray-800 dark:text-gray-200">
+                        {{ showPastEvents() ? 'No events yet' : 'No upcoming events' }}
+                      </p>
+                      <p class="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+                        Create a listing, finish the details, then save to publish it.
+                      </p>
+                      <div class="flex flex-wrap justify-center gap-2 mt-1">
+                        <button type="button" class="btn-primary btn-sm" (click)="addNewEvent()">
+                          <app-icon icon="plus-circle" /> New event
+                        </button>
+                        @if (!showPastEvents()) {
+                          <button type="button" class="btn-outline-secondary btn-sm" (click)="togglePastEvents()">
+                            Show past events
+                          </button>
+                        }
+                      </div>
+                    </div>
                   }
-
-                  <div class="pt-2">
-                    <button class="px-4 py-2.5 text-sm font-semibold rounded-lg text-primary hover:bg-primary/5 dark:hover:bg-primary/10 border border-dashed border-primary/30 flex items-center justify-center gap-2 w-full transition-all cursor-pointer" (click)="addNewEvent()">
-                      <app-icon icon="plus-circle" /> Add Event
-                    </button>
-                  </div>
                 </div>
 
-                <div class="card-footer flex justify-end items-center bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 px-5 py-4">
-                  @if (eventData().events.length > 0) {
-                    <button class="btn-primary" (click)="saveEventData()" [disabled]="loading() || someFormInvalid() || !someFormDirty()">
+                <div class="card-footer flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-gray-50 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 px-5 py-4">
+                  @if (listingIndices().length > 0) {
+                    <p class="text-xs sm:max-w-xl order-2 sm:order-1"
+                       [class.text-gray-500]="!listingsSaveAttempted() || canSaveEventListings()"
+                       [class.text-red-700]="listingsSaveAttempted() && !canSaveEventListings()"
+                       [class.dark:text-red-300]="listingsSaveAttempted() && !canSaveEventListings()">
+                      {{ eventSaveFooterHint() }}
+                    </p>
+                    <button class="btn-primary order-1 sm:order-2 shrink-0" (click)="saveEventData()" [disabled]="loading() || !someFormDirty()">
                       @if (loading()) {
                         <app-icon icon="spinner" iconAnimation="spin" />
                       } @else {
@@ -254,45 +298,168 @@
                 </div>
 
                 <div class="card-body p-5 space-y-6">
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-100 dark:border-slate-700/50">
+                  <div class="space-y-4 bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-100 dark:border-slate-700/50">
                     <div>
-                      <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Select Event</label>
-                      <select class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                      <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Event</label>
+                      <select class="select-control w-full border border-gray-300 dark:border-slate-600 rounded-lg pl-3 py-2.5 text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
                               [ngModel]="selectedRegEventId()"
                               (ngModelChange)="onRegEventSelect($event)">
-                        <option value="" disabled>-- Select an event --</option>
+                        <option value="" disabled>Choose an event…</option>
                         @for (event of formEvents; track event.id) {
-                          <option [value]="event.id">{{ event.title }}</option>
+                          <option [value]="event.id">{{ formEventOptionLabel(event) }}</option>
                         }
                       </select>
+                      @if (getSelectedEvent()?.donationRequired === 'required') {
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-2">
+                          A place is only confirmed after payment. Unfinished payments cannot be checked in.
+                        </p>
+                      }
                     </div>
 
-                    <div>
-                      <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Payment Status</label>
-                      <select class="w-full border border-gray-300 dark:border-slate-600 rounded px-3 py-2 text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                              [ngModel]="regStatusFilter()"
-                              (ngModelChange)="regStatusFilter.set($event)">
-                        <option value="all">All</option>
-                        <option value="completed">Completed / Paid</option>
-                        <option value="awaiting_payment">Awaiting payment (drafts)</option>
-                        <option value="unpaid_optional">Registered (no payment yet)</option>
-                        <option value="waitlist">Waitlist</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Search Details</label>
-                      <div class="relative">
-                        <input type="text"
-                               class="w-full border border-gray-300 dark:border-slate-600 rounded pl-9 pr-3 py-2 text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                               placeholder="Search name, email, details..."
-                               [ngModel]="regSearchQuery()"
-                               (input)="regSearchQuery.set($any($event.target).value)">
-                        <span class="absolute left-3 top-2.5 text-gray-400">
-                          <app-icon icon="search" class="w-3.5 h-3.5" />
-                        </span>
+                    @if (selectedRegEventId()) {
+                      <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-end">
+                        <div>
+                          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Search</label>
+                          <div class="reg-search-field">
+                            <input type="search"
+                                   class="reg-search-input w-full border border-gray-300 dark:border-slate-600 rounded-lg pl-9 py-2.5 text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                                   [class.pr-3]="!regSearchQuery()"
+                                   [class.pr-9]="!!regSearchQuery()"
+                                   placeholder="Name, email, answers, status…"
+                                   [ngModel]="regSearchQuery()"
+                                   (ngModelChange)="regSearchQuery.set($event)">
+                            <span class="reg-search-leading" aria-hidden="true">
+                              <app-icon icon="search" iconSize="xs" />
+                            </span>
+                            @if (regSearchQuery()) {
+                              <button type="button"
+                                      class="reg-search-clear"
+                                      (click)="regSearchQuery.set('')"
+                                      aria-label="Clear search">
+                                <app-icon icon="xmark" iconSize="xs" />
+                              </button>
+                            }
+                          </div>
+                        </div>
+                        <div class="sm:min-w-[10rem]">
+                          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Sort</label>
+                          <select class="select-control w-full border border-gray-300 dark:border-slate-600 rounded-lg pl-3 py-2.5 text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                                  [ngModel]="regSort()"
+                                  (ngModelChange)="regSort.set($event)">
+                            <option value="newest">Newest first</option>
+                            <option value="oldest">Oldest first</option>
+                            <option value="name_az">Name (A–Z)</option>
+                          </select>
+                        </div>
                       </div>
-                    </div>
+
+                      <div class="space-y-3">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                          <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Place</span>
+                          @if (regFiltersActive()) {
+                            <button type="button"
+                                    class="text-xs font-semibold text-primary hover:underline"
+                                    (click)="resetRegManagerFilters()">
+                              Reset filters
+                            </button>
+                          }
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                          @for (def of visibleRegManagerFilterDefs('place'); track def.id) {
+                            @let count = regFilterCounts()[def.id];
+                            <button type="button"
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors"
+                                    [class.bg-primary]="regManagerFilter() === def.id"
+                                    [class.text-white]="regManagerFilter() === def.id"
+                                    [class.border-primary]="regManagerFilter() === def.id"
+                                    [class.bg-white]="regManagerFilter() !== def.id"
+                                    [class.dark:bg-slate-900]="regManagerFilter() !== def.id"
+                                    [class.text-gray-700]="regManagerFilter() !== def.id"
+                                    [class.dark:text-gray-200]="regManagerFilter() !== def.id"
+                                    [class.border-gray-200]="regManagerFilter() !== def.id"
+                                    [class.dark:border-slate-600]="regManagerFilter() !== def.id"
+                                    [class.hover:border-primary/40]="regManagerFilter() !== def.id"
+                                    [attr.aria-pressed]="regManagerFilter() === def.id"
+                                    (click)="regManagerFilter.set(def.id)">
+                              {{ def.label }}
+                              <span class="tabular-nums px-1.5 py-0.5 rounded-full text-[10px] font-bold min-w-[1.25rem] text-center"
+                                    [class.bg-white/20]="regManagerFilter() === def.id"
+                                    [class.bg-gray-100]="regManagerFilter() !== def.id"
+                                    [class.dark:bg-slate-800]="regManagerFilter() !== def.id"
+                                    [class.text-inherit]="regManagerFilter() === def.id"
+                                    [class.text-gray-600]="regManagerFilter() !== def.id"
+                                    [class.dark:text-gray-300]="regManagerFilter() !== def.id">
+                                {{ count }}
+                              </span>
+                            </button>
+                          }
+                        </div>
+                        @if (visibleRegManagerFilterDefs('money').length) {
+                          <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Money</p>
+                          <div class="flex flex-wrap gap-2">
+                            @for (def of visibleRegManagerFilterDefs('money'); track def.id) {
+                              @let count = regFilterCounts()[def.id];
+                              <button type="button"
+                                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors"
+                                      [class.bg-primary]="regManagerFilter() === def.id"
+                                      [class.text-white]="regManagerFilter() === def.id"
+                                      [class.border-primary]="regManagerFilter() === def.id"
+                                      [class.bg-white]="regManagerFilter() !== def.id"
+                                      [class.dark:bg-slate-900]="regManagerFilter() !== def.id"
+                                      [class.text-gray-700]="regManagerFilter() !== def.id"
+                                      [class.dark:text-gray-200]="regManagerFilter() !== def.id"
+                                      [class.border-gray-200]="regManagerFilter() !== def.id"
+                                      [class.dark:border-slate-600]="regManagerFilter() !== def.id"
+                                      [class.hover:border-primary/40]="regManagerFilter() !== def.id"
+                                      [attr.aria-pressed]="regManagerFilter() === def.id"
+                                      (click)="regManagerFilter.set(def.id)">
+                                {{ def.label }}
+                                <span class="tabular-nums px-1.5 py-0.5 rounded-full text-[10px] font-bold min-w-[1.25rem] text-center"
+                                      [class.bg-white/20]="regManagerFilter() === def.id"
+                                      [class.bg-gray-100]="regManagerFilter() !== def.id"
+                                      [class.dark:bg-slate-800]="regManagerFilter() !== def.id"
+                                      [class.text-inherit]="regManagerFilter() === def.id"
+                                      [class.text-gray-600]="regManagerFilter() !== def.id"
+                                      [class.dark:text-gray-300]="regManagerFilter() !== def.id">
+                                  {{ count }}
+                                </span>
+                              </button>
+                            }
+                          </div>
+                        }
+                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Door</p>
+                        <div class="flex flex-wrap gap-2">
+                          @for (def of visibleRegManagerFilterDefs('door'); track def.id) {
+                            @let count = regFilterCounts()[def.id];
+                            <button type="button"
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors"
+                                    [class.bg-primary]="regManagerFilter() === def.id"
+                                    [class.text-white]="regManagerFilter() === def.id"
+                                    [class.border-primary]="regManagerFilter() === def.id"
+                                    [class.bg-white]="regManagerFilter() !== def.id"
+                                    [class.dark:bg-slate-900]="regManagerFilter() !== def.id"
+                                    [class.text-gray-700]="regManagerFilter() !== def.id"
+                                    [class.dark:text-gray-200]="regManagerFilter() !== def.id"
+                                    [class.border-gray-200]="regManagerFilter() !== def.id"
+                                    [class.dark:border-slate-600]="regManagerFilter() !== def.id"
+                                    [class.hover:border-primary/40]="regManagerFilter() !== def.id"
+                                    [attr.aria-pressed]="regManagerFilter() === def.id"
+                                    (click)="regManagerFilter.set(def.id)">
+                              {{ def.label }}
+                              <span class="tabular-nums px-1.5 py-0.5 rounded-full text-[10px] font-bold min-w-[1.25rem] text-center"
+                                    [class.bg-white/20]="regManagerFilter() === def.id"
+                                    [class.bg-gray-100]="regManagerFilter() !== def.id"
+                                    [class.dark:bg-slate-800]="regManagerFilter() !== def.id"
+                                    [class.text-inherit]="regManagerFilter() === def.id"
+                                    [class.text-gray-600]="regManagerFilter() !== def.id"
+                                    [class.dark:text-gray-300]="regManagerFilter() !== def.id">
+                                {{ count }}
+                              </span>
+                            </button>
+                          }
+                        </div>
+                      </div>
+                    }
                   </div>
 
                   @if (!selectedRegEventId()) {
@@ -307,13 +474,26 @@
                         <p class="text-sm font-medium">Loading registrations...</p>
                       </div>
                     } @else {
-                      @if (getRegsForSelectedEvent().length === 0) {
+                      @if (regsForSelectedEvent().length === 0) {
                         <p class="text-sm text-gray-500 italic text-center py-6">No registrations found for this event.</p>
                       } @else if (filteredRegistrations().length === 0) {
-                        <p class="text-sm text-gray-500 italic text-center py-6">No registrations match your search or filter criteria.</p>
+                        <div class="text-center py-8 space-y-3">
+                          <p class="text-sm text-gray-500">No registrations match the current filters.</p>
+                          @if (regFiltersActive()) {
+                            <button type="button" class="btn-outline-primary btn-sm" (click)="resetRegManagerFilters()">Reset filters</button>
+                          }
+                        </div>
                       } @else {
                         <div class="flex justify-between items-center mb-2 gap-2 flex-wrap">
-                          <span class="text-xs text-gray-500 font-medium">Showing {{ filteredRegistrations().length }} of {{ getRegsForSelectedEvent().length }}</span>
+                          <span class="text-xs text-gray-500 font-medium">
+                            Showing {{ filteredRegistrations().length }} of {{ regsForSelectedEvent().length }}
+                            @if (regManagerFilter() !== 'all' || regSearchQuery()) {
+                              · <span class="text-gray-700 dark:text-gray-300">{{ activeRegManagerFilterLabel() }}</span>
+                              @if (regSearchQuery()) {
+                                · matching “{{ regSearchQuery() }}”
+                              }
+                            }
+                          </span>
                           <div class="flex items-center gap-2">
                             <button type="button" class="btn-outline-secondary btn-sm flex items-center gap-1.5 py-1 px-2.5 text-xs font-semibold rounded-lg" (click)="exportRegistrationsCsv()">
                               <app-icon icon="download" /> CSV
@@ -324,150 +504,151 @@
                           </div>
                         </div>
 
-                        <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-700 shadow-xs bg-white dark:bg-slate-900">
-                          <table class="w-full min-w-max text-sm text-left">
-                            <thead class="bg-gray-50 dark:bg-slate-800/80 text-gray-700 dark:text-gray-300">
-                              <tr>
-                                <th class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 font-semibold text-xs uppercase tracking-wider min-w-[120px]">Date</th>
-                                <th class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 font-semibold text-xs uppercase tracking-wider">Status</th>
-                                <th class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 font-semibold text-xs uppercase tracking-wider min-w-[160px]">Registrant</th>
-                                <th class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 font-semibold text-xs uppercase tracking-wider min-w-[200px]">Details</th>
-                                <th class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 font-semibold text-xs uppercase tracking-wider text-right min-w-[120px]">Action</th>
-                              </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100 dark:divide-slate-800">
-                              @for (reg of filteredRegistrations(); track reg['id']) {
-                                <tr class="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors align-top">
-                                  <td class="px-4 py-4 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
-                                    {{ $any(reg['createdAt']) | date:'medium' }}
-                                  </td>
-                                  <td class="px-4 py-4 whitespace-nowrap">
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full"
-                                      [class.bg-green-100]="!isAwaitingPayment(reg) && reg['status'] === 'completed'"
-                                      [class.text-green-800]="!isAwaitingPayment(reg) && reg['status'] === 'completed'"
-                                      [class.dark:bg-green-900/30]="!isAwaitingPayment(reg) && reg['status'] === 'completed'"
-                                      [class.dark:text-green-300]="!isAwaitingPayment(reg) && reg['status'] === 'completed'"
-                                      [class.bg-amber-100]="isAwaitingPayment(reg)"
-                                      [class.text-amber-800]="isAwaitingPayment(reg)"
-                                      [class.dark:bg-amber-900/30]="isAwaitingPayment(reg)"
-                                      [class.dark:text-amber-300]="isAwaitingPayment(reg)">
-                                      <span class="w-1.5 h-1.5 rounded-full"
-                                            [class.bg-green-600]="!isAwaitingPayment(reg) && reg['status'] === 'completed'"
-                                            [class.bg-amber-500]="isAwaitingPayment(reg)"></span>
-                                      {{ regStatusLabel(reg) }}
-                                    </span>
-                                  </td>
-                                  <td class="px-4 py-4 text-xs">
-                                    <div class="font-semibold text-gray-900 dark:text-gray-100 truncate" [title]="reg['name'] || getSummaryDetail(reg['formData'], ['name', 'Name', 'firstName', 'First Name'])">
-                                      {{ reg['name'] || getSummaryDetail(reg['formData'], ['name', 'Name', 'firstName', 'First Name']) }}
+                        <div class="space-y-3">
+                          @for (reg of filteredRegistrations(); track reg['id']) {
+                            <article class="rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xs overflow-hidden">
+                              <div class="p-4 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-4 md:items-center">
+                                <button type="button"
+                                        class="min-w-0 w-full text-left group rounded-lg -m-1 p-1 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors"
+                                        (click)="toggleRegExpanded($any(reg['id']))">
+                                  <div class="flex items-center gap-3">
+                                    <app-email-gravatar
+                                      [email]="getRegEmail(reg)"
+                                      [displayName]="getRegDisplayName(reg)"
+                                      [size]="40" />
+                                    <div class="min-w-0 flex-1 py-0.5">
+                                      <div class="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
+                                        <h6 class="font-semibold text-gray-900 dark:text-gray-100 truncate min-w-0 max-w-full">{{ getRegDisplayName(reg) }}</h6>
+                                        @if (reg['attended']) {
+                                          <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-green-700 dark:text-green-300">
+                                            <app-icon icon="check-circle" class="text-[10px]" /> Checked in
+                                          </span>
+                                        }
+                                      </div>
+                                      <p class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                        {{ getRegEmail(reg) || getSummaryDetail(reg['formData'], ['email', 'Email']) }}
+                                      </p>
+                                      @let rowStatus = getRegStatus(reg);
+                                      <p class="text-[11px] leading-snug font-semibold mt-1 whitespace-normal break-words rounded-md px-1.5 py-0.5 inline-block"
+                                         [class]="regStatusToneClasses(rowStatus.tone)">
+                                        {{ rowStatus.label }}
+                                      </p>
+                                      <p class="text-[11px] text-gray-400 mt-0.5">
+                                        {{ $any(reg['createdAt']) | date:'medium' }}
+                                      </p>
                                     </div>
-                                    <div class="text-gray-500 dark:text-gray-400 truncate mt-0.5" [title]="reg['email'] || getSummaryDetail(reg['formData'], ['email', 'Email'])">
-                                      {{ reg['email'] || getSummaryDetail(reg['formData'], ['email', 'Email']) }}
-                                    </div>
+                                    <app-icon [icon]="isRegExpanded($any(reg['id'])) ? 'chevron-up' : 'chevron-down'"
+                                              class="text-gray-400 shrink-0 self-center group-hover:text-primary transition-colors" />
+                                  </div>
+                                </button>
+
+                                <div class="flex flex-col items-stretch justify-center gap-2 min-w-[9.5rem] pt-3 border-t border-gray-100 dark:border-slate-800 md:pt-0 md:border-t-0 md:border-l md:pl-4 md:self-center">
+                                  @if (canCheckInRegistration(reg)) {
+                                    <button
+                                      type="button"
+                                      class="btn-sm w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-semibold rounded-lg border"
+                                      [class.btn-outline-primary]="!reg['attended']"
+                                      [class.bg-green-600]="reg['attended']"
+                                      [class.text-white]="reg['attended']"
+                                      [class.border-green-600]="reg['attended']"
+                                      (click)="toggleAttendance(reg)"
+                                      [title]="reg['attended'] ? 'Undo check-in' : 'Mark as checked in'">
+                                      <app-icon [icon]="reg['attended'] ? 'check-circle' : 'clipboard-list'" />
+                                      {{ reg['attended'] ? 'Undo check-in' : 'Check in' }}
+                                    </button>
+                                  }
+                                  <button
+                                    type="button"
+                                    class="btn-danger btn-sm w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-semibold rounded-lg"
+                                    [disabled]="deletingRegIds().has($any(reg['id']))"
+                                    (click)="deleteRegistration(reg)"
+                                    [title]="isAwaitingPayment(reg) ? 'Remove unfinished payment' : (reg['paymentIntent'] ? 'Refund payment and remove registration' : 'Delete registration')">
+                                    @if (deletingRegIds().has($any(reg['id']))) {
+                                      <app-icon icon="spinner" iconAnimation="spin" />
+                                    } @else if (reg['paymentIntent']) {
+                                      <app-icon icon="arrows-rotate" /> Refund and remove
+                                    } @else {
+                                      <app-icon icon="trash" /> Delete
+                                    }
+                                  </button>
+                                  @if (canSendOptionalPayLink(reg)) {
+                                    <button
+                                      type="button"
+                                      class="btn-outline-primary btn-sm w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-semibold rounded-lg"
+                                      (click)="generatePaymentLink(reg)"
+                                      title="Generate a donation link for this registrant">
+                                      <app-icon icon="link" /> Donation link
+                                    </button>
+                                  }
+                                </div>
+                              </div>
+
+                              @if (isRegExpanded($any(reg['id']))) {
+                                <div class="px-4 pb-4 pt-0 border-t border-gray-100 dark:border-slate-800">
+                                  <div class="grid sm:grid-cols-2 gap-x-6 gap-y-2 pt-4 text-xs">
                                     @if (getSummaryDetail(reg['formData'], ['phone', 'Phone', 'tel']) !== '—') {
-                                      <div class="text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                                        {{ getSummaryDetail(reg['formData'], ['phone', 'Phone', 'tel']) }}
+                                      <div>
+                                        <span class="text-gray-400 font-medium">Phone</span>
+                                        <p class="text-gray-800 dark:text-gray-200">{{ getSummaryDetail(reg['formData'], ['phone', 'Phone', 'tel']) }}</p>
                                       </div>
                                     }
-                                  </td>
-                                  <td class="px-4 py-4 text-xs space-y-2">
-                                    <div class="space-y-1">
-                                      @for (field of $any(reg['formData']) | keyvalue; track field.key) {
-                                        @if (!isCoreRegField(field.key)) {
-                                          <div class="flex gap-2">
-                                            <span class="shrink-0 text-gray-400 font-medium">{{ getSelectedEventFieldLabel(field.key) }}:</span>
-                                            <span class="text-gray-800 dark:text-gray-200 break-words">{{ field.value }}</span>
+                                    @for (field of getRegExtraFields(reg); track field.key) {
+                                      <div>
+                                        <span class="text-gray-400 font-medium">{{ getSelectedEventFieldLabel(field.key) }}</span>
+                                        @let display = formatRegFieldValue(field.key, field.value);
+                                        <p class="text-gray-800 dark:text-gray-200 break-words"
+                                          [class.text-emerald-600]="display === '✓'"
+                                          [class.dark:text-emerald-400]="display === '✓'"
+                                          [class.text-red-500]="display === '✗'"
+                                          [class.dark:text-red-400]="display === '✗'"
+                                          [class.text-lg]="display === '✓' || display === '✗'"
+                                          [attr.aria-label]="display === '✓' ? 'Yes' : display === '✗' ? 'No' : null">
+                                          {{ display }}
+                                        </p>
+                                      </div>
+                                    }
+                                  </div>
+
+                                  @if (getRegPaymentPanel(reg); as payment) {
+                                    <div class="mt-4 rounded-xl border border-gray-200/80 dark:border-slate-700 bg-gray-50/80 dark:bg-slate-800/40 p-4 max-w-md">
+                                      <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300">
+                                            <app-icon icon="credit-card" class="text-sm" />
+                                          </span>
+                                          <div class="min-w-0">
+                                            <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Donation</p>
+                                            <p class="text-xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">{{ payment.amountLabel }}</p>
                                           </div>
-                                        }
-                                      }
-                                    </div>
-
-                                    @if (getSelectedEvent()?.donationRequired === 'required'
-                                      || (getSelectedEvent()?.donationRequired === 'optional' && $any(reg['formData'])['optInDonation'])
-                                      || reg['paymentIntent']
-                                      || reg['stripeInvoiceId']
-                                      || reg['amountPence'] != null) {
-                                      <div class="pt-2 border-t border-dashed border-gray-100 dark:border-slate-800 space-y-1">
-                                        <div class="flex justify-between gap-3">
-                                          <span class="text-gray-400 font-medium">
-                                            {{ reg['paymentIntent'] ? 'Paid' : 'Amount' }}
-                                          </span>
-                                          <span class="font-semibold text-gray-800 dark:text-gray-200" [class.text-amber-600]="!reg['paymentIntent']">
-                                            @if (reg['amountPence'] != null) {
-                                              £{{ (parseFloat(reg['amountPence']) / 100).toFixed(2) }}
-                                            } @else if (getSelectedEvent()?.donationRequired === 'optional') {
-                                              £{{ ($any(reg['formData'])['customDonationAmount'] != null ? parseFloat($any(reg['formData'])['customDonationAmount']) : (getSelectedEvent()?.donationPrice || 0) / 100).toFixed(2) }}
-                                            } @else {
-                                              £{{ ((getSelectedEvent()?.donationPrice || 0) / 100).toFixed(2) }}
-                                            }
-                                          </span>
                                         </div>
-                                        @if (reg['paymentIntent']) {
-                                          <a [href]="'https://dashboard.stripe.com/payments/' + reg['paymentIntent']"
-                                             target="_blank"
-                                             class="block font-mono text-[10px] text-blue-600 dark:text-blue-400 hover:underline truncate"
-                                             [title]="$any(reg['paymentIntent'])">
-                                            {{ reg['paymentIntent'] }}
-                                          </a>
-                                        }
-                                        @if (isAwaitingPayment(reg) && (reg['donateLaterUrl'] || reg['checkoutUrl'])) {
-                                          <a [href]="$any(reg['donateLaterUrl'] || reg['checkoutUrl'])"
-                                             target="_blank"
-                                             class="block text-[10px] text-blue-600 dark:text-blue-400 hover:underline truncate">
-                                            Open pay link
-                                          </a>
-                                        }
+                                        <span class="inline-flex items-center w-full sm:w-auto sm:max-w-[min(100%,14rem)] px-2.5 py-1.5 rounded-lg text-[10px] font-bold min-w-0 sm:justify-end"
+                                              [class]="regStatusToneClasses(payment.statusTone)">
+                                          <span class="leading-tight whitespace-normal break-words min-w-0 sm:text-right">{{ payment.statusLabel }}</span>
+                                        </span>
                                       </div>
-                                    }
-                                  </td>
-                                  <td class="px-4 py-4 text-right whitespace-nowrap">
-                                    <div class="flex flex-col gap-2 items-end">
-                                      @if (!isAwaitingPayment(reg) && reg['status'] !== 'awaiting_payment') {
-                                        <button
-                                          type="button"
-                                          class="btn-sm inline-flex items-center justify-center gap-1.5 py-1.5 px-3 w-24 text-xs font-semibold rounded-lg border"
-                                          [class.btn-outline-primary]="!reg['attended']"
-                                          [class.bg-green-600]="reg['attended']"
-                                          [class.text-white]="reg['attended']"
-                                          [class.border-green-600]="reg['attended']"
-                                          (click)="toggleAttendance(reg)"
-                                          [title]="reg['attended'] ? 'Mark as not checked in' : 'Check in'">
-                                          <app-icon [icon]="reg['attended'] ? 'check-circle' : 'clipboard-list'" />
-                                          {{ reg['attended'] ? 'In' : 'Check in' }}
-                                        </button>
+                                      @if (payment.stripePaymentId) {
+                                        <a [href]="stripePaymentDashboardUrl(payment.stripePaymentId)"
+                                           target="_blank"
+                                           rel="noopener noreferrer"
+                                           class="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                                          View in Stripe
+                                          <app-icon icon="arrow-up-right-from-square" class="text-[10px]" />
+                                        </a>
                                       }
-                                      <button
-                                        type="button"
-                                        class="btn-danger btn-sm inline-flex items-center justify-center gap-1.5 py-1.5 px-3 w-24 text-xs font-semibold rounded-lg"
-                                        [disabled]="deletingRegIds().has($any(reg['id']))"
-                                        (click)="deleteRegistration(reg)"
-                                        [title]="isAwaitingPayment(reg) ? 'Remove unpaid checkout draft' : (reg['paymentIntent'] ? 'Refund payment and remove registration' : 'Delete registration')">
-                                        @if (deletingRegIds().has($any(reg['id']))) {
-                                          <app-icon icon="spinner" iconAnimation="spin" />
-                                        } @else if (reg['paymentIntent']) {
-                                          <app-icon icon="arrows-rotate" />
-                                          Refund
-                                        } @else {
-                                          <app-icon icon="trash" />
-                                          Delete
-                                        }
-                                      </button>
-
-                                      @if (!isAwaitingPayment(reg) && getSelectedEvent()?.donationRequired === 'optional' && !reg['paymentIntent'] && reg['status'] === 'completed') {
-                                        <button
-                                          type="button"
-                                          class="btn-outline-primary btn-sm inline-flex items-center justify-center gap-1.5 py-1.5 px-3 w-24 text-xs font-semibold rounded-lg"
-                                          (click)="generatePaymentLink(reg)"
-                                          title="Generate a custom payment link for an optional donation">
-                                          <app-icon icon="link" /> Pay Link
-                                        </button>
+                                      @if (payment.payLink) {
+                                        <a [href]="payment.payLink"
+                                           target="_blank"
+                                           rel="noopener noreferrer"
+                                           class="mt-3 block text-xs font-medium text-primary hover:underline truncate">
+                                          Open donation link
+                                        </a>
                                       }
                                     </div>
-                                  </td>
-                                </tr>
+                                  }
+                                </div>
                               }
-                            </tbody>
-                          </table>
+                            </article>
+                          }
                         </div>
                       }
                     }

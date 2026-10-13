@@ -3,7 +3,7 @@ import { DialogRef } from "@angular/cdk/dialog"
 import { DatesService } from "@services/dates.service"
 import { ReviveEvent } from "@services/events.service"
 import { IconComponent } from "../../../icon/icon.component"
-import { downloadEventIcs, downloadEventPoster, getGoogleMapsUrl } from "../event-download.utils"
+import { downloadEventIcs, downloadEventPoster, getGoogleMapsUrl, isPastEvent } from "../event-download.utils"
 
 @Component ( {
   selector: "app-event-details-modal",
@@ -38,6 +38,10 @@ export class EventDetailsModalComponent {
 
   public addToCalendar ( ): void {
     downloadEventIcs ( this.event ( ) )
+  }
+
+  public eventHasEnded ( ): boolean {
+    return isPastEvent ( this.event ( ) )
   }
 
   public async savePoster ( ): Promise<void> {

@@ -1,5 +1,5 @@
 <div class="space-y-3">
-  <input type="text" class="form-control" [value]="displayFilename()" name="url-{{this.id}}" placeholder="Name of Selected File" readonly>
+  <input type="text" class="form-control" [class.border-red-500]="showError" [class.ring-2]="showError" [class.ring-red-200]="showError" [value]="displayFilename()" name="url-{{this.id}}" placeholder="Name of Selected File" readonly>
 
   <div class="grid grid-cols-3 gap-3">
     <button class="btn-secondary w-full border border-zinc-200 bg-zinc-800 border-zinc-700 items-center justify-center gap-2 font-semibold hover:bg-zinc-700 transition-colors" type="button" (click)="quickUploadInput.click()" [disabled]="uploading()">

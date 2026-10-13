@@ -103,11 +103,9 @@ export class FormlyConfig implements ConfigOption {
     lazyRender: false,
     resetFieldOnHide: false,
     showError: ( field: FormlyFieldConfig ) => {
-      if ( field.formControl?.dirty ) {
-        return  field.formControl?.invalid && ( field.formControl?.touched || field.formControl?.value )
-      } else {
-        return false
-      }
+      const control = field.formControl
+      if ( !control ) return false
+      return !!( control.invalid && ( control.touched || control.dirty ) )
     }
   }
 }
