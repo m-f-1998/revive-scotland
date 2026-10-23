@@ -63,6 +63,11 @@ echo "✅ Success! Image pushed to: $IMAGE"
 IMAGE_REPO="ghcr.io/$USERNAME/$REPO_NAME"
 IMAGE_REF="$IMAGE_REPO:$TAG"
 
+CF_ACCESS_HEADERS=()
+if [[ -n "$CF_ACCESS_CLIENT_ID" && -n "$CF_ACCESS_CLIENT_SECRET" ]]; then
+  CF_ACCESS_HEADERS=(-H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET")
+fi
+
 portainer_base_url() {
   if [[ -n "$PORTAINER_URL" ]]; then
     echo "${PORTAINER_URL%/}"
@@ -82,6 +87,7 @@ portainer_api() {
   base_url=$(portainer_base_url) || return 1
   endpoint_id="${PORTAINER_ENDPOINT_ID:-1}"
   curl -s -w "\n%{http_code}" -X "$method" \
+    "${CF_ACCESS_HEADERS[@]}" \
     -H "X-API-Key: $PORTAINER_API_TOKEN" \
     "${base_url}/api/endpoints/${endpoint_id}/docker${path}"
 }
@@ -235,6 +241,67 @@ PY
   fi
 }
 
+# Webhooks stay pinned to one container id. If that container was removed,
+# pull and recreate whichever container is actually running this image.
+portainer_recreate_current ( ) {
+  if [[ -z "$PORTAINER_API_TOKEN" ]]; then
+    echo "⚠️  Cannot recreate container (set PORTAINER_API_TOKEN in .deploy.env)."
+    return 1
+  fi
+
+  local out http_status body container_id base_url endpoint_id
+  out=$(portainer_api GET "/containers/json?all=true") || return 1
+  http_status=$(echo "$out" | tail -n1)
+  body=$(echo "$out" | sed '$d')
+  if [[ "$http_status" != "200" ]]; then
+    portainer_api_error_hint "$http_status"
+    return 1
+  fi
+
+  container_id=$(IMAGE_REF="$IMAGE_REF" REPO_NAME="$REPO_NAME" TAG="$TAG" BODY="$body" python3 <<'PY'
+import json, os
+containers = json.loads(os.environ["BODY"])
+image_ref = os.environ["IMAGE_REF"]
+repo = os.environ["REPO_NAME"]
+tag = os.environ["TAG"]
+wanted_name = f"/{repo}" if tag == "latest" else f"/{repo}-{tag}"
+for container in containers:
+    if container.get("State") != "running":
+        continue
+    names = container.get("Names") or []
+    image = container.get("Image") or ""
+    if image == image_ref and wanted_name in names:
+        print(container["Id"])
+        break
+PY
+)
+
+  if [[ -z "$container_id" ]]; then
+    echo "⚠️  No running container named ${REPO_NAME} for $IMAGE_REF."
+    return 1
+  fi
+
+  base_url=$(portainer_base_url) || return 1
+  endpoint_id="${PORTAINER_ENDPOINT_ID:-1}"
+  echo "🔄 Recreating ${container_id:0:12} and pulling $IMAGE_REF..."
+  out=$(curl -s -w "\n%{http_code}" -X POST \
+    "${CF_ACCESS_HEADERS[@]}" \
+    -H "X-API-Key: $PORTAINER_API_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"PullImage":true}' \
+    "${base_url}/api/docker/${endpoint_id}/containers/${container_id}/recreate") || return 1
+  http_status=$(echo "$out" | tail -n1)
+  body=$(echo "$out" | sed '$d')
+  if [[ "$http_status" == "200" ]]; then
+    echo "✅ Container recreated from $IMAGE_REF."
+    return 0
+  fi
+
+  portainer_api_error_hint "$http_status"
+  [[ -n "$body" ]] && echo "   ${body:0:300}"
+  return 1
+}
+
 if [[ "$TAG" == "latest" && -n "$PORTAINER_WEBHOOK_LATEST" ]]; then
   PORTAINER_WEBHOOK="$PORTAINER_WEBHOOK_LATEST"
 elif [[ "$TAG" == "dev" && -n "$PORTAINER_WEBHOOK_DEV" ]]; then
@@ -251,14 +318,18 @@ if [[ -n "$PORTAINER_WEBHOOK" ]]; then
   fi
 
   echo "🔄 Triggering Portainer redeploy for tag: $TAG"
-  HTTP_STATUS=$(curl -s -o /tmp/portainer-webhook.out -w "%{http_code}" -X POST "$PORTAINER_WEBHOOK")
+  HTTP_STATUS=$(curl -s -o /tmp/portainer-webhook.out -w "%{http_code}" "${CF_ACCESS_HEADERS[@]}" -X POST "$PORTAINER_WEBHOOK")
   if [[ "$HTTP_STATUS" == "204" || "$HTTP_STATUS" == "200" ]]; then
     echo "✅ Portainer redeploy triggered."
     portainer_prune_old_image "$PORTAINER_OLD_IMAGE_ID"
   else
     echo "⚠️  Portainer webhook returned HTTP $HTTP_STATUS:"
     cat /tmp/portainer-webhook.out
-    exit 1
+    if grep -q "No such container" /tmp/portainer-webhook.out && portainer_recreate_current; then
+      portainer_prune_old_image "$PORTAINER_OLD_IMAGE_ID"
+    else
+      exit 1
+    fi
   fi
 else
   echo "ℹ️  No Portainer webhook configured for tag '$TAG' (set PORTAINER_WEBHOOK_LATEST or PORTAINER_WEBHOOK_DEV)."
