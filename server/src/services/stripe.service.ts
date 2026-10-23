@@ -5,15 +5,26 @@ export type EventCheckoutOpts = {
   orgSlug?: string
   successPath?: string
   cancelPath?: string
+  successUrl?: string
+  cancelUrl?: string
   connectAccountId?: string
   platformFeePence?: number
   paymentAmountPence?: number
+  displayName?: string
+  buttonColor?: string
+  paymentNote?: string
 }
 
 export class StripeService {
   public static isLivemode ( ): boolean {
     const key = process.env [ "STRIPE_SECRET_KEY" ] || ""
     return key.startsWith ( "sk_live_" )
+  }
+
+  /** Local dev with a test key charges Revive's platform test account. Connect is for live payouts. */
+  public static devUsesPlatformTestAccount ( ): boolean {
+    const key = process.env [ "STRIPE_SECRET_KEY" ] || ""
+    return isDevMode ( ) && key.startsWith ( "sk_test_" )
   }
 
   public static getStripeInstance ( ): Stripe | null {
@@ -93,6 +104,12 @@ export class StripeService {
       paymentIntentData.transfer_data = { destination: checkoutOpts.connectAccountId }
     }
 
+    const buttonColor = checkoutOpts?.buttonColor?.trim ( ) || ""
+    const branding: Stripe.Checkout.SessionCreateParams.BrandingSettings = { }
+    if ( checkoutOpts?.displayName?.trim ( ) ) branding.display_name = checkoutOpts.displayName.trim ( ).slice ( 0, 100 )
+    if ( /^#[0-9A-Fa-f]{6}$/.test ( buttonColor ) ) branding.button_color = buttonColor
+    const paymentNote = checkoutOpts?.paymentNote?.trim ( ).slice ( 0, 1200 )
+
     const session = await stripe.checkout.sessions.create ( {
       allowed_payment_method_types: [ "card" ],
       line_items: [ lineItem ],
@@ -100,8 +117,10 @@ export class StripeService {
       customer_email: customerEmail || undefined,
       customer_creation: customerEmail ? "always" : undefined,
       payment_intent_data: paymentIntentData,
-      success_url: `${host}${successBase}?registration=success&${returnQs}`,
-      cancel_url: `${host}${cancelBase}?registration=cancelled&${returnQs}`,
+      branding_settings: Object.keys ( branding ).length ? branding : undefined,
+      custom_text: paymentNote ? { submit: { message: paymentNote } } : undefined,
+      success_url: checkoutOpts?.successUrl || `${host}${successBase}?registration=success&${returnQs}`,
+      cancel_url: checkoutOpts?.cancelUrl || `${host}${cancelBase}?registration=cancelled&${returnQs}`,
       client_reference_id: draftId,
       metadata: {
         draftId,

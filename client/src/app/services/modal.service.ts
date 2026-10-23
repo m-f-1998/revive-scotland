@@ -55,6 +55,10 @@ export interface ModalOptions {
   bare?: boolean
   /** Extra panel classes appended after the default modal-panel classes */
   panelClass?: string | string [ ]
+  /** When false, the dialog does not move focus. Embeds use this so the parent page does not scroll. */
+  autoFocus?: boolean
+  /** When false, closing the dialog does not return focus. */
+  restoreFocus?: boolean
 }
 
 @Service ( )
@@ -81,8 +85,8 @@ export class ModalService {
       backdropClass,
       hasBackdrop: true,
       disableClose: options.backdrop === "static",
-      autoFocus: true,
-      restoreFocus: true,
+      autoFocus: options.autoFocus !== false,
+      restoreFocus: options.restoreFocus !== false,
     }
 
     const cdkRef = this.dialog.open<R, unknown, T> ( component, config )

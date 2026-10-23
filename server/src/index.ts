@@ -194,11 +194,37 @@ await app.register ( helmet, {
       manifestSrc: [
         "'self'"
       ],
+      frameAncestors: [
+        "'none'"
+      ],
     }
   },
   crossOriginOpenerPolicy: false,
   frameguard: { action: "deny" },
   hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }
+} )
+
+const bookAncestors = [
+  "'self'",
+  "http://localhost:4200",
+  "http://127.0.0.1:4200",
+  "https://stmaryscathedralaberdeen.org",
+  "https://www.stmaryscathedralaberdeen.org"
+].join ( " " )
+
+app.addHook ( "onSend", async ( request, reply, payload ) => {
+  const path = request.url.split ( "?" )[ 0 ] || ""
+  const booking = path === "/book" || path.startsWith ( "/book/" )
+  if ( !booking ) return payload
+  reply.removeHeader ( "x-frame-options" )
+  const current = reply.getHeader ( "content-security-policy" )
+  const directive = `frame-ancestors ${bookAncestors}`
+  const next = typeof current === "string"
+    ? current.replace ( /frame-ancestors [^;]*/, directive )
+    : directive
+  reply.removeHeader ( "content-security-policy" )
+  reply.header ( "content-security-policy", next )
+  return payload
 } )
 
 export const logResponse = ( req: FastifyRequest, reply: FastifyReply, isProxy = false ) => {

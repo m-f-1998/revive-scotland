@@ -80,10 +80,18 @@ export class EventsComponent implements OnInit {
   private readonly recaptchaExecuteSvc: RecaptchaExecuteService = inject ( RecaptchaExecuteService )
   private readonly route: ActivatedRoute = inject ( ActivatedRoute )
   private readonly router: Router = inject ( Router )
+  private heightWatchStarted = false
+  private heightPaused = false
+  private postedHeight = 0
+
+  public constructor ( ) {
+    const embed = this.route.snapshot.queryParamMap.get ( "embed" ) === "1"
+    this.embedMode.set ( embed )
+    if ( embed ) document.documentElement.classList.add ( "booking-embed" )
+  }
 
   public ngOnInit ( ) {
     this.quote.set ( pickRandomQuote ( ) )
-    this.embedMode.set ( this.route.snapshot.queryParamMap.get ( "embed" ) === "1" )
     const returnParam = this.route.snapshot.queryParamMap.get ( "return" )
     if ( returnParam ) {
       this.returnUrl.set ( returnParam )
@@ -100,11 +108,15 @@ export class EventsComponent implements OnInit {
   }
 
   public openEventDetails ( event: ReviveEvent ): void {
-    const modalRef = this.modalSvc.open ( EventDetailsModalComponent, {
-      centered: true,
-      panelClass: "modal-event-details"
+    void this.coverParish ( true ).then ( () => {
+      const modalRef = this.modalSvc.open ( EventDetailsModalComponent, {
+        centered: true,
+        panelClass: "modal-event-details",
+        ...this.embedDialogChrome ( )
+      } )
+      modalRef.setInput ( "event", event )
+      void modalRef.result.then ( () => this.coverParish ( false ), () => this.coverParish ( false ) )
     } )
-    modalRef.setInput ( "event", event )
   }
 
   public isHighlighted ( eventId: string ): boolean {
@@ -139,7 +151,6 @@ export class EventsComponent implements OnInit {
   }
 
   public async openContactForm ( event: ReviveEvent ) {
-    await this.getEvents ( true )
     const current = this.events ( ).find ( e => e.id === event.id ) || event
 
     if ( current.comingSoon ) {
@@ -154,9 +165,12 @@ export class EventsComponent implements OnInit {
 
     const needsPayment = current.donationRequired === "required"
     const waitlistOnly = !!current.isFull && !!current.waitlistOpen
+    await this.coverParish ( true )
     const modalRef = this.modalSvc.open ( InputDialogComponent, {
-      centered: true
+      centered: true,
+      ...this.embedDialogChrome ( )
     } )
+    if ( this.embedMode ( ) ) this.focusDialogField ( )
     modalRef.setInput ( "title", waitlistOnly ? `Join waitlist — ${current.title}` : `Register for ${current.title}` )
     modalRef.setInput (
       "body",
@@ -180,9 +194,14 @@ export class EventsComponent implements OnInit {
     modalRef.setInput ( "fields", fields )
 
     await modalRef.result.then ( async ( result: Record<string, unknown> ) => {
+      if ( !result ) {
+        this.coverParish ( false )
+        return
+      }
       if ( result ) {
         if ( !modalRef.componentInstance.captchaToken ) {
           console.error ( "No reCAPTCHA token available." )
+          this.coverParish ( false )
           return
         }
 
@@ -199,7 +218,8 @@ export class EventsComponent implements OnInit {
               const res = await this.apiSvc.post ( `/api/events/${current.id}/register`, {
                 ...result,
                 recaptchaToken,
-                recaptchaAction
+                recaptchaAction,
+                ...( this.returnUrl ( ) ? { returnUrl: this.returnUrl ( ) } : { } )
               } ) as { message: string; checkoutUrl?: string; donateLaterUrl?: string; draftId?: string; cancelToken?: string }
 
               if ( res.checkoutUrl ) {
@@ -221,14 +241,21 @@ export class EventsComponent implements OnInit {
                   { timeOut: 6000 }
                 )
                 await new Promise ( resolve => setTimeout ( resolve, 900 ) )
-                window.location.href = res.checkoutUrl
-              } else {
+                const target = window.top || window
+                target.location.href = res.checkoutUrl
+              } else if ( !this.returnToParish (
+                ( res as { status?: string } ).status === "waitlist" ? "waitlist" : "completed",
+                current.title,
+                current.id
+              ) ) {
                 const successRef = this.modalSvc.open ( SuccessModalComponent, {
                   centered: true,
-                  bare: true
+                  bare: true,
+                  ...this.embedDialogChrome ( )
                 } )
                 successRef.setInput ( "eventTitle", current.title )
                 successRef.setInput ( "status", ( res as { status?: string } ).status === "waitlist" ? "waitlist" : "completed" )
+                void successRef.result.then ( () => this.coverParish ( false ), () => this.coverParish ( false ) )
                 void this.getEvents ( true )
               }
               return
@@ -259,7 +286,8 @@ export class EventsComponent implements OnInit {
 
           const errorRef = this.modalSvc.open ( ErrorModalComponent, {
             centered: true,
-            bare: true
+            bare: true,
+            ...this.embedDialogChrome ( )
           } )
           errorRef.setInput ( "title", recaptchaError?.retryable ? "Security check incomplete" : "Registration Error" )
           errorRef.setInput (
@@ -267,11 +295,14 @@ export class EventsComponent implements OnInit {
             apiMessage || "An error occurred while submitting your registration. Please try again later."
           )
           errorRef.setInput ( "type", recaptchaError?.retryable ? "warning" : "error" )
+          void errorRef.result.then ( () => this.coverParish ( false ), () => this.coverParish ( false ) )
         } finally {
           this.loading.set ( false )
         }
       }
-    } ).catch ( ( ) => { } )
+    } ).catch ( ( ) => {
+      this.coverParish ( false )
+    } )
   }
 
   private async bootstrapBookingPage ( ): Promise<void> {
@@ -377,6 +408,13 @@ export class EventsComponent implements OnInit {
       const draftId = ( params [ "draftId" ] as string | undefined )
         || sessionStorage.getItem ( "checkoutDraftId" )
         || undefined
+
+      if ( ( status === "success" || status === "cancelled" ) && this.returnToParish (
+        status === "cancelled" ? "cancelled" : ( params [ "status" ] === "waitlist" ? "waitlist" : "completed" ),
+        String ( params [ "event" ] || sessionStorage.getItem ( "checkoutEventTitle" ) || "" ),
+        String ( eventId || "" ),
+        params [ "optional" ] === "1"
+      ) ) return
 
       if ( status === "success" ) {
         const title = sessionStorage.getItem ( "checkoutEventTitle" )
@@ -545,6 +583,97 @@ export class EventsComponent implements OnInit {
     }
   }
 
+  private embedDialogChrome ( ): { autoFocus?: boolean; restoreFocus?: boolean } {
+    if ( !this.embedMode ( ) ) return { }
+    return { autoFocus: false, restoreFocus: false }
+  }
+
+  private focusDialogField ( ): void {
+    requestAnimationFrame ( () => {
+      const field = document.querySelector<HTMLElement> (
+        ".cdk-overlay-container input, .cdk-overlay-container textarea, .cdk-overlay-container select"
+      )
+      field?.focus ( { preventScroll: true } )
+    } )
+  }
+
+  private coverParish ( open: boolean ): Promise<void> {
+    if ( !this.embedMode ( ) || window.parent === window ) return Promise.resolve ( )
+    this.heightPaused = open
+    window.parent.postMessage ( { type: "revive-embed-cover", open }, "*" )
+    if ( !open ) {
+      requestAnimationFrame ( () => this.postEmbedHeight ( ) )
+      return Promise.resolve ( )
+    }
+    return new Promise ( resolve => {
+      let settled = false
+      let timer = 0
+      const finish = () => {
+        if ( settled ) return
+        settled = true
+        window.clearTimeout ( timer )
+        window.removeEventListener ( "message", onReady )
+        resolve ( )
+      }
+      const onReady = ( event: MessageEvent ) => {
+        if ( event.source !== window.parent ) return
+        const data = event.data as { type?: string }
+        if ( data?.type !== "revive-embed-ready" ) return
+        finish ( )
+      }
+      window.addEventListener ( "message", onReady )
+      timer = window.setTimeout ( finish, 300 )
+    } )
+  }
+
+  private postEmbedHeight ( ): void {
+    if ( this.heightPaused || !this.embedMode ( ) || window.parent === window ) return
+    const root = document.querySelector ( ".embed-root" )
+    if ( !root ) return
+    const height = Math.ceil ( root.getBoundingClientRect ( ).height )
+    if ( height < 40 || Math.abs ( height - this.postedHeight ) < 2 ) return
+    this.postedHeight = height
+    window.parent.postMessage ( { type: "revive-embed-height", height }, "*" )
+  }
+
+  private returnToParish (
+    status: "completed" | "waitlist" | "cancelled",
+    title: string,
+    eventId: string,
+    optional = false
+  ): boolean {
+    if ( !this.embedMode ( ) ) return false
+    const base = this.returnUrl ( )
+    if ( !base ) return false
+    const registration = status === "cancelled" ? "cancelled" : "success"
+    let toldParish = false
+    try {
+      const url = new URL ( base )
+      url.searchParams.set ( "registration", registration )
+      url.searchParams.set ( "status", status )
+      url.searchParams.set ( "event", title )
+      url.searchParams.set ( "eventId", eventId )
+      if ( optional ) url.searchParams.set ( "optional", "1" )
+      if ( window.parent !== window ) {
+        window.parent.postMessage ( {
+          type: "revive-embed-result",
+          registration,
+          status,
+          event: title,
+          eventId,
+          ...( optional ? { optional: "1" } : { } )
+        }, "*" )
+        toldParish = true
+      }
+      this.coverParish ( false )
+      const target = window.top || window
+      target.location.assign ( url.toString ( ) )
+      return true
+    } catch {
+      return toldParish
+    }
+  }
+
   private clearQueryParams ( ): void {
     this.router.navigate ( [ ], {
       relativeTo: this.route,
@@ -567,6 +696,19 @@ export class EventsComponent implements OnInit {
       }
     } finally {
       this.loading.set ( false )
+      if ( this.embedMode ( ) ) {
+        requestAnimationFrame ( () => requestAnimationFrame ( () => this.watchEmbedHeight ( ) ) )
+      }
     }
+  }
+
+  private watchEmbedHeight ( ): void {
+    if ( this.heightWatchStarted || !this.embedMode ( ) || window.parent === window ) return
+    const root = document.querySelector ( ".embed-root" )
+    if ( !root ) return
+    this.heightWatchStarted = true
+    this.postEmbedHeight ( )
+    const observer = new ResizeObserver ( () => this.postEmbedHeight ( ) )
+    observer.observe ( root )
   }
 }

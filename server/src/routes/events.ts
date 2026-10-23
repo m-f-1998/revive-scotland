@@ -105,6 +105,7 @@ interface CheckoutDraft {
   stripeInvoiceId?: string
   donateLaterUrl?: string | null
   checkoutUrl?: string | null
+  returnUrl?: string
   stripeCheckoutSessionId?: string | null
   /** Set when payment is confirmed — kept so status polls remain accurate after merge */
   finalized?: boolean
@@ -169,9 +170,39 @@ const getPublicEventsForOrganization = async ( organizationId: string ): Promise
   return enriched
 }
 
+const parishReturnUrl = ( value: unknown ): string | null => {
+  const raw = String ( value || "" ).trim ( )
+  if ( !raw || raw.length > 500 ) return null
+  try {
+    const url = new URL ( raw )
+    if ( url.protocol !== "http:" && url.protocol !== "https:" ) return null
+    return url.toString ( )
+  } catch {
+    return null
+  }
+}
+
+const bookingResultUrl = (
+  base: string,
+  registration: "success" | "cancelled",
+  eventId: string,
+  title: string,
+  optional = false
+): string => {
+  const url = new URL ( base )
+  url.searchParams.set ( "registration", registration )
+  url.searchParams.set ( "status", registration === "cancelled" ? "cancelled" : "completed" )
+  url.searchParams.set ( "eventId", eventId )
+  url.searchParams.set ( "event", title.slice ( 0, 120 ) )
+  if ( optional ) url.searchParams.set ( "optional", "1" )
+  return url.toString ( )
+}
+
 const buildCheckoutOptsForEvent = async (
   event: Event,
-  amountPence?: number
+  amountPence?: number,
+  returnUrl?: string,
+  optionalDonation = false
 ): Promise<EventCheckoutOpts> => {
   const orgId = eventOrganizationId ( event )
   const org = await resolveOrganizationById ( orgId )
@@ -186,13 +217,19 @@ const buildCheckoutOptsForEvent = async (
     ? org.stripeConnectAccountId
     : undefined
 
+  const parish = parishReturnUrl ( returnUrl )
   return {
     orgSlug,
     successPath: path,
     cancelPath: path,
+    successUrl: parish ? bookingResultUrl ( parish, "success", event.id, event.title ) : undefined,
+    cancelUrl: parish ? bookingResultUrl ( parish, "cancelled", event.id, event.title, optionalDonation ) : undefined,
     connectAccountId,
     platformFeePence,
-    paymentAmountPence: paymentAmountPence ?? undefined
+    paymentAmountPence: paymentAmountPence ?? undefined,
+    displayName: org?.name,
+    buttonColor: org?.primaryColor,
+    paymentNote: org?.tagline
   }
 }
 
@@ -687,7 +724,12 @@ const sendPaymentPromptForDraft = async (
     }
 
     const { token: rotatedCancelToken, hash: rotatedCancelTokenHash } = newCancelToken ( )
-    const checkoutOpts = await buildCheckoutOptsForEvent ( event, customFromForm ?? amountPence )
+    const checkoutOpts = await buildCheckoutOptsForEvent (
+      event,
+      customFromForm ?? amountPence,
+      draft.returnUrl,
+      !!draft.existingRegistrationId
+    )
     const session = await StripeService.createEventCheckoutSession (
       draft.eventId,
       event.stripePriceId,
@@ -1003,6 +1045,7 @@ const startOrResumeCheckout = async ( opts: {
   amountPence: number | undefined
   customAmountInPence?: number
   existingRegistrationId?: string
+  returnUrl?: string
 } ): Promise<CheckoutStartResult> => {
   const draftRef = getFirestore ( )
     .collection ( "event_checkout_drafts" )
@@ -1036,6 +1079,7 @@ const startOrResumeCheckout = async ( opts: {
     name: opts.name,
     amountPence: opts.amountPence,
     ...( opts.existingRegistrationId ? { existingRegistrationId: opts.existingRegistrationId } : { } ),
+    ...( opts.returnUrl ? { returnUrl: opts.returnUrl } : { } ),
     cancelTokenHash,
     finalized: false,
     checkoutUrl: null,
@@ -1045,7 +1089,9 @@ const startOrResumeCheckout = async ( opts: {
 
   const checkoutOpts = await buildCheckoutOptsForEvent (
     opts.event,
-    opts.customAmountInPence ?? opts.amountPence
+    opts.customAmountInPence ?? opts.amountPence,
+    opts.returnUrl,
+    !!opts.existingRegistrationId
   )
   const session = await StripeService.createEventCheckoutSession (
     opts.eventId,
@@ -1312,6 +1358,7 @@ export const router: FastifyPluginAsync = async app => {
     const name = String (
       formData [ "name" ] || formData [ "Name" ] || formData [ "firstName" ] || formData [ "First Name" ] || ""
     ).trim ( )
+    const returnUrl = parishReturnUrl ( formData [ "returnUrl" ] ) || undefined
 
     const event = await loadEvent ( eventId )
     if ( !event ) {
@@ -1346,7 +1393,8 @@ export const router: FastifyPluginAsync = async app => {
             },
             amountPence: customAmountInPence,
             customAmountInPence,
-            existingRegistrationId: existingReg.id
+            existingRegistrationId: existingReg.id,
+            returnUrl
           } )
           if ( checkout.ok ) {
             return rep.send ( {
@@ -1435,7 +1483,8 @@ export const router: FastifyPluginAsync = async app => {
           formData: cleanedFormData,
           amountPence,
           customAmountInPence,
-          existingRegistrationId: registrationRef.id
+          existingRegistrationId: registrationRef.id,
+          returnUrl
         } )
 
         if ( !checkout.ok ) {
@@ -1490,7 +1539,8 @@ export const router: FastifyPluginAsync = async app => {
           name,
           formData: cleanedFormData,
           amountPence,
-          customAmountInPence
+          customAmountInPence,
+          returnUrl
         } )
 
         if ( !checkout.ok ) {

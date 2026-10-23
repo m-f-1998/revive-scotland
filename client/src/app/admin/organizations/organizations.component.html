@@ -1,12 +1,19 @@
 <div class="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
   <app-admin-navbar />
 
-  <main class="flex-1 max-w-4xl mx-auto w-full px-6 py-8 space-y-8">
-    <header>
-      <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Partner organizations</h1>
-      <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-1 max-w-2xl">
-        Host event booking for parishes and partners. Link <code class="text-xs">/book/:slug</code> from the parish site instead of ChurchSuite. Add <code class="text-xs">?return=</code> for a back-to-website button and <code class="text-xs">embed=1</code> to hide Revive chrome.
-      </p>
+  <main class="flex-1 max-w-3xl mx-auto w-full px-6 py-8 space-y-5">
+    <header class="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Partner organisations</h1>
+        <p class="text-sm text-zinc-600 dark:text-zinc-400 mt-1 max-w-xl">
+          Revive takes the card payment. The fee below is what the parish pays. Stripe’s card charge comes out of Revive’s share, so do not add it on top. At 1.5% + £0.20 a UK booking stays under ChurchSuite, which adds its own 1% on top of Stripe.
+        </p>
+      </div>
+      @if (isSuperAdmin() && !loading()) {
+        <button type="button" class="btn-primary btn-sm" (click)="showAdd()">
+          <app-icon icon="plus" /> {{ adding() ? "Close" : "Add organisation" }}
+        </button>
+      }
     </header>
 
     @if (loading()) {
@@ -14,95 +21,158 @@
         <app-icon icon="spinner" iconAnimation="spin" iconSize="2x" />
       </div>
     } @else {
-      @for (org of organizations(); track org.id) {
-        <section class="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-4 shadow-sm">
-          <div class="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-50">{{ org.name }}</h2>
-              <p class="text-xs text-zinc-500 font-mono mt-0.5">{{ org.slug }} · {{ org.id }}</p>
-              @if (org.websiteUrl) {
-                <a [href]="org.websiteUrl" target="_blank" rel="noopener" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">{{ org.websiteUrl }}</a>
-              }
+      @if (adding()) {
+        <section class="rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-5 space-y-4">
+          <h2 class="font-semibold text-zinc-900 dark:text-zinc-50">New organisation</h2>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <label class="text-xs text-zinc-600 dark:text-zinc-400">
+              Document id
+              <input class="form-control text-sm mt-1" [value]="newOrg().id" (input)="patchNew({ id: text($event) })" />
+            </label>
+            <label class="text-xs text-zinc-600 dark:text-zinc-400">
+              URL slug
+              <input class="form-control text-sm mt-1" [value]="newOrg().slug" (input)="patchNew({ slug: text($event) })" />
+            </label>
+            <label class="text-xs text-zinc-600 dark:text-zinc-400 sm:col-span-2">
+              Display name
+              <input class="form-control text-sm mt-1" [value]="newOrg().name" (input)="patchNew({ name: text($event) })" />
+            </label>
+            <label class="text-xs text-zinc-600 dark:text-zinc-400">
+              Parish website
+              <input class="form-control text-sm mt-1" [value]="newOrg().websiteUrl" (input)="patchNew({ websiteUrl: text($event) })" />
+            </label>
+            <div class="text-xs text-zinc-600 dark:text-zinc-400 sm:col-span-2">
+              <span>Office emails</span>
+              <ul class="mt-2 flex flex-wrap gap-2">
+                @for (email of newOrg().adminEmails; track email) {
+                  <li class="inline-flex items-center gap-2 rounded-md border border-zinc-200 dark:border-zinc-700 px-2 py-1 text-sm text-zinc-800 dark:text-zinc-100">
+                    {{ email }}
+                    <button type="button" class="text-xs text-zinc-500" (click)="removeNewEmail(email)">Remove</button>
+                  </li>
+                }
+              </ul>
+              <div class="mt-2 flex gap-2">
+                <input #newOfficeEmail class="form-control text-sm" type="email" (keydown.enter)="addNewEmail(newOfficeEmail); $event.preventDefault()" />
+                <button type="button" class="btn-outline-secondary btn-sm" (click)="addNewEmail(newOfficeEmail)">Add</button>
+              </div>
             </div>
-            <div class="flex flex-wrap gap-2">
-              @if (isSuperAdmin()) {
-                <button type="button" class="btn-outline-primary btn-sm" (click)="connectStripe(org)">
-                  <app-icon icon="link" /> Stripe Connect
-                </button>
-              }
-              <button type="button" class="btn-outline-secondary btn-sm" (click)="syncStripe(org)">
-                <app-icon icon="refresh" /> Sync Stripe
-              </button>
-            </div>
+            <label class="text-xs text-zinc-600 dark:text-zinc-400">
+              Platform fee %
+              <input class="form-control text-sm mt-1" inputmode="decimal" [value]="newOrg().platformFeePercent" (input)="patchNewNumber('platformFeePercent', $event)" />
+            </label>
+            <label class="text-xs text-zinc-600 dark:text-zinc-400">
+              Fixed fee (£)
+              <input class="form-control text-sm mt-1" inputmode="decimal" [value]="newOrg().fixedFeePounds" (input)="patchNewNumber('fixedFeePounds', $event)" />
+            </label>
+            <label class="text-xs text-zinc-600 dark:text-zinc-400">
+              Payment button colour
+              <input class="form-control text-sm mt-1" [value]="newOrg().buttonColor" (input)="patchNew({ buttonColor: text($event) })" />
+            </label>
+            <label class="text-xs text-zinc-600 dark:text-zinc-400 sm:col-span-2">
+              Payment screen text
+              <textarea class="form-control text-sm mt-1" rows="2" [value]="newOrg().paymentNote" (input)="patchNew({ paymentNote: text($event) })"></textarea>
+            </label>
           </div>
+          <button type="button" class="btn-primary btn-sm" (click)="createOrg()">Create organisation</button>
+        </section>
+      }
 
-          <div class="grid sm:grid-cols-2 gap-3 text-xs">
-            <div class="rounded-lg bg-zinc-50 dark:bg-zinc-800/60 p-3 border border-zinc-100 dark:border-zinc-700">
-              <p class="font-semibold text-zinc-500 uppercase tracking-wider mb-1">Booking page</p>
-              <code class="block break-all text-zinc-800 dark:text-zinc-200">{{ bookingLink(org) }}</code>
-              <button type="button" class="btn-outline-primary btn-sm mt-2" (click)="copyText(bookingLink(org), 'Booking URL')">
-                Copy link
-              </button>
-            </div>
-            <div class="rounded-lg bg-zinc-50 dark:bg-zinc-800/60 p-3 border border-zinc-100 dark:border-zinc-700">
-              <p class="font-semibold text-zinc-500 uppercase tracking-wider mb-1">Website embed</p>
-              <p class="text-zinc-600 dark:text-zinc-400 mb-2">Paste on the partner site (opens branded booking in a new tab).</p>
-              <button type="button" class="btn-outline-secondary btn-sm" (click)="copyText(embedSnippet(org), 'Embed HTML')">
-                Copy button HTML
-              </button>
-            </div>
-          </div>
+      @if (organizations().length > 3) {
+        <input class="form-control text-sm" placeholder="Find a parish" [value]="query()" (input)="query.set(text($event))" />
+      }
 
-          <div class="rounded-lg border border-zinc-100 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/60 p-3 text-xs space-y-1">
-            <p class="font-semibold uppercase tracking-wider text-zinc-500">Payments</p>
-            <p>
-              <span class="font-semibold"
+      <div class="space-y-2">
+        @for (org of visible(); track org.id) {
+          <section class="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+            <button type="button" class="w-full text-left px-4 py-3 flex items-center gap-3" (click)="toggle(org.id)">
+              <span class="min-w-0 flex-1">
+                <span class="block font-semibold text-zinc-900 dark:text-zinc-50 truncate">{{ org.name }}</span>
+                <span class="block text-xs text-zinc-500 font-mono truncate">/book/{{ org.slug }}</span>
+              </span>
+              <span class="hidden sm:block text-xs text-zinc-500 whitespace-nowrap">{{ feeLabel(org) }}</span>
+              <span class="text-xs font-semibold whitespace-nowrap"
                     [class.text-green-700]="org.stripeConnectPayoutsEnabled || org.stripeConnectChargesEnabled"
                     [class.dark:text-green-400]="org.stripeConnectPayoutsEnabled || org.stripeConnectChargesEnabled"
                     [class.text-amber-700]="!!org.stripeConnectAccountId && !org.stripeConnectChargesEnabled && !org.stripeConnectPayoutsEnabled"
-                    [class.dark:text-amber-300]="!!org.stripeConnectAccountId && !org.stripeConnectChargesEnabled && !org.stripeConnectPayoutsEnabled">
+                    [class.dark:text-amber-300]="!!org.stripeConnectAccountId && !org.stripeConnectChargesEnabled && !org.stripeConnectPayoutsEnabled"
+                    [class.text-zinc-600]="!(org.stripeConnectPayoutsEnabled || org.stripeConnectChargesEnabled) && !(org.stripeConnectAccountId && !org.stripeConnectChargesEnabled && !org.stripeConnectPayoutsEnabled)">
                 {{ connectStatusLabel(org) }}
               </span>
-              — {{ connectStatusHint(org) }}
-            </p>
-          </div>
+              <span class="text-xs text-zinc-400">{{ openId() === org.id ? "Close" : "Edit" }}</span>
+            </button>
 
-          @if (isSuperAdmin()) {
-            <div class="grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
-              <label class="text-xs text-zinc-600 dark:text-zinc-400">
-                Platform fee %
-                <input class="form-control text-sm mt-1" type="number" min="0" max="100" step="0.1"
-                       [ngModel]="org.platformFeePercent ?? 0"
-                       (ngModelChange)="org.platformFeePercent = $event" />
-              </label>
-              <label class="text-xs text-zinc-600 dark:text-zinc-400">
-                Fixed fee (£)
-                <input class="form-control text-sm mt-1" type="number" min="0" step="0.01"
-                       [ngModel]="feePounds(org)"
-                       (ngModelChange)="setFeePounds(org, $event)" />
-              </label>
-              <button type="button" class="btn-outline-primary btn-sm" (click)="saveFees(org)">Save fees</button>
-            </div>
-          }
-        </section>
-      }
+            @if (openId() === org.id && drafts()[org.id]; as draft) {
+              <div class="px-4 pb-4 space-y-4 border-t border-zinc-100 dark:border-zinc-800">
+                <p class="pt-3 text-xs text-zinc-500">{{ connectStatusHint(org) }}</p>
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" class="btn-outline-secondary btn-sm" (click)="copyText(bookingLink(org), 'Booking link')">Copy booking link</button>
+                  <button type="button" class="btn-outline-secondary btn-sm" (click)="copyText(embedSnippet(org), 'Embed HTML')">Copy embed</button>
+                  @if (isSuperAdmin()) {
+                    <button type="button" class="btn-outline-primary btn-sm" (click)="connectStripe(org)">Set up parish payouts</button>
+                  }
+                  <button type="button" class="btn-outline-secondary btn-sm" (click)="syncStripe(org)">Refresh payouts</button>
+                </div>
 
-      @if (isSuperAdmin()) {
-        <section class="rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 p-5 space-y-3">
-          <h3 class="font-semibold text-zinc-900 dark:text-zinc-50">Add organization</h3>
-          <div class="grid sm:grid-cols-2 gap-3">
-            <input class="form-control text-sm" placeholder="Document id (e.g. st-marys)" [(ngModel)]="newOrg.id" />
-            <input class="form-control text-sm" placeholder="URL slug (e.g. st-marys)" [(ngModel)]="newOrg.slug" />
-            <input class="form-control text-sm sm:col-span-2" placeholder="Display name" [(ngModel)]="newOrg.name" />
-            <input class="form-control text-sm sm:col-span-2" placeholder="Partner website (return link)" [(ngModel)]="newOrg.websiteUrl" />
-            <input class="form-control text-sm" type="number" min="0" step="0.1" placeholder="Platform fee %" [(ngModel)]="newOrg.platformFeePercent" />
-            <input class="form-control text-sm" type="number" min="0" step="1" placeholder="Fixed fee (pence)" [(ngModel)]="newOrg.platformFeeFixedPence" />
-          </div>
-          <button type="button" class="btn-primary btn-sm" (click)="createOrg()">
-            <app-icon icon="plus" /> Create organization
-          </button>
-        </section>
-      }
+                @if (isSuperAdmin()) {
+                  <form class="grid sm:grid-cols-2 gap-3" (submit)="saveOrganisation(org); $event.preventDefault()">
+                    <label class="text-xs text-zinc-600 dark:text-zinc-400">
+                      Display name
+                      <input class="form-control text-sm mt-1" [value]="draft.name" (input)="patchDraft(org.id, { name: text($event) })" />
+                    </label>
+                    <label class="text-xs text-zinc-600 dark:text-zinc-400">
+                      Parish website
+                      <input class="form-control text-sm mt-1" [value]="draft.websiteUrl" (input)="patchDraft(org.id, { websiteUrl: text($event) })" />
+                    </label>
+                    <div class="text-xs text-zinc-600 dark:text-zinc-400 sm:col-span-2">
+                      <span>Office emails</span>
+                      <ul class="mt-2 flex flex-wrap gap-2">
+                        @for (email of draft.adminEmails; track email) {
+                          <li class="inline-flex items-center gap-2 rounded-md border border-zinc-200 dark:border-zinc-700 px-2 py-1 text-sm text-zinc-800 dark:text-zinc-100">
+                            {{ email }}
+                            <button type="button" class="text-xs text-zinc-500" (click)="removeDraftEmail(org.id, email)">Remove</button>
+                          </li>
+                        }
+                      </ul>
+                      <div class="mt-2 flex gap-2">
+                        <input #officeEmail class="form-control text-sm" type="email" (keydown.enter)="addDraftEmail(org.id, officeEmail); $event.preventDefault()" />
+                        <button type="button" class="btn-outline-secondary btn-sm" (click)="addDraftEmail(org.id, officeEmail)">Add</button>
+                      </div>
+                    </div>
+                    <label class="text-xs text-zinc-600 dark:text-zinc-400">
+                      Platform fee %
+                      <input class="form-control text-sm mt-1" inputmode="decimal" [value]="draft.platformFeePercent" (input)="patchDraftNumber(org.id, 'platformFeePercent', $event)" />
+                    </label>
+                    <label class="text-xs text-zinc-600 dark:text-zinc-400">
+                      Fixed fee (£)
+                      <input class="form-control text-sm mt-1" inputmode="decimal" [value]="draft.fixedFeePounds" (input)="patchDraftNumber(org.id, 'fixedFeePounds', $event)" />
+                    </label>
+                    <label class="text-xs text-zinc-600 dark:text-zinc-400">
+                      Payment button colour
+                      <input class="form-control text-sm mt-1" [value]="draft.buttonColor" (input)="patchDraft(org.id, { buttonColor: text($event) })" />
+                    </label>
+                    <label class="text-xs text-zinc-600 dark:text-zinc-400">
+                      Booking page
+                      <span class="mt-2 flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300 normal-case tracking-normal">
+                        <input type="checkbox" [checked]="draft.enabled" (change)="patchDraft(org.id, { enabled: checked($event) })" />
+                        On
+                      </span>
+                    </label>
+                    <label class="text-xs text-zinc-600 dark:text-zinc-400 sm:col-span-2">
+                      Payment screen text
+                      <textarea class="form-control text-sm mt-1" rows="2" [value]="draft.paymentNote" (input)="patchDraft(org.id, { paymentNote: text($event) })"></textarea>
+                    </label>
+                    <div class="sm:col-span-2">
+                      <button type="submit" class="btn-primary btn-sm">Save</button>
+                    </div>
+                  </form>
+                }
+              </div>
+            }
+          </section>
+        } @empty {
+          <p class="text-sm text-zinc-500 py-6">No organisations match.</p>
+        }
+      </div>
     }
   </main>
 

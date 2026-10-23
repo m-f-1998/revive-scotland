@@ -14,6 +14,7 @@ export interface AdminOrganization extends PublicOrganization {
   stripeConnectAccountId?: string | null
   stripeConnectChargesEnabled?: boolean
   stripeConnectPayoutsEnabled?: boolean
+  stripeDevReady?: boolean
   platformFeePercent?: number | null
   platformFeeFixedPence?: number | null
   adminEmails?: string[]

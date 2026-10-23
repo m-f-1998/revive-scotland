@@ -30,10 +30,12 @@ export class OrganizationService {
   public async createOrganization ( payload: Record<string, unknown> ): Promise<{
     organization: AdminOrganization
     bookingUrl: string
+    onboardingUrl: string | null
   }> {
     return this.apiSvc.post ( "/api/admin/organizations", payload, await this.authHeaders ( ) ) as Promise<{
       organization: AdminOrganization
       bookingUrl: string
+      onboardingUrl: string | null
     }>
   }
 

@@ -1,5 +1,5 @@
-<div class="flex flex-col min-h-screen">
-  @if (isPartnerBooking()) {
+<div class="flex flex-col" [class.min-h-screen]="!embedMode()" [class.embed-root]="embedMode()">
+  @if (isPartnerBooking() && !embedMode()) {
     <header class="border-b border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-sm sticky top-0 z-40">
       <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
         <div class="flex items-center gap-3 min-w-0">
@@ -18,7 +18,7 @@
         }
       </div>
     </header>
-  } @else {
+  } @else if (!embedMode()) {
     <app-navbar />
     <app-slider [defaultSlides]="slides" pageid="events" />
   }
@@ -35,7 +35,8 @@
     </div>
   }
 
-  <section class="relative px-6 pt-8 pb-2 max-w-6xl mx-auto w-full">
+  <section class="relative w-full" [class.px-6]="!embedMode()" [class.pt-8]="!embedMode()" [class.pb-2]="!embedMode()" [class.max-w-6xl]="!embedMode()" [class.mx-auto]="!embedMode()">
+    @if (!embedMode()) {
     <div class="text-center max-w-2xl mx-auto mb-8">
       @if (isPartnerBooking()) {
         @if (!partnerOrgUnavailable()) {
@@ -55,9 +56,10 @@
         </p>
       }
     </div>
+    }
 
     @if (loading()) {
-      <div class="flex flex-col items-center gap-2 my-12">
+      <div class="flex flex-col items-center gap-2" [class.my-12]="!embedMode()" [class.py-6]="embedMode()">
         <app-icon icon="spinner" iconAnimation="spin" iconSize="2x" />
         <p class="text-sm text-zinc-500">Loading events…</p>
       </div>
@@ -70,26 +72,35 @@
         </p>
       </div>
     } @else if (events().length === 0) {
-      <div class="flex flex-col items-center justify-center gap-3 my-12 rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-600 py-16 px-6 bg-zinc-50/80 dark:bg-zinc-900/40">
+      <div class="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-600 bg-zinc-50/80 dark:bg-zinc-900/40"
+           [class.my-12]="!embedMode()"
+           [class.py-16]="!embedMode()"
+           [class.px-6]="!embedMode()"
+           [class.py-8]="embedMode()"
+           [class.px-4]="embedMode()">
         <app-icon icon="calendar-days" iconSize="2x" class="text-zinc-400" />
         <p class="font-semibold text-lg">No upcoming events</p>
-        <p class="text-muted text-sm text-center max-w-sm">Check back later — or browse past events below.</p>
+        @if (!embedMode()) {
+          <p class="text-muted text-sm text-center max-w-sm">Check back later — or browse past events below.</p>
+        }
       </div>
     } @else {
       <div class="w-full gap-8"
-           [class.max-w-2xl]="events().length === 1"
-           [class.mx-auto]="events().length === 1"
-           [class.grid]="events().length > 1"
-           [class.grid-cols-1]="events().length > 1"
-           [class.lg:grid-cols-2]="events().length > 1">
+           [class.embed-list]="embedMode()"
+           [class.max-w-2xl]="events().length === 1 && !embedMode()"
+           [class.mx-auto]="events().length === 1 && !embedMode()"
+           [class.grid]="events().length > 1 && !embedMode()"
+           [class.grid-cols-1]="events().length > 1 && !embedMode()"
+           [class.lg:grid-cols-2]="events().length > 1 && !embedMode()">
         @for (event of events(); track event.id) {
           <article class="group flex flex-col rounded-2xl overflow-hidden border border-zinc-200/80 dark:border-zinc-700/80 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
+                   [class.embed-sheet]="embedMode()"
                    [id]="'event-' + event.id"
                    [class.ring-2]="isHighlighted(event.id)"
                    [class.ring-blue-500]="isHighlighted(event.id)"
                    [class.ring-offset-2]="isHighlighted(event.id)">
 
-            <div class="relative aspect-[16/10] bg-zinc-100 dark:bg-zinc-950 overflow-hidden">
+            <div class="relative aspect-[16/10] bg-zinc-100 dark:bg-zinc-950 overflow-hidden" [class.embed-photo]="embedMode()">
               <button type="button" class="absolute inset-0 w-full h-full text-left" (click)="openEventDetails(event)" [attr.aria-label]="'View details for ' + event.title">
                 <img
                   [attr.src]="event.imageUrl"
@@ -98,15 +109,15 @@
                     event.imageUrl + '?w=768&f=webp 768w, ' +
                     event.imageUrl + '?w=1200&f=webp 1200w'
                   "
-                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  [attr.sizes]="embedMode() ? '20rem' : '(max-width: 1024px) 100vw, 50vw'"
                   [attr.alt]="event.title || 'Event image'"
-                  loading="lazy"
+                  [attr.loading]="embedMode() ? 'eager' : 'lazy'"
                   decoding="async"
                   crossorigin="anonymous"
                   class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                 />
                 <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent pointer-events-none"></div>
-                <div class="absolute bottom-0 left-0 right-0 p-5 pointer-events-none">
+                <div class="embed-caption absolute bottom-0 left-0 right-0 p-5 pointer-events-none">
                   <h2 class="font-bold text-xl md:text-2xl text-white leading-tight drop-shadow-sm">{{ event.title }}</h2>
                 </div>
               </button>
@@ -133,6 +144,7 @@
                 @if (event.startDate) {
                   <button type="button"
                           class="group/date w-full flex items-center gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/60 dark:hover:bg-blue-950/20 transition-all text-left"
+                          [class.embed-chip]="embedMode()"
                           (click)="downloadIcs(event)"
                           title="Add to calendar">
                     <div class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
@@ -156,7 +168,8 @@
 
                 @if (event.location?.trim()) {
                   <a [href]="getGoogleMapsUrl(event.location)" target="_blank" rel="noopener noreferrer"
-                     class="group/loc flex items-center gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700 hover:border-red-400 dark:hover:border-red-500 hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-all">
+                     class="group/loc flex items-center gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700 hover:border-red-400 dark:hover:border-red-500 hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-all"
+                     [class.embed-chip]="embedMode()">
                     <div class="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
                       <app-icon icon="map-marker" />
                     </div>
@@ -241,10 +254,15 @@
           </article>
         }
       </div>
+      @if (embedMode()) {
+        <a class="embed-mark" href="https://revivescotland.co.uk" target="_blank" rel="noopener">
+          <img src="/api/img/logo.png?w=320&f=webp" alt="Powered by Revive Scotland" />
+        </a>
+      }
     }
   </section>
 
-  @if (showPublicEventChrome()) {
+  @if (showPublicEventChrome() && !embedMode()) {
     <div class="px-6 pb-10 pt-4 text-center max-w-6xl mx-auto w-full">
       <button type="button" class="btn-outline-primary btn-sm rounded-full px-5" (click)="toggleArchive()">
         {{ showArchive() ? 'Hide past events' : 'View past events' }}

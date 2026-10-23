@@ -34,6 +34,14 @@
     h1, h2, h3, h4, h5, h6 { color: #f1f5f9; }
   }
 
+  html.booking-embed,
+  html.booking-embed body {
+    background-color: transparent !important;
+    height: auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     margin-top: 0;
     margin-bottom: 0.5rem;
@@ -614,4 +622,68 @@
 
 .cdk-overlay-container {
   z-index: 1000 !important;
+}
+
+html.booking-embed article.embed-sheet,
+html.booking-embed article.embed-sheet:hover {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border-color: rgb(28 25 21 / 0.14) !important;
+  transform: none !important;
+}
+
+html.booking-embed .embed-chip,
+html.booking-embed .embed-chip:hover {
+  background-color: transparent !important;
+}
+
+html.booking-embed .embed-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.25rem;
+  width: min(100%, calc(20rem * 3 + 2.5rem + 4px));
+  margin-inline: auto;
+}
+
+html.booking-embed .embed-list > article {
+  flex: 0 1 20rem;
+  width: 20rem;
+  max-width: 100%;
+  min-width: min(20rem, 100%);
+}
+
+html.booking-embed .embed-photo {
+  background: transparent !important;
+  height: 8.5rem;
+  max-height: 8.5rem;
+  aspect-ratio: auto;
+}
+
+html.booking-embed .embed-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+html.booking-embed .embed-caption {
+  padding: 0.65rem 0.75rem;
+}
+
+html.booking-embed .embed-caption h2 {
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+html.booking-embed .embed-mark {
+  display: flex;
+  justify-content: flex-end;
+  width: min(100%, calc(20rem * 3 + 2.5rem + 4px));
+  margin-inline: auto;
+  margin-top: 0.75rem;
+}
+
+html.booking-embed .embed-mark img {
+  height: 2rem;
+  width: auto;
 }

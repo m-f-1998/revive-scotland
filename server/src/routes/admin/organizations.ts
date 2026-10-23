@@ -7,6 +7,7 @@ import {
   requireSuperAdmin
 } from "./middleware/authz.js"
 import { StripeService } from "../../services/stripe.service.js"
+import { isDevMode } from "../static.js"
 import {
   getDefaultOrganizationId,
   isValidOrgSlug,
@@ -18,6 +19,14 @@ import {
   userCanAccessOrganization
 } from "../../services/organization.service.js"
 
+const finiteNumber = ( value: unknown ): number | null => {
+  if ( typeof value === "number" && Number.isFinite ( value ) ) return value
+  if ( typeof value === "string" && value.trim ( ) !== "" && Number.isFinite ( Number ( value ) ) ) {
+    return Number ( value )
+  }
+  return null
+}
+
 export const router: FastifyPluginAsync = async app => {
   app.get ( "/", { preHandler: [ attachAdminUser ] }, async ( req, rep ) => {
     const admin = req.adminUser!
@@ -26,6 +35,7 @@ export const router: FastifyPluginAsync = async app => {
       ? orgs
       : orgs.filter ( o => userCanAccessOrganization ( admin.role, admin.organizationIds, o.id ) )
 
+    const stripeDevReady = StripeService.devUsesPlatformTestAccount ( )
     return rep.send ( {
       organizations: visible.map ( o => ( {
         ...toPublicOrganization ( o ),
@@ -33,6 +43,7 @@ export const router: FastifyPluginAsync = async app => {
         stripeConnectAccountId: o.stripeConnectAccountId || null,
         stripeConnectChargesEnabled: !!o.stripeConnectChargesEnabled,
         stripeConnectPayoutsEnabled: !!o.stripeConnectPayoutsEnabled,
+        stripeDevReady,
         platformFeePercent: o.platformFeePercent ?? null,
         platformFeeFixedPence: o.platformFeeFixedPence ?? null,
         adminEmails: admin.role === "superadmin" ? ( o.adminEmails || [ ] ) : undefined
@@ -57,7 +68,7 @@ export const router: FastifyPluginAsync = async app => {
     const ref = db.collection ( "organizations" ).doc ( id )
     const existing = await ref.get ( )
     if ( existing.exists ) {
-      return rep.status ( 409 ).send ( { error: "Organization id already exists." } )
+      return rep.status ( 409 ).send ( { error: "An organisation with this id already exists." } )
     }
 
     const slugTaken = await db.collection ( "organizations" ).where ( "slug", "==", slug ).limit ( 1 ).get ( )
@@ -75,16 +86,39 @@ export const router: FastifyPluginAsync = async app => {
       tagline: body [ "tagline" ] || null,
       enabled: body [ "enabled" ] !== false,
       adminEmails: normalizeOrgAdminEmails ( body [ "adminEmails" ] ),
-      platformFeePercent: typeof body [ "platformFeePercent" ] === "number" ? body [ "platformFeePercent" ] : null,
-      platformFeeFixedPence: typeof body [ "platformFeeFixedPence" ] === "number" ? body [ "platformFeeFixedPence" ] : null,
+      platformFeePercent: finiteNumber ( body [ "platformFeePercent" ] ),
+      platformFeeFixedPence: finiteNumber ( body [ "platformFeeFixedPence" ] ),
       createdAt: FieldValue.serverTimestamp ( ),
       updatedAt: FieldValue.serverTimestamp ( )
     } )
 
+    const host = isDevMode ( )
+      ? "http://localhost:4200"
+      : ( process.env [ "PUBLIC_DOMAIN" ] || "https://revivescotland.co.uk" )
+    const base = host.replace ( /\/$/, "" )
+    let onboardingUrl: string | null = null
+    try {
+      const link = await StripeService.createConnectOnboardingLink ( {
+        organizationId: id,
+        refreshUrl: `${base}/admin/organizations?connect=refresh&org=${encodeURIComponent ( id )}`,
+        returnUrl: `${base}/admin/organizations?connect=done&org=${encodeURIComponent ( id )}`
+      } )
+      if ( link?.accountId ) {
+        await ref.set ( {
+          stripeConnectAccountId: link.accountId,
+          updatedAt: FieldValue.serverTimestamp ( )
+        }, { merge: true } )
+        onboardingUrl = link.url
+      }
+    } catch ( error ) {
+      console.warn ( "Organisation saved without a Stripe account:", error )
+    }
+
     const org = await resolveOrganizationById ( id )
     return rep.status ( 201 ).send ( {
       organization: org,
-      bookingUrl: partnerBookingUrl ( slug )
+      bookingUrl: partnerBookingUrl ( slug ),
+      onboardingUrl
     } )
   } )
 
@@ -110,12 +144,10 @@ export const router: FastifyPluginAsync = async app => {
       if ( body [ "adminEmails" ] != null ) {
         patch [ "adminEmails" ] = normalizeOrgAdminEmails ( body [ "adminEmails" ] )
       }
-      if ( typeof body [ "platformFeePercent" ] === "number" ) {
-        patch [ "platformFeePercent" ] = body [ "platformFeePercent" ]
-      }
-      if ( typeof body [ "platformFeeFixedPence" ] === "number" ) {
-        patch [ "platformFeeFixedPence" ] = body [ "platformFeeFixedPence" ]
-      }
+      const percent = finiteNumber ( body [ "platformFeePercent" ] )
+      const fixed = finiteNumber ( body [ "platformFeeFixedPence" ] )
+      if ( percent != null ) patch [ "platformFeePercent" ] = percent
+      if ( fixed != null ) patch [ "platformFeeFixedPence" ] = fixed
     }
 
     if ( body [ "slug" ] != null ) {
@@ -128,7 +160,7 @@ export const router: FastifyPluginAsync = async app => {
 
     const ref = getFirestore ( ).collection ( "organizations" ).doc ( id )
     if ( !( await ref.get ( ) ).exists && id !== getDefaultOrganizationId ( ) ) {
-      return rep.status ( 404 ).send ( { error: "Organization not found." } )
+      return rep.status ( 404 ).send ( { error: "Organisation not found." } )
     }
 
     await ref.set ( patch, { merge: true } )
@@ -143,22 +175,30 @@ export const router: FastifyPluginAsync = async app => {
     const { id } = req.params as { id: string }
     const org = await resolveOrganizationById ( id )
     if ( !org ) {
-      return rep.status ( 404 ).send ( { error: "Organization not found." } )
+      return rep.status ( 404 ).send ( { error: "Organisation not found." } )
     }
 
-    const host = process.env [ "PUBLIC_DOMAIN" ] || "https://revivescotland.co.uk"
+    const host = isDevMode ( )
+      ? "http://localhost:4200"
+      : ( process.env [ "PUBLIC_DOMAIN" ] || "https://revivescotland.co.uk" )
     const refreshUrl = `${host.replace ( /\/$/, "" )}/admin/organizations?connect=refresh&org=${encodeURIComponent ( id )}`
     const returnUrl = `${host.replace ( /\/$/, "" )}/admin/organizations?connect=done&org=${encodeURIComponent ( id )}`
 
-    const link = await StripeService.createConnectOnboardingLink ( {
-      organizationId: id,
-      refreshUrl,
-      returnUrl,
-      existingAccountId: org.stripeConnectAccountId
-    } )
+    let link: { url: string; accountId: string } | undefined
+    try {
+      link = await StripeService.createConnectOnboardingLink ( {
+        organizationId: id,
+        refreshUrl,
+        returnUrl,
+        existingAccountId: org.stripeConnectAccountId
+      } )
+    } catch ( error ) {
+      const message = error instanceof Error ? error.message : "Could not start payout setup."
+      return rep.status ( 400 ).send ( { error: message } )
+    }
 
     if ( !link ) {
-      return rep.status ( 500 ).send ( { error: "Stripe Connect is not configured." } )
+      return rep.status ( 500 ).send ( { error: "Stripe is not configured." } )
     }
 
     if ( link.accountId && link.accountId !== org.stripeConnectAccountId ) {

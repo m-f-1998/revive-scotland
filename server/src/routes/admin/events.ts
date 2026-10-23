@@ -545,9 +545,9 @@ export const router: FastifyPluginAsync = async app => {
         if ( takesDonation && !event.comingSoon ) {
           const org = await resolveOrganizationById ( targetOrgId )
           const isPlatformOrg = targetOrgId === getDefaultOrganizationId ( )
-          if ( !isPlatformOrg && !org?.stripeConnectChargesEnabled ) {
+          if ( !isPlatformOrg && !org?.stripeConnectChargesEnabled && !StripeService.devUsesPlatformTestAccount ( ) ) {
             throw new Error (
-              `Event "${model.title}": partner paid events need payouts enabled. Finish Stripe onboarding for ${org?.name || targetOrgId} first. (The Revive platform organisation can use the platform Stripe account.)`
+              `Event "${model.title}": this organisation needs its own Stripe payouts before paid events can go live. Finish Stripe setup for ${org?.name || targetOrgId}.`
             )
           }
         }
