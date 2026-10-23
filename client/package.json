@@ -24,7 +24,7 @@
     "@fortawesome/angular-fontawesome": "^5.1.0",
     "@fortawesome/free-brands-svg-icons": "^7.3.1",
     "@fortawesome/free-solid-svg-icons": "^7.3.1",
-    "@m-f-1998/ngx-toastr": "^4.0.1",
+    "@m-f-1998/ngx-toastr": "^4.0.2",
     "@ngx-formly/core": "^11.0.0",
     "chart.js": "^4.6.1",
     "date-fns": "^4.4.0",
