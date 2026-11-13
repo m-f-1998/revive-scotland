@@ -14,49 +14,49 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/cdk": "^22.2.4",
+    "@angular/cdk": "^22.2.7",
     "@angular/common": "^22.0.2",
     "@angular/compiler": "^22.0.2",
     "@angular/core": "^22.0.2",
-    "@angular/forms": "^22.2.3",
+    "@angular/forms": "^22.2.6",
     "@angular/platform-browser": "^22.0.2",
-    "@angular/router": "^22.2.3",
+    "@angular/router": "^22.2.6",
     "@fortawesome/angular-fontawesome": "^5.1.0",
     "@fortawesome/free-brands-svg-icons": "^7.3.1",
     "@fortawesome/free-solid-svg-icons": "^7.3.1",
-    "@m-f-1998/ngx-toastr": "^4.0.2",
-    "@ngx-formly/core": "^11.0.0",
+    "@m-f-1998/ngx-toastr": "^4.0.3",
+    "@ngx-formly/core": "^11.2.0",
     "chart.js": "^4.6.1",
     "date-fns": "^4.4.0",
-    "firebase": "^13.1.0",
+    "firebase": "^13.3.0",
     "ng-qrcode": "^22.0.0",
     "ng-recaptcha-2": "^22.0.1",
     "ng2-charts": "^11.0.0"
   },
   "devDependencies": {
-    "@angular/build": "^22.2.4",
-    "@angular/cli": "^22.2.4",
+    "@angular/build": "^22.2.7",
+    "@angular/cli": "^22.2.7",
     "@angular/compiler-cli": "^22.0.2",
-    "@angular/localize": "^22.2.3",
-    "@ngx-formly/schematics": "^11.0.0",
+    "@angular/localize": "^22.2.6",
+    "@ngx-formly/schematics": "^11.2.0",
     "@stylistic/eslint-plugin": "^5.10.0",
-    "@tailwindcss/postcss": "^4.3.3",
+    "@tailwindcss/postcss": "^4.3.5",
     "angular-eslint": "^22.6.0",
-    "postcss": "^8.5.31",
+    "postcss": "^8.5.32",
     "tailwindcss": "^4.2.4",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.72.0"
+    "typescript-eslint": "^8.72.2"
   },
   "volta": {
-    "node": "24.22.1"
+    "node": "26.13.1"
   },
   "allowScripts": {
     "fsevents@2.3.3": true,
-    "msgpackr-extract@3.0.4": true,
     "@parcel/watcher@2.6.0": true,
     "lmdb@3.5.6": true,
     "@firebase/util@1.15.3": true,
     "esbuild@0.28.2": true,
-    "protobufjs@7.6.6": true
+    "protobufjs@7.6.6": true,
+    "msgpackr-extract@3.0.7": true
   }
 }
